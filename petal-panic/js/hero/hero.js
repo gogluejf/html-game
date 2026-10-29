@@ -7,6 +7,7 @@
 // offset-box model end-to-end (the debug overlay shows the box get shorter).
 
 import { Entity } from '../core/entity.js';
+import { isHighGraphic } from '../core/renderMode.js';
 import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
 import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from '../objects/projectile.js';
 import { SPECIAL_TYPES } from '../objects/specialWeapons.js';
@@ -1345,9 +1346,15 @@ export class Hero extends Entity {
    * height so the visual matches the collision box (no "two boxes" artifact).
    */
   draw(ctx) {
+    if (this.visible === false) return;
+    // High-graphic: try sheet sprite first.
+    if (isHighGraphic() && this.drawSprite(ctx)) return;
+    this.drawPrimitive(ctx);
+  }
+
+  /** Hero primitive: crouch-aware rect (feet-anchored when crouching). */
+  drawPrimitive(ctx) {
     ctx.save();
-    // When crouching, pivot at the FEET (bottom-center) so the sprite shrinks
-    // downward-to-upward, matching the crouchBox which keeps feet planted.
     const cx = this.x + this.w / 2;
     const cy = this.crouching ? this.y + this.h : this.y + this.h / 2;
     ctx.translate(cx, cy);
@@ -1356,15 +1363,9 @@ export class Hero extends Entity {
     ctx.rotate(this.rotation);
     const scaleY = this.crouching ? 0.6 : 1;
     ctx.scale(this.scale, this.scale * scaleY);
-    // Offset so the sprite draws relative to the pivot.
     const offsetY = this.crouching ? -this.h : -this.h / 2;
-
-    if (this.anim && this.anim.frames.length > 0) {
-      this.anim.draw(ctx, this);
-    } else {
-      ctx.fillStyle = this.debugColor;
-      ctx.fillRect(-this.w / 2, offsetY, this.w, this.h * scaleY);
-    }
+    ctx.fillStyle = this.debugColor;
+    ctx.fillRect(-this.w / 2, offsetY, this.w, this.h * scaleY);
     ctx.restore();
   }
 }

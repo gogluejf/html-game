@@ -4,6 +4,7 @@
 // avoid a circular import back into systems/update.js.
 
 import { input } from '../core/input.js';
+import { setGraphicMode, GRAPHIC_MODE } from '../core/renderMode.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { LAYER } from '../consts.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
@@ -83,6 +84,7 @@ function handleDebugToggle(e, source) {
     ctx.hero.dying = false;
     ctx.hero.deathTimer = 0;
     enableDebug(source);
+    setGraphicMode(GRAPHIC_MODE.PRIMITIVE); // sync gate to default (primitive+collision)
     tryTransition(S.PLAY);
     console.log(`[debug] ${source}: ${STATE_NAMES[s]} → PLAY`);
     return;
@@ -90,6 +92,7 @@ function handleDebugToggle(e, source) {
 
   if (!Debug.enabled) {
     enableDebug(source);
+    setGraphicMode(GRAPHIC_MODE.PRIMITIVE); // sync gate to default (primitive+collision)
   } else {
     Debug.toggle();
     Debug.reset();
@@ -267,9 +270,12 @@ function handleDebugKeys(e) {
         Debug.logEvent('trace JSON downloaded');
       }
       break;
-    case 'F3': // Cycle collision view mode (round-robin)
-      Debug.viewMode = (Debug.viewMode + 1) % 3;
-      const modeNames = ['sprite+collision', 'collision-only', 'sprite-only'];
+    case 'F3': // Cycle render mode (round-robin: 5 modes)
+      Debug.viewMode = (Debug.viewMode + 1) % 5;
+      const modeNames = ['primitive+collision', 'primitive-only', 'collision-only', 'high+collision', 'high-only'];
+      // Sync the graphic mode gate with the view mode.
+      const graphicMode = [GRAPHIC_MODE.PRIMITIVE, GRAPHIC_MODE.PRIMITIVE, GRAPHIC_MODE.PRIMITIVE, GRAPHIC_MODE.HIGH, GRAPHIC_MODE.HIGH][Debug.viewMode];
+      setGraphicMode(graphicMode);
       Debug.logEvent(`view: ${modeNames[Debug.viewMode]}`);
       break;
   }

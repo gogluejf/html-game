@@ -202,6 +202,23 @@ export class Powerup extends Entity {
     super.draw(ctx);
     ctx.restore();
   }
+
+  /** Powerup primitive: colored rect + glyph text (placeholder until sprites land). */
+  drawPrimitive(ctx) {
+    ctx.save();
+    ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
+    if (this.mirrorX) ctx.scale(-1, 1);
+    if (this.mirrorY) ctx.scale(1, -1);
+    ctx.rotate(this.rotation);
+    ctx.scale(this.scale, this.scale);
+    if (this.anim && this.anim.frames.length > 0) {
+      this.anim.draw(ctx, this);
+    } else {
+      ctx.fillStyle = this.debugColor;
+      ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+    }
+    ctx.restore();
+  }
 }
 
 /** Create a powerup of `type` at (x, y). Convenience factory for level setup. */

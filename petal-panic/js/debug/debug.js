@@ -50,7 +50,7 @@ export const Debug = {
   showLog: false, // L toggles the on-screen tail of the log
   showStats: false, // T toggles the telemetry panel (default OFF)
   showInput: false, // U toggles the live input monitor panel (default OFF)
-  viewMode: 0, // C cycles (round-robin): 0=sprite+collision, 1=collision-only (opaque), 2=sprite-only (pure gameplay)
+  viewMode: 0, // F3 cycles (round-robin): 0=primitive+collision, 1=primitive-only, 2=high+collision, 3=collision-only, 4=high-only
 
   // --- Transform-debug detail level -----------------------------------------
   // The mirror icons + inspect panel are part of the collision debug details.
@@ -101,7 +101,7 @@ export const Debug = {
     this.showStats = false;
     this.showInput = false;
     this.detailLevel = 0;
-    this.viewMode = 0; // never let a stale collision-only/sprite-only mode hide the overlay
+    this.viewMode = 0; // default to primitive+collision
     this.log = [];
   },
 };

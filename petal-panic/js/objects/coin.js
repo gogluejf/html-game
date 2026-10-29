@@ -15,6 +15,7 @@
 // coins always get their chance to be picked up.
 
 import { Entity } from '../core/entity.js';
+import { isHighGraphic } from '../core/renderMode.js';
 import { LAYER, GRAVITY, MAX_FALL_SPEED, COIN_TTL, TTL_SPEED } from '../consts.js';
 
 // --- Tunables ----------------------------------------------------------------
@@ -167,27 +168,29 @@ export class Coin extends Entity {
    */
   draw(ctx) {
     if (!this.alive || this.collected) return;
+    if (isHighGraphic() && this.drawSprite(ctx)) return;
+    this.drawPrimitive(ctx);
+  }
+
+  /** Coin primitive: spinning circle with rim highlight. */
+  drawPrimitive(ctx) {
     const cx = this.x + this.w / 2;
     const cy = this.y + this.h / 2;
     const r = this.w / 2;
-    // Horizontal squash factor from spin (cos oscillates between -1..1).
     const squash = Math.max(0.15, Math.abs(Math.cos(this.spinAngle)));
     const def = COIN_TYPES[this.coinType];
 
     ctx.save();
-    // Fade out during the last 25% of TTL so the player sees coins expiring.
     if (this.maxTtl > 0) {
       const frac = this.ttlFrac;
       if (frac < 0.25) ctx.globalAlpha = frac / 0.25;
     }
     ctx.translate(cx, cy);
     ctx.scale(squash, 1);
-    // Body.
     ctx.fillStyle = def.color;
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fill();
-    // Rim highlight (only when wide enough to show).
     if (squash > 0.5) {
       ctx.fillStyle = 'rgba(255,255,255,0.55)';
       ctx.beginPath();

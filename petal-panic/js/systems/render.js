@@ -18,6 +18,7 @@ import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../core/timers.js';
 import { drawScreen, screenUpdate } from '../ui/screens.js';
 import { drawHUD } from '../systems/hud.js';
 import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../world/level.js';
+import { isHighGraphic } from '../core/renderMode.js';
 import { tileSolid, loadTerrainFrames, drawFloor } from '../world/terrainTiles.js';
 import { getTileSprites, drawTileSprites } from '../world/tileSprite.js';
 import { getLastWorldSeed } from '../world/build.js';
@@ -70,9 +71,10 @@ export function render(ctx) {
   // Parallax level background (viewport space, behind the world): the active
   // zone's bg art scaled to fit and tiled, drifting at 1/BG_PARALLAX_DIVISOR
   // of camera speed. No-op while the image is still loading.
+  // In primitive mode: solid dark fill only (no image).
   {
     const zone = getActiveZone(getHero());
-    if (zone) drawParallaxBg(ctx, cam, zone.level, zone.orientation);
+    if (zone && isHighGraphic()) drawParallaxBg(ctx, cam, zone.level, zone.orientation);
   }
 
   // --- World (camera-translated) -------------------------------------------
@@ -93,26 +95,26 @@ export function render(ctx) {
   // skipped (the flat fill behind shows through for one frame at most).
   // The floor is its OWN kind (sprite-engine M7): one wide tiled fg entity,
   // never block-tiled — no double-draw.
-  if (!(Debug.viewMode === 1)) {
+  if (!(Debug.viewMode === 2)) {
     const seed = getLastWorldSeed() ?? 0;
-    // BUGFIX (barrel-class cache bug): level must come from the ACTIVE ZONE,
-    // not LEVELS[0]. Hardcoding level 1 meant every later level fetched its
-    // own sheets fine but any code path still pinned to level 1 desynced;
-    // worse, a failed load poisoned the per-level cache for the rest of the
-    // session (including restarts). Same source as the parallax bg above.
     const zone = getActiveZone(getHero());
     const level = zone?.level ?? 1;
     for (const s of getSolids()) {
-      if (s.kind === 'floor') {
-        drawFloor(ctx, s, level);
-        continue;
+      if (isHighGraphic()) {
+        // High-graphic: sheet sprites for terrain.
+        if (s.kind === 'floor') {
+          drawFloor(ctx, s, level);
+          continue;
+        }
+        const kind = s.oneWay ? 'platform' : 'block';
+        loadTerrainFrames(level, kind);
+        const tiles = tileSolid(s, level, seed);
+        drawTileSprites(ctx, getTileSprites(s, level, tiles));
+      } else {
+        // Primitive: flat colored rects per solid.
+        ctx.fillStyle = s.oneWay ? '#ffb86c' : '#ff9f43';
+        ctx.fillRect(s.x, s.y, s.w, s.h);
       }
-      const kind = s.oneWay ? 'platform' : 'block';
-      loadTerrainFrames(level, kind); // fire-and-forget; cached per level+kind
-      const tiles = tileSolid(s, level, seed);
-      // Tiles are REAL sprite entities (tileSprite.js): each scales from its
-      // variant sheet's authored collision box via setAnim() — no stretching.
-      drawTileSprites(ctx, getTileSprites(s, level, tiles));
     }
   }
 
@@ -123,7 +125,7 @@ export function render(ctx) {
   // The collision debug layer (drawDebugOverlay) is separate and always
   // semitransparent — see below.
   // =====================================================================
-  const showSprites = !(Debug.viewMode === 1);
+  const showSprites = !(Debug.viewMode === 2);
   // Per-entity shake consumption (effects.md §Carriers): any drawable entity
   // that can be an effect carrier must translate its draw by the combined
   // hitFlash + standalone offset so carrier-declared sprite-shake instances are
@@ -280,7 +282,7 @@ export function render(ctx) {
       if (boss.hp != null && boss.maxHp > 0 && boss.aiState !== 'dead') {
         drawBossHpBar(ctx, boss);
       }
-      if (Debug.enabled && Debug.viewMode !== 2) drawBossDebug(ctx, boss);
+      if (Debug.enabled && Debug.viewMode !== 1 && Debug.viewMode !== 4) drawBossDebug(ctx, boss);
     }
   }
 
@@ -292,7 +294,7 @@ export function render(ctx) {
   // per-type weight/value difference is visible during development.
   // (The TTL bar used to be hand-drawn here; coins now flow through the same
   // generic drawTimerStack as every other entity — see allEnts below.)
-  if (Debug.enabled && Debug.viewMode !== 2) {
+  if (Debug.enabled && Debug.viewMode !== 1 && Debug.viewMode !== 4) {
     ctx.save();
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
@@ -400,7 +402,7 @@ export function render(ctx) {
   //   sprite layer  — hidden only in collision-only mode (viewMode 1)
   //   collision layer — drawn whenever debug is on and not sprite-only;
   //                     SEMITRANSPARENT in both modes (it's always an overlay).
-  if (Debug.enabled && Debug.viewMode !== 2) {
+  if (Debug.enabled && Debug.viewMode !== 1 && Debug.viewMode !== 4) {
     drawDebugOverlay(ctx);
     // per-enemy debug: aggro radius circle + AI state label
     // above each real enemy's head.
@@ -411,7 +413,7 @@ export function render(ctx) {
   // Generic transform viz (sprite-orientation arrow + velocity vector) drawn for
   // EVERY live entity. Gated entirely behind Debug.enabled so normal play pays
   // nothing. Detail level (C key) controls how much text is shown.
-  if (Debug.enabled && Debug.viewMode !== 2) {
+  if (Debug.enabled && Debug.viewMode !== 1 && Debug.viewMode !== 4) {
     const allEnts = [
       ...getRealEnemies().filter(e => e.alive),
       ...getProjectiles(),
@@ -628,9 +630,9 @@ function drawDeathSkull(ctx, h) {
  */
 function drawDebugOverlay(ctx) {
   ctx.save();
-  // The collision layer is ALWAYS semitransparent — it's an overlay on top of
-  // the sprite layer, in both sprite+collision and collision-only modes.
-  // (One code path; viewMode only decides whether the sprite layer exists.)
+  // Always semitransparent — it's an overlay on top of the graphic layer.
+  // In mode 3 (collision-only) the graphic layer is hidden so the boxes
+  // appear over the dark background, but they're still alpha-blended.
   ctx.globalAlpha = 0.4;
   ctx.lineWidth = 2;
 

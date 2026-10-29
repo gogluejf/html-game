@@ -12,6 +12,7 @@
 import { GRAVITY, MAX_FALL_SPEED } from '../consts.js';
 import { Timers } from './timers.js';
 import { uniformScale } from './spriteData.js';
+import { isHighGraphic } from './renderMode.js';
 
 export class Entity {
   /**
@@ -53,6 +54,8 @@ export class Entity {
     // --- Sprite data (sprites.md runtime wiring, v1) -------------------------
     // entity.sprite = {
     //   anchor: 'bottom-center',          // physical anchor (§3); default bottom-center
+    //   targetH: 1.0,                     // target height in Y-units (§4)
+    //   tile: false,                      // repeat frame across width (M7)
     //   anims: { [name]: AnimData },      // from parseSheet(); dict keyed by state name
     //   frames: Map<file, HTMLImageElement>,  // filled by loadFrames() (may be empty)
     // }
@@ -209,9 +212,10 @@ export class Entity {
     const data = this.sprite.anims[name];
     if (!data) throw new Error(`setAnim: unknown anim "${name}"`);
     this._spriteAnim = name;
-    // §4 v1: target height = the entity's own collision-box height. One scalar
-    // for art + any future geometry; width follows uniformly (no forcing).
-    this._spriteScale = uniformScale(data, this.h);
+    // §4: target height in Y-units → px (48px/unit). Width follows uniformly.
+    const UNIT = 48; // mirrors macros.js UNIT_PX_Y (avoids circular import)
+    const targetUnits = this.sprite.targetH ?? (this.h / UNIT);
+    this._spriteScale = uniformScale(data, targetUnits * UNIT);
   }
 
   /** Active sprite AnimData (or null when no sprite anim is set/known). */
@@ -317,23 +321,28 @@ export class Entity {
    */
   draw(ctx) {
     if (this.visible === false) return; // engine contract: invisible = not drawn
-    // Sprite data path first (§22 pipeline, anchor-based); legacy path below.
-    if (this.drawSprite(ctx)) return;
+    // High-graphic: try sheet sprite first (§22 pipeline). Falls through to
+    // primitive if no sprite data is loaded.
+    if (isHighGraphic() && this.drawSprite(ctx)) return;
+    // Primitive path (always available): basic shapes, per-entity details.
+    this.drawPrimitive(ctx);
+  }
 
+  /**
+   * Draw the entity's primitive (non-sprite) representation.
+   * Default: a filled rect in debugColor at the entity's position.
+   * Subclasses override to add details (fuse dots, whip arcs, spin squash, etc.)
+   * and call super.drawPrimitive(ctx) for the base body.
+   */
+  drawPrimitive(ctx) {
     ctx.save();
-    // Pivot at the entity's visual center.
     ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
     if (this.mirrorX) ctx.scale(-1, 1);
     if (this.mirrorY) ctx.scale(1, -1);
     ctx.rotate(this.rotation);
     ctx.scale(this.scale, this.scale);
-
-    if (this.anim && this.anim.frames.length > 0) {
-      this.anim.draw(ctx, this);
-    } else {
-      ctx.fillStyle = this.debugColor;
-      ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
-    }
+    ctx.fillStyle = this.debugColor;
+    ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
     ctx.restore();
   }
 
