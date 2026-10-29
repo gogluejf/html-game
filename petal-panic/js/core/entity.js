@@ -299,6 +299,39 @@ export class Entity {
   }
 
   /**
+   * Current sheet-sprite frame + transform state (effects contract). Lets an
+   * effect (spriteFlash) re-draw the ACTUAL frame through this entity's own
+   * pipeline instead of a rect over worldBox(). Returns null when no sheet
+   * frame is loaded (primitive fallback active) — effects fall back to box
+   * mode. All geometry in source-bbox units, matching drawSprite(): the
+   * frame's bbox horizontal center lands on anchorX and its bottom edge on
+   * anchorY, scaled by `scale`, mirrored/rotated per the entity state.
+   * @returns {?{img:object, bbox:{x:number,y:number,w:number,h:number},
+   *             scale:number, anchorX:number, anchorY:number, mirrorX:boolean,
+   *             mirrorY:boolean, rotation:number, tile:boolean, widthUnits:number}}
+   */
+  spriteFrame() {
+    const data = this.spriteAnimData;
+    const frames = this.sprite?.frames;
+    if (!data || !frames || frames.size === 0) return null;
+    const frame = data.frames[this.spriteFrameIndex % data.frames.length];
+    const img = frames.get(frame.file);
+    if (!img || !(img.complete && img.naturalWidth > 0)) return null;
+    return {
+      img,
+      bbox: frame.bbox,
+      scale: this._spriteScale,
+      anchorX: this.x + this.w / 2,
+      anchorY: this.y + this.h,
+      mirrorX: !!this.mirrorX,
+      mirrorY: !!this.mirrorY,
+      rotation: this.rotation ?? 0,
+      tile: !!this.sprite.tile,
+      widthUnits: this.w,
+    };
+  }
+
+  /**
    * Basic integration step: apply gravity, clamp fall speed, move by velocity.
    * dt is in seconds (fixed 1/60 in the main loop).
    * Subclasses should call super.update(dt) then add their own logic.

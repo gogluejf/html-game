@@ -17,6 +17,7 @@
 // dead.
 
 import { record } from '../stats.js';
+import { fireManual } from '../effects/index.js';
 
 /** Hit-landed method buckets that damage() may write (subset of stats HIT_METHODS). */
 const HITS_LANDED_METHODS = new Set(['melee', 'projectile', 'special', 'specialMelee', 'superMove', 'explosion']);
@@ -92,5 +93,9 @@ export function damage(source, target, amt, method = 'projectile') {
  * @param {object} target entity carrying a `hitFlash` timer
  */
 export function flashTarget(target) {
-  if (target != null && 'hitFlash' in target) target.hitFlash = 0.1;
+  if (target == null || !('hitFlash' in target)) return;
+  target.hitFlash = 0.1; // sprite-shake still rides on this timer
+  // Effect-engine hit feedback: the sprite-flash instance tints the carrier's
+  // box over a short blink cycle (world-space pass, drawn after entities).
+  fireManual({ type: 'sprite-flash', params: { duration: 0.15, flashes: 2, opacity: 0.7 } }, target);
 }

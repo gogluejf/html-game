@@ -226,14 +226,8 @@ export class GameObj extends Entity {
   draw(ctx) {
     if (!this.alive) return;
     super.draw(ctx);
-    if (this.hitFlash > 0) {
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, this.hitFlash * 10);
-      const b = this.worldBox();
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(b.x, b.y, b.w, b.h);
-      ctx.restore();
-    }
+    // Hit feedback is the effect engine's sprite-flash instance (fired from
+    // flashTarget on hit) — no local white-rect overlay anymore.
   }
 }
 

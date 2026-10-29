@@ -257,14 +257,7 @@ export class Enemy extends Entity {
     }
     ctx.restore();
 
-    // Hit flash overlay (drawn un-scaled so it matches the collision box).
-    if (this.hitFlash > 0 && this.aiState !== 'dead') {
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, this.hitFlash * 10);
-      const b = this.worldBox();
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(b.x, b.y, b.w, b.h);
-      ctx.restore();
-    }
+    // Hit feedback is the effect engine's sprite-flash instance (fired from
+    // flashTarget on damage) — no local white-rect overlay anymore.
   }
 }
