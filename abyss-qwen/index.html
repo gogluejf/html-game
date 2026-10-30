@@ -1267,9 +1267,9 @@ loadPngSprite("pu_bomb", "powerups", "powerup_bomb", 4, 34);
  *   wave 4 -> octopus, 8 -> megalodon, 12 -> kraken, 16 -> octopus, ...
  */
 const BOSS_ROSTER = [
-  { name: "octopus",   sprite: "boss_octopus",   prefix: "boss_octopus",   hp: 10, points: 5000, fireRate: 0.8, scaleW: 130 },
-  { name: "megalodon", sprite: "boss_megalodon", prefix: "boss_shark",     hp: 14, points: 7500, fireRate: 0.65, scaleW: 150 },
-  { name: "kraken",    sprite: "boss_kraken",    prefix: "boss_kraken",    hp: 18, points: 10000, fireRate: 0.5, scaleW: 130 },
+  { name: "octopus",   sprite: "boss_octopus",   prefix: "boss_octopus",   hp: 30, points: 5000, fireRate: 0.8, scaleW: 130 },
+  { name: "megalodon", sprite: "boss_megalodon", prefix: "boss_shark",     hp: 42, points: 7500, fireRate: 0.65, scaleW: 150 },
+  { name: "kraken",    sprite: "boss_kraken",    prefix: "boss_kraken",    hp: 54, points: 10000, fireRate: 0.5, scaleW: 130 },
 ];
 BOSS_ROSTER.forEach((b) => loadPngSprite(b.sprite, "bosses", b.prefix, 4, b.scaleW));
 
@@ -1698,9 +1698,32 @@ class DamageVignette {
  *   - start(entity) marks it dying and schedules its burst.
  *   - update(dt) counts down the flash phase; when it ends it calls
  *     particleSystem.explode at the entity's position and removes the record.
- *   - render(ctx) paints a white flash rect over the entity during the phase.
+ *   - render(ctx) paints a white flash over the entity during the phase.
  * The helper `killEntity(entity, opts)` wires everything together in one call.
  * ------------------------------------------------------------------------- */
+
+// Shared tint cache (ported from petal-panic effects/spriteFlash.js):
+// key `${img.src}|${color}` -> offscreen canvas with the image recolored to a
+// solid color via globalCompositeOperation 'source-in'. Tinting once per
+// (frame, color) pair means rapid kills reuse the same surface.
+const _tintCache = new Map();
+function _tintedImage(img, color) {
+  const key = `${img.src ?? 'img'}|${color}`;
+  const hit = _tintCache.get(key);
+  if (hit) return hit;
+  const c = document.createElement("canvas");
+  c.width = img.naturalWidth || img.width;
+  c.height = img.naturalHeight || img.height;
+  const c2d = c.getContext("2d");
+  if (!c2d) return null;
+  c2d.drawImage(img, 0, 0);
+  c2d.globalCompositeOperation = "source-in";
+  c2d.fillStyle = color;
+  c2d.fillRect(0, 0, c.width, c.height);
+  _tintCache.set(key, c);
+  return c;
+}
+
 class DeathAnim {
   constructor(particleSystem) {
     this.ps = particleSystem;
@@ -1719,11 +1742,39 @@ class DeathAnim {
       h: entity.h,
       color: entity.color || "#ffffff",
       t: 0,
-      dur: opts.flashTime ?? 0.1,   // ~100ms white flash
+      dur: opts.flashTime ?? 0.15, // ~150ms white sprite flash
       exploded: false,
+      img: null,                    // sprite frame to tint (see _captureSprite)
+      rot: 0,                       // rotation applied when the sprite was drawn
     };
+    this._captureSprite(rec, entity);
     this.dying.push(rec);
     return rec;
+  }
+
+  /**
+   * Capture the PNG frame the entity is currently showing, so render() can
+   * flash the ACTUAL sprite silhouette (petal-panic style) instead of a box.
+   * Mirrors Enemy.render(): diving/returning enemies are rotated toward their
+   * velocity vector; bosses use their own time-based frame.
+   */
+  _captureSprite(rec, e) {
+    let name = null;
+    let frame = 0;
+    if (e.type && ENEMY_TYPES[e.type]) {
+      name = e.type;
+      frame = Math.floor(e.time * 4) % 2;
+      if (e.state === "diving" || e.state === "returning") {
+        rec.rot = Math.atan2(e.vy, e.vx) + Math.PI / 2;
+      }
+    } else if (e.sprite && BOSS_ROSTER.some((b) => b.sprite === e.sprite)) {
+      name = e.sprite;
+      frame = Math.floor(e.time * 6) % 4;
+    }
+    const def = name ? PNG_SPRITES[name] : null;
+    if (!def || !def.frames.length) return;
+    const img = def.frames[Math.max(0, Math.min(frame | 0, def.frames.length - 1))];
+    if (img && img.complete && img.naturalWidth > 0) rec.img = img;
   }
 
   /** One-shot convenience: mark dying, schedule burst, return the record. */
@@ -1751,12 +1802,33 @@ class DeathAnim {
   /** Paint a white flash over each entity still in its flash phase. */
   render(ctx) {
     for (const d of this.dying) {
-      const a = Math.max(0, 1 - d.t / d.dur); // 1 -> 0 across the flash
+      // Blink the tinted sprite on/off at ~10Hz (petal-panic style): the
+      // flicker reads far better than a single short fade, and the burst
+      // only fires after the last ON frame so the flash is actually seen.
+      const t = Math.max(0, Math.min(1, d.t / d.dur));
+      const half = d.dur / 4;                       // 4 half-cycles -> 2 blinks
+      const on = Math.floor((d.t + 1e-9) / half) % 2 === 0;
+      if (!on) continue;
+      const a = 1 - t * 0.5;                        // slight fade across the flash
+      ctx.save();
       ctx.globalAlpha = a;
+      if (d.img) {
+        const tinted = _tintedImage(d.img, "#ffffff");
+        if (tinted) {
+          const dw = d.w;
+          const dh = Math.round(dw * (d.img.naturalHeight / d.img.naturalWidth));
+          ctx.translate(d.x + d.w / 2, d.y + d.h / 2);
+          if (d.rot) ctx.rotate(d.rot);
+          ctx.drawImage(tinted, Math.round(-dw / 2), Math.round(-dh / 2), dw, dh);
+          ctx.restore();
+          continue;
+        }
+      }
+      // Fallback: plain white box over the hitbox.
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(d.x, d.y, d.w, d.h);
+      ctx.restore();
     }
-    ctx.globalAlpha = 1;
   }
 }
 
@@ -2149,7 +2221,11 @@ class Boss {
     this.fireTimer = 1.2;
     this.dead = false;
     this.deathT = 0;         // drives the multi-burst death sequence
+    this.hitFlash = 0;       // seconds of white sprite flash remaining (per hit)
   }
+
+  /** Duration of the per-hit white sprite flash. */
+  static HIT_FLASH_TIME = 0.12;
 
   /** Reposition the boss's hover center (used to spread multiple bosses). */
   setHover(x, y) {
@@ -2188,6 +2264,7 @@ class Boss {
   /** Advance the boss by dt seconds. */
   update(dt, player) {
     this.time += dt;
+    if (this.hitFlash > 0) this.hitFlash -= dt;
 
     if (this.state === "entering") {
       this.y += 120 * dt;
@@ -2216,6 +2293,8 @@ class Boss {
   /** Take a hit. Returns true if the boss just died. */
   hit() {
     this.hp -= 1;
+    // White sprite flash on every hit (re-triggers on rapid fire).
+    this.hitFlash = Boss.HIT_FLASH_TIME;
     if (this.hp <= 0) {
       this.dead = true;
       this.deathT = 0;
@@ -2255,11 +2334,37 @@ class Boss {
     return this.deathT >= burstInterval * bursts;
   }
 
+  /**
+   * Flash the boss's own sprite white (petal-panic style). Called from hit()
+   * on every non-lethal shot so heavy armor reads as "absorbing" hits.
+   */
+  _flashSprite(ctx) {
+    const def = PNG_SPRITES[this.sprite];
+    if (!def || !def.frames.length) return;
+    const frame = Math.floor(this.time * 6) % 4;
+    const img = def.frames[Math.max(0, Math.min(frame | 0, def.frames.length - 1))];
+    if (!img || !img.complete || !img.naturalWidth) return;
+    const tinted = _tintedImage(img, "#ffffff");
+    if (!tinted) return;
+    const t = this.hitFlash / Boss.HIT_FLASH_TIME; // 1 -> 0
+    const dw = this.w;
+    const dh = Math.round(dw * (img.naturalHeight / img.naturalWidth));
+    ctx.save();
+    ctx.globalAlpha = 0.85 * t;
+    ctx.translate(this.cx, this.cy);
+    ctx.drawImage(tinted, Math.round(-dw / 2), Math.round(-dh / 2), dw, dh);
+    ctx.restore();
+  }
+
   /** Draw the boss sprite with animated frames. */
   render(ctx) {
     const frame = Math.floor(this.time * 6) % 4;
     // PNG path: draw centered on the boss's center at its target width.
-    if (drawPngSprite(ctx, this.sprite, frame, this.cx, this.cy)) return;
+    if (drawPngSprite(ctx, this.sprite, frame, this.cx, this.cy)) {
+      // Per-hit white sprite flash (energy feedback while HP remains).
+      if (this.hitFlash > 0) this._flashSprite(ctx);
+      return;
+    }
     // Fallback: procedural 'boss' grid at 2x (legacy).
     drawSprite(ctx, "boss", frame, this.x, this.y, 2);
   }
@@ -2778,7 +2883,7 @@ const Game = {
     for (const e of this.enemies) {
       if (e.dead) continue;
       e.dead = true;
-      if (Game.deathAnim) Game.deathAnim.killEntity(e, { flashTime: 0.08 });
+      if (Game.deathAnim) Game.deathAnim.killEntity(e);
       if (Game.particleSystem) Game.particleSystem.explode(e.cx, e.cy, "#ff9a1e", 20);
       this._awardPoints(e.points, e.cx, e.cy);
     }
@@ -2871,7 +2976,7 @@ const Game = {
           if (e.dead) continue;
           if (this.hitTest(b, e)) {
             e.dead = true;
-            if (Game.deathAnim) Game.deathAnim.killEntity(e, { flashTime: 0.08 });
+            if (Game.deathAnim) Game.deathAnim.killEntity(e);
             if (sfx) sfx.pop();
             this._awardPoints(e.points, e.cx, e.cy);
             this._maybeDropPowerUp(e.cx, e.cy);
@@ -2899,7 +3004,7 @@ const Game = {
       if (e.dead) continue;
       if (e.state === "diving" && this.hitTest(e, p)) {
         e.dead = true;
-        if (Game.deathAnim) Game.deathAnim.killEntity(e, { flashTime: 0.08 });
+        if (Game.deathAnim) Game.deathAnim.killEntity(e);
         if (p.shieldTimer > 0 || p.invincible > 0) continue; // shield absorbs it
         if (p.hit()) this._onGameOver();
       }
@@ -3164,6 +3269,38 @@ const Game = {
     c.moveTo(0, 52);
     c.lineTo(W, 52);
     c.stroke();
+
+    // --- Boss energy bar (full width, just under the HUD strip) -------------
+    // One long bar with equal segments — one per boss on this wave. Each
+    // segment charges left->right while the zone is clear (bosses entering),
+    // sits full once the boss is active, then drains as its HP drops.
+    if (this.bosses.length > 0) {
+      const bx = 8, by = 56, bw = W - 16, bh = 5;
+      const segW = bw / this.bosses.length;
+      c.fillStyle = "rgba(0,0,0,0.55)";
+      c.fillRect(bx, by, bw, bh);
+      for (let i = 0; i < this.bosses.length; i++) {
+        const b = this.bosses[i];
+        let frac;
+        if (b.dead) frac = 0;
+        else if (b.state === "entering") {
+          // Charge while descending: from off-screen top to the hover line.
+          frac = Math.max(0, Math.min(1, (b.y + b.h) / (b.hoverY + b.h)));
+        } else {
+          frac = Math.max(0, b.hp / b.maxHp);
+        }
+        const sx = bx + i * segW;
+        c.fillStyle = "#ff3b30";
+        c.fillRect(sx + 1, by + 1, Math.round((segW - 2) * frac), bh - 2);
+        // Segment dividers (visible only with 2+ bosses).
+        if (i > 0) {
+          c.fillStyle = "#2b3a7a";
+          c.fillRect(Math.round(sx) - 1, by, 1, bh);
+        }
+      }
+      c.strokeStyle = "#2b3a7a";
+      c.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+    }
 
     // --- Left column: SCORE / HI -------------------------------------------
     c.textAlign = "left";
