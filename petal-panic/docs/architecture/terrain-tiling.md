@@ -80,10 +80,17 @@ Each tile picks which frame to draw using a weighted random roll, made **once
 per tile at build time** (not per-frame — the choice must be stable across
 renders and zone reloads within the same game seed):
 
-| Roll | Probability | Platform frame | Block frame |
-|------|-------------|----------------|-------------|
-| "best" | 75% | **f4** | **f2** |
-| "random" | 25% | random from **f1–f3** | **f1** |
+| Roll | Probability | Platform frames | Block frames |
+|------|-------------|-----------------|--------------|
+| "plain" | 75% | random from **f4..end** | random from **f2..end** |
+| "decorated" | 25% | random from **f1–f3** | **f1** (f1..f1) |
+
+Pools are defined by position, not by fixed indices, so new variants slot in
+without code changes: the **plain pool is `lastFrame − 2` through the last
+frame** (today: platform f4 only, block f2 only); the **decorated pool is
+everything before it** (platform f1–f3, block f1). If more plain variants are
+added they append at the end of the sheet and join the plain pool
+automatically.
 
 The random number comes from the **per-game seeded RNG** (`createRng` in
 `terrain.js`), so the same seed always produces the same frame choices —
@@ -91,9 +98,10 @@ death/Continue rebuilds the identical world (lifecycle.md §6).
 
 ### Why 75/25
 
-f4 (platform) and f2 (block) are the visually strongest frames. Using them
-most of the time keeps large stretches coherent; the 25% variation prevents
-the "copy-paste" look on long runs without sacrificing readability.
+The plain frames (platform f4+, block f2+) are the visually quiet ones. Using
+them most of the time keeps large stretches coherent and readable; the 25%
+decorated variation breaks up the "copy-paste" look on long runs without
+sacrificing readability.
 
 ## Scaling
 

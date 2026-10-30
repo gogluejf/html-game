@@ -4,8 +4,8 @@
 // the per-level block/platform sheet art:
 //   - width tiling: longest-first (triple → double → single), trim remainder
 //   - height stacking (blocks): same logic vertically, bottom-up
-//   - frame selection: 75% "best" frame (platform f4 / block f2), 25% random
-//     (platform f1–f3 / block f1) — rolled from a per-solid seeded stream so
+//   - frame selection: 75% plain frame (platform f4..end / block f2..end),
+//     25% random decorated (platform f1–f3 / block f1) — rolled from a per-solid seeded stream so
 //     choices are stable across death/Continue (lifecycle.md §6)
 //
 // Deterministic: same (solid, level, seed) → same tiles, every time.
@@ -20,11 +20,14 @@ import { Entity } from '../core/entity.js';
 import { decomposeVariant, blockColumns, BLOCK_FOOTPRINT } from './squareGrid.js';
 
 // --- Frame selection (terrain-tiling.md §Frame selection) ----------------------
-const BEST_FRAME_WEIGHT = 0.75;
-/** "Best" frame index per kind (0-based): platform f4 → 3, block f2 → 1. */
-const BEST_FRAME = { platform: 3, block: 1 };
-/** Random-pool frame indices (0-based): platform f1–f3 → 0..2, block f1 → 0. */
-const RANDOM_POOL = { platform: [0, 1, 2], block: [0] };
+const PLAIN_FRAME_WEIGHT = 0.75;
+/**
+ * Pools are positional, not fixed indices (terrain-tiling.md): the plain pool
+ * is the LAST TWO frames of the sheet through the end (today: platform f4,
+ * block f2 — one frame each); the decorated pool is everything before it
+ * (platform f1–f3, block f1). New plain variants appended at the sheet end
+ * join the plain pool automatically.
+ */
 
 /** Kick off (or join) the asset load for a terrain kind. Fire-and-forget. */
 export function loadTerrainFrames(level, kind) {
@@ -37,11 +40,16 @@ export function loadTerrainFrames(level, kind) {
 // platforms decompose WIDTH into variants.
 
 /** Pick a frame index for one tile (deterministic per rng stream + kind). */
-function pickFrame(rng, kind, frameCount) {
-  const best = Math.min(BEST_FRAME[kind], frameCount - 1);
-  const pool = RANDOM_POOL[kind].filter((i) => i < frameCount);
-  if (rng.next() < BEST_FRAME_WEIGHT) return best;
-  return pool.length > 0 ? pool[Math.floor(rng.next() * pool.length)] : best;
+function pickFrame(rng, frameCount) {
+  const plainStart = Math.max(0, frameCount - 2); // last two slots → end
+  const plainPool = [];
+  for (let i = plainStart; i < frameCount; i++) plainPool.push(i);
+  const decoPool = [];
+  for (let i = 0; i < plainStart; i++) decoPool.push(i);
+  if (rng.next() < PLAIN_FRAME_WEIGHT && plainPool.length > 0) {
+    return plainPool[Math.floor(rng.next() * plainPool.length)];
+  }
+  return decoPool.length > 0 ? decoPool[Math.floor(rng.next() * decoPool.length)] : plainPool[0];
 }
 
 /**
@@ -90,7 +98,7 @@ export function tileSolid(s, level, seed) {
     let colX = s.x;
     for (let c = 0; c < widths.length; c++) {
       const colW = widths[c]; // block: always 2 (fixed column); platform: variant width
-      const frame = pickFrame(rng, kind, frameCount);
+      const frame = pickFrame(rng, frameCount);
       // imgKey: resolved from the parsed sheet when available; otherwise a
       // deterministic placeholder that getTerrainFrameImage() can match once
       // the asset lands (frame file names follow the <kind>_<variant>_f<N>.png
