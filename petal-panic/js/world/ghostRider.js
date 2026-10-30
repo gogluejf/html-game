@@ -8,7 +8,7 @@
 import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { GRAVITY, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL, UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
-import { doubleJumpReachForStats, superAssistReachForStats, PLATFORM_DRAW_H } from './macros.js';
+import { doubleJumpReachForStats, superAssistReachForStats, PLATFORM_DRAW_H, HORIZONTAL_ZONE_LENGTH_UNITS } from './macros.js';
 
 const DT = 1 / 60;
 const MAX_ATTEMPTS = 8;
@@ -32,7 +32,11 @@ export function buildRideWorld(macro, c = {}) {
     maxX = Math.max(maxX, (u.x ?? 0) + (u.width ?? 1));
     maxY = Math.max(maxY, (u.y ?? 0) + (u.kind === 'block' ? (u.height ?? 1) : 1));
   }
-  const zoneW = vertical ? Math.max(maxX, 13) : Math.max(maxX, 56);
+  // Horizontal floor spans the FULL canonical zone (112u), not just the macro's
+  // content. Sizing it to maxX made long macros (≥56u) end the floor exactly at
+  // the endpoint → zero runway → hero walks off and falls forever. Vertical is
+  // unchanged (one-screen wide, climb height = content).
+  const zoneW = vertical ? Math.max(maxX, 13) : HORIZONTAL_ZONE_LENGTH_UNITS;
   const zoneRows = vertical ? Math.max(maxY, 56) : Math.max(maxY, 10);
 
   const W = zoneW * UX;
