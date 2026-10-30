@@ -1,44 +1,50 @@
 {
- "file": "petal-panic/assets/levels/level4/block_single_sheet.png",
- "size": "453x580",
- "rows": 2,
- "cols": 1,
- "kind": "tile_variant",
- "description": "level4 block_single (2 frames)",
- "entities": [
-  {
-   "name": "level4",
-   "anim": "block_single",
-   "frames_dir": "petal-panic/assets/levels/level4",
-   "frames": [
+  "file": "petal-panic/assets/levels/level4/block_single_sheet.png",
+  "size": "453x580",
+  "rows": 2,
+  "cols": 1,
+  "kind": "tile_variant",
+  "description": "level4 block_single (2 frames)",
+  "entities": [
     {
-     "file": "block_single_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      1,
-      0,
-      450,
-      328
-     ]
-    },
-    {
-     "file": "block_single_f2.png",
-     "row": 1,
-     "col": 0,
-     "bbox": [
-      0,
-      328,
-      453,
-      252
-     ]
+      "name": "level4",
+      "anim": "block_single",
+      "frames_dir": "petal-panic/assets/levels/level4",
+      "frames": [
+        {
+          "file": "block_single_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            1,
+            0,
+            450,
+            328
+          ]
+        },
+        {
+          "file": "block_single_f2.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            328,
+            453,
+            252
+          ]
+        }
+      ],
+      "collision": {
+        "x": -227,
+        "y": -226,
+        "w": 453,
+        "h": 226
+      }
     }
-   ]
+  ],
+  "updated": "2026-10-30T03:18:59",
+  "crop": {
+    "frames_dir": "petal-panic/assets/levels/level4",
+    "pass": "/home/goglue/tmp/blockcrop/lv4_single"
   }
- ],
- "updated": "2026-10-30T03:18:59",
- "crop": {
-  "frames_dir": "petal-panic/assets/levels/level4",
-  "pass": "/home/goglue/tmp/blockcrop/lv4_single"
- }
 }

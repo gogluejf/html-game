@@ -1,90 +1,158 @@
 {
- "file": "petal-panic/assets/levels/level2/platform_double_sheet.png",
- "size": "461x1224",
- "rows": 6,
- "cols": 1,
- "kind": "tile_variant",
- "description": "level2 platform_double (6 frames)",
- "entities": [
-  {
-   "name": "level2",
-   "anim": "platform_double",
-   "frames_dir": "petal-panic/assets/levels/level2",
-   "frames": [
+  "file": "petal-panic/assets/levels/level2/platform_double_sheet.png",
+  "size": "461x1224",
+  "rows": 6,
+  "cols": 1,
+  "kind": "tile_variant",
+  "description": "level2 platform_double (6 frames)",
+  "entities": [
     {
-     "file": "platform_double_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      3,
-      0,
-      454,
-      223
-     ]
-    },
-    {
-     "file": "platform_double_f2.png",
-     "row": 1,
-     "col": 0,
-     "bbox": [
-      0,
-      223,
-      461,
-      234
-     ]
-    },
-    {
-     "file": "platform_double_f3.png",
-     "row": 2,
-     "col": 0,
-     "bbox": [
-      1,
-      457,
-      459,
-      242
-     ]
-    },
-    {
-     "file": "platform_double_f4.png",
-     "row": 3,
-     "col": 0,
-     "bbox": [
-      4,
-      699,
-      452,
-      174
-     ]
-    },
-    {
-     "file": "platform_double_f5.png",
-     "row": 4,
-     "col": 0,
-     "bbox": [
-      1,
-      873,
-      459,
-      176
-     ]
-    },
-    {
-     "file": "platform_double_f6.png",
-     "row": 5,
-     "col": 0,
-     "bbox": [
-      2,
-      1049,
-      456,
-      175
-     ]
+      "name": "level2",
+      "anim": "platform_double",
+      "frames_dir": "petal-panic/assets/levels/level2",
+      "frames": [
+        {
+          "file": "platform_double_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            3,
+            0,
+            454,
+            223
+          ],
+          "offset": {
+            "x": 0,
+            "y": -111.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "platform_double_f2.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            223,
+            461,
+            234
+          ],
+          "offset": {
+            "x": 0,
+            "y": -117
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "platform_double_f3.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            1,
+            457,
+            459,
+            242
+          ],
+          "offset": {
+            "x": 0,
+            "y": -121
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "platform_double_f4.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            4,
+            699,
+            452,
+            174
+          ],
+          "offset": {
+            "x": 0,
+            "y": -87
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "platform_double_f5.png",
+          "row": 4,
+          "col": 0,
+          "bbox": [
+            1,
+            873,
+            459,
+            176
+          ],
+          "offset": {
+            "x": 0,
+            "y": -88
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "platform_double_f6.png",
+          "row": 5,
+          "col": 0,
+          "bbox": [
+            2,
+            1049,
+            456,
+            175
+          ],
+          "offset": {
+            "x": 0,
+            "y": -87.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "collision": {
+        "x": -200,
+        "y": -150,
+        "w": 403,
+        "h": 201
+      },
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "pivot": {
+        "x": 0,
+        "y": -115
+      },
+      "markers": []
     }
-   ],
-   "collision": {
-    "x": -227,
-    "y": -48,
-    "w": 454,
-    "h": 48
-   }
-  }
- ],
- "updated": "2026-10-30"
+  ],
+  "updated": "2026-10-30"
 }

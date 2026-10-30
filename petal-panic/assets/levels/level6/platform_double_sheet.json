@@ -1,90 +1,90 @@
 {
- "file": "petal-panic/assets/levels/level6/platform_double_sheet.png",
- "size": "456x1267",
- "rows": 6,
- "cols": 1,
- "kind": "tile_variant",
- "description": "level6 platform_double (6 frames)",
- "entities": [
-  {
-   "name": "level6",
-   "anim": "platform_double",
-   "frames_dir": "petal-panic/assets/levels/level6",
-   "frames": [
+  "file": "petal-panic/assets/levels/level6/platform_double_sheet.png",
+  "size": "456x1267",
+  "rows": 6,
+  "cols": 1,
+  "kind": "tile_variant",
+  "description": "level6 platform_double (6 frames)",
+  "entities": [
     {
-     "file": "platform_double_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      455,
-      268
-     ]
-    },
-    {
-     "file": "platform_double_f2.png",
-     "row": 1,
-     "col": 0,
-     "bbox": [
-      0,
-      268,
-      456,
-      205
-     ]
-    },
-    {
-     "file": "platform_double_f3.png",
-     "row": 2,
-     "col": 0,
-     "bbox": [
-      1,
-      473,
-      454,
-      247
-     ]
-    },
-    {
-     "file": "platform_double_f4.png",
-     "row": 3,
-     "col": 0,
-     "bbox": [
-      0,
-      720,
-      455,
-      188
-     ]
-    },
-    {
-     "file": "platform_double_f5.png",
-     "row": 4,
-     "col": 0,
-     "bbox": [
-      1,
-      908,
-      454,
-      177
-     ]
-    },
-    {
-     "file": "platform_double_f6.png",
-     "row": 5,
-     "col": 0,
-     "bbox": [
-      1,
-      1085,
-      453,
-      182
-     ]
+      "name": "level6",
+      "anim": "platform_double",
+      "frames_dir": "petal-panic/assets/levels/level6",
+      "frames": [
+        {
+          "file": "platform_double_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            455,
+            268
+          ]
+        },
+        {
+          "file": "platform_double_f2.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            268,
+            456,
+            205
+          ]
+        },
+        {
+          "file": "platform_double_f3.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            1,
+            473,
+            454,
+            247
+          ]
+        },
+        {
+          "file": "platform_double_f4.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            0,
+            720,
+            455,
+            188
+          ]
+        },
+        {
+          "file": "platform_double_f5.png",
+          "row": 4,
+          "col": 0,
+          "bbox": [
+            1,
+            908,
+            454,
+            177
+          ]
+        },
+        {
+          "file": "platform_double_f6.png",
+          "row": 5,
+          "col": 0,
+          "bbox": [
+            1,
+            1085,
+            453,
+            182
+          ]
+        }
+      ],
+      "collision": {
+        "x": -228,
+        "y": -228,
+        "w": 456,
+        "h": 228
+      }
     }
-   ],
-   "collision": {
-    "x": -228,
-    "y": -48,
-    "w": 455,
-    "h": 48
-   }
-  }
- ],
- "updated": "2026-10-30"
+  ],
+  "updated": "2026-10-30"
 }
