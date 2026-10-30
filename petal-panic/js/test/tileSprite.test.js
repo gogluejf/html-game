@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { loadLevelAsset } from '../world/levelAssets.js';
 import { tileSolid } from '../world/terrainTiles.js';
 import { getTileSprites, drawTileSprites, _clearAllTilePools } from '../world/tileSprite.js';
-import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
+import { UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H } from '../world/macros.js';
 import { BLOCK_FOOTPRINT } from '../world/squareGrid.js';
 import { parseSheet, uniformScale } from '../core/spriteData.js';
 
@@ -33,8 +33,11 @@ async function readSheet(name) {
 
 test('block_single tile scales from the sheet collision box (§4)', async () => {
   const data = parseSheet(await readSheet('block_single_sheet.json'));
-  const expected = uniformScale(data.anims.block_single, UNIT_PX_Y);
-  assert.ok(Math.abs(expected - UNIT_PX_Y / 243) < 1e-9, 'reference: 48 / collision h 243');
+  // level1 block_single collision box: w=464 (frame width), h=232 (ratio 2:1).
+  const refH = data.anims.block_single.collisionBox.h;
+  const expected = uniformScale(data.anims.block_single, UNIT_PY_TARGET(1));
+  function UNIT_PY_TARGET(units) { return units * UNIT_PX_Y; }
+  assert.ok(Math.abs(expected - UNIT_PX_Y / refH) < 1e-9, `reference: 48 / collision h ${refH}`);
 
   await loadLevelAsset(1, 'block');
   _clearAllTilePools();
@@ -43,10 +46,14 @@ test('block_single tile scales from the sheet collision box (§4)', async () => 
   assert.equal(e._spriteScale, expected, 'scale comes from the authored collision box');
 });
 
-test('platform_single tile uses platform_single collision box (h 160)', async () => {
+test('platform_single tile scales its collision box onto the 1u rect (§4)', async () => {
   const data = parseSheet(await readSheet('platform_single_sheet.json'));
+  const refH = data.anims.platform_single.collisionBox.h;
+  // Same rule as blocks: scale = rect height / collision box height. The
+  // ratio box (h ≈ frame width) makes the drawn slab thin; its bottom sits
+  // on the rect's bottom edge = the landing face (build.js R5.1).
   const expected = uniformScale(data.anims.platform_single, UNIT_PX_Y);
-  assert.ok(Math.abs(expected - UNIT_PX_Y / 160) < 1e-9);
+  assert.ok(Math.abs(expected - UNIT_PX_Y / refH) < 1e-9, `reference: 48 / collision h ${refH}`);
 
   await loadLevelAsset(1, 'platform');
   _clearAllTilePools();
@@ -68,7 +75,9 @@ test('drawTileSprites falls back to flat rects when frames are unloaded (node)',
   const rects = ctx.calls.filter((c) => c.rect);
   assert.equal(rects.length, 3, 'one fallback rect per tile');
   // Fallback rect matches the tile footprint exactly.
-  assert.deepEqual(rects[0].rect, [0, 200, 3 * UNIT_PX_X, UNIT_PX_Y]);
+  // Right→left draw order: first fallback rect is the right-most triple (x4–7u).
+  // Right→left draw order: first fallback rect is the single at x6–7u.
+  assert.deepEqual(rects[0].rect, [6 * UNIT_PX_X, 200, 1 * UNIT_PX_X, UNIT_PX_Y]);
 });
 
 test('pool is reused for identical solids, rebuilt when the rect changes', async () => {

@@ -10,7 +10,7 @@
 // terrainTiles.js; this module only turns those decisions into drawable
 // entities. Pool is rebuilt when the solid rect changes (zone transitions).
 
-import { UNIT_PX_Y } from './macros.js';
+import { UNIT_PX_Y, PLATFORM_DRAW_H } from './macros.js';
 import { getLevelAsset } from './levelAssets.js';
 import { Entity } from '../core/entity.js';
 
@@ -55,7 +55,14 @@ export function getTileSprites(s, level, tiles) {
     let e = pool[i];
     if (!e) {
       e = new Entity({ x: t.x, y: t.y, w: t.w, h: t.h, debugColor: '#a86' });
-      e.sprite = { anchor: 'bottom-center', targetH: 1.0, anims: asset.data.anims };
+      // The tile rect IS the placement unit (from the macro grid). Scale the
+      // sheet's collision box onto that rect height (uniform §4) and let the
+      // standard bottom-center anchor do the rest — no special-casing:
+      //   blocks:    colBox.h == row height → scale ×1, art fills its row
+      //   platforms: colBox.h = ratio height → thin slab, bottom of the 1u
+      //              rect = the landing face (build.js R5.1 thins the solid
+      //              to PLATFORM_DRAW_H at that same face)
+      e.sprite = { anchor: 'bottom-center', anims: asset.data.anims };
       Object.defineProperty(e.sprite, 'frames', { get: () => asset.frames });
       e.setAnim(animName);
       pool[i] = e;

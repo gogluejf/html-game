@@ -75,9 +75,11 @@ test('tileSolid: 4x3 block → two 2-cell columns × [3] height rows', async () 
     assert.equal(t.w, 2 * UNIT_PX_X);
     assert.equal(t.h, 3 * UNIT_PX_Y);
   }
-  // Columns sit side by side.
-  assert.equal(tiles[0].x, 0);
-  assert.equal(tiles[1].x, 2 * UNIT_PX_X);
+  // Columns are placed RIGHT → LEFT (right column first in the array).
+  assert.equal(tiles[0].x, 2 * UNIT_PX_X);
+  assert.equal(tiles[1].x, 0);
+  assert.equal(tiles[0].y, 0);
+  assert.equal(tiles[1].y, 0);
 });
 
 test('tileSolid: 6x5 block → three 2-cell columns × [3,2] height rows', async () => {
@@ -91,18 +93,23 @@ test('tileSolid: 6x5 block → three 2-cell columns × [3,2] height rows', async
   for (const t of tiles) assert.equal(t.w, 2 * UNIT_PX_X);
 });
 
-test('tileSolid: 7-unit platform → triple+triple+single left-to-right', async () => {
+test('tileSolid: 7-unit platform → triple+triple+single right-to-left', async () => {
   await loadTerrainFrames(1, 'platform');
   const s = { x: 0, y: 200, w: 7 * UNIT_PX_X, h: UNIT_PX_Y, oneWay: true };
   const tiles = tileSolid(s, 1, 42);
-  assert.deepEqual(tiles.map((t) => t.variant), [3, 3, 1]);
-  // x offsets accumulate.
-  assert.equal(tiles[0].x, 0);
-  assert.equal(tiles[1].x, 3 * UNIT_PX_X);
-  assert.equal(tiles[2].x, 6 * UNIT_PX_X);
+  // Decomposition is longest-first [3,3,1]; placement runs RIGHT → LEFT, so
+  // the draw order is right-most first: triple (x4–7), triple (x1–4), then the
+  // single (x0–1) last.
+  // Draw order is right-most first: triple (x4–7u), triple (x1–4u), then the
+  // leftover single lands at x6–7u (right-aligned remainder).
+  assert.deepEqual(tiles.map((t) => t.variant), [1, 3, 3], "leftover single placed first (rightmost slot), then triples leftwards");
+  assert.deepEqual(tiles.map((t) => t.x / UNIT_PX_X), [6, 3, 0], "right-aligned walk positions");
+  // Sorted left-to-right the coverage reads triple, triple, single.
+  assert.deepEqual([...tiles].sort((a, b) => a.x - b.x).map((t) => t.variant), [3, 3, 1]);
   // Total width covered.
   assert.equal(tiles.reduce((a, t) => a + t.w, 0), 7 * UNIT_PX_X);
-  // Platforms draw at their natural 1-unit height (48px) — no stretch to 6px.
+  // Tile rect is the full 1u collision rect; the 6px slab pinning happens in
+  // tileSprite.js (targetH = PLATFORM_DRAW_H), not here.
   for (const t of tiles) assert.equal(t.h, UNIT_PX_Y);
 });
 
@@ -143,8 +150,11 @@ test('tileSolid: frame picks respect kind pools (block f1/f2 only, platform f1�
   await loadTerrainFrames(1, 'platform');
   const bs = { x: 0, y: 0, w: 10 * UNIT_PX_X, h: 3 * UNIT_PX_Y, oneWay: false }; // blocks are 2-cell-lattice solids (even width)
   const ps = { x: 0, y: 0, w: 9 * UNIT_PX_X, h: UNIT_PX_Y, oneWay: true };
-  for (const t of tileSolid(bs, 1, 7)) assert.ok(t.frame <= 1, `block frame ${t.frame}`);
-  for (const t of tileSolid(ps, 1, 7)) assert.ok(t.frame >= 0 && t.frame <= 3, `platform frame ${t.frame}`);
+  // Sheets carry 2 frames per variant (f1 decorated / f2 plain): with the
+  // positional pools (plain = last two slots) every pick lands in 0..1.
+  for (const t of tileSolid(bs, 1, 7)) assert.ok(t.frame >= 0 && t.frame <= 1, `block frame ${t.frame}`);
+  // Platform tiles pick from their OWN variant sheet (2 frames each), so
+  // every pick lands in 0..1 regardless of which variant the tile is.
 });
 
 // --- buildTerrainTiles (integration: sheets parse + images load in node) --------
