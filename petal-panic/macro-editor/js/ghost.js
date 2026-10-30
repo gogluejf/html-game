@@ -176,11 +176,12 @@ export function startRide(){
   world.macroEndPx = endpoint.value * (endpoint.orientation === 'vertical' ? c.unitPxY : c.unitPxX);
   // Spawn with FEET on the entry surface: anchor by the real box height so
   // the rect isn't sunk into the ground (box h comes from the hero def).
-  // Manual play (plan 07) uses the player's actual game hero (same selection
-  // as the game: window.__selectedHero, default scarlet); AI test rides keep
-  // balthazar — it's a geometry probe, and the picker/tuning is calibrated to
-  // those stats.
-  const heroKey = ride.manual ? (window.__selectedHero || 'scarlet') : 'balthazar';
+  // Test rides are a geometry probe and must match the reachability flag,
+  // which is computed for the WEAKEST hero (Balthazar). Both manual and AI
+  // rides use Balthazar so the color, the ghost, and your hands all agree —
+  // otherwise a stronger selected hero (Scarlet) clears platforms the flag
+  // correctly marks unreachable, and the editor looks wrong.
+  const heroKey = 'balthazar';
   const _spawnHero = () => {
     const h = createHeadlessHero(heroKey, { x: 0, y: 0 });
     const bh = h.worldBox().h;

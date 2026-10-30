@@ -645,6 +645,12 @@ function finishPointer(e, cancelled=false){
       pushUndo();
       app.cur.st.units = i.nextMacro.units;
       app.cur.st.placements = i.nextMacro.placements;
+      // Recompute the reachability warnings for the NEW geometry. Every other
+      // mutation path (single-move commit, delete, undo, select) does this;
+      // the multi path used to skip it, so the amber highlight kept showing
+      // the pre-drag warning set — a moved platform stayed yellow even after
+      // it became reachable (and vice versa).
+      app.editor.warningUnitIndices = analyzeMacroWarnings(app.cur.st).warningUnitIndices;
       markChanged();
       app.editor.interaction=null;
       endTransientSelect();
