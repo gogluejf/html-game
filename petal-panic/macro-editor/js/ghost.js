@@ -8,7 +8,7 @@ import { cv, s2c as s2cLocal, $ } from './viewport.js';
 import { showToast } from './toast.js';
 import { buildRideWorld } from '../../js/world/ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../../js/hero/headless.js';
-import { HEROES } from '../../js/hero/heroDefs.js';
+import { HEROES, resolveHeroStats } from '../../js/hero/heroDefs.js';
 import { predictFrame, feetPos } from '../../js/world/platformMover.js';
 import { traversalRoute } from '../../js/world/macros.js';
 import { macroEndpoint } from './clearance.js';
@@ -189,7 +189,11 @@ export function startRide(){
   };
   const hero = _spawnHero();
   // Smart mover setup (task 4): injected params match the spawned hero.
-  const stats = HEROES[heroKey].stats;
+  // MUST be px-converted (resolveHeroStats) — the brain/mover math is px-based
+  // (GRAVITY=1500 px/s², rise measured in px). Raw def.stats are unit-native;
+  // feeding them made the brain plan arcs for a ~10× superhero, so editor
+  // rides "passed" hops the real hero physics cannot make (and hid stalls).
+  const stats = resolveHeroStats(HEROES[heroKey]);
   const params = { ...stats, hasDoubleJump: true, canSuper: true };
   // buildGoalList marks BFS-unreachable surfaces into ride.failedSet — it
   // must exist BEFORE the call (module default is null; the Object.assign

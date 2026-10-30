@@ -11,8 +11,7 @@
 
 import { buildRideWorld } from './ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
-import { HEROES } from '../hero/heroDefs.js';
-import { UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
+import { HEROES, resolveHeroStats } from '../hero/heroDefs.js';
 import { traversalRoute } from './macros.js';
 import { createRideBrain } from './rideBrain.js';
 import { createRideState, stepRide } from './rideDriver.js';
@@ -23,7 +22,7 @@ const DEFAULT_MAX_FRAMES = 60 * 90; // ~90 s per lap cap
 /** Balthazar governs (weakest hero). Ghost ride = infinite supers. */
 // UNIT→PX conversion point (pixel-hardcode-audit.md Tier 2): def stats are unit-native;
 // the mover math is px-based.
-export const RIDE_PARAMS = { ...HEROES.balthazar.stats, speed: HEROES.balthazar.stats.speed * UNIT_PX_X, jump: HEROES.balthazar.stats.jump * UNIT_PX_Y, hasDoubleJump: true, canSuper: true };
+export const RIDE_PARAMS = { ...resolveHeroStats(HEROES.balthazar), hasDoubleJump: true, canSuper: true };
 
 /** Build the ordered goal list for a ride world (mirrors ghost.js buildGoalList). */
 export function buildGoalList(world, st){
@@ -55,13 +54,11 @@ function mapOrder(ls, order){
  * @returns {{cleared:boolean, landed:number[], goals:number[],
  *            failPoint:{goal:number, reason:string}|null, frames:number}}
  */
-export function runPickerRide(macro, opts = {}){
-  const maxFrames = opts.maxFrames ?? DEFAULT_MAX_FRAMES;
+/** Shared browser/node initialization: geometry, spawn, stats, goals and brain. */
+export function createPickerRide(macro){
   // Authoritative grid constants — the ride world shares the game's 48×48 cell.
   const world = buildRideWorld(macro);
   const { goals, unreachable } = buildGoalList(world, macro);
-  const goalIndices = goals.map(g => g.index);
-
   const bh = createHeadlessHero('balthazar', { x: 0, y: 0 }).worldBox().h;
   const hero = createHeadlessHero('balthazar', { x: world.entry.x - 8, y: world.entry.y - bh });
 
@@ -79,8 +76,17 @@ export function runPickerRide(macro, opts = {}){
   state.brain = brain;
   state.goals = goals;
   state.failedSet = unreachable;
-  state.path = null; // node doesn't render a trail
+  state.params = RIDE_PARAMS;
 
+  return state;
+}
+
+export function runPickerRide(macro, opts = {}){
+  const maxFrames = opts.maxFrames ?? DEFAULT_MAX_FRAMES;
+  const state = createPickerRide(macro);
+  const { brain, goals, failedSet: unreachable } = state;
+  const goalIndices = goals.map(g => g.index);
+  state.path = null;
   let frames = 0;
   let fellOut = false;
   for (frames = 0; frames < maxFrames; frames++){

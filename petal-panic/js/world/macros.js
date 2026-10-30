@@ -2247,7 +2247,7 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
   // @param {number} axisUnitPx pixel size of one unit along the traversal axis
   // @returns {Set<number>} indices of spans NOT reachable
   // ------------------------------------------------------------------
-    const computeUnreachable = (spans, axisUnitPx) => bfsReachableSpans(spans, axisUnitPx, units).unreachable;
+    const computeUnreachable = (spans, axisUnitPx) => bfsReachableSpans(spans, axisUnitPx, units, layout.orientation).unreachable;
 
   if (!isVertical) {
     // Horizontal: each unit is its own landing span with full x-extent.
@@ -2467,8 +2467,9 @@ function arcBlockedBySolids(from, to, units, isVertical){
  *   unreachable: span indices never reached
  *   parent: span index → span index it was discovered from (-1 = ground seed)
  */
-export function bfsReachableSpans(spans, axisUnitPx, units = null){
-  const isVertical = axisUnitPx === UNIT_PX_Y;
+export function bfsReachableSpans(spans, axisUnitPx, units = null, orientation = 'horizontal'){
+  // Square cells have equal X/Y sizes; size cannot encode orientation.
+  const isVertical = orientation === 'vertical';
   const reachable = new Set();
   const parent = new Map();
   // Seed: a span is ground-reachable if its rise from 0 is within the

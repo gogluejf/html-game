@@ -278,7 +278,11 @@ function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world,
     } else if (surfRef){
       toEdge = dir > 0 ? Math.max(0, surfRef.x1 - f.x) : Math.max(0, f.x - surfRef.x0);
     } else if (world){
-      toEdge = nearestWallFacePx(h, world, dir);
+      // One-way goals have no wall face. Approach their near edge on the
+      // floor, then jump; Infinity otherwise leaves every candidate walking
+      // forever beneath a ground-reachable platform.
+      const goalEdge = dir > 0 ? Math.max(0, goalRef.x0 - f.x) : Math.max(0, f.x - goalRef.x1);
+      toEdge = Math.min(nearestWallFacePx(h, world, dir), goalEdge);
     } else {
       toEdge = dir > 0 ? Math.max(0, goalRef.x0 - f.x) : Math.max(0, f.x - goalRef.x1);
     }
