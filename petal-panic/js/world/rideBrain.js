@@ -114,18 +114,28 @@ function freshMem(){
 }
 
 /** Advance to the next goal after the current one landed. Resets per-hop mem
- *  and invalidates the pick cache. If a backtrack target is pending (set when
- *  the brain re-routed through an intermediate surface), restore THAT goal
+ *  and invalidates the pick cache. Skips any goal already in `landedSet` so
+ *  out-of-order manual clears are never re-targeted when control returns to
+ *  the AI (the brain must aim at the NEXT unlanded goal, not one the player
+ *  already walked over). If a backtrack target is pending (set when the
+ *  brain re-routed through an intermediate surface), restore THAT goal
  *  instead of advancing forward in the route array. */
 export function advanceGoal(b){
   // If we backtracked through an intermediate, the real target is stored in
   // _backtrackTarget. Restore it now that the intermediate has been landed.
-  if (b._backtrackTarget){
+  if (b._backtrackTarget && !b.landedSet?.has(b._backtrackTarget.index)){
     b.goal = b._backtrackTarget;
     b._backtrackTarget = null;
   } else {
-    b.goalIdx++;
-    b.goal = b.goals[b.goalIdx] ?? null;
+    b._backtrackTarget = null;
+    // Walk forward to the first goal NOT already landed. Without this, an
+    // out-of-order manual clear leaves brain.goal pointing at a platform the
+    // player already touched, and the AI re-plans toward it (re-clearing a
+    // done surface) instead of moving on.
+    let i = b.goalIdx + 1;
+    while (i < b.goals.length && b.landedSet?.has(b.goals[i].index)) i++;
+    b.goalIdx = i;
+    b.goal = b.goals[i] ?? null;
   }
   b.mem = freshMem();
   b._pick = null;
@@ -190,8 +200,18 @@ export function decideInput(b, hero, world){
       f.x >= g.x0 - world.UX * 0.6 && f.x <= g.x1 + world.UX * 0.6;
     const goalBelowOverlap = risePx < -world.UY * 0.5 &&
       g.x1 > standingOn.x0 && g.x0 < standingOn.x1;
+    // Goal is ABOVE the current surface's span (not just directly over the
+    // hero). The correct move is to WALK TO THE GOAL'S CENTER and jump in
+    // place — NOT walk to the surface's far edge and fall off. The old code
+    // only caught this when the hero was already under the goal (±0.6·UX),
+    // but by then walk-to-edge had committed to the far edge (lowRepeated
+    // #1→#7: walked to x3168 instead of jumping at x2736).
+    const goalAboveSpan = risePx > world.UY * 0.5 &&
+      g.x1 > standingOn.x0 && g.x0 < standingOn.x1;
     if (!goalAbove && !goalBelowOverlap){
-      const targetX = gcx >= f.x ? standingOn.x1 : standingOn.x0;
+      // Walk to the goal's center if it's above our span (in-place jump spot);
+      // otherwise walk to the nearest edge (lateral hop).
+      const targetX = goalAboveSpan ? gcx : (gcx >= f.x ? standingOn.x1 : standingOn.x0);
       if (!b.mem._walkEdge || Math.abs(f.x - b.mem._walkEdge.targetX) > 4){
         b.mem._walkEdge = { targetX, dir: targetX > f.x ? 1 : -1 };
       }
@@ -200,8 +220,24 @@ export function decideInput(b, hero, world){
         inp.right = b.mem._walkEdge.dir > 0;
         return inp;
       }
+      // At the edge: settle to a clean resting pose ON the source surface and
+      // make the pick NOW (grounded). Picking after the hero walks off into a
+      // fall degrades every candidate's sim — the arc launches from a lower,
+      // moving state, so a tool that would land cleanly from rest (e.g.
+      // SINGLE_S for lowRepeated #7→#8) scores a near-miss and the brain falls
+      // back to a weaker single jump that falls short. Pick at rest, then
+      // replay the winning script next frame.
       b.mem._walkEdge = null;
       settleHero(hero, world);
+      const { pickTakeoff, buildCandidates } = pickerRef;
+      b._pick = pickTakeoff(hero, g, world, b._params, {}, standingOn);
+      b._cands = buildCandidates(hero, g, world, b._params, standingOn);
+      b._pickGoalIdx = g.index;
+      b._pickFromKey = standingOn?.index ?? 'FLOOR';
+      b._pickFrame = 0;
+      b.mem._fallbackDir = null;
+      b.scorecard = b._pick.scorecard;
+      return inp; // next frame replays the picked script
     }
   }
 

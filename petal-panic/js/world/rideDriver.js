@@ -127,6 +127,10 @@ export function stepRide(state, dt){
   // honest. Without this, manual play could never "clear" a macro because
   // landing was ignored entirely.
   if (brain){
+    // Keep the brain's landed view current so advanceGoal() can skip goals
+    // the player already cleared out of order (manual) or the ride already
+    // banked (auto). Same Set reference — no copy to drift.
+    brain.landedSet = state.landedSet;
     if (state.manual){
       const on = state.goals.find(g => isLandedOn(hero, world, g));
       if (on && !state.landedSet.has(on.index)){
