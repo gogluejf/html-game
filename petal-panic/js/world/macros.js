@@ -278,19 +278,12 @@ export function superAssistReachForStats(stats, risePx) {
   // dropped from totalApex — a fantasy dash fired 203px up in the air that
   // the mover never does. Real behavior: jump off the edge, fire the dash
   // near the arc's peak while FALLING toward the target, carry level from
-  // there. Model it as: single-jump ascent time to the takeoff arc peak
-  // (the dash fires around j1/j2 apex of an actual hop), burst + decel at
-  // that altitude, then fall the remaining distance to the target top.
+  // there. The mover fires the super at the DOUBLE-jump apex (platformMover:
+  // `mem.djDone && jumpsUsed===2 && vy>=0`), i.e. at totalApex with vy=0,
+  // then holds level through the burst phase. Model the dash at totalApex.
   if (risePx <= 0) {
-    // Arc peak available before the dash must clear the target: use the
-    // higher of (a) just above the target (minimal climb) — but the hero
-    // commits a real jump, so the dash fires near the FULL single-jump
-    // apex of the takeoff hop. That is the honest ceiling for a downward
-    // dash: you cannot choose to dash at an arbitrary lower height on the
-    // way down because the mover fires it at the apex (see platformMover:
-    // super fires when vy >= 0 after djDone).
-    const dashAltitude = firstApex; // apex of the committed jump arc
-    const preSuperDistDown = speed * (jump / GRAVITY); // run to that apex
+    const dashAltitude = totalApex; // j2 apex — where the mover actually fires
+    const preSuperDistDown = speed * (jump / GRAVITY + secondJump / GRAVITY); // run to j2 apex
     const fallDistanceDown = dashAltitude - risePx; // drop from apex to target top
     const fallTimeDown = Math.sqrt((2 * Math.max(0, fallDistanceDown)) / GRAVITY);
     const postSuperDistDown = speed * fallTimeDown;
