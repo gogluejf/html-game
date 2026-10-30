@@ -10,6 +10,7 @@ produces a new URL, so a plain reload ALWAYS serves fresh code.
 No manual cache-clearing, ever. Drop-in replacement for `http.server`.
 """
 import hashlib
+import json
 import os
 import re
 import sys
@@ -127,6 +128,84 @@ class DevHandler(SimpleHTTPRequestHandler):
 
         text = CSS_URL_RE.sub(bust, text)
         self._send_bytes(text.encode('utf-8'), 'text/css; charset=utf-8')
+
+    # ------------------------------------------------------------------
+    # Macro write API (macro-editor/js/save.js contract):
+    #   PUT    {name, data}            → write macros/levels/<name>.json
+    #   PATCH  {old, new}              → rename macros/levels/<old>.json
+    #   DELETE {name}                  → remove macros/levels/<name>.json
+    # All writes are pretty-printed JSON + trailing newline (the format the
+    # editor's fingerprint comparison expects). Paths are confined to
+    # macros/levels — name is validated as a plain id (no separators).
+    # ------------------------------------------------------------------
+    MACRO_DIR = os.path.join(ROOT, 'macros', 'levels')
+    _ID_RE = re.compile(r'^[A-Za-z0-9_\-]+$')
+
+    def _read_body(self):
+        length = int(self.headers.get('Content-Length') or 0)
+        raw = self.rfile.read(length) if length > 0 else b''
+        return json.loads(raw.decode('utf-8')) if raw else {}
+
+    def _macro_path(self, name):
+        if not self._ID_RE.match(name or ''):
+            raise ValueError(f'invalid macro id: {name!r}')
+        return os.path.join(self.MACRO_DIR, f'{name}.json')
+
+    def _write_json(self, path, obj):
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(json.dumps(obj, indent=2, ensure_ascii=False) + '\n')
+
+    def _send_json(self, code, obj):
+        body = json.dumps(obj).encode('utf-8')
+        self.send_response(code)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_PUT(self):
+        try:
+            payload = self._read_body()
+            path = self._macro_path(payload.get('name'))
+            self._write_json(path, payload.get('data'))
+            self._send_json(200, {'ok': True, 'name': payload.get('name')})
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': str(e)})
+        except OSError as e:
+            self._send_json(500, {'error': f'write failed: {e}'})
+
+    def do_PATCH(self):
+        try:
+            payload = self._read_body()
+            old, new = payload.get('old'), payload.get('new')
+            src = self._macro_path(old)
+            dst = self._macro_path(new)
+            if not os.path.isfile(src):
+                self._send_json(404, {'error': f'not on disk: {old}'})
+                return
+            if os.path.exists(dst):
+                self._send_json(409, {'error': f'target exists: {new}'})
+                return
+            os.replace(src, dst)
+            self._send_json(200, {'ok': True, 'old': old, 'new': new})
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': str(e)})
+        except OSError as e:
+            self._send_json(500, {'error': f'rename failed: {e}'})
+
+    def do_DELETE(self):
+        try:
+            payload = self._read_body()
+            path = self._macro_path(payload.get('name'))
+            if not os.path.isfile(path):
+                self._send_json(404, {'error': f'not on disk: {payload.get("name")}'})
+                return
+            os.remove(path)
+            self._send_json(200, {'ok': True, 'name': payload.get('name')})
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as e:
+            self._send_json(400, {'error': str(e)})
+        except OSError as e:
+            self._send_json(500, {'error': f'delete failed: {e}'})
 
 
 if __name__ == '__main__':
