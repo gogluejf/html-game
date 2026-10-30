@@ -1,6 +1,6 @@
 {
  "file": "petal-panic/assets/levels/level1/block_triple_sheet.png",
- "size": "483x1459",
+ "size": "464x1683",
  "rows": 2,
  "cols": 1,
  "kind": "tile_variant",
@@ -16,10 +16,10 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      2,
       0,
-      479,
-      809
+      0,
+      464,
+      912
      ]
     },
     {
@@ -28,13 +28,17 @@
      "col": 0,
      "bbox": [
       0,
-      809,
-      483,
-      650
+      912,
+      463,
+      771
      ]
     }
    ]
   }
  ],
- "updated": "2026-10-29"
+ "updated": "2026-10-30T03:18:56",
+ "crop": {
+  "frames_dir": "petal-panic/assets/levels/level1",
+  "pass": "/home/goglue/tmp/blockcrop/lv1_triple"
+ }
 }
