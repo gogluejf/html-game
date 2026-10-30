@@ -119,15 +119,34 @@ export function stepRide(state, dt){
     if (state.path.length > TRAIL_MAX) state.path.shift();
   }
 
-  // Goal-landing tracking. Manual play has no goals — skip (exit check still applies).
-  if (!state.manual && brain && brain.goal){
-    if (isLandedOn(hero, world, brain.goal)){
-      const idx = brain.goal.index;
-      state.landedSet.add(idx);
-      state._lastLandedIdx = idx;
-      state._landFlash = 30;
-      ev.landed = idx;
-      advanceGoal(brain);
+  // Goal-landing tracking. AUTO: only the current goal counts (the ride
+  // follows the BFS order). MANUAL: stepping on ANY goal marks it landed —
+  // the player isn't forced to follow the route order. If the platform they
+  // step on happens to be the current goal, advance to the next one (same
+  // logic as auto); otherwise just record it so the clear-check and HUD stay
+  // honest. Without this, manual play could never "clear" a macro because
+  // landing was ignored entirely.
+  if (brain){
+    if (state.manual){
+      const on = state.goals.find(g => isLandedOn(hero, world, g));
+      if (on && !state.landedSet.has(on.index)){
+        state.landedSet.add(on.index);
+        state._lastLandedIdx = on.index;
+        state._landFlash = 30;
+        ev.landed = on.index;
+        if (brain.goal && brain.goal.index === on.index){
+          advanceGoal(brain);
+        }
+      }
+    } else if (brain.goal){
+      if (isLandedOn(hero, world, brain.goal)){
+        const idx = brain.goal.index;
+        state.landedSet.add(idx);
+        state._lastLandedIdx = idx;
+        state._landFlash = 30;
+        ev.landed = idx;
+        advanceGoal(brain);
+      }
     }
   }
   if (state._landFlash > 0) state._landFlash--;
