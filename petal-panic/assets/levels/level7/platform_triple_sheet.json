@@ -1,14 +1,15 @@
 {
  "file": "petal-panic/assets/levels/level7/platform_triple_sheet.png",
- "size": "620x979",
- "rows": 4,
+ "size": "674x1211",
+ "rows": 6,
  "cols": 1,
  "kind": "tile_variant",
- "description": "level7 platform_triple (4 frames) \u2014 reassembled from frames",
+ "description": "level7 platform_triple (6 frames)",
  "entities": [
   {
    "name": "level7",
    "anim": "platform_triple",
+   "frames_dir": "petal-panic/assets/levels/level7",
    "frames": [
     {
      "file": "platform_triple_f1.png",
@@ -17,8 +18,8 @@
      "bbox": [
       0,
       0,
-      620,
-      323
+      674,
+      289
      ]
     },
     {
@@ -26,10 +27,10 @@
      "row": 1,
      "col": 0,
      "bbox": [
-      2,
-      323,
-      615,
-      241
+      0,
+      289,
+      674,
+      245
      ]
     },
     {
@@ -37,10 +38,10 @@
      "row": 2,
      "col": 0,
      "bbox": [
-      3,
-      564,
-      614,
-      231
+      0,
+      534,
+      674,
+      225
      ]
     },
     {
@@ -48,15 +49,36 @@
      "row": 3,
      "col": 0,
      "bbox": [
-      3,
-      795,
-      614,
-      184
+      0,
+      759,
+      674,
+      154
+     ]
+    },
+    {
+     "file": "platform_triple_f5.png",
+     "row": 4,
+     "col": 0,
+     "bbox": [
+      0,
+      913,
+      674,
+      154
+     ]
+    },
+    {
+     "file": "platform_triple_f6.png",
+     "row": 5,
+     "col": 0,
+     "bbox": [
+      0,
+      1067,
+      674,
+      144
      ]
     }
-   ],
-   "frames_dir": "petal-panic/assets/levels/level7"
+   ]
   }
  ],
- "updated": "2026-10-21"
+ "updated": "2026-10-29"
 }

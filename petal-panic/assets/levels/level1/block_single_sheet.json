@@ -1,74 +1,40 @@
 {
-  "file": "petal-panic/assets/levels/level1/block_single_sheet.png",
-  "size": "463x596",
-  "rows": 2,
-  "cols": 1,
-  "kind": "tile_variant",
-  "description": "level1 block_single (2 frames) \u2014 reassembled from frames",
-  "entities": [
+ "file": "petal-panic/assets/levels/level1/block_single_sheet.png",
+ "size": "463x596",
+ "rows": 2,
+ "cols": 1,
+ "kind": "tile_variant",
+ "description": "level1 block_single (2 frames)",
+ "entities": [
+  {
+   "name": "level1",
+   "anim": "block_single",
+   "frames_dir": "petal-panic/assets/levels/level1",
+   "frames": [
     {
-      "name": "level1",
-      "anim": "block_single",
-      "frames": [
-        {
-          "file": "block_single_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            462,
-            326
-          ],
-          "offset": {
-            "x": 231,
-            "y": -163
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "block_single_f2.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            0,
-            326,
-            463,
-            270
-          ],
-          "offset": {
-            "x": 233,
-            "y": -138
-          },
-          "scale": {
-            "sx": 1.0064826197751524,
-            "sy": 1.0187709115377983
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/levels/level1",
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": 43,
-        "y": -249,
-        "w": 404,
-        "h": 243
-      },
-      "pivot": {
-        "x": 227,
-        "y": -159
-      },
-      "markers": []
+     "file": "block_single_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      462,
+      326
+     ]
+    },
+    {
+     "file": "block_single_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      326,
+      463,
+      270
+     ]
     }
-  ],
-  "updated": "2026-10-21"
+   ]
+  }
+ ],
+ "updated": "2026-10-29"
 }

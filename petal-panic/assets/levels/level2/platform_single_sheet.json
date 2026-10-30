@@ -1,14 +1,15 @@
 {
  "file": "petal-panic/assets/levels/level2/platform_single_sheet.png",
- "size": "268x856",
- "rows": 4,
+ "size": "236x1187",
+ "rows": 6,
  "cols": 1,
  "kind": "tile_variant",
- "description": "level2 platform_single (4 frames) \u2014 reassembled from frames",
+ "description": "level2 platform_single (6 frames)",
  "entities": [
   {
    "name": "level2",
    "anim": "platform_single",
+   "frames_dir": "petal-panic/assets/levels/level2",
    "frames": [
     {
      "file": "platform_single_f1.png",
@@ -17,8 +18,8 @@
      "bbox": [
       0,
       0,
-      268,
-      218
+      236,
+      221
      ]
     },
     {
@@ -27,9 +28,9 @@
      "col": 0,
      "bbox": [
       0,
-      218,
-      267,
-      198
+      221,
+      236,
+      221
      ]
     },
     {
@@ -37,10 +38,10 @@
      "row": 2,
      "col": 0,
      "bbox": [
-      5,
-      416,
-      258,
-      292
+      0,
+      442,
+      236,
+      248
      ]
     },
     {
@@ -49,14 +50,35 @@
      "col": 0,
      "bbox": [
       0,
-      708,
-      268,
-      148
+      690,
+      236,
+      167
+     ]
+    },
+    {
+     "file": "platform_single_f5.png",
+     "row": 4,
+     "col": 0,
+     "bbox": [
+      0,
+      857,
+      236,
+      165
+     ]
+    },
+    {
+     "file": "platform_single_f6.png",
+     "row": 5,
+     "col": 0,
+     "bbox": [
+      0,
+      1022,
+      236,
+      165
      ]
     }
-   ],
-   "frames_dir": "petal-panic/assets/levels/level2"
+   ]
   }
  ],
- "updated": "2026-10-21"
+ "updated": "2026-10-29"
 }

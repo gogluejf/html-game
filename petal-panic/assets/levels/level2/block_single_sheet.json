@@ -4,11 +4,12 @@
  "rows": 2,
  "cols": 1,
  "kind": "tile_variant",
- "description": "level2 block_single (2 frames) \u2014 reassembled from frames",
+ "description": "level2 block_single (2 frames)",
  "entities": [
   {
    "name": "level2",
    "anim": "block_single",
+   "frames_dir": "petal-panic/assets/levels/level2",
    "frames": [
     {
      "file": "block_single_f1.png",
@@ -32,9 +33,8 @@
       267
      ]
     }
-   ],
-   "frames_dir": "petal-panic/assets/levels/level2"
+   ]
   }
  ],
- "updated": "2026-10-21"
+ "updated": "2026-10-29"
 }

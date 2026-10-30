@@ -1,14 +1,15 @@
 {
- "label": "levels",
  "file": "petal-panic/assets/levels/level3/fg_sheet.png",
+ "size": "2171x724",
  "rows": 1,
  "cols": 1,
- "size": "2172x565",
- "description": "Foreground strip level 3 (Wild Menagerie)",
+ "kind": "tile_variant",
+ "description": "Foreground strip level 3 (Tropical Skull Market Boardwalk)",
  "entities": [
   {
    "name": "level3",
    "anim": "fg",
+   "frames_dir": "petal-panic/assets/levels/level3",
    "frames": [
     {
      "file": "fg_f1.png",
@@ -17,16 +18,12 @@
      "bbox": [
       0,
       0,
-      2172,
-      565
+      2171,
+      724
      ]
     }
-   ],
-   "frames_dir": "petal-panic/assets/levels/level3"
+   ]
   }
  ],
- "crop": {
-  "pass": "/tmp/reg3-fg_level3-v1"
- },
- "kind": "tile_variant"
+ "updated": "2026-10-29"
 }

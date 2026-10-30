@@ -1,116 +1,84 @@
 {
-  "file": "petal-panic/assets/levels/level1/platform_single_sheet.png",
-  "size": "288x933",
-  "rows": 4,
-  "cols": 1,
-  "kind": "tile_variant",
-  "description": "level1 platform_single (4 frames) \u2014 reassembled from frames",
-  "entities": [
+ "file": "petal-panic/assets/levels/level1/platform_single_sheet.png",
+ "size": "237x1298",
+ "rows": 6,
+ "cols": 1,
+ "kind": "tile_variant",
+ "description": "level1 platform_single (6 frames)",
+ "entities": [
+  {
+   "name": "level1",
+   "anim": "platform_single",
+   "frames_dir": "petal-panic/assets/levels/level1",
+   "frames": [
     {
-      "name": "level1",
-      "anim": "platform_single",
-      "frames": [
-        {
-          "file": "platform_single_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            1,
-            0,
-            285,
-            225
-          ],
-          "offset": {
-            "x": 142.5,
-            "y": -112.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_single_f2.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            7,
-            225,
-            274,
-            260
-          ],
-          "offset": {
-            "x": 137,
-            "y": -130
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_single_f3.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            0,
-            485,
-            288,
-            268
-          ],
-          "offset": {
-            "x": 144,
-            "y": -134
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_single_f4.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            0,
-            753,
-            288,
-            180
-          ],
-          "offset": {
-            "x": 144,
-            "y": -90
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/levels/level1",
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": 21,
-        "y": -160,
-        "w": 245,
-        "h": 160
-      },
-      "pivot": {
-        "x": 139,
-        "y": -108
-      },
-      "markers": []
+     "file": "platform_single_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      237,
+      229
+     ]
+    },
+    {
+     "file": "platform_single_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      229,
+      237,
+      252
+     ]
+    },
+    {
+     "file": "platform_single_f3.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      481,
+      237,
+      260
+     ]
+    },
+    {
+     "file": "platform_single_f4.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      0,
+      741,
+      237,
+      184
+     ]
+    },
+    {
+     "file": "platform_single_f5.png",
+     "row": 4,
+     "col": 0,
+     "bbox": [
+      0,
+      925,
+      237,
+      194
+     ]
+    },
+    {
+     "file": "platform_single_f6.png",
+     "row": 5,
+     "col": 0,
+     "bbox": [
+      0,
+      1119,
+      237,
+      179
+     ]
     }
-  ],
-  "updated": "2026-10-21"
+   ]
+  }
+ ],
+ "updated": "2026-10-29"
 }

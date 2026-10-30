@@ -1,24 +1,25 @@
 {
  "file": "petal-panic/assets/levels/level4/platform_double_sheet.png",
- "size": "441x991",
- "rows": 4,
+ "size": "408x1318",
+ "rows": 6,
  "cols": 1,
  "kind": "tile_variant",
- "description": "level4 platform_double (4 frames) \u2014 reassembled from frames",
+ "description": "level4 platform_double (6 frames)",
  "entities": [
   {
    "name": "level4",
    "anim": "platform_double",
+   "frames_dir": "petal-panic/assets/levels/level4",
    "frames": [
     {
      "file": "platform_double_f1.png",
      "row": 0,
      "col": 0,
      "bbox": [
-      15,
       0,
-      411,
-      272
+      0,
+      408,
+      253
      ]
     },
     {
@@ -26,10 +27,10 @@
      "row": 1,
      "col": 0,
      "bbox": [
-      13,
-      272,
-      414,
-      223
+      0,
+      253,
+      408,
+      237
      ]
     },
     {
@@ -38,9 +39,9 @@
      "col": 0,
      "bbox": [
       0,
-      495,
-      441,
-      316
+      490,
+      408,
+      291
      ]
     },
     {
@@ -49,14 +50,35 @@
      "col": 0,
      "bbox": [
       0,
-      811,
-      441,
-      180
+      781,
+      408,
+      187
+     ]
+    },
+    {
+     "file": "platform_double_f5.png",
+     "row": 4,
+     "col": 0,
+     "bbox": [
+      0,
+      968,
+      408,
+      182
+     ]
+    },
+    {
+     "file": "platform_double_f6.png",
+     "row": 5,
+     "col": 0,
+     "bbox": [
+      0,
+      1150,
+      408,
+      168
      ]
     }
-   ],
-   "frames_dir": "petal-panic/assets/levels/level4"
+   ]
   }
  ],
- "updated": "2026-10-21"
+ "updated": "2026-10-29"
 }
