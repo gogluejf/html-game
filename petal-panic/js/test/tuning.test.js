@@ -166,7 +166,7 @@ test('converted-coin decision is concrete and wired to GAME_RULES (game-rules.md
 // ===========================================================================
 
 test('area lengths are derived from canonical whole-unit budgets', () => {
-  assert.equal(ZONE_WIDTH_HORIZONTAL, 56 * 72, 'horizontal area is 56 × 72px = 4032px');
+  assert.equal(ZONE_WIDTH_HORIZONTAL, 112 * 48, 'horizontal area is 112 × 48px = 5376px (authored x2 migration)');
   assert.equal(ZONE_H_VERTICAL, 56 * 48, 'vertical climb is 56 × 48px = 2688px');
   // The Level 1 config references these single-source constants (no re-declared
   // literals) — levelConfigs.js cites structure.md §6.

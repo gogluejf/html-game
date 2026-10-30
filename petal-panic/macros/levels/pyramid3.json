@@ -3,118 +3,119 @@
   "name": "pyramid3",
   "orientation": "horizontal",
   "difficulty": 1,
+  "variations": [],
+  "follows": [],
+  "followedBy": [],
+  "schemaVersion": "square-grid-v1",
   "units": [
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 5,
-      "width": 1
+      "x": 10,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 6,
-      "width": 1
+      "x": 12,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 7,
-      "width": 1
+      "x": 14,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 8,
-      "width": 1
+      "x": 16,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 9,
-      "width": 1
-    },
-    {
-      "kind": "platform",
-      "x": 5,
-      "y": 5,
-      "width": 6
-    },
-    {
-      "kind": "platform",
-      "x": 14,
-      "y": 6,
-      "width": 6
-    },
-    {
-      "kind": "platform",
-      "x": 13,
-      "y": 4,
-      "width": 7
-    },
-    {
-      "kind": "platform",
-      "x": 22,
-      "y": 4,
+      "x": 18,
       "width": 2
     },
     {
       "kind": "platform",
-      "x": 23,
-      "y": 1,
-      "width": 5
+      "y": 5,
+      "x": 10,
+      "width": 12
     },
     {
       "kind": "platform",
-      "x": 13,
-      "y": 2,
+      "y": 6,
+      "x": 28,
+      "width": 12
+    },
+    {
+      "kind": "platform",
+      "y": 4,
+      "x": 26,
+      "width": 14
+    },
+    {
+      "kind": "platform",
+      "y": 4,
+      "x": 44,
       "width": 4
     },
     {
       "kind": "platform",
-      "x": 31,
-      "y": 3,
-      "width": 2
+      "y": 1,
+      "x": 46,
+      "width": 10
     },
     {
       "kind": "platform",
-      "x": 36,
+      "y": 2,
+      "x": 26,
+      "width": 8
+    },
+    {
+      "kind": "platform",
+      "y": 3,
+      "x": 62,
+      "width": 4
+    },
+    {
+      "kind": "platform",
       "y": 5,
-      "width": 5
+      "x": 72,
+      "width": 10
     }
   ],
   "placements": [
     {
       "slot": "base",
-      "x": 5,
+      "x": 10,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "on-h2",
-      "x": 6,
+      "x": 12,
       "type": "enemy",
       "y": 2
     },
     {
       "slot": "on-h2b",
-      "x": 8,
+      "x": 16,
       "type": "enemy",
       "y": 2
     },
     {
       "slot": "peak-barrel",
-      "x": 7,
+      "x": 14,
       "type": "barrel",
       "y": 3
     }
-  ],
-  "variations": [],
-  "follows": [],
-  "followedBy": []
+  ]
 }

@@ -7,6 +7,13 @@
 
 const ID_RE = /^[A-Za-z0-9_]+$/;
 const OWN = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+import { unitGridError } from './squareGrid.js';
+
+// Current macro data format version (square-grid cutover). Single owner for the
+// marker value so the JSON schema, this validator, and the offline migrator all
+// agree. The runtime REQUIRES this exact value on every macro it loads — there
+// is no legacy fallback path (legacy files are migrated offline, never at load).
+export const CURRENT_SCHEMA_VERSION = 'square-grid-v1';
 
 function object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
 function intAtLeast(value, min) { return Number.isInteger(value) && value >= min; }
@@ -23,10 +30,19 @@ export function macroSchemaErrors(macro, { expectedId } = {}) {
   const err = (path, message) => errors.push(`${path}: ${message}`);
   if (!object(macro)) return ['$: must be an object'];
 
-  const required = new Set(['id','name','orientation','difficulty','units','placements','variations','follows','followedBy']);
+  const required = new Set(['id','name','orientation','difficulty','units','placements','variations','follows','followedBy','schemaVersion']);
   const topAllowed = new Set([...required, 'clearance']);
   for (const key of extraKeys(macro, topAllowed)) err(`$.${key}`, 'unknown property');
   for (const key of required) if (!OWN(macro, key)) err('$', `missing required property "${key}"`);
+
+  // Current-schema gate: the runtime requires the square-grid marker and rejects
+  // legacy (un-migrated) data rather than silently reinterpreting old units.
+  // Legacy files must be migrated offline via tools/migrate_square_grid.mjs.
+  if (!OWN(macro, 'schemaVersion')) {
+    err('$.schemaVersion', 'missing — this is a legacy pre-square-grid macro; run petal-panic/tools/migrate_square_grid.mjs --apply to migrate it');
+  } else if (macro.schemaVersion !== CURRENT_SCHEMA_VERSION) {
+    err('$.schemaVersion', `must be "${CURRENT_SCHEMA_VERSION}", got ${JSON.stringify(macro.schemaVersion)}`);
+  }
 
   if (typeof macro.id !== 'string' || !ID_RE.test(macro.id)) err('$.id', 'must be a non-empty safe identifier');
   if (expectedId !== undefined && macro.id !== expectedId) err('$.id', `must match filename "${expectedId}.json"`);
@@ -81,6 +97,11 @@ function validateUnit(unit, path, err) {
   if (!intAtLeast(unit.y, isBlock ? 0 : 1)) err(`${path}.y`, isBlock ? 'must be a non-negative integer' : 'platform row must be integer >= 1');
   if (!intAtLeast(unit.width, 1)) err(`${path}.width`, 'must be a positive integer');
   if (isBlock && !intAtLeast(unit.height, 1)) err(`${path}.height`, 'must be a positive integer');
+  // Square-grid block lattice: the shared contract (squareGrid.js) owns the
+  // rules — blocks are fixed 2-cell columns on the even-X lattice; platforms
+  // use whole cells with width ≥ 1.
+  const gridError = unitGridError(unit);
+  if (gridError) err(path, gridError);
 }
 
 function validatePlacement(slot, path, err) {

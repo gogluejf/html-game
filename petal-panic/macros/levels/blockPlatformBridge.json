@@ -3,88 +3,89 @@
   "name": "Block & Platform Bridge",
   "orientation": "horizontal",
   "difficulty": 3,
+  "variations": [],
+  "follows": [],
+  "followedBy": [],
+  "schemaVersion": "square-grid-v1",
   "units": [
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 2,
-      "width": 1
+      "x": 4,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 3,
-      "width": 1
+      "x": 6,
+      "width": 2
     },
     {
       "kind": "platform",
-      "width": 3,
       "y": 2,
-      "x": 6
+      "x": 12,
+      "width": 6
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 11,
-      "width": 1
+      "x": 22,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 12,
-      "width": 1
+      "x": 24,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
       "x": 0,
-      "width": 1
+      "width": 2
     }
   ],
   "placements": [
     {
       "slot": "on-h1",
-      "x": 2,
+      "x": 4,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "on-h2",
-      "x": 3,
+      "x": 6,
       "type": "enemy",
       "y": 2
     },
     {
       "slot": "on-bridge",
-      "x": 7,
+      "x": 14,
       "type": "enemy",
       "y": 3
     },
     {
       "slot": "on-bridge-pu",
-      "x": 8,
+      "x": 16,
       "type": "powerup",
       "y": 3
     },
     {
       "slot": "on-far-h2",
-      "x": 11,
+      "x": 22,
       "type": "barrel",
       "y": 2
     },
     {
       "slot": "on-far-h1",
-      "x": 12,
+      "x": 24,
       "type": "barrel",
       "y": 1
     }
-  ],
-  "variations": [],
-  "follows": [],
-  "followedBy": []
+  ]
 }

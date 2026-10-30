@@ -493,7 +493,10 @@ test('macroWeights bias: harder-tier weights shift macro selection toward harder
   // composing the same stage with a brutal-leaning weight set must yield a
   // different (harder) macro sequence than the same stage with an
   // easy-leaning set. Use a fixed seed so the difference is purely the bias.
-  const budget = 40;
+  // Square-grid cutover note: authored macro widths doubled, so the budget is
+  // raised to 80 cells — wide enough for the composer to place more than one
+  // macro and let the difficulty bias actually change the selection.
+  const budget = 80;
   const easyWeights = { easy: 10, medium: 1, hard: 1, brutal: 0 };
   const brutalWeights = { easy: 0, medium: 1, hard: 5, brutal: 10 };
   const a = composeArea(createRng('bias-test'), 'horizontal', 3, budget, easyWeights);

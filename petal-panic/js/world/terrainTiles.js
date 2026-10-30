@@ -17,6 +17,7 @@ import { createRng } from './terrain.js';
 import { loadLevelAsset, getLevelAsset } from './levelAssets.js';
 import { ZONE_FLOOR_UNITS } from './level.js';
 import { Entity } from '../core/entity.js';
+import { decomposeVariant, blockColumns, BLOCK_FOOTPRINT } from './squareGrid.js';
 
 // --- Frame selection (terrain-tiling.md §Frame selection) ----------------------
 const BEST_FRAME_WEIGHT = 0.75;
@@ -25,32 +26,15 @@ const BEST_FRAME = { platform: 3, block: 1 };
 /** Random-pool frame indices (0-based): platform f1–f3 → 0..2, block f1 → 0. */
 const RANDOM_POOL = { platform: [0, 1, 2], block: [0] };
 
-/** Width variants in descending order (longest first). */
-const WIDTH_VARIANTS = [3, 2, 1]; // triple, double, single
-
 /** Kick off (or join) the asset load for a terrain kind. Fire-and-forget. */
 export function loadTerrainFrames(level, kind) {
   return loadLevelAsset(level, kind);
 }
 
 // --- Tiling ---------------------------------------------------------------------
-
-/**
- * Longest-first decomposition: [3,3,2,1,...] summing to n units.
- * @param {number} n positive integer
- * @returns {number[]} variant sizes, largest first
- */
-export function decompose(n) {
-  if (!Number.isInteger(n) || n < 1) throw new Error(`decompose: need positive int, got ${n}`);
-  const out = [];
-  let r = n;
-  while (r > 0) {
-    const v = WIDTH_VARIANTS.find((c) => c <= r);
-    out.push(v);
-    r -= v;
-  }
-  return out;
-}
+// Variant decomposition (longest-first [3,2,1]) lives in squareGrid.js — the
+// single shared footprint contract. Blocks decompose HEIGHT into variants;
+// platforms decompose WIDTH into variants.
 
 /** Pick a frame index for one tile (deterministic per rng stream + kind). */
 function pickFrame(rng, kind, frameCount) {
@@ -77,8 +61,23 @@ export function tileSolid(s, level, seed) {
   // world rebuilds produce identical frame picks (lifecycle.md §6).
   const rng = createRng(`${seed}:tile:${kind}:${Math.round(s.x)}:${Math.round(s.y)}`);
 
-  const widths = decompose(wUnits);
-  const rows = kind === 'block' ? decompose(hUnits) : [1];
+  // Square-grid footprint rules (squareGrid.js):
+  //   - BLOCKS are fixed 2-cell columns; a wide wall repeats those columns and
+  //     each column decomposes its HEIGHT into single/double/triple variants.
+  //     (Blocks describe height, never width.)
+  //   - PLATFORMS keep 1-cell height; their WIDTH decomposes into
+  //     single/double/triple variants left-to-right.
+  let widths;
+  if (kind === 'block') {
+    // Authored blocks are lattice-validated upstream (squareGrid.unitGridError:
+    // even x, width a positive multiple of BLOCK_FOOTPRINT.widthCells). If a
+    // malformed solid reaches the tiler we must NOT silently round or truncate
+    // its geometry — throw with the offending box so the producer is fixed.
+    widths = blockColumns(wUnits);
+  } else {
+    widths = decomposeVariant('platform', wUnits);
+  }
+  const rows = kind === 'block' ? decomposeVariant('block', hUnits) : [1];
   const asset = getLevelAsset(level, kind);
   const anim = asset?.data?.anims[asset.animName];
   const frameCount = anim?.frames.length ?? (kind === 'platform' ? 4 : 2);
@@ -90,12 +89,15 @@ export function tileSolid(s, level, seed) {
     rowY -= rowH;
     let colX = s.x;
     for (let c = 0; c < widths.length; c++) {
-      const variant = widths[c];
+      const colW = widths[c]; // block: always 2 (fixed column); platform: variant width
       const frame = pickFrame(rng, kind, frameCount);
       // imgKey: resolved from the parsed sheet when available; otherwise a
       // deterministic placeholder that getTerrainFrameImage() can match once
       // the asset lands (frame file names follow the <kind>_<variant>_f<N>.png
       // convention — see assets/levels/).
+      // Blocks are fixed 2-cell columns: the sprite VARIANT is the HEIGHT row
+      // (single/double/triple), not the column width. Platforms tile by width.
+      const variant = kind === 'block' ? rows[r] : colW;
       let imgKey = null;
       if (anim) {
         imgKey = anim.frames[frame % anim.frames.length].file;
@@ -106,7 +108,7 @@ export function tileSolid(s, level, seed) {
       tiles.push({
         x: colX,
         y: rowY,
-        w: variant * UNIT_PX_X,
+        w: colW * UNIT_PX_X,
         // Both blocks and platforms draw at their natural row height (48px per
         // unit) — no stretching. Platforms are 1 unit thick by definition;
         // blocks stack rows bottom-up. The art keeps its full visual height.
@@ -116,7 +118,7 @@ export function tileSolid(s, level, seed) {
         variant,
         imgKey,
       });
-      colX += variant * UNIT_PX_X;
+      colX += colW * UNIT_PX_X;
     }
   }
   return tiles;

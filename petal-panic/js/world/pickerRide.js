@@ -12,7 +12,7 @@
 import { buildRideWorld } from './ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
 import { HEROES } from '../hero/heroDefs.js';
-import { UNIT_PX_X, UNIT_PX_Y } from './macros.js';
+import { UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
 import { traversalRoute } from './macros.js';
 import { createRideBrain } from './rideBrain.js';
 import { createRideState, stepRide } from './rideDriver.js';
@@ -57,7 +57,8 @@ function mapOrder(ls, order){
  */
 export function runPickerRide(macro, opts = {}){
   const maxFrames = opts.maxFrames ?? DEFAULT_MAX_FRAMES;
-  const world = buildRideWorld(macro, { unitPxX: 72, unitPxY: 48, platformDrawH: 6 });
+  // Authoritative grid constants — the ride world shares the game's 48×48 cell.
+  const world = buildRideWorld(macro);
   const { goals, unreachable } = buildGoalList(world, macro);
   const goalIndices = goals.map(g => g.index);
 

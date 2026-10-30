@@ -3,68 +3,69 @@
   "name": "Stretched Pyramid",
   "orientation": "horizontal",
   "difficulty": 2,
+  "variations": [],
+  "follows": [],
+  "followedBy": [],
+  "schemaVersion": "square-grid-v1",
   "units": [
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 2,
-      "width": 5
+      "x": 4,
+      "width": 10
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 7,
-      "width": 5
+      "x": 14,
+      "width": 10
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 12,
-      "width": 5
+      "x": 24,
+      "width": 10
     }
   ],
   "placements": [
     {
       "slot": "low",
-      "x": 4,
+      "x": 8,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "low2",
-      "x": 5,
+      "x": 10,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "mid-enemy",
-      "x": 9,
+      "x": 18,
       "type": "enemy",
       "y": 2
     },
     {
       "slot": "mid2",
-      "x": 10,
+      "x": 20,
       "type": "barrel",
       "y": 2
     },
     {
       "slot": "high-barrel",
-      "x": 14,
+      "x": 28,
       "type": "barrel",
       "y": 3
     },
     {
       "slot": "high2",
-      "x": 15,
+      "x": 30,
       "type": "powerup",
       "y": 3
     }
-  ],
-  "variations": [],
-  "follows": [],
-  "followedBy": []
+  ]
 }

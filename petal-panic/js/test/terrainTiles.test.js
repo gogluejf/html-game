@@ -4,42 +4,91 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
-import { decompose, tileSolid, buildTerrainTiles, loadTerrainFrames } from '../world/terrainTiles.js';
+import { tileSolid, buildTerrainTiles, loadTerrainFrames } from '../world/terrainTiles.js';
+import { decomposeVariant } from '../world/squareGrid.js';
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 
 // --- Width decomposition (longest-first) ---------------------------------------
-test('decompose: longest-first, sums to input', () => {
+// Decomposition lives in the shared footprint contract (squareGrid.js); the
+// terrain pipeline routes both block heights and platform widths through it.
+test('decomposeVariant: longest-first, sums to input', () => {
   const cases = {
     1: [1], 2: [2], 3: [3], 4: [3, 1], 5: [3, 2], 6: [3, 3],
     7: [3, 3, 1], 8: [3, 3, 2], 9: [3, 3, 3], 10: [3, 3, 3, 1],
   };
   for (const [n, expected] of Object.entries(cases)) {
-    const got = decompose(Number(n));
-    assert.deepEqual(got, expected, `decompose(${n})`);
+    const got = decomposeVariant('platform', Number(n));
+    assert.deepEqual(got, expected, `decomposeVariant(platform, ${n})`);
     assert.equal(got.reduce((a, b) => a + b, 0), Number(n));
   }
 });
 
-test('decompose: rejects non-positive / non-integer', () => {
-  assert.throws(() => decompose(0));
-  assert.throws(() => decompose(1.5));
-  assert.throws(() => decompose(-2));
+test('decomposeVariant: rejects non-positive / non-integer', () => {
+  assert.throws(() => decomposeVariant('block', 0));
+  assert.throws(() => decomposeVariant('block', 1.5));
+  assert.throws(() => decomposeVariant('block', -2));
 });
 
 // --- Tiling geometry -------------------------------------------------------------
-test('tileSolid: 1x1 block → one triple-free single tile at full size', async () => {
-  await loadTerrainFrames(1, 'block');
-  const s = { x: 0, y: 100, w: UNIT_PX_X, h: UNIT_PX_Y, oneWay: false };
+// Square-grid footprint rules: blocks are fixed 2-cell columns (each decomposed
+// by HEIGHT into single/double/triple); platforms keep 1-cell height and their
+// WIDTH decomposes into single/double/triple. A real block is therefore at least
+// 2 cells wide; a 1-cell-wide solid is treated as a platform (one-way).
+test('tileSolid: 1x1 one-way solid → one single tile at full size', async () => {
+  await loadTerrainFrames(1, 'platform');
+  const s = { x: 0, y: 100, w: UNIT_PX_X, h: UNIT_PX_Y, oneWay: true };
   const tiles = tileSolid(s, 1, 42);
   assert.equal(tiles.length, 1);
   const t = tiles[0];
-  assert.equal(t.kind, 'block');
+  assert.equal(t.kind, 'platform');
   assert.equal(t.variant, 1);
   assert.equal(t.x, 0);
   assert.equal(t.y, 100);
   assert.equal(t.w, UNIT_PX_X);
   assert.equal(t.h, UNIT_PX_Y);
+  assert.ok(t.imgKey?.startsWith('platform_single_f'));
+});
+
+test('tileSolid: 2x1 block → one 2-cell column (height variant 1)', async () => {
+  await loadTerrainFrames(1, 'block');
+  const s = { x: 0, y: 100, w: 2 * UNIT_PX_X, h: UNIT_PX_Y, oneWay: false };
+  const tiles = tileSolid(s, 1, 42);
+  // One 2-cell column, height 1 → exactly one tile spanning both cells.
+  assert.equal(tiles.length, 1);
+  const t = tiles[0];
+  assert.equal(t.kind, 'block');
+  assert.equal(t.variant, 1); // height variant (single) — blocks are fixed 2-cell columns
+  assert.equal(t.w, 2 * UNIT_PX_X);
+  assert.equal(t.h, UNIT_PX_Y); // height variant 1 (single)
   assert.ok(t.imgKey?.startsWith('block_single_f'));
+});
+
+test('tileSolid: 4x3 block → two 2-cell columns × [3] height rows', async () => {
+  await loadTerrainFrames(1, 'block');
+  const s = { x: 0, y: 0, w: 4 * UNIT_PX_X, h: 3 * UNIT_PX_Y, oneWay: false };
+  const tiles = tileSolid(s, 1, 42);
+  // Two 2-cell columns, each a single triple-height row → 2 tiles.
+  assert.equal(tiles.length, 2);
+  for (const t of tiles) {
+    assert.equal(t.kind, 'block');
+    assert.equal(t.variant, 3); // height variant (triple)
+    assert.equal(t.w, 2 * UNIT_PX_X);
+    assert.equal(t.h, 3 * UNIT_PX_Y);
+  }
+  // Columns sit side by side.
+  assert.equal(tiles[0].x, 0);
+  assert.equal(tiles[1].x, 2 * UNIT_PX_X);
+});
+
+test('tileSolid: 6x5 block → three 2-cell columns × [3,2] height rows', async () => {
+  await loadTerrainFrames(1, 'block');
+  const s = { x: 0, y: 0, w: 6 * UNIT_PX_X, h: 5 * UNIT_PX_Y, oneWay: false };
+  const tiles = tileSolid(s, 1, 42);
+  // Three columns × two height rows ([3,2]) = 6 tiles.
+  assert.equal(tiles.length, 6);
+  const variants = new Set(tiles.map((t) => t.variant));
+  assert.deepEqual([...variants].sort(), [2, 3], 'height variants are double + triple');
+  for (const t of tiles) assert.equal(t.w, 2 * UNIT_PX_X);
 });
 
 test('tileSolid: 7-unit platform → triple+triple+single left-to-right', async () => {
@@ -57,10 +106,11 @@ test('tileSolid: 7-unit platform → triple+triple+single left-to-right', async 
   for (const t of tiles) assert.equal(t.h, UNIT_PX_Y);
 });
 
-test('tileSolid: 4-tall block stacks rows bottom-up ([3,1] longest-first)', async () => {
+test('tileSolid: 4-tall 2-wide block stacks height rows bottom-up ([3,1])', async () => {
   await loadTerrainFrames(1, 'block');
-  const s = { x: 0, y: 0, w: UNIT_PX_X, h: 4 * UNIT_PX_Y, oneWay: false };
+  const s = { x: 0, y: 0, w: 2 * UNIT_PX_X, h: 4 * UNIT_PX_Y, oneWay: false };
   const tiles = tileSolid(s, 1, 42);
+  // One 2-cell column, height 4 → rows [3,1] = 2 tiles.
   assert.equal(tiles.length, 2); // rows [3,1] × 1 column
   // Bottom row (3 tall) sits at the box bottom; top row (1 tall) at the top.
   assert.equal(tiles[0].y, 1 * UNIT_PX_Y); // bottom row: y = 0 + 4u - 3u = 1u
@@ -91,7 +141,7 @@ test('tileSolid: different seeds can differ (frame variety)', async () => {
 test('tileSolid: frame picks respect kind pools (block f1/f2 only, platform f1–f4)', async () => {
   await loadTerrainFrames(1, 'block');
   await loadTerrainFrames(1, 'platform');
-  const bs = { x: 0, y: 0, w: 9 * UNIT_PX_X, h: 3 * UNIT_PX_Y, oneWay: false };
+  const bs = { x: 0, y: 0, w: 10 * UNIT_PX_X, h: 3 * UNIT_PX_Y, oneWay: false }; // blocks are 2-cell-lattice solids (even width)
   const ps = { x: 0, y: 0, w: 9 * UNIT_PX_X, h: UNIT_PX_Y, oneWay: true };
   for (const t of tileSolid(bs, 1, 7)) assert.ok(t.frame <= 1, `block frame ${t.frame}`);
   for (const t of tileSolid(ps, 1, 7)) assert.ok(t.frame >= 0 && t.frame <= 3, `platform frame ${t.frame}`);
@@ -99,10 +149,8 @@ test('tileSolid: frame picks respect kind pools (block f1/f2 only, platform f1�
 
 // --- buildTerrainTiles (integration: sheets parse + images load in node) --------
 test('buildTerrainTiles: returns tiles with imgKey set (node fs path)', async () => {
-  const s = { x: 0, y: 0, w: 4 * UNIT_PX_X, h: UNIT_PY_SAFE(), oneWay: true };
+  const s = { x: 0, y: 0, w: 4 * UNIT_PX_X, h: UNIT_PX_Y, oneWay: true };
   const tiles = await buildTerrainTiles(s, 1, 99);
   assert.ok(tiles.length >= 2); // 4 units = triple + single
   for (const t of tiles) assert.ok(t.imgKey, 'imgKey resolved from parsed sheet');
 });
-
-function UNIT_PY_SAFE() { return UNIT_PX_Y; }

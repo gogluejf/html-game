@@ -171,9 +171,7 @@ export function startRide(){
   stopRide(false); // kill any existing ride + trail
   const st = app.cur.st;
   const c = app.consts;
-  const world = buildRideWorld(st, {
-    unitPxX: c.unitPxX, unitPxY: c.unitPxY, platformDrawH: c.platformDrawH,
-  });
+  const world = buildRideWorld(st);
   const endpoint = macroEndpoint(st);
   world.macroEndPx = endpoint.value * (endpoint.orientation === 'vertical' ? c.unitPxY : c.unitPxX);
   // Spawn with FEET on the entry surface: anchor by the real box height so
@@ -255,9 +253,7 @@ export function startRide(){
 export function rebuildRideWorld(){
   if (!ride.active || !app.cur || !app.cur.st) return;
   const c = app.consts;
-  const world = buildRideWorld(app.cur.st, {
-    unitPxX: c.unitPxX, unitPxY: c.unitPxY, platformDrawH: c.platformDrawH,
-  });
+  const world = buildRideWorld(app.cur.st);
   const endpoint = macroEndpoint(app.cur.st);
   world.macroEndPx = endpoint.value * (endpoint.orientation === 'vertical' ? c.unitPxY : c.unitPxX);
   ride.world = world;

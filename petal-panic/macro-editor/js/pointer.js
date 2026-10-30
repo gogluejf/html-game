@@ -9,6 +9,7 @@ import { markChanged } from './save.js';
 import { validateMacroCandidate, validateDeletion, previewLayout, reasonFromError, analyzeMacroWarnings } from './validation.js';
 import { macroSchemaErrors } from '../../js/world/macroSchema.js';
 import { validateLayout } from '../../js/world/macros.js';
+import { normalizeUnit, snapCellX, BLOCK_FOOTPRINT } from '../../js/world/squareGrid.js';
 import { showToast } from './toast.js';
 import { pushUndo } from './undo.js';
 import { syncToolButtons, cursorForTool } from './tools.js';
@@ -109,35 +110,44 @@ function moveAttachedPlacements(interaction){
 
 function candidateForCreate(mode, anchor, current){
   if (mode === 'creating-block'){
-    const x=Math.min(anchor.x,current.x), y=Math.min(anchor.y,current.y);
-    return { kind:'block', x, y, width:Math.abs(current.x-anchor.x)+1, height:Math.abs(current.y-anchor.y)+1 };
+    // Blocks paint on the 2-cell lattice: snap the drag corners before sizing.
+    const ax=snapCellX('block',anchor.x), ay=Math.floor(anchor.y);
+    const cx=snapCellX('block',current.x), cy=Math.floor(current.y);
+    const x=Math.min(ax,cx), y=Math.min(ay,cy);
+    return normalizeUnit({ kind:'block', x, y, width:Math.abs(cx-ax)+1, height:Math.abs(cy-ay)+1 });
   }
   const x=Math.min(anchor.x,current.x);
-  return { kind:'platform', x, y:anchor.y, width:Math.abs(current.x-anchor.x)+1 };
+  return normalizeUnit({ kind:'platform', x, y:anchor.y, width:Math.abs(current.x-anchor.x)+1 });
 }
+
+// Block columns are fixed 2 cells wide (squareGrid contract).
+const BLOCK_MIN_W = BLOCK_FOOTPRINT.minWidthCells;
 
 function resizedCandidate(original, handle, cell){
   if (original.kind === 'platform'){
     const right=original.x+original.width;
-    if (handle === 'w') return { ...original, x:Math.min(cell.x,right-1), width:Math.max(1,right-cell.x) };
-    return { ...original, width:Math.max(1,cell.x-original.x) };
+    if (handle === 'w') return normalizeUnit({ ...original, x:Math.min(cell.x,right-1), width:Math.max(1,right-cell.x) });
+    return normalizeUnit({ ...original, width:Math.max(1,cell.x-original.x) });
   }
   let left=original.x, right=original.x+original.width;
   let bottom=original.y, top=original.y+original.height;
-  if (handle.includes('w')) left=Math.min(cell.x,right-1);
-  if (handle.includes('e')) right=Math.max(cell.x,left+1);
-  if (handle.includes('s')) bottom=Math.min(cell.y,top-1);
-  if (handle.includes('n')) top=Math.max(cell.y,bottom+1);
-  return { ...original, x:left, y:bottom, width:right-left, height:top-bottom };
+  // Block edges live on the 2-cell X lattice and integer Y rows.
+  if (handle.includes('w')) left=Math.min(snapCellX('block',cell.x),right-BLOCK_MIN_W);
+  if (handle.includes('e')) right=Math.max(snapCellX('block',cell.x),left+BLOCK_MIN_W);
+  if (handle.includes('s')) bottom=Math.min(Math.floor(cell.y),top-1);
+  if (handle.includes('n')) top=Math.max(Math.floor(cell.y),bottom+1);
+  return normalizeUnit({ ...original, x:left, y:bottom, width:right-left, height:top-bottom });
 }
 
 function movedCandidate(original, anchor, current, seed=original){
-  return { ...seed, x:original.x+current.x-anchor.x, y:original.y+current.y-anchor.y };
+  const moved = { ...seed, x:original.x+(current.x-anchor.x), y:original.y+(current.y-anchor.y) };
+  // Horizontal movement snaps to the object's own X lattice (blocks: even).
+  return normalizeUnit({ ...moved, x:snapCellX(moved.kind,moved.x) });
 }
 
 export function hoverCandidateForTool(tool,cell,placements=[]){
-  if (tool==='block') return {kind:'block',x:cell.x,y:cell.y,width:1,height:1};
-  if (tool==='platform') return {kind:'platform',x:cell.x,y:cell.y,width:1};
+  if (tool==='block') return normalizeUnit({kind:'block',x:cell.x,y:cell.y,width:2,height:1});
+  if (tool==='platform') return normalizeUnit({kind:'platform',x:cell.x,y:cell.y,width:1});
   if (tool.startsWith('slot-')) {
     const type=tool.slice(5);
     return {slot:uniqueSlotName(type,placements),type,x:cell.x,y:cell.y};
@@ -195,16 +205,25 @@ function validateMultiResize(interaction){
   if (!primary) { interaction.valid = false; interaction.reason = 'No items'; return; }
 
   const resized = resizedCandidate(primary.original, interaction.handle, interaction.currentCell);
-  const dx = resized.x - primary.original.x;
-  const dy = resized.y - primary.original.y;
-  const dw = (resized.width ?? 1) - (primary.original.width ?? 1);
-  const dh = (resized.height ?? 1) - (primary.original.height ?? 1);
+  // Deltas are shared across the group: snap them to every member's lattice
+  // (blocks move/size in even-X steps; platforms in whole cells).
+  let dx = resized.x - primary.original.x;
+  let dy = resized.y - primary.original.y;
+  let dw = (resized.width ?? 1) - (primary.original.width ?? 1);
+  let dh = (resized.height ?? 1) - (primary.original.height ?? 1);
+  for (const item of interaction.multiOriginals) {
+    if (item.original.kind === 'block') {
+      dx -= dx % BLOCK_MIN_W;
+      dw -= dw % BLOCK_MIN_W;
+    }
+  }
 
   const next = clone(app.cur.st);
   for (const item of interaction.multiOriginals) {
     const newX = item.original.x + dx;
     const newY = item.original.y + dy;
-    const newW = Math.max(1, (item.original.width ?? 1) + dw);
+    let newW = Math.max(1, (item.original.width ?? 1) + dw);
+    if (item.original.kind === 'block') newW = Math.max(BLOCK_MIN_W, newW - newW % BLOCK_MIN_W);
     const newH = item.original.kind === 'block' ? Math.max(1, (item.original.height ?? 1) + dh) : undefined;
     const unit = { ...clone(item.original), x: newX, y: newY, width: newW };
     if (newH !== undefined) unit.height = newH;
@@ -232,11 +251,17 @@ function validateMultiResize(interaction){
   }
 }
 
-function validateCopyInteraction(interaction){
+export function validateCopyInteraction(interaction){
   // Originals stay in place; copies are added as new units at the offset position
   const next = clone(app.cur.st);
-  const dx = interaction.currentCell.x - interaction.anchorCell.x;
+  let dx = interaction.currentCell.x - interaction.anchorCell.x;
   const dy = interaction.currentCell.y - interaction.anchorCell.y;
+  // If ANY member is a block, snap the shared dx to the block lattice ONCE
+  // (before processing members) so every item moves by the same offset and
+  // order never changes the result.
+  if (interaction.multiOriginals.some(item => item.original.kind === 'block')) {
+    dx -= dx % BLOCK_MIN_W;
+  }
   for (const item of interaction.multiOriginals) {
     next.units.push({ ...clone(item.original), x: item.original.x + dx, y: item.original.y + dy });
   }
@@ -256,11 +281,17 @@ function validateCopyInteraction(interaction){
   }
 }
 
-function validateMultiInteraction(interaction){
+export function validateMultiInteraction(interaction){
   // Build a macro with ALL multi-selected items at their new positions
   const next = clone(app.cur.st);
-  const dx = interaction.currentCell.x - interaction.anchorCell.x;
+  let dx = interaction.currentCell.x - interaction.anchorCell.x;
   const dy = interaction.currentCell.y - interaction.anchorCell.y;
+  // If ANY member is a block, snap the shared dx to the block lattice ONCE
+  // (before processing members) so every item moves by the same offset and
+  // order never changes the result.
+  if (interaction.multiOriginals.some(item => item.kind === 'unit' && item.original.kind === 'block')) {
+    dx -= dx % BLOCK_MIN_W;
+  }
   for (const item of interaction.multiOriginals) {
     const newX = item.original.x + dx;
     const newY = item.original.y + dy;

@@ -3,60 +3,61 @@
   "name": "newMacro_3",
   "orientation": "horizontal",
   "difficulty": 1,
+  "variations": [],
+  "follows": [],
+  "followedBy": [],
+  "schemaVersion": "square-grid-v1",
   "units": [
     {
       "kind": "block",
-      "x": 6,
+      "height": 7,
       "y": 0,
-      "width": 5,
-      "height": 7
+      "x": 12,
+      "width": 10
     },
     {
       "kind": "platform",
-      "x": 5,
       "y": 1,
-      "width": 1
+      "x": 10,
+      "width": 2
     },
     {
       "kind": "platform",
-      "x": 5,
       "y": 3,
-      "width": 1
+      "x": 10,
+      "width": 2
     },
     {
       "kind": "platform",
-      "x": 11,
       "y": 4,
-      "width": 1
+      "x": 22,
+      "width": 2
     },
     {
       "kind": "platform",
-      "x": 11,
       "y": 2,
-      "width": 1
+      "x": 22,
+      "width": 2
     },
     {
       "kind": "block",
-      "x": 12,
+      "height": 6,
       "y": 2,
-      "width": 5,
-      "height": 6
+      "x": 24,
+      "width": 10
     },
     {
       "kind": "platform",
-      "x": 5,
       "y": 5,
-      "width": 1
+      "x": 10,
+      "width": 2
     },
     {
       "kind": "platform",
-      "x": 3,
       "y": 2,
-      "width": 1
+      "x": 6,
+      "width": 2
     }
   ],
-  "placements": [],
-  "variations": [],
-  "follows": [],
-  "followedBy": []
+  "placements": []
 }

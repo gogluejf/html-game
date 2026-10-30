@@ -25,6 +25,7 @@
 
 import { Enemy } from '../enemies/enemy.js';
 import { LAYER } from '../consts.js';
+import { UNIT_PX_X } from '../world/macros.js';
 import { projectilePool } from '../objects/projectile.js';
 import { damage } from '../combat/damage.js';
 
@@ -41,7 +42,7 @@ export const ELEPHANT_DEF = {
   w: 80, h: 100,
   aggroRadius: Infinity, // always active once the fight triggers
   stats: {
-    weight: 5, speed: 200, attack: 30, defense: 5, stamina: 500,
+    weight: 5, speed: 200 / UNIT_PX_X, attack: 30, defense: 5, stamina: 500, // X-units/s (exactly 200 px/s at the current grid)
     melee: true, projectile: true, fly: false,
   },
   coinDrop: { min: 6, max: 10, chance: 1.0, types: { bronze: 0.5, silver: 0.35, gold: 0.15 } }, // generous bounty on victory

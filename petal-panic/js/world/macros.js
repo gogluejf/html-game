@@ -36,36 +36,40 @@ import { VIEW_W, VIEW_H } from '../core/view.js';
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
+// ENTRY_CLEAR / EXIT_CLEAR are AREA-level clearance budgets, NOT object
+// footprints. They were historically a single shared number used for both
+// axes; on the square grid the horizontal and vertical semantics diverge
+// (horizontal clearances doubled with the authored ×2 migration, vertical
+// dimensions unchanged), so they are now separate constants with explicit
+// axis semantics. Do not reintroduce a shared Y value.
 
 /**
- * Minimum clear ground (width-units) at the START of an area. The hero spawns
- * here; no terrain units may occupy this zone.
+ * Minimum clear ground (width-units) at the START of a HORIZONTAL area. The
+ * hero spawns here; no terrain units may occupy this zone. Authored
+ * horizontal geometry was migrated ×2 (square-grid plan §"Authored macro
+ * geometry"), so this doubles from the legacy 3 to 6.
  */
-export const ENTRY_CLEAR = 3;
+export const H_ENTRY_CLEAR = 6;
 
 /**
- * Minimum clear ground (width-units) at the END of an area. The exit flag
- * sits here; no terrain units may occupy this zone.
+ * Minimum clear ground (width-units) at the END of a HORIZONTAL area. The
+ * exit flag sits here; no terrain units may occupy this zone. Doubled with
+ * the authored horizontal migration (legacy 3 → 6).
  */
-export const EXIT_CLEAR = 3;
+export const H_EXIT_CLEAR = 6;
 
-// ---------------------------------------------------------------------------
-// Orientation-specific clearance values
-// ---------------------------------------------------------------------------
-// Horizontal areas: entry/exit clear = empty space (no terrain).
-// Vertical areas: entry clear = 0 (first macro starts at ground), exit clear = reserved at top.
-
-/** Entry clear for horizontal areas (area-level, reserved at the area start). */
-export const H_ENTRY_CLEAR = ENTRY_CLEAR;   // 3
-
-/** Exit clear for horizontal areas (area-level, reserved at the area end). */
-export const H_EXIT_CLEAR = EXIT_CLEAR;     // 3
-
-/** Entry clear for vertical areas (0 — first macro starts at ground). */
+/** Entry clear for VERTICAL areas (0 — first macro starts at ground).
+ * Vertical coordinates/dimensions are UNCHANGED by the migration. */
 export const V_ENTRY_CLEAR = 0;
 
-/** Exit clear for vertical areas. */
-export const V_EXIT_CLEAR = EXIT_CLEAR;     // 3
+/** Exit clear for VERTICAL areas (rows reserved at the top of the climb).
+ * Vertical dimensions unchanged — stays at the legacy 3 rows. */
+export const V_EXIT_CLEAR = 3;
+
+/** @deprecated alias kept for old import sites — see H_ENTRY_CLEAR / V_ENTRY_CLEAR. */
+export const ENTRY_CLEAR = H_ENTRY_CLEAR;
+/** @deprecated alias kept for old import sites — see H_EXIT_CLEAR / V_EXIT_CLEAR. */
+export const EXIT_CLEAR = H_EXIT_CLEAR;
 
 // NOTE: macros carry NO entry/exit clear of their own anymore — spacing
 // between set-pieces is baked into each macro's authored unit coordinates.
@@ -100,12 +104,10 @@ export const V_EXIT_CLEAR = EXIT_CLEAR;     // 3
  */
 
 /**
- * Pixel size of one layout unit. Units are ANISOTROPIC (R6): a cell is wider
- * than it is tall, so blocks read less chunky and horizontal areas get more
- * room per unit while vertical physics (jump height, tier steps, clearance)
- * stays exactly as tuned at 48px. The unit → pixel scale is owned by the
- * pixel-scaling task (3.3 / 7.2); these are the working scales the composer
- * uses to translate physics-derived reach into unit space.
+ * Pixel size of one layout unit. The grid is SQUARE (R6 square-grid cutover):
+ * a cell is 48×48 px, so X and Y units are equal. The unit → pixel scale is
+ * owned by consts.js (UNIT_PX_X / UNIT_PX_Y); these are the working scales the
+ * composer uses to translate physics-derived reach into unit space.
  */
 import { UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
 // Re-exported from consts.js (single owner — see the cycle note there).
@@ -122,23 +124,28 @@ export const UNIT_PX = UNIT_PX_Y;
 // derived from these constants by level.js; the game and macro editor consume
 // the same values, so neither independently rounds a pixel size.
 
-/** Horizontal area length (composition axis). 56 × 72 = 4032 px. */
-export const HORIZONTAL_ZONE_LENGTH_UNITS = 56;
-/** Vertical area climb height. 56 × 48 = 2688 px (space ABOVE the floor). */
+/** Horizontal area length (composition axis). Authored horizontal geometry
+ * was migrated ×2: 56 → 112 cells. 112 × 48 = 5376 px. */
+export const HORIZONTAL_ZONE_LENGTH_UNITS = 112;
+/** Vertical area climb height. Vertical dimensions UNCHANGED by the migration:
+ * 56 × 48 = 2688 px (space ABOVE the floor). */
 export const VERTICAL_ZONE_HEIGHT_UNITS = 56;
-/** One-screen vertical-area width: floor(960 / 72) = 13 whole columns. */
+/** One-screen vertical-area width: floor(960 / 48) = 20 whole columns
+ * (derived from the pixel viewport — recomputed, not doubled). */
 export const VERTICAL_ZONE_WIDTH_UNITS = Math.floor(VIEW_W / UNIT_PX_X);
-/** Boss-zone approach length: 22 whole columns (22 × 72 = 1584px). */
-export const BOSS_ZONE_LENGTH_UNITS = 22;
-/** Boss-card trigger position inside the approach: column 15 (1080px). */
-export const BOSS_TRIGGER_UNITS = 15;
-/** Entry/checkpoint inset from a zone edge: 2 columns (144px). */
+/** Boss-zone approach length: authored horizontal ×2 (22 → 44).
+ * 44 × 48 = 2112px. */
+export const BOSS_ZONE_LENGTH_UNITS = 44;
+/** Boss-card trigger position inside the approach: authored horizontal ×2
+ * (column 15 → 30 = 1440px). */
+export const BOSS_TRIGGER_UNITS = 30;
+/** Entry/checkpoint inset from a zone edge: 2 columns (96px). */
 export const ZONE_ENTRY_PAD_UNITS = 2;
-/** Exit/checkpoint inset from a zone edge: 2 columns (144px). */
+/** Exit/checkpoint inset from a zone edge: 2 columns (96px). */
 export const ZONE_EXIT_PAD_UNITS = 2;
 /** Vertical exit platform top offset: 1 vertical row (48px). */
 export const VERTICAL_TOP_PLATFORM_OFFSET_UNITS = 1;
-/** Vertical exit platform width: 2 horizontal columns (144px). */
+/** Vertical exit platform width: 2 horizontal columns (96px). */
 export const VERTICAL_TOP_PLATFORM_WIDTH_UNITS = 2;
 /** One-screen horizontal play-space height above the ground line. */
 export const HORIZONTAL_PLAY_HEIGHT_UNITS = 10;
@@ -326,9 +333,9 @@ export const MAX_CLEARABLE_GAP = Math.max(1, Math.floor(minHeroSuperAssistReachP
 /**
  * Fixed width of a vertical zone in whole grid columns.
  *
- * The logical view is 960px wide and one x-unit is 72px, so exactly 13 full
- * columns fit (936px). The remaining 24px is non-authorable screen margin.
- * This is shared by composition, validation, level bounds, and the editor.
+ * The logical view is 960px wide and one x-unit is 48px (square grid), so
+ * exactly 20 full columns fit (960px) with no remainder margin. This is shared
+ * by composition, validation, level bounds, and the editor.
  */
 export const ZONE_WIDTH_UNITS = VERTICAL_ZONE_WIDTH_UNITS;
 
@@ -1289,7 +1296,7 @@ function assignBarrelTypes(barrelSlots, counts, rng) {
  *   - HORIZONTAL areas compose along X. The budget is a WIDTH budget; macros
  *     are placed left to right, each one extending the route's x position.
  *   - VERTICAL areas compose along Y. The budget is a HEIGHT budget (the
- *     zone is 56 rows = 2688px tall, 13 columns wide). Macros are stacked
+ *     zone is 56 rows = 2688px tall, 20 columns wide). Macros are stacked
  *     upward: each macro's entry sits at the current climb elevation and its
  *     exit raises the hero's position. The zone's width is fixed (one screen
  *     wide), so horizontal positioning is constrained — the layout records
@@ -1352,8 +1359,9 @@ export function composeArea(rng, orientationOrRoom, stage, budget, macroWeights 
     throw new Error(`composeArea: stage must be 1 to 4, got ${stage}`);
   }
   // Use orientation-specific clearance values for budget validation.
-  const minClear = orientation === 'vertical' 
-    ? V_ENTRY_CLEAR + V_EXIT_CLEAR 
+  const isVertical = orientation === 'vertical';
+  const minClear = isVertical
+    ? V_ENTRY_CLEAR + V_EXIT_CLEAR
     : H_ENTRY_CLEAR + H_EXIT_CLEAR;
   if (budget < minClear) {
     throw new Error(`composeArea: budget ${budget} is less than minimum ${minClear}`);
@@ -1445,7 +1453,7 @@ function runCompose(rng, orientation, stage, budget, macroWeights, room = null) 
 
   // In a vertical area, the hero starts at the bottom of the zone (y=0) and
   // climbs up. Since V_ENTRY_CLEAR = 0, the first macro is placed at y=0.
-  // For horizontal, H_ENTRY_CLEAR = 3, so the first macro starts at x=3.
+  // For horizontal, H_ENTRY_CLEAR = 6, so the first macro starts at x=6.
   let axisPos = entryClear; // current position on the composition axis
 
   // Step 2: Select compatible macros (generation.md §4 step 2). The
@@ -1684,7 +1692,7 @@ function runCompose(rng, orientation, stage, budget, macroWeights, room = null) 
 
     // R6 FIT (vertical): clamp the macro's whole x-span into the fixed zone
     // width [0, ZONE_WIDTH_UNITS] — always, because authored cols can already
-    // exceed the canonical 13-column zone width. Done before placement so every
+    // exceed the canonical one-screen zone width. Done before placement so every
     // unit lands inside the screen.
     if (isVertical) {
       const vMinX = Math.min(...macro.units.map((u) => u.x));

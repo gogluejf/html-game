@@ -67,15 +67,21 @@ ok('hero cannot pass through a barrel (blocked like a platform)', () => {
   const heroY = barrel.y - hero.h;
   placeHero(barrel.x - hero.w - 40, heroY);
   press('KeyD'); // hold right
-  const startX = hero.x;
+  const startX = hero.worldBox().x;
+  const initialGap = barrel.worldBox().x - (startX + hero.worldBox().w);
+  assert.ok(initialGap > 0, 'hero starts separated from the barrel after settling');
   for (let i = 0; i < 90; i++) U.update(DT);
   release('KeyD');
-  const rightEdge = hero.x + hero.w;
-  assert.ok(rightEdge <= barrel.x + 1,
-    `hero right=${rightEdge.toFixed(1)} must not pass barrel left=${barrel.x}`);
-  // Walked most of the 40px gap, then pinned at the barrel face.
-  assert.ok(hero.x > startX + 30, `hero should have walked toward the barrel (moved ${hero.x.toFixed(1) - startX.toFixed(1)}px)`);
-  assert.ok(hero.x < barrel.x - hero.w + 2, 'and stopped at its face');
+  const heroBox = hero.worldBox();
+  const barrelBox = barrel.worldBox();
+  const rightEdge = heroBox.x + heroBox.w;
+  assert.ok(rightEdge <= barrelBox.x + 1,
+    `hero right=${rightEdge.toFixed(1)} must not pass barrel left=${barrelBox.x}`);
+  // placeHero runs real simulation frames to settle. Measure the gap AFTER
+  // those frames instead of assuming its requested 40px gap is unchanged.
+  assert.ok(Math.abs((heroBox.x - startX) - initialGap) <= 1,
+    `hero must close the ${initialGap.toFixed(1)}px settled gap and stop at the barrel face; moved ${(heroBox.x - startX).toFixed(1)}px`);
+  assert.ok(Math.abs(rightEdge - barrelBox.x) <= 1, 'hero is pinned at the barrel collision face');
 });
 
 ok('hero can stand on top of a barrel and is grounded', () => {

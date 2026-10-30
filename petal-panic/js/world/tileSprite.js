@@ -6,7 +6,7 @@
 // No raw drawImage stretching anywhere — the authored collision box drives
 // the scale exactly like barrels, checkpoints and the floor (sprites.md §4).
 //
-// Tiling layout (decompose, 75/25 frame picks, per-solid seeded RNG) stays in
+// Tiling layout (decomposeVariant, 75/25 frame picks, per-solid seeded RNG) stays in
 // terrainTiles.js; this module only turns those decisions into drawable
 // entities. Pool is rebuilt when the solid rect changes (zone transitions).
 

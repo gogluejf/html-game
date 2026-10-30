@@ -206,6 +206,19 @@ test('vertical-area slot is explicit config, not an undocumented default', () =>
   assert.equal(vz.areaIdx, def.verticalArea, 'the configured area is the vertical one');
 });
 
+test('authored zone geometry carries the migrated exact values', () => {
+  // Authored horizontal dimensions doubled (square-grid migration); vertical
+  // dimensions unchanged; screen width re-derived (20 columns at 960px/48px).
+  assert.equal(HORIZONTAL_ZONE_LENGTH_UNITS, 112, 'horizontal zone = 112 cells (56 x2)');
+  assert.equal(BOSS_ZONE_LENGTH_UNITS, 44, 'boss approach = 44 cells (22 x2)');
+  assert.equal(BOSS_TRIGGER_UNITS, 30, 'boss trigger = column 30 (15 x2)');
+  assert.equal(VERTICAL_ZONE_HEIGHT_UNITS, 56, 'vertical climb height unchanged');
+  assert.equal(VERTICAL_ZONE_WIDTH_UNITS, 20, 'derived screen width floor(960/48)=20');
+  assert.equal(ZONE_WIDTH_HORIZONTAL, 112 * 48, '112 x 48 = 5376px');
+  assert.equal(ZONE_WIDTH_BOSS, 44 * 48, '44 x 48 = 2112px');
+  assert.equal(BOSS_TRIGGER_X, 30 * 48, 'trigger at 1440px');
+});
+
 test('authored zone geometry is derived from canonical unit constants', () => {
   assert.equal(ZONE_WIDTH_HORIZONTAL, HORIZONTAL_ZONE_LENGTH_UNITS * UNIT_PX_X);
   assert.equal(ZONE_WIDTH_VERTICAL, VERTICAL_ZONE_WIDTH_UNITS * UNIT_PX_X);

@@ -46,10 +46,11 @@ const redoStack = [];
 // display toggles
 const show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true, markerView:false };
 
-// Game unit convention (petal-panic): ANISOTROPIC cell — 72px wide × 48px tall.
-// Source of truth: petal-panic/js/world/macros.js (UNIT_PX_X / UNIT_PX_Y).
+// Game unit convention (petal-panic): SQUARE cell — 48px wide × 48px tall.
+// Source of truth: petal-panic/js/consts.js (UNIT_PX_X / UNIT_PX_Y), square-grid-v1.
 // The background grid draws at these sizes so sprites align to the game grid.
-export const UNIT_PX_X = 72;
+// This is a DISPLAY-only constant; source-pixel authoring geometry is untouched.
+export const UNIT_PX_X = 48;
 export const UNIT_PX_Y = 48;
 
 let bgColor = '#000000';   // canvas background fill

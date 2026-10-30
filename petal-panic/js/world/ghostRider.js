@@ -7,9 +7,8 @@
 
 import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
 import { HEROES } from '../hero/heroDefs.js';
-import { GRAVITY, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
-import { doubleJumpReachForStats, superAssistReachForStats } from './macros.js';
-import { UNIT_PX_X, UNIT_PX_Y } from './macros.js';
+import { GRAVITY, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL, UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
+import { doubleJumpReachForStats, superAssistReachForStats, PLATFORM_DRAW_H } from './macros.js';
 
 const DT = 1 / 60;
 const MAX_ATTEMPTS = 8;
@@ -19,9 +18,12 @@ const MAX_STEPS_PER_LAP = 60 * 90; // 90 s of sim per lap — runaway guard
  * Convert a macro draft (unit space, y-up rows) into ride solids + bounds.
  */
 export function buildRideWorld(macro, c = {}) {
-  const UX = c.unitPxX ?? 72;
-  const UY = c.unitPxY ?? 48;
-  const PDH = c.platformDrawH ?? 6;
+  // Authoritative grid (square-grid-v1): one shared 48×48 cell for every ride
+  // consumer (browser editor + headless node). No caller overrides — the game
+  // and the editor must never diverge on units.
+  const UX = UNIT_PX_X;
+  const UY = UNIT_PX_Y;
+  const PDH = c.platformDrawH ?? PLATFORM_DRAW_H;
   const vertical = macro.orientation === 'vertical';
   const units = macro.units || [];
 

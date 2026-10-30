@@ -2,12 +2,13 @@
 // Lean version of the sprite-editor state: camera, current macro, draft map,
 // display toggles. No rotation / filmstrip / playback — those are sprite-only.
 
-// Game unit convention (petal-panic): ANISOTROPIC cell.
-// Source of truth: petal-panic/js/world/macros.js (UNIT_PX_X / UNIT_PX_Y).
-// Fallback values match the game; loader.js overwrites from the real module.
-export const UNIT_PX_X = 72;   // horizontal cell width (px)
-export const UNIT_PX_Y = 48;   // vertical cell height (px)
-export const PLATFORM_DRAW_H = 6; // thin platform draw height (px)
+// Game unit convention (petal-panic): SQUARE 48×48 cell.
+// Source of truth: petal-panic/js/consts.js (UNIT_PX_X / UNIT_PX_Y). The editor
+// imports them directly so its grid can never drift from the game — there is no
+// duplicated fallback constant to keep in lockstep (square-grid cutover).
+import { UNIT_PX_X, UNIT_PX_Y } from '../../js/consts.js';
+export { UNIT_PX_X, UNIT_PX_Y };
+export const PLATFORM_DRAW_H = Math.max(2, Math.round(UNIT_PX_Y / 8)); // thin platform draw height (px)
 
 // Slot type colors (UI only — not persisted gameplay semantics).
 export const SLOT_COLORS = { powerup:'#3498db', enemy:'#ff5a5a', barrel:'#ff9d2e' };

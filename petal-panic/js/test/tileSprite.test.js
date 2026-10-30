@@ -12,6 +12,7 @@ import { loadLevelAsset } from '../world/levelAssets.js';
 import { tileSolid } from '../world/terrainTiles.js';
 import { getTileSprites, drawTileSprites, _clearAllTilePools } from '../world/tileSprite.js';
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
+import { BLOCK_FOOTPRINT } from '../world/squareGrid.js';
 import { parseSheet, uniformScale } from '../core/spriteData.js';
 
 /** Minimal canvas ctx recorder. */
@@ -37,7 +38,7 @@ test('block_single tile scales from the sheet collision box (§4)', async () => 
 
   await loadLevelAsset(1, 'block');
   _clearAllTilePools();
-  const s = { x: 0, y: 100, w: UNIT_PX_X, h: UNIT_PX_Y, oneWay: false };
+  const s = { x: 0, y: 100, w: BLOCK_FOOTPRINT.widthCells * UNIT_PX_X, h: UNIT_PX_Y, oneWay: false };
   const e = getTileSprites(s, 1, tileSolid(s, 1, 42))[0];
   assert.equal(e._spriteScale, expected, 'scale comes from the authored collision box');
 });
@@ -73,10 +74,10 @@ test('drawTileSprites falls back to flat rects when frames are unloaded (node)',
 test('pool is reused for identical solids, rebuilt when the rect changes', async () => {
   await loadLevelAsset(1, 'block');
   _clearAllTilePools();
-  const s = { x: 0, y: 100, w: UNIT_PX_X, h: UNIT_PX_Y, oneWay: false };
+  const s = { x: 0, y: 100, w: BLOCK_FOOTPRINT.widthCells * UNIT_PX_X, h: UNIT_PX_Y, oneWay: false };
   const t1 = tileSolid(s, 1, 42);
   const p1 = getTileSprites(s, 1, t1);
   assert.equal(getTileSprites(s, 1, t1), p1, 'same rect + tiles → same pool');
-  const s2 = { x: 0, y: 52, w: UNIT_PX_X, h: UNIT_PX_Y, oneWay: false }; // moved 1u
+  const s2 = { x: 0, y: 52, w: BLOCK_FOOTPRINT.widthCells * UNIT_PX_X, h: UNIT_PX_Y, oneWay: false }; // moved 1u
   assert.notEqual(getTileSprites(s2, 1, tileSolid(s2, 1, 42)), p1, 'new rect → new pool');
 });

@@ -30,12 +30,15 @@ export const COIN_TTL = 8;
 
 // --- Unit grid (single pixel-conversion point, pixel-hardcode-audit.md) -----
 // Logical layout unit → px. X-unit = horizontal cell, Y-unit = vertical cell.
-// Lives in consts.js (NOT macros.js) because heroDefs.js imports these for
-// unit→px conversion at construction — and macros.js imports heroDefs.js, so
-// putting them in macros.js creates a heroDefs→macros→terrain→heroDefs cycle
-// that TDZ-crashes HEROES when terrain.js enters the graph first.
-export const UNIT_PX_X = 72; // horizontal cell width (px)
-export const UNIT_PX_Y = 48; // vertical cell height (px)
+// SQUARE GRID CUTOVER: both axes are 48px — one square 48×48 cell everywhere.
+// This is the single source of truth for the base grid; every consumer
+// (runtime + macro editor) derives its scale from here.
+// NOTE: movement/jump stats in heroDefs.js are authored as explicit PIXEL
+// speeds (e.g. 250 px/s) divided by this constant so they stay unit-native.
+// Changing the cell size rescales those derived unit values automatically —
+// the underlying PIXEL measurements do not change (plan §"Physics").
+export const UNIT_PX_X = 48; // horizontal cell width (px) — square grid
+export const UNIT_PX_Y = 48; // vertical cell height (px) — square grid
 
 // --- Collision layers (bitmask) --------------------------------------------
 // Each entity sets `layer` to one or more of these bits; collision rules in

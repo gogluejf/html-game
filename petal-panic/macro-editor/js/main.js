@@ -19,6 +19,7 @@ import { markChanged } from './save.js';
 import { previewLayout, reasonFromError } from './validation.js';
 import { macroSchemaErrors } from '../../js/world/macroSchema.js';
 import { validateLayout } from '../../js/world/macros.js';
+import { snapCellX } from '../../js/world/squareGrid.js';
 import { stampClearance } from './clearance.js';
 
 // ---------- toolbar toggles ----------
@@ -163,6 +164,12 @@ function pasteAtCursor(){
   }
   const dx = anchor.x - minOrigX;
   const dy = anchor.y - minOrigY;
+  // Shared group offset: if ANY pasted unit is a block, snap the WHOLE group's
+  // dx to the block lattice ONCE (squareGrid contract — same rule as
+  // pointer.js multi-move/copy) so every item moves by the same offset and
+  // member order never changes the result. Per-unit re-snapping would shift
+  // individual blocks relative to their siblings and break group shape.
+  const dxSnap = clipboard.units.some(u => u.kind === 'block') ? snapCellX('block', dx) : dx;
 
   // Pasting over the CURRENT selection REPLACES it: selected units/placements
   // whose cells fall inside the pasted group's footprint are removed (the
@@ -204,7 +211,9 @@ function pasteAtCursor(){
   let maxUnitIdx = next.units.length;
   let maxPlatIdx = next.placements.length;
   for (const u of clipboard.units) {
-    next.units.push({ ...clone(u), x: u.x + dx, y: u.y + dy });
+    // All units share the pre-snapped group offset (dxSnap); blocks land on
+    // the lattice because their original x is even and dxSnap is even.
+    next.units.push({ ...clone(u), x: u.x + dxSnap, y: u.y + dy });
     maxUnitIdx++;
   }
   for (const p of clipboard.placements) {
@@ -230,7 +239,7 @@ function pasteAtCursor(){
     valid,
     severity: valid ? 'valid' : 'error',
     reason,
-    pasteUnits: clipboard.units.map(u => ({...u, x: u.x+dx, y: u.y+dy})),
+    pasteUnits: clipboard.units.map(u => ({...u, x: u.x+dxSnap, y: u.y+dy})),
     pastePlacements: clipboard.placements.map(p => ({...p, x: p.x+dx, y: p.y+dy})),
   };
 

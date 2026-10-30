@@ -22,11 +22,11 @@ The Sprite Animation Engine provides the visual and spatial data those systems c
 
 ## 1. Logical Units and Placement
 
-- Default logical grid unit: **72 × 48 pixels** (anisotropic — X units are wider than Y; R6 convention).
+- Default logical grid unit: **48 × 48 pixels** (square cell — one 48px cell on both axes; square-grid-v1, source of truth `js/consts.js` `UNIT_PX_X = UNIT_PX_Y = 48`).
 - Positions and dimensions may use fractional units (e.g., 0.5, 1.5, 3, 4.5).
-- Units standardize macro-editor block, platform, and slot placement; snapping increments are configurable.
+- Units standardize macro-editor block, platform, and slot placement; snapping increments are configurable (blocks snap to the 2-cell lattice horizontally; platforms to 1 cell).
 - A platform's source art may occupy 1.5, 3, or 4.5 logical units without changing the grid definition.
-- Heights expressed in units are measured in **Y-units (48px)**. The grid's X/Y anisotropy affects world placement only — sprite scaling itself is always uniform.
+- Heights expressed in units are measured in **cells (48px)**. The grid is isotropic, so X/Y placement uses the same cell size — sprite scaling itself is always uniform regardless.
 
 ---
 
@@ -39,7 +39,7 @@ A sprite animation contains:
 - playback mode
 - playback direction
 - timing mode (`fps` or `relative`)
-- per-animation target collision-box height (logical Y-units)
+- per-animation target collision-box height (logical cells)
 - animation-level collision box
 - animation-level pivot point
 - per-frame sprite data
@@ -78,18 +78,18 @@ The chain is: editor geometry → uniform scale (§5) → translate into anchor 
 
 ## 4. Per-Animation Target Height and Uniform Scaling
 
-Each animation has a configurable **target collision-box height in logical Y-units** in the game configuration. This may vary across animations (idle, crouch, roll, jump, attack) to reflect different physical poses.
+Each animation has a configurable **target collision-box height in logical cells** in the game configuration. This may vary across animations (idle, crouch, roll, jump, attack) to reflect different physical poses.
 
 For an animation:
 
 ```text
-target_height_px = target_height_units * unit_height_px   // 48px per Y unit
+target_height_px = target_height_units * unit_height_px   // 48px per cell
 scale = target_height_px / source_collision_box_height_px
 scaled_width_px = source_collision_box_width_px * scale
 scaled_height_px = source_collision_box_height_px * scale
 ```
 
-Apply the **same scalar** to sprite frame geometry, collision-box width/height, hitbox coordinates and dimensions, marker offsets, pivots, radii, and other spatial values relative to the source reference. This preserves the source aspect ratio and geometry. Do not independently force width to a unit count.
+Apply the **same uniform collision-height scalar** to sprite frame geometry, collision-box width/height, hitbox coordinates and dimensions, marker offsets, pivots, radii, and other spatial values relative to the source reference. This preserves the source aspect ratio and geometry. Do not independently force width to a unit count.
 
 **Important:** Translate coordinates into the entity's physical-anchor space after uniform scaling. The collision box can change with animation, but the world-space anchor remains stable. All frames of an animation use its configured scale; never rescale frame-by-frame based on artwork bounds.
 

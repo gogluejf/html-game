@@ -22,7 +22,7 @@ export const VINE_HOUND_DEF = {
   w: 40, h: 44,
   aggroRadius: 320,
   stats: {
-    weight: 1, speed: 180 / 72,  // X-units/s (exactly 180 px/s at current unit)
+    weight: 1, speed: 180 / UNIT_PX_X,  // X-units/s (exactly 180 px/s at the current grid)
     attack: 18, defense: 1, stamina: 35,
     mjump: 0,
     melee: true, projectile: false, fly: false,
@@ -33,7 +33,7 @@ export const VINE_HOUND_DEF = {
 const LUNGE_RANGE = 50;          // px — distance at which the hound lunges
 const LUNGE_DURATION = 0.35;     // seconds — total lunge anim length
 const LUNGE_ACTIVE_FRAC = [0.1, 0.7]; // fraction of lunge where the dash is live
-const LUNGE_SPEED = 420 / 72;    // X-units/s — forward dash speed while lunging (exactly 420 px/s at current unit)
+const LUNGE_SPEED = 420 / UNIT_PX_X;    // X-units/s — forward dash speed while lunging (exactly 420 px/s at the current grid)
 const RECOVER_TIME = 0.3;        // seconds of wind-down after a lunge
 const LUNGE_COOLDOWN = 1.2;      // seconds between lunges
 const AGGRO_RELEASE_MULT = 1.5;  // deaggro when hero exceeds aggroRadius * this

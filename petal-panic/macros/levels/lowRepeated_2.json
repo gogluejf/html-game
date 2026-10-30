@@ -3,113 +3,114 @@
   "name": "lowRepeated_2",
   "orientation": "horizontal",
   "difficulty": 1,
-  "units": [
-    {
-      "kind": "platform",
-      "x": 9,
-      "y": 4,
-      "width": 1
-    },
-    {
-      "kind": "platform",
-      "x": 29,
-      "y": 1,
-      "width": 1
-    },
-    {
-      "kind": "platform",
-      "x": 31,
-      "y": 2,
-      "width": 1
-    },
-    {
-      "kind": "platform",
-      "x": 29,
-      "y": 5,
-      "width": 1
-    },
-    {
-      "kind": "platform",
-      "x": 27,
-      "y": 4,
-      "width": 1
-    },
-    {
-      "kind": "platform",
-      "x": 23,
-      "y": 3,
-      "width": 4
-    },
-    {
-      "kind": "platform",
-      "x": 13,
-      "y": 3,
-      "width": 1
-    },
-    {
-      "kind": "platform",
-      "x": 13,
-      "y": 5,
-      "width": 1
-    },
-    {
-      "kind": "block",
-      "x": 14,
-      "y": 0,
-      "width": 3,
-      "height": 8
-    },
-    {
-      "kind": "platform",
-      "x": 11,
-      "y": 1,
-      "width": 3
-    },
-    {
-      "kind": "block",
-      "height": 1,
-      "y": 0,
-      "x": 5,
-      "width": 5
-    }
-  ],
-  "placements": [
-    {
-      "slot": "powerup-1",
-      "x": 9,
-      "type": "powerup",
-      "y": 1
-    },
-    {
-      "slot": "barrel-1",
-      "x": 8,
-      "type": "barrel",
-      "y": 1
-    },
-    {
-      "slot": "enemy-1",
-      "x": 7,
-      "type": "enemy",
-      "y": 1
-    },
-    {
-      "slot": "enemy-2",
-      "x": 6,
-      "type": "enemy",
-      "y": 1
-    },
-    {
-      "slot": "enemy-3",
-      "x": 5,
-      "type": "enemy",
-      "y": 1
-    }
-  ],
   "variations": [],
   "follows": [],
   "followedBy": [],
   "clearance": {
     "status": "cleared",
     "contentSignature": "e34f42eb"
-  }
+  },
+  "schemaVersion": "square-grid-v1",
+  "units": [
+    {
+      "kind": "platform",
+      "y": 4,
+      "x": 18,
+      "width": 2
+    },
+    {
+      "kind": "platform",
+      "y": 1,
+      "x": 58,
+      "width": 2
+    },
+    {
+      "kind": "platform",
+      "y": 2,
+      "x": 62,
+      "width": 2
+    },
+    {
+      "kind": "platform",
+      "y": 5,
+      "x": 58,
+      "width": 2
+    },
+    {
+      "kind": "platform",
+      "y": 4,
+      "x": 54,
+      "width": 2
+    },
+    {
+      "kind": "platform",
+      "y": 3,
+      "x": 46,
+      "width": 8
+    },
+    {
+      "kind": "platform",
+      "y": 3,
+      "x": 26,
+      "width": 2
+    },
+    {
+      "kind": "platform",
+      "y": 5,
+      "x": 26,
+      "width": 2
+    },
+    {
+      "kind": "block",
+      "height": 8,
+      "y": 0,
+      "x": 28,
+      "width": 6
+    },
+    {
+      "kind": "platform",
+      "y": 1,
+      "x": 22,
+      "width": 6
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "y": 0,
+      "x": 10,
+      "width": 10
+    }
+  ],
+  "placements": [
+    {
+      "slot": "powerup-1",
+      "x": 18,
+      "type": "powerup",
+      "y": 1
+    },
+    {
+      "slot": "barrel-1",
+      "x": 16,
+      "type": "barrel",
+      "y": 1
+    },
+    {
+      "slot": "enemy-1",
+      "x": 14,
+      "type": "enemy",
+      "y": 1
+    },
+    {
+      "slot": "enemy-2",
+      "x": 12,
+      "type": "enemy",
+      "y": 1
+    },
+    {
+      "slot": "enemy-3",
+      "x": 10,
+      "type": "enemy",
+      "y": 1
+    }
+  ]
 }

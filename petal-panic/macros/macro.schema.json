@@ -14,9 +14,14 @@
     "placements",
     "variations",
     "follows",
-    "followedBy"
+    "followedBy",
+    "schemaVersion"
   ],
   "properties": {
+    "schemaVersion": {
+      "description": "Macro data format version. Current = \"square-grid-v1\" (48×48 square grid; horizontal fields in cells). Legacy files without this marker are rejected by the runtime and must be migrated offline via tools/migrate_square_grid.mjs.",
+      "const": "square-grid-v1"
+    },
     "id": {
       "type": "string",
       "pattern": "^[A-Za-z0-9_]+$",
@@ -95,6 +100,12 @@
       "type": "integer",
       "minimum": 1
     },
+    "blockWidthCells": {
+      "description": "Block width in cells: a positive multiple of the 2-cell block column (agreed rules). Block x is also on the 2-cell lattice; both are enforced by the runtime validator.",
+      "type": "integer",
+      "minimum": 2,
+      "multipleOf": 2
+    },
     "block": {
       "type": "object",
       "additionalProperties": false,
@@ -103,7 +114,7 @@
         "kind": { "const": "block" },
         "x": { "$ref": "#/$defs/gridCoordinate" },
         "y": { "$ref": "#/$defs/gridCoordinate" },
-        "width": { "$ref": "#/$defs/positiveUnits" },
+        "width": { "$ref": "#/$defs/blockWidthCells" },
         "height": { "$ref": "#/$defs/positiveUnits" }
       }
     },

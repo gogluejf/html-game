@@ -24,7 +24,7 @@ export const JACKO_DEF = {
   w: 40, h: 40,
   aggroRadius: 400,             // rolls once the hero gets this close
   stats: {
-    weight: 1, speed: 150 / 72,  // X-units/s (exactly 150 px/s at current unit)
+    weight: 1, speed: 150 / UNIT_PX_X,  // X-units/s (exactly 150 px/s at the current grid)
     attack: 22, defense: 0, stamina: 30,
     mjump: 0,
     melee: false, projectile: false, fly: false,
@@ -41,7 +41,7 @@ export const JACKO_DEF = {
   },
 };
 
-const ROLL_SPEED = 150 / 72;     // X-units/s while rolling toward the hero (exactly 150 px/s at current unit)
+const ROLL_SPEED = 150 / UNIT_PX_X;     // X-units/s while rolling toward the hero (exactly 150 px/s at the current grid)
 const DETONATE_RANGE = 80;      // px — proximity that triggers detonation
 const FUSE_TIME = 3;            // seconds — auto-detonate after this long
 const LAUNCH_TIME = 0.4;        // seconds of "launch" telegraph before exploding

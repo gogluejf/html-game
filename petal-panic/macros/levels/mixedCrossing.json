@@ -3,95 +3,96 @@
   "name": "Mixed Crossing",
   "orientation": "horizontal",
   "difficulty": 3,
+  "variations": [],
+  "follows": [],
+  "followedBy": [],
+  "schemaVersion": "square-grid-v1",
   "units": [
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 2,
-      "width": 1
+      "x": 4,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 3,
-      "width": 1
+      "x": 6,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 4,
-      "width": 1
+      "x": 8,
+      "width": 2
     },
     {
       "kind": "platform",
-      "width": 3,
       "y": 2,
-      "x": 7
+      "x": 14,
+      "width": 6
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 10,
-      "width": 1
+      "x": 20,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 11,
-      "width": 1
+      "x": 22,
+      "width": 2
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 12,
-      "width": 1
+      "x": 24,
+      "width": 2
     }
   ],
   "placements": [
     {
       "slot": "on-h1",
-      "x": 2,
+      "x": 4,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "before-gap",
-      "x": 4,
-      "type": "enemy",
-      "y": 3
-    },
-    {
-      "slot": "on-platform",
-      "x": 7,
-      "type": "enemy",
-      "y": 3
-    },
-    {
-      "slot": "on-platform2",
       "x": 8,
       "type": "enemy",
       "y": 3
     },
     {
+      "slot": "on-platform",
+      "x": 14,
+      "type": "enemy",
+      "y": 3
+    },
+    {
+      "slot": "on-platform2",
+      "x": 16,
+      "type": "enemy",
+      "y": 3
+    },
+    {
       "slot": "after-platform",
-      "x": 11,
+      "x": 22,
       "type": "barrel",
       "y": 2
     },
     {
       "slot": "on-h3",
-      "x": 10,
+      "x": 20,
       "type": "barrel",
       "y": 3
     }
-  ],
-  "variations": [],
-  "follows": [],
-  "followedBy": []
+  ]
 }

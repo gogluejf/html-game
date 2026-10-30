@@ -1,29 +1,61 @@
 # Terrain Sprite Tiling Rules
 
-How block and platform art is tiled from the single/double/triple width variants
-and their frame sets. Source of truth for the render path in `js/systems/render.js`
-and any future macro-editor preview.
+How block and platform art is tiled from their frame sets on the **square 48×48px
+logical grid** (source of truth: `js/consts.js`, `UNIT_PX_X = UNIT_PX_Y = 48`).
+Source of truth for the render path in `js/systems/render.js` and any future
+macro-editor preview. Footprint contract: `js/world/squareGrid.js`.
 
 ## Art inventory (per level)
 
-| Kind | Widths | Frames |
-|------|--------|--------|
-| Block | single (1u), double (2u), triple (3u) | f1, f2 |
-| Platform | single (1u), double (2u), triple (3u) | f1, f2, f3, f4 |
+| Kind | Variants | Frames |
+|------|----------|--------|
+| Block | height single (1 cell), double (2 cells), triple (3 cells); width fixed at 2 cells per column | f1, f2 |
+| Platform | width single (1 cell), double (2 cells), triple (3 cells); height fixed at 1 cell | f1, f2, f3, f4 |
 
-All dimensions are in **logical units** (72px wide × 48px tall per unit). A
-platform is always 1 row thick; a block may be multiple rows tall.
+All dimensions are in **cells** (one cell = 48px × 48px). A platform is always
+1 cell thick; a block column is always 2 cells wide and may be multiple cells
+tall. Wide walls repeat 2-cell columns side by side; tall columns decompose
+into height variants.
 
-## Width tiling rule
+## Height tiling rule (blocks only)
 
-Given a terrain piece of width **W** units (any positive integer):
+Given a block column of height **H** cells (any positive integer ≥ 1):
+
+1. **Longest first:** place the tallest variant that fits the remaining height
+   (triple → double → single).
+2. **Trim:** repeat until the remaining height is 0.
+
+This produces a deterministic, non-uniform pattern that avoids obvious
+repeat-tiling.
+
+### Examples
+
+| H | Stacking (bottom → top) |
+|---|-------------------------|
+| 1 | single |
+| 2 | double |
+| 3 | triple |
+| 4 | triple + single |
+| 5 | triple + double |
+| 6 | triple + triple |
+| 7 | triple + double + single + single |
+| 8 | triple + triple + single + single |
+| 9 | triple + triple + triple |
+
+Each row's y offset is the sum of all previous row heights (stacked bottom-up).
+Horizontal repetition of 2-cell columns is done by the macro layout, not by the
+tiler — the tiler only splits one column's height.
+
+## Width tiling rule (platforms only)
+
+Given a platform of width **W** cells (any positive integer ≥ 1):
 
 1. **Longest first:** place the widest variant that fits the remaining width
    (triple → double → single).
 2. **Trim:** repeat until the remaining width is 0.
 
-This produces a deterministic, non-uniform pattern that avoids obvious
-repeat-tiling.
+The tiling is computed left-to-right; each tile's x offset is the sum of all
+previous tile widths.
 
 ### Examples
 
@@ -39,32 +71,8 @@ repeat-tiling.
 | 8 | triple + triple + single + single |
 | 9 | triple + triple + triple |
 
-The tiling is computed left-to-right; each tile's x offset is the sum of all
-previous tile widths.
-
-## Height stacking rule (blocks only)
-
-A block of height **H** units is stacked vertically using the same
-"longest-first, trim" logic:
-
-1. Place the tallest available block-art row that fits the remaining height.
-2. Repeat until the remaining height is 0.
-
-In practice the block art is a single rectangular image per width variant, so
-"stacking" means drawing the same width-variant image multiple times, each one
-row tall, from bottom to top. If H > 1 the topmost row may use a different
-frame for visual variety (see frame selection below).
-
-### Example
-
-A 4-unit-tall, 3-unit-wide block:
-- Row 0 (bottom): triple-width block, frame per selection rule
-- Row 1: triple-width block, frame per selection rule
-- Row 2: triple-width block, frame per selection rule
-- Row 3 (top): triple-width block, frame per selection rule
-
-(If distinct "cap" art existed we would use it on the top row; today all rows
-use the same width-variant image.)
+Both rules route through the shared `squareGrid.decomposeVariant(kind, cells)`
+(longest-first `[3,2,1]`) so runtime and editor previews agree.
 
 ## Frame selection rule
 
@@ -95,10 +103,10 @@ Each tile is scaled uniformly to fit its logical footprint:
 scale = target_height_px / source_bbox_height_px
 ```
 
-where `target_height_px = 48` (one Y-unit) for a single-row tile, and the
+where `target_height_px = 48` (one cell) for a single-row tile, and the
 source bbox comes from the sheet JSON (first-frame bbox as reference, per
-`sprites.md` §4 v1). Width follows the same scalar — never stretched
-independently.
+`sprites.md` §4 v1). One uniform collision-height scalar per animation — width
+follows the same scalar; never stretched independently.
 
 ## Integration points
 

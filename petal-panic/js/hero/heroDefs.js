@@ -63,18 +63,18 @@ export const HEROES = {
     w: 32, h: 48,
     stats: {
       weight: 1,
-      speed: 250 / 72,  // X-units/s (exactly 250 px/s at current unit)
+      speed: 250 / UNIT_PX_X,  // X-units/s (exactly 250 px/s at the current grid)
       attack: 10,
       defense: 2,
       stamina: 100,
-      jump: 511 / 48,   // Y-units/s impulse (exactly 511 px/s at current unit)
+      jump: 511 / UNIT_PX_Y,   // Y-units/s impulse (exactly 511 px/s at the current grid)
       projectile_freq: 8,   // shots per second (default weapon only)
     },
     // §15 Special melee (Down+Melee): retreating cartwheel — travels AWAY from
     // facing while the sprite keeps its original orientation. Tuning lives here.
     specialMelee: {
       direction: -1,        // -1 = away from facing (scarlet's cartwheel)
-      travelSpeed: 300 / 72, // X-units/s self-supplied horizontal movement (exactly 300 px/s at current unit)
+      travelSpeed: 300 / UNIT_PX_X, // X-units/s self-supplied horizontal movement (exactly 300 px/s at the current grid)
       frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
       hitbox: { ox: 0, oy: 0, bw: 32, bh: 48 },       // full-body overlay (cartwheel)
       // Knockback (knockback.md §11): strong escape shove AWAY from the hero —
@@ -94,17 +94,17 @@ export const HEROES = {
     w: 36, h: 52,
     stats: {
       weight: 1.3,
-      speed: 180 / 72,  // X-units/s (exactly 180 px/s at current unit)
+      speed: 180 / UNIT_PX_X,  // X-units/s (exactly 180 px/s at the current grid)
       attack: 20,
       defense: 5,
       stamina: 70,
-      jump: 456 / 48,   // Y-units/s impulse (exactly 456 px/s at current unit)
+      jump: 456 / UNIT_PX_Y,   // Y-units/s impulse (exactly 456 px/s at the current grid)
       projectile_freq: 10,   // shots per second (default weapon only)
     },
     // §15 Special melee (Down+Melee): advancing sweep — travels TOWARD facing.
     specialMelee: {
       direction: 1,         // +1 = toward facing (balthazar's sweep)
-      travelSpeed: 300 / 72, // X-units/s self-supplied horizontal movement (exactly 300 px/s at current unit)
+      travelSpeed: 300 / UNIT_PX_X, // X-units/s self-supplied horizontal movement (exactly 300 px/s at the current grid)
       frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
       hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over his body
       // Knockback (knockback.md §11): aggressive forward pushback along the

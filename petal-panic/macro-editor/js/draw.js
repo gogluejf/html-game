@@ -16,8 +16,11 @@ import { app, SLOT_COLORS, COL_BLOCK, COL_PLATFORM, COL_GRID, COL_GRID_MAJOR } f
 import { cv, ctx, s2c, setDrawHook } from './viewport.js';
 import { drawRide, setRedrawHook } from './ghost.js';
 import { macroEndpoint } from './clearance.js';
+import { UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H } from './state.js';
 
-let _consts = { unitPxX:72, unitPxY:48, platformDrawH:6 };
+// Authoritative square-grid constants (state.js re-exports consts.js). No
+// pre-boot fallback values: boot always calls setConstants() before any draw.
+let _consts = { unitPxX:UNIT_PX_X, unitPxY:UNIT_PX_Y, platformDrawH:PLATFORM_DRAW_H };
 export function setConstants(c){ 
   _consts = c; 
 }

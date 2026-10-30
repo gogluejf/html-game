@@ -3,67 +3,68 @@
   "name": "Block Bridge",
   "orientation": "horizontal",
   "difficulty": 2,
+  "variations": [],
+  "follows": [],
+  "followedBy": [],
+  "schemaVersion": "square-grid-v1",
   "units": [
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 3,
-      "width": 2
+      "x": 6,
+      "width": 4
     },
     {
       "kind": "platform",
-      "width": 3,
       "y": 5,
-      "x": 3
+      "x": 6,
+      "width": 6
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 6,
-      "width": 1
-    },
-    {
-      "kind": "platform",
-      "x": 1,
-      "y": 3,
-      "width": 3
-    },
-    {
-      "kind": "platform",
       "x": 12,
-      "y": 1,
       "width": 2
     },
     {
       "kind": "platform",
-      "x": 14,
       "y": 3,
-      "width": 2
+      "x": 2,
+      "width": 6
+    },
+    {
+      "kind": "platform",
+      "y": 1,
+      "x": 24,
+      "width": 4
+    },
+    {
+      "kind": "platform",
+      "y": 3,
+      "x": 28,
+      "width": 4
     }
   ],
   "placements": [
     {
       "slot": "on-wall",
-      "x": 3,
+      "x": 6,
       "type": "enemy",
       "y": 4
     },
     {
       "slot": "on-bridge",
-      "x": 4,
+      "x": 8,
       "type": "powerup",
       "y": 6
     },
     {
       "slot": "on-bridge2",
-      "x": 5,
+      "x": 10,
       "type": "barrel",
       "y": 6
     }
-  ],
-  "variations": [],
-  "follows": [],
-  "followedBy": []
+  ]
 }

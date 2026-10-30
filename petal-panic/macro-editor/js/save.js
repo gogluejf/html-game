@@ -12,7 +12,7 @@ import { confirmDialog, promptDialog } from './dialog.js';
 import { showToast } from './toast.js';
 import { selectMacro, buildSidebar } from './sidebar.js';
 import { draw } from './draw.js';
-import { assertMacroSchema } from '../../js/world/macroSchema.js';
+import { assertMacroSchema, CURRENT_SCHEMA_VERSION } from '../../js/world/macroSchema.js';
 import { invalidateStaleClearance, hasValidClearance } from './clearance.js';
 
 // v4 invalidates drafts created before formal schema enforcement.
@@ -243,18 +243,19 @@ function nextFreeId(base){
   return `${base}_${n}`;
 }
 
-/** A minimal valid macro object (schema requires >=1 unit). */
+/** A minimal valid macro object (schema requires >=1 unit + current version). */
 function blankMacro(id){
   return {
     id,
     name: id,
     orientation: 'horizontal',
     difficulty: 1,
-    units: [ { kind:'block', x:4, y:0, width:5, height:1 } ],
+    units: [ { kind:'block', x:4, y:0, width:2, height:1 } ],
     placements: [],
     variations: [],
     follows: [],
     followedBy: [],
+    schemaVersion: CURRENT_SCHEMA_VERSION,
   };
 }
 

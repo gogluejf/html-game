@@ -3,64 +3,65 @@
   "name": "newMacro",
   "orientation": "horizontal",
   "difficulty": 1,
+  "variations": [],
+  "follows": [],
+  "followedBy": [],
+  "schemaVersion": "square-grid-v1",
   "units": [
     {
       "kind": "block",
-      "x": 4,
+      "height": 2,
       "y": 0,
-      "width": 5,
-      "height": 2
+      "x": 8,
+      "width": 10
     },
     {
       "kind": "block",
-      "x": 9,
+      "height": 4,
       "y": 0,
-      "width": 4,
-      "height": 4
-    },
-    {
-      "kind": "block",
-      "x": 13,
-      "y": 0,
-      "width": 2,
-      "height": 2
-    },
-    {
-      "kind": "platform",
       "x": 18,
-      "y": 4,
-      "width": 6
+      "width": 8
     },
     {
       "kind": "block",
-      "x": 23,
+      "height": 2,
       "y": 0,
-      "width": 1,
-      "height": 3
-    },
-    {
-      "kind": "block",
-      "x": 24,
-      "y": 5,
-      "width": 1,
-      "height": 3
+      "x": 26,
+      "width": 4
     },
     {
       "kind": "platform",
-      "x": 25,
-      "y": 6,
-      "width": 1
+      "y": 4,
+      "x": 36,
+      "width": 12
     },
     {
       "kind": "block",
-      "x": 20,
+      "height": 3,
+      "y": 0,
+      "x": 46,
+      "width": 2
+    },
+    {
+      "kind": "block",
+      "height": 3,
       "y": 5,
-      "width": 1,
-      "height": 1
+      "x": 48,
+      "width": 2
+    },
+    {
+      "kind": "platform",
+      "y": 6,
+      "x": 50,
+      "width": 2
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "y": 5,
+      "x": 40,
+      "width": 2
     }
   ],
-  "placements": [],
-  "variations": [],
-  "follows": [],
-  "followedBy": []
+  "placements": []
 }

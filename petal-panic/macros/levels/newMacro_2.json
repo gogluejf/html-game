@@ -3,36 +3,37 @@
   "name": "newMacro_2",
   "orientation": "horizontal",
   "difficulty": 1,
+  "variations": [],
+  "follows": [],
+  "followedBy": [],
+  "schemaVersion": "square-grid-v1",
   "units": [
     {
       "kind": "block",
-      "x": 4,
+      "height": 2,
       "y": 0,
-      "width": 5,
-      "height": 2
+      "x": 8,
+      "width": 10
     },
     {
       "kind": "platform",
-      "x": 15,
       "y": 2,
-      "width": 3
+      "x": 30,
+      "width": 6
     }
   ],
   "placements": [
     {
       "slot": "powerup-1",
       "type": "powerup",
-      "x": 5,
+      "x": 10,
       "y": 2
     },
     {
       "slot": "powerup-2",
       "type": "powerup",
-      "x": 8,
+      "x": 16,
       "y": 2
     }
-  ],
-  "variations": [],
-  "follows": [],
-  "followedBy": []
+  ]
 }

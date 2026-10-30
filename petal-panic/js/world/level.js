@@ -104,13 +104,14 @@ export const LEVELS = [
  *
  * The zone IS the world (structure.md §2 — independent sealed zones). A
  * Zone dimensions are authored in whole grid units in macros.js. Horizontal
- * areas are 56 columns (4032px); vertical zones are 13 columns (936px);
- * boss approaches are 22 columns (1584px).
+ * areas are 112 columns (5376px, authored x2 migration); vertical zones are 20
+ * columns (960px, one screen wide — derived, not doubled); boss approaches are
+ * 44 columns (2112px, authored x2). Square 48×48 grid.
  */
 export const ZONE_WIDTH_HORIZONTAL = HORIZONTAL_ZONE_LENGTH_UNITS * UNIT_PX_X;
-/** Vertical macro zones occupy the 13-column one-screen grid. */
+/** Vertical macro zones occupy the 20-column one-screen grid. */
 export const ZONE_WIDTH_VERTICAL = VERTICAL_ZONE_WIDTH_UNITS * UNIT_PX_X;
-/** Boss approach length derived from its canonical 22-column budget. */
+/** Boss approach length derived from its canonical 44-column budget (authored x2). */
 export const ZONE_WIDTH_BOSS = BOSS_ZONE_LENGTH_UNITS * UNIT_PX_X;
 /**
  * Backward-compat alias for the pre-doubling zone width. New code should use
@@ -166,7 +167,7 @@ export const ZONE_EXIT_X = ZONE_WIDTH_VERTICAL - ZONE_EXIT_PAD;
  * invisible line to start the battle room (update.js: hero.x >= triggerX).
  * It is a TRIGGER, not a flag — nothing is drawn there.
  */
-export const BOSS_TRIGGER_X = BOSS_TRIGGER_UNITS * UNIT_PX_X; // column 15 = 1080px
+export const BOSS_TRIGGER_X = BOSS_TRIGGER_UNITS * UNIT_PX_X; // column 30 = 1440px (authored x2)
 /** Checkpoint flag height: exactly one vertical unit. */
 export const ZONE_FLAG_H = UNIT_PX_Y;
 /**
@@ -448,7 +449,7 @@ export function buildLevelZones(levelDef) {
 // ~2000px each. The nearest canonical whole-unit target is 56 columns
 // (4032px), approximately 2x one prototype segment.
 //
-//   - HORIZONTAL areas: 56 width-units × 72px = 4032px.
+//   - HORIZONTAL areas: 112 width-units × 48px = 5376px (authored x2).
 //   - VERTICAL areas: 56 height-units × 48px = 2688px.
 //     Vertical length is tuned separately, NOT blindly doubled (structure.md
 //     §6), so it stays at the one-screen-wide climb height, not 2x.

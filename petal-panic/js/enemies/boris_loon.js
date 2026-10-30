@@ -13,6 +13,7 @@
 // and lower HP (15); swarms of 2–3 are handled by the spawner, not the AI.
 
 import { Enemy } from './enemy.js';
+import { UNIT_PX_X } from '../world/macros.js';
 import { projectilePool } from '../objects/projectile.js';
 
 const BASE_W = 44, BASE_H = 40;
@@ -23,7 +24,7 @@ export const BORIS_DEF = {
   w: BASE_W, h: BASE_H,
   aggroRadius: 360,
   stats: {
-    weight: 1, speed: 80 / 72,  // X-units/s (exactly 80 px/s at current unit)
+    weight: 1, speed: 80 / UNIT_PX_X,  // X-units/s (exactly 80 px/s at the current grid)
     attack: 12, defense: 1, stamina: 25,
     mjump: 0,
     melee: false, projectile: true, fly: true,
@@ -37,7 +38,7 @@ export const BORIS_BABY_DEF = {
   w: Math.round(BASE_W * 0.6), h: Math.round(BASE_H * 0.6),
   aggroRadius: 320,
   stats: {
-    weight: 1, speed: 120 / 72,  // X-units/s (exactly 120 px/s at current unit)
+    weight: 1, speed: 120 / UNIT_PX_X,  // X-units/s (exactly 120 px/s at the current grid)
     attack: 8, defense: 0, stamina: 15,
     mjump: 0,
     melee: false, projectile: true, fly: true,
