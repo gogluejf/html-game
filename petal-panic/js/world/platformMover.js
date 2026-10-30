@@ -227,10 +227,31 @@ export function classifyTakeoff(hero, goal, world, params){
   // tool — it is fired mid-arc (at the DJ frame or when still short of the
   // span), never committed from the ground. A wide gap from the ground means
   // "run to the edge, jump, and escalate in the air" — nothing else.
-  if (rise > singleApexPx(params) + 4) {
+  //
+  // The jump-vs-dj decision must weigh BOTH rise AND gap. Rise alone says
+  // "+1 row fits a single apex → single jump", but a single arc also carries
+  // only ~1.5u horizontally at that rise — so "1 higher + 4 further" loops
+  // forever on singles that fall short (hero retries the same hop). If the
+  // gap exceeds what a single arc can carry at this rise, commit to a double
+  // jump instead; the airborne branch sequences it via mem.wantJump.
+  if (rise > singleApexPx(params) + 4 ||
+      gap > singleCarryPxFor(params, rise) + world.UX * 0.25) {
     return { plan: 'dj', rise, gap, dir };
   }
   return { plan: 'jump', rise, gap, dir };
+}
+
+/** Horizontal distance a SINGLE jump arc covers from takeoff to landing back
+ *  at `rise` above takeoff height (px). Same model as the no-DJ branch of
+ *  djCarryPxFor. Used by classifyTakeoff to decide when a single jump's
+ *  horizontal carry is too short for the gap. */
+function singleCarryPxFor(params, rise){
+  const G = GRAVITY;
+  const v1 = params.jump;
+  if (rise <= 0) return params.speed * (2 * v1 / G);
+  const tUp = (v1 - Math.sqrt(Math.max(0, v1 * v1 - 2 * G * rise))) / G;
+  const tDown = Math.sqrt((2 * rise) / G);
+  return params.speed * (tUp + tDown);
 }
 
 /** Solid OR one-way ground continuing `distPx` ahead in `dir` at foot level? */
