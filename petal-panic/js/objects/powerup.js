@@ -14,7 +14,7 @@
 
 import { Entity } from '../core/entity.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
-import { LAYER } from '../consts.js';
+import { LAYER, UNIT_PX_Y } from '../consts.js';
 import { SPECIAL_TYPES, specialById } from './specialWeapons.js';
 import { record } from '../stats.js';
 
@@ -22,6 +22,10 @@ import { record } from '../stats.js';
 // Each entry: { label, color, duration?, apply(hero, context) }.
 // `context` carries live game state the effect needs beyond the hero itself
 // (e.g. the enemy list for 'clear'). All effects clamp sensibly.
+/** Signboard collision size in px (square). Single source of truth — the
+ *  constructor converts it to the pure target model (T6 audit). */
+export const POWERUP_SIZE = 28;
+
 export const POWERUP_DEFS = {
   invincibility: { label: 'Invincible!',  color: '#3498db', duration: 5,
                    apply: (hero) => {
@@ -131,7 +135,7 @@ export class Powerup extends Entity {
     if (!def) throw new Error(`Unknown powerup type: ${type}`);
     super({
       x, y,
-      w: 28, h: 28,
+      targetH: POWERUP_SIZE / UNIT_PX_Y, // pure size model — square signboard
       layer: LAYER.PICKUP,
       debugColor: def.color,
       gravity: 0,

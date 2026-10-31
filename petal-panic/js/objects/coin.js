@@ -16,7 +16,7 @@
 
 import { Entity } from '../core/entity.js';
 import { isHighGraphic } from '../core/renderMode.js';
-import { LAYER, GRAVITY, MAX_FALL_SPEED, COIN_TTL, TTL_SPEED } from '../consts.js';
+import { LAYER, GRAVITY, MAX_FALL_SPEED, COIN_TTL, TTL_SPEED, UNIT_PX_Y } from '../consts.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const MAX_COINS = 30;                 // hard cap on live coins (§17 perf param)
@@ -72,7 +72,7 @@ export class Coin extends Entity {
     const def = COIN_TYPES[type];
     super({
       x, y,
-      w: def.size, h: def.size,
+      targetH: def.size / UNIT_PX_Y, // pure size model — square coin, w == h
       layer: LAYER.COIN,
       debugColor: def.color,
       gravity: 1,

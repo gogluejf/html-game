@@ -18,7 +18,7 @@
 //     inherit cleanly.
 
 import { Entity } from '../core/entity.js';
-import { LAYER, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
+import { LAYER, GRAVITY, MAX_FALL_SPEED, UNIT_PX_Y } from '../consts.js';
 import { UNIT_PX_X } from '../world/macros.js';
 import { damage, flashTarget } from '../combat/damage.js';
 
@@ -33,8 +33,8 @@ export class Enemy extends Entity {
   constructor(def, x = 0, y = 0) {
     super({
       x, y,
-      w: def.w ?? 32,
-      h: def.h ?? 48,
+      targetH: (def.h ?? 48) / UNIT_PX_Y, // pure size model (T6 audit)
+      baseW: def.w ?? 32,                  // width stays def-owned until sheets land
       layer: LAYER.ENEMY,
       debugColor: '#e74c3c',
       gravity: def.stats?.fly ? 0 : 1,

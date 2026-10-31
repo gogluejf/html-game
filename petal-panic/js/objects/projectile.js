@@ -11,7 +11,7 @@
 
 import { invalidateImpactMotion } from '../combat/entryImpact.js';
 import { Entity } from '../core/entity.js';
-import { LAYER } from '../consts.js';
+import { LAYER, UNIT_PX_Y } from '../consts.js';
 import { parseSheet } from '../core/spriteData.js';
 import { loadFrames } from '../core/frameLoader.js';
 import { specialById, isSpecialType } from './specialWeapons.js';
@@ -259,7 +259,7 @@ export class Special extends Entity {
     if (type != null && !meta) throw new Error(`Unknown special weapon: ${type}`);
     super({
       x, y,
-      w: meta?.size ?? 16, h: meta?.size ?? 16,
+      targetH: (meta?.size ?? 16) / UNIT_PX_Y, // pure size model — square specials
       layer: LAYER.PROJ_ALLY,
       debugColor: meta?.color ?? '#888',
       gravity: (meta?.gravity ?? 0) > 0 ? 1 : 0,

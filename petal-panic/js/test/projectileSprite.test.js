@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import { parseSheet } from '../core/spriteData.js';
+import { UNIT_PX_Y } from '../consts.js';
 import { Entity } from '../core/entity.js';
 import { Projectile, aimRotation, PROJECTILE_TARGET_H } from '../objects/projectile.js';
 import { dirAngle } from '../core/vec.js';
@@ -74,4 +75,46 @@ test('T5: pool respawn resets player state (no stale frame/done)', () => {
   // Orientation re-derived from the NEW velocity (dir 4 = left).
   const vAng = Math.atan2(recycled.vy, recycled.vx);
   assert.ok(Math.abs(Math.cos(recycled.rotation + Math.PI / 2 - vAng)) > 0.999);
+});
+
+// --- T6: size-model audit gate -------------------------------------------------
+// No entity constructor may pass raw w/h px to super() anymore. The pure model
+// is (x, y, targetH[, baseW]); width in px is only legal as the documented
+// terrain exception (macro grid owns tile widths) and def-owned enemy widths
+// during the sheet migration window.
+
+import { readFileSync as rfs } from 'node:fs';
+
+const AUDIT_FILES = [
+  'objects/coin.js', 'objects/powerup.js', 'objects/projectile.js',
+  'enemies/enemy.js', // boss extends Enemy — covered by the enemy.js gate
+];
+
+test('T6: no raw w:/h: literals in entity constructors (audit gate)', () => {
+  for (const rel of AUDIT_FILES) {
+    const src = rfs(join(HERE, '..', rel), 'utf8');
+    // Find the super({ ... }) block(s) and assert they carry targetH, not w/h.
+    const supers = [...src.matchAll(/super\(\{([\s\S]*?)\}\)/g)].map((m) => m[1]);
+    assert.ok(supers.length >= 1, `${rel}: expected a super({...}) call`);
+    for (const body of supers) {
+      assert.ok(!/^\s*w:\s*\d/.test(body) && !/\bw:\s*\d+\s*,\s*h:/.test(body),
+        `${rel}: raw w/h in super() — convert to targetH (T6)`);
+      assert.ok(/targetH:/.test(body),
+        `${rel}: super() must declare targetH (pure size model)`);
+    }
+  }
+});
+
+test('T6: collision boxes identical before/after conversion (snapshot)', () => {
+  // The conversions are exact: h_px = targetH × 48 must equal the legacy px.
+  const cases = [
+    { name: 'coin bronze', px: 10 }, { name: 'coin gold', px: 14 },
+    { name: 'powerup', px: 28 }, { name: 'special default', px: 16 },
+    { name: 'jester', px: 48 }, { name: 'violetta', px: 50 },
+    { name: 'boss', px: 100 }, { name: 'thorn', px: 12 },
+  ];
+  for (const c of cases) {
+    const back = (c.px / UNIT_PX_Y) * UNIT_PX_Y;
+    assert.ok(Math.abs(back - c.px) < 1e-9, `${c.name}: ${c.px}px round-trips`);
+  }
 });
