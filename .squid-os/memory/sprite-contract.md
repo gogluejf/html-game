@@ -28,6 +28,3 @@ HARD RULE for any LLM/human touching petal-panic sprite code:
 - 2026-10-30: bbox removed from runtime (a4758fac). Earlier same-day attempts
   (top-left offset convention, ratio-box scaling) broke fg/blocks/barrel renders
   and were reverted — center-based offset + footprint boxes is the working contract.
-- 2026-10-30: TEMP on-screen FG debug readout lives in `drawFloor`
-  (terrainTiles.js, top-left y≈140) for mobile diagnosis — remove once fg
-  visibility is confirmed by the user.
