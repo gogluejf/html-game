@@ -23,12 +23,10 @@ export const MAX_PROJECTILES = 64;        // hard cap on live projectiles (perf 
 const PROJECTILE_LIFETIME = 2;            // seconds before a shot auto-culls
 const PROJECTILE_SPEED = 600;             // px/s
 const PROJECTILE_DAMAGE = 10;             // base damage per thorn hit
-/** Thorn height in Y-units — the PURE size model (x, y, targetH). 0.32u ≈ 15px;
- *  the thorn art (~244×101 source px) renders at a readable ~31×17 px. Width is
- *  SHEET-OWNED: the sheet's square collision box (96×96 on the head mass) × §4
- *  scale resolves w to the same value — no hardcoded dimensions anywhere. */
+/** Thorn collision height in units. Width derives solely from the authored
+ *  sheet collision aspect ratio; never force a square. */
 export const PROJECTILE_TARGET_H = 0.32;
-/** The thorn (petal) art's nose points RIGHT — the standard facing-right
+/** The thorn art's nose points RIGHT — the standard facing-right
  *  convention, so aiming the nose along velocity v needs NO offset:
  *  rotation = atan2(vy, vx). Orientation is rotation-only for projectiles
  *  (no mirror); the render pipeline applies ctx.rotate(rotation) in a frame

@@ -8,8 +8,10 @@ import { dirname, join } from 'node:path';
 import { parseSheet } from '../core/spriteData.js';
 import { UNIT_PX_Y } from '../consts.js';
 import { Entity } from '../core/entity.js';
-import { Projectile, aimRotation, PROJECTILE_TARGET_H } from '../objects/projectile.js';
+import { Projectile, aimRotation, PROJECTILE_TARGET_H, initProjectileSprites } from '../objects/projectile.js';
 import { dirAngle } from '../core/vec.js';
+
+await initProjectileSprites();
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const thornSheet = JSON.parse(readFileSync(join(HERE, '..', '..', 'assets', 'projectiles', 'thorn', 'shoot_sheet.json'), 'utf8'));
@@ -20,9 +22,10 @@ test('T4: thorn sheet declares playback in DATA (fps 14, mode loop)', () => {
   assert.equal(a.fps, 14);
   assert.equal(a.mode, 'loop');
   assert.equal(a.frames.length, 8);
-  // Square collision box → thorn AABB stays 12×12 at targetH 0.25u.
+  // Full-frame proportions, not the former forced square.
   assert.ok(a.collisionBox, 'collision box must be authored (§4)');
-  assert.equal(a.collisionBox.w, a.collisionBox.h, 'box must be square for the 12px AABB');
+  assert.equal(a.collisionBox.w, 250);
+  assert.equal(a.collisionBox.h, 102);
 });
 
 test('T5: projectile uses pure target model — no hardcoded w/h', () => {
@@ -36,8 +39,9 @@ test('T5: projectile uses pure target model — no hardcoded w/h', () => {
   const scale = (PROJECTILE_TARGET_H * 48) / cb.h;
   const expectedW = cb.w * scale;
   assert.ok(Math.abs(p.w - expectedW) < 1, `w=${p.w} want ${expectedW}`);
-  // Square sheet box ⇒ w == h exactly (sheet-owned, zero literals).
-  assert.ok(Math.abs(p.w - p.h) < 1e-9, `square box: w=${p.w} h=${p.h}`);
+  // Actual loaded sheet controls the aspect ratio.
+  assert.ok(Math.abs(p.w / p.h - cb.w / cb.h) < 1e-9);
+  assert.equal(p._baseW, null, 'sheet owns width');
 });
 
 test('T5: constructor aims the nose along velocity for all 8 directions', () => {
