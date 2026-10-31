@@ -99,7 +99,15 @@
      ]
     }
    ],
-   "frames_dir": "petal-panic/assets/projectiles/thorn"
+   "frames_dir": "petal-panic/assets/projectiles/thorn",
+   "fps": 14,
+   "mode": "loop",
+   "collision": [
+    148,
+    0,
+    96,
+    96
+   ]
   }
  ],
  "updated": "2026-10-21"

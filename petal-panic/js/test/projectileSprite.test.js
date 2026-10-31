@@ -12,10 +12,10 @@ import { Projectile, aimRotation, PROJECTILE_TARGET_H } from '../objects/project
 import { dirAngle } from '../core/vec.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const peaSheet = JSON.parse(readFileSync(join(HERE, '..', '..', 'assets', 'projectiles', 'pea', 'shoot_sheet.json'), 'utf8'));
+const thornSheet = JSON.parse(readFileSync(join(HERE, '..', '..', 'assets', 'projectiles', 'thorn', 'shoot_sheet.json'), 'utf8'));
 
-test('T4: pea sheet declares playback in DATA (fps 14, mode loop)', () => {
-  const data = parseSheet(peaSheet);
+test('T4: thorn sheet declares playback in DATA (fps 14, mode loop)', () => {
+  const data = parseSheet(thornSheet);
   const a = data.anims.shoot;
   assert.equal(a.fps, 14);
   assert.equal(a.mode, 'loop');
@@ -31,12 +31,13 @@ test('T5: projectile uses pure target model — no hardcoded w/h', () => {
   assert.ok(Math.abs(p.h - PROJECTILE_TARGET_H * 48) < 1e-9, `h=${p.h}`);
   // Width is SHEET-OWNED: collisionBox.w × scale. With the square box this
   // resolves to the same 12px as the legacy AABB (±1 tolerance for drift).
-  const data = parseSheet(peaSheet);
+  const data = parseSheet(thornSheet);
   const cb = data.anims.shoot.collisionBox;
   const scale = (PROJECTILE_TARGET_H * 48) / cb.h;
   const expectedW = cb.w * scale;
   assert.ok(Math.abs(p.w - expectedW) < 1, `w=${p.w} want ${expectedW}`);
-  assert.ok(Math.abs(p.w - 12) <= 1, `thorn AABB width ~12px, got ${p.w}`);
+  // Square sheet box ⇒ w == h exactly (sheet-owned, zero literals).
+  assert.ok(Math.abs(p.w - p.h) < 1e-9, `square box: w=${p.w} h=${p.h}`);
 });
 
 test('T5: constructor aims the nose along velocity for all 8 directions', () => {
@@ -45,7 +46,7 @@ test('T5: constructor aims the nose along velocity for all 8 directions', () => 
     const vAng = Math.atan2(p.vy, p.vx);
     // Nose direction in world space = rotation + baseSpriteAngle(0) + art-up offset.
     // The art's up-vector rotated by `rotation` must align with velocity.
-    const nose = p.rotation + Math.PI / 2; // up-vector (−y) rotated by rotation
+    const nose = p.rotation; // art faces right: nose direction == rotation
     const dot = Math.cos(nose - vAng);
     assert.ok(dot > 0.999, `dir ${dir}: nose·velocity = ${dot}`);
   }
@@ -55,13 +56,13 @@ test('T5: aimRotation handles free angles (non-8-way shots)', () => {
   for (const ang of [0, Math.PI / 8, Math.PI / 2, -Math.PI / 3, Math.PI]) {
     const vx = Math.cos(ang), vy = Math.sin(ang);
     const rot = aimRotation(vx, vy);
-    const nose = rot + Math.PI / 2;
+    const nose = rot;
     assert.ok(Math.abs(Math.cos(nose - ang)) > 0.999, `angle ${ang}`);
   }
 });
 
 test('T5: pool respawn resets player state (no stale frame/done)', () => {
-  const data = parseSheet(peaSheet);
+  const data = parseSheet(thornSheet);
   const proto = new Projectile(0, 0, 0, true);
   // Simulate the pool's Object.assign recycle over a fresh instance.
   const recycled = Object.assign(new Projectile(50, 50, 4, true), proto);
@@ -74,7 +75,7 @@ test('T5: pool respawn resets player state (no stale frame/done)', () => {
   }
   // Orientation re-derived from the NEW velocity (dir 4 = left).
   const vAng = Math.atan2(recycled.vy, recycled.vx);
-  assert.ok(Math.abs(Math.cos(recycled.rotation + Math.PI / 2 - vAng)) > 0.999);
+  assert.ok(Math.abs(Math.cos(recycled.rotation - vAng)) > 0.999);
 });
 
 // --- T6: size-model audit gate -------------------------------------------------

@@ -6,7 +6,7 @@ import { strict as assert } from 'node:assert';
 import { Special } from '../objects/projectile.js';
 import {
   Projectile, Pool, projectilePool, MAX_PROJECTILES,
-  dirAngle, aimFromInput,
+  dirAngle, aimFromInput, PROJECTILE_TARGET_H,
 } from '../objects/projectile.js';
 import { LAYER } from '../consts.js';
 
@@ -27,10 +27,11 @@ ok('foe → PROJ_FOE layer', () => {
   assert.equal(p.layer, LAYER.PROJ_FOE);
   assert.equal(p.friendly, false);
 });
-ok('size ~12px, gravity 0, speed 600, damage 10, life 2', () => {
+ok('size from pure target model (targetH × 48), gravity 0, speed 600, damage 10, life 2', () => {
   const p = new Projectile(0, 0, 0, true);
-  assert.equal(p.w, 12);
-  assert.equal(p.h, 12);
+  // h is ALWAYS targetH × 48; w is sheet-owned (square thorn box ⇒ w == h).
+  assert.ok(Math.abs(p.h - PROJECTILE_TARGET_H * 48) < 1e-9, `h=${p.h}`);
+  assert.ok(Math.abs(p.w - p.h) < 1, `w=${p.w} should match h (square sheet box)`);
   assert.equal(p.gravity, 0);
   assert.equal(p.speed, 600);
   assert.equal(p.damage, 10);

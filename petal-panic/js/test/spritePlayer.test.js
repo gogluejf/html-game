@@ -110,7 +110,7 @@ test('relative timing: setProgress maps [0,1] onto traversal, ignoring durations
   p.setProgress(0);
   assert.equal(p.frameIndex, 0);
   p.setProgress(0.5);
-  assert.equal(p.frameIndex, 2, 'mid-traversal regardless of fps/durations');
+  assert.equal(p.frameIndex, 2, 'mid-traversal regardless of fps/durations (5 frames: slot 2)');
   p.setProgress(1);
   assert.equal(p.frameIndex, 4);
   // Out-of-range clamps.

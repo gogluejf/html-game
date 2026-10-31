@@ -14,6 +14,8 @@ import { Entity } from '../core/entity.js';
 import { LAYER, UNIT_PX_Y } from '../consts.js';
 import { parseSheet } from '../core/spriteData.js';
 import { loadFrames } from '../core/frameLoader.js';
+import { spriteOutline } from '../effects/spriteOutline.js';
+import { isHighGraphic } from '../core/renderMode.js';
 import { specialById, isSpecialType } from './specialWeapons.js';
 
 // --- Tunables ----------------------------------------------------------------
@@ -21,16 +23,17 @@ export const MAX_PROJECTILES = 64;        // hard cap on live projectiles (perf 
 const PROJECTILE_LIFETIME = 2;            // seconds before a shot auto-culls
 const PROJECTILE_SPEED = 600;             // px/s
 const PROJECTILE_DAMAGE = 10;             // base damage per thorn hit
-/** Thorn height in Y-units — the PURE size model (x, y, targetH). 0.25u = 12px,
- *  matching the legacy 12×12 AABB; width is sheet-owned (pea collision box is
- *  square, so w resolves to the same 12px via the §4 scale). */
-export const PROJECTILE_TARGET_H = 0.25;
-/** The pea art's nose points UP (verified on shoot_f1: peas trail downward).
- *  Orientation is rotation-only for projectiles (no mirror): the render
- *  pipeline applies ctx.rotate(rotation) in a frame whose untransformed "0"
- *  is facing-right (baseSpriteAngle = 0), so aiming an up-facing nose along
- *  velocity v needs rotation = atan2(vy,vx) + π/2. */
-export const PROJECTILE_BASE_ROTATION = Math.PI / 2;
+/** Thorn height in Y-units — the PURE size model (x, y, targetH). 0.32u ≈ 15px;
+ *  the thorn art (~244×101 source px) renders at a readable ~31×17 px. Width is
+ *  SHEET-OWNED: the sheet's square collision box (96×96 on the head mass) × §4
+ *  scale resolves w to the same value — no hardcoded dimensions anywhere. */
+export const PROJECTILE_TARGET_H = 0.32;
+/** The thorn (petal) art's nose points RIGHT — the standard facing-right
+ *  convention, so aiming the nose along velocity v needs NO offset:
+ *  rotation = atan2(vy, vx). Orientation is rotation-only for projectiles
+ *  (no mirror); the render pipeline applies ctx.rotate(rotation) in a frame
+ *  whose untransformed "0" is facing-right (baseSpriteAngle = 0). */
+export const PROJECTILE_BASE_ROTATION = 0;
 
 /** Rotation that aims the art's nose along (vx, vy). Single source of truth
  *  for projectile orientation — constructor AND spawn-time velocity overrides
@@ -39,13 +42,13 @@ export function aimRotation(vx, vy) {
   return Math.atan2(vy, vx) - PROJECTILE_BASE_ROTATION;
 }
 
-// --- Sprite data (pea sheet — SOTA wiring, sprite-player-projectile plan T5) --
+// --- Sprite data (thorn sheet — SOTA wiring, sprite-player-projectile plan T5) --
 let projectileSpriteData = null;
 let projectileFrames = new Map(); // shared frame cache, filled at boot
 export function getProjectileSpriteData() { return projectileSpriteData; }
 export function initProjectileSprites() {
   if (projectileSpriteData || typeof fetch === 'undefined') return Promise.resolve();
-  const base = new URL('../../assets/projectiles/pea/', import.meta.url).href;
+  const base = new URL('../../assets/projectiles/thorn/', import.meta.url).href;
   const load = base.startsWith('file:')
     ? readFileJson(new URL('shoot_sheet.json', base))
     : fetch(base + 'shoot_sheet.json').then((r) => r.json());
@@ -55,7 +58,7 @@ export function initProjectileSprites() {
       return loadFrames(projectileSpriteData, base);
     })
     .then((imgs) => { if (imgs && imgs.size > 0) projectileFrames = imgs; })
-    .catch((e) => console.warn('[sprite] pea sheet failed to load', e));
+    .catch((e) => console.warn('[sprite] thorn sheet failed to load', e));
 }
 async function readFileJson(url) {
   const { readFile } = await import('node:fs/promises');
@@ -118,7 +121,7 @@ export class Projectile extends Entity {
     // Orientation: nose along velocity (rotation-only, no mirror).
     this.rotation = aimRotation(this.vx, this.vy);
 
-    // Sprite (SOTA): pea sheet via the standard pipeline. `frames` is a LIVE
+    // Sprite (SOTA): thorn sheet via the standard pipeline. `frames` is a LIVE
     // accessor so boot-time image loading is picked up without rebuilds.
     // Node / pre-boot: sprite data null → primitive rect fallback (unchanged).
     if (projectileSpriteData?.anims.shoot) {
@@ -126,6 +129,9 @@ export class Projectile extends Entity {
       Object.defineProperty(this.sprite, 'frames', { get: () => projectileFrames });
       try { this.setAnim('shoot'); } catch { /* legacy rect path stays active */ }
     }
+    // Persistent 5px white outline (same effect as the checkpoint flag —
+    // follows silhouette + rotation; box fallback when no sheet frame loaded).
+    this._outline = spriteOutline({ color: '#ffffff', thickness: 5, opacity: 1.0 }, this);
 
     // Drawer: optional render override. Contract: (ctx, entity) => void.
     // null = use default draw (sheet sprite or debug rect). Set per-shot by
@@ -145,6 +151,8 @@ export class Projectile extends Entity {
       return;
     }
     super.draw(ctx);
+    // White outline on top of the sprite (high-graphic only, like checkpoint).
+    if (isHighGraphic() && this._outline && !this._outline.done) this._outline.render(ctx);
   }
 
   reflectVelocity(box) {

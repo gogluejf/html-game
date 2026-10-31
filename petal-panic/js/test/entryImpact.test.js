@@ -12,6 +12,9 @@ const center = p => ({ x: p.x + p.w / 2, y: p.y + p.h / 2 });
 const floor = { x: 0, y: 476, w: 2000, h: 100 };
 test('diagonal floor uses bounded actual travel, not max-axis velocity rewind', () => {
   const p = new Projectile(694, 454, 0);
+  // Pure target model: box is sheet-owned (w == h == targetH × 48). Pin the
+  // legacy 12px box this test's arithmetic was authored against.
+  p.w = 12; p.h = 12;
   p.vx = p.vy = 1200;
   p.update(1 / 60);
   const before = { ...p };
