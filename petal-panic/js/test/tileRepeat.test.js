@@ -26,7 +26,7 @@ function fgSheet() {
   return {
     entities: [{
       name: 'level1', anim: 'fg',
-      frames: [{ file: 'fg_f1.png', bbox: [0, 0, 2171, 287] }],
+      frames: [{ file: 'fg_f1.png' }],
       collision: { x: 0, y: -181, w: 2163, h: 175 },
     }],
   };
@@ -53,8 +53,9 @@ test('tile=true: a wide floor entity repeats the frame to cover its full width',
   // left edge, last tile ends at or beyond the right edge.
   let minX = Infinity, maxX = -Infinity;
   for (const c of ctx.calls) {
-    const [dx, dy, dw, dh] = c.args;
-    assert.equal(dw, 2171); // drawn in source-bbox units (ctx is pre-scaled by s)
+    const [sx, sy, sw, sh, dx, dy, dw, dh] = c.args;
+    assert.deepEqual([sx, sy, sw, sh], [0, 0, 2171, 287]); // full image, no crop
+    assert.equal(dw, 2171); // natural width (ctx is pre-scaled by s)
     assert.equal(dh, 287);
     minX = Math.min(minX, dx * s + e.x + e.w / 2);
     maxX = Math.max(maxX, (dx + 2171) * s + e.x + e.w / 2);

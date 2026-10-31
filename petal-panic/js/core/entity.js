@@ -199,7 +199,7 @@ export class Entity {
    * Set the active sprite animation (sprites.md runtime wiring, v1).
    *
    * Looks up this.sprite.anims[name], computes the UNIFORM scale that fits the
-   * anim's reference box height (§4: collision box / first-frame bbox) onto
+   * anim's collision box height (§4) onto
    * this entity's collision-box height, and stores it. The entity's world
    * position (physical anchor, default bottom-center) is NOT touched — only
    * the rendered art size changes, so switching anims never teleports the
@@ -237,9 +237,9 @@ export class Entity {
   /**
    * Draw the active sprite frame through the transform pipeline (§22 v1):
    * translate to physical anchor (bottom-center by default) → uniform scale →
-   * mirrorX/Y → rotate. The frame's bbox is fitted onto the collision box
-   * height, bottom-aligned to the anchor, so feet stay on the floor across
-   * anim switches. Falls back to the legacy path (anim frames or debug rect)
+   * mirrorX/Y → rotate. Frame size comes from the image's natural size ×
+   * per-frame tuning; position from offset (anchor space) or the legacy
+   * bottom-center placement, so feet stay on the floor across anim switches. Falls back to the legacy path (anim frames or debug rect)
    * when no sprite data is active or frames haven't loaded yet.
    * @param {CanvasRenderingContext2D} ctx
    */
@@ -264,6 +264,22 @@ export class Entity {
     // Anchor at bottom-center of the collision box (default physical anchor).
     const ax = this.x + this.w / 2;
     const ay = this.y + this.h;
+    // Frame geometry comes from the IMAGE itself (each frame is its own PNG —
+    // the crop happened at asset-creation time; there is no sheet to cut into)
+    // plus per-frame TUNING from the sheet JSON: offset (where the frame's
+    // CENTER sits in anchor space, y-up — exactly how the sprite editor
+    // displays frames) and scale (multiplier on the natural size). The §4
+    // uniform scalar `s` scales everything together, so art and collision
+    // box stay locked. No tuning → legacy placement (centered, bottom on the
+    // anchor line) so untuned sheets render as before.
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    const fsx = frame.scale?.sx ?? 1;
+    const fsy = frame.scale?.sy ?? 1;
+    const w = nw * fsx;
+    const h = nh * fsy;
+    const dx = frame.offset ? frame.offset.x - w / 2 : -w / 2;
+    const dy = frame.offset ? frame.offset.y - h / 2 : -h;
 
     ctx.save();
     ctx.translate(ax, ay);
@@ -271,39 +287,21 @@ export class Entity {
     if (this.mirrorY) ctx.scale(1, -1);
     ctx.rotate(this.rotation);
     ctx.scale(s, s);
-    // Per-frame tuning (Animation Studio contract): when the sheet carries
-    // frame.offset (+ optional frame.scale), the frame is drawn in ANCHOR
-    // SPACE — its TOP-LEFT corner lands at offset (same convention as the
-    // collision box's x/y: top-left, y-up from the anchor) and its size is
-    // crop * scale. bbox stays a CROP rect (where to cut the PNG) and is
-    // never used as sprite geometry on this path.
-    if (frame.offset) {
-      const fsx = frame.scale?.sx ?? 1;
-      const fsy = frame.scale?.sy ?? 1;
-      const w = frame.bbox.w * fsx;
-      const h = frame.bbox.h * fsy;
-      ctx.drawImage(img, frame.bbox.x, frame.bbox.y, frame.bbox.w, frame.bbox.h,
-        frame.offset.x, frame.offset.y - h, w, h);
-    } else if (this.sprite.tile) {
-      // Tile repeat: draw the frame bbox repeatedly across the entity width so
-      // one wide entity (e.g. a full-zone floor) fills its whole span with the
+    if (this.sprite.tile) {
+      // Tile repeat: draw the frame repeatedly across the entity width so one
+      // wide entity (e.g. a full-zone floor) fills its whole span with the
       // same uniform scale — no stretching, no per-tile math. The frame's
       // natural (scaled) width is the repeat period; start one period left of
       // the left edge so coverage always begins at x = -w/2.
-      const fw = frame.bbox.w;
+      const fw = w;
       const left = -this.w / 2 / s; // entity left edge in scaled local units
       const right = this.w / 2 / s; // entity right edge (local units)
       const first = Math.floor(left / fw);
       for (let i = first; i * fw < right; i++) {
-        ctx.drawImage(img, frame.bbox.x + i * fw, frame.bbox.y - frame.bbox.h, frame.bbox.w, frame.bbox.h);
+        ctx.drawImage(img, 0, 0, nw, nh, dx + i * fw, dy, w, h);
       }
     } else {
-      // Frame drawn in source-bbox units, centered on the anchor (bottom-center
-      // physical anchor): the bbox's horizontal CENTER lands on the box center,
-      // and its bottom edge lands on the anchor line. Drawing at bbox.x raw
-      // would put the frame's LEFT edge at center — shifting every sprite half
-      // its width to the right (the barrel-offset bug).
-      ctx.drawImage(img, frame.bbox.x - frame.bbox.w / 2, frame.bbox.y - frame.bbox.h, frame.bbox.w, frame.bbox.h);
+      ctx.drawImage(img, 0, 0, nw, nh, dx, dy, w, h);
     }
     ctx.restore();
     return true;
@@ -314,10 +312,11 @@ export class Entity {
    * effect (spriteFlash) re-draw the ACTUAL frame through this entity's own
    * pipeline instead of a rect over worldBox(). Returns null when no sheet
    * frame is loaded (primitive fallback active) — effects fall back to box
-   * mode. All geometry in source-bbox units, matching drawSprite(): the
-   * frame's bbox horizontal center lands on anchorX and its bottom edge on
-   * anchorY, scaled by `scale`, mirrored/rotated per the entity state.
-   * @returns {?{img:object, bbox:{x:number,y:number,w:number,h:number},
+   * mode. All geometry in ANCHOR SPACE matching drawSprite(): the frame's
+   * natural size (× per-frame tuning scale) is centered on offset.x and its
+   * bottom sits at offset.y (or on the anchor line when untuned), scaled by
+   * `scale`, mirrored/rotated per the entity state.
+   * @returns {?{img:object, w:number, h:number, dx:number, dy:number,
    *             scale:number, anchorX:number, anchorY:number, mirrorX:boolean,
    *             mirrorY:boolean, rotation:number, tile:boolean, widthUnits:number}}
    */
@@ -328,9 +327,15 @@ export class Entity {
     const frame = data.frames[this.spriteFrameIndex % data.frames.length];
     const img = frames.get(frame.file);
     if (!img || !(img.complete && img.naturalWidth > 0)) return null;
+    const fsx = frame.scale?.sx ?? 1;
+    const fsy = frame.scale?.sy ?? 1;
+    const w = img.naturalWidth * fsx;
+    const h = img.naturalHeight * fsy;
+    const dx = frame.offset ? frame.offset.x - w / 2 : -w / 2;
+    const dy = frame.offset ? frame.offset.y - h / 2 : -h;
     return {
       img,
-      bbox: frame.bbox,
+      w, h, dx, dy,
       scale: this._spriteScale,
       anchorX: this.x + this.w / 2,
       anchorY: this.y + this.h,

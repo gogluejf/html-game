@@ -9,18 +9,17 @@
 //
 //   SpriteData = { anims: { [animName]: AnimData } }
 //   AnimData   = { fps, mode, direction, timing,
-//                  frames: [{ file, bbox: {x,y,w,h} }],
-//                  collisionBox: {x,y,w,h} | null,
+//                  frames: [{ file, offset: {x,y}|null, scale: {sx,sy}|null }],
+//                  collisionBox: {x,y,w,h},
 //                  pivot: {x,y} | null }
 //
-// Current sheets carry only {name, anim, frames[{file,row,col,bbox}],
-// frames_dir}. Timing/playback fields are OPTIONAL (the Animation Studio
-// revision adds them); defaults preserve simple loop behavior:
+// Frames are standalone PNGs (the crop happened at asset-creation time) —
+// there is NO sheet rect / bbox at runtime. Size and position come from the
+// image's natural size + per-frame TUNING (offset/scale in anchor space, the
+// Animation Studio contract); the collision box is the §4 scaling reference
+// and MUST be authored on every sheet. Timing/playback fields are OPTIONAL;
+// defaults preserve simple loop behavior:
 //   fps: 12, mode: 'loop', direction: 'forward', timing: 'fps'
-//
-// Scaling reference (§4 v1): until sheets export per-anim collision boxes +
-// target heights, the FIRST FRAME'S BBOX is the scaling reference. The
-// runtime scales it to the entity's collision box height (uniform scalar).
 
 /** Playback defaults (sprites.md §6: forward when omitted; loop for idle art). */
 export const SPRITE_DEFAULTS = Object.freeze({
@@ -85,7 +84,7 @@ export function parseSheet(sheetJson) {
   return { anims };
 }
 
-/** Parse the frame list of one entity: files + bboxes, validated. */
+/** Parse the frame list of one entity: files + optional per-frame tuning. */
 function parseFrames(ent) {
   const raw = ent.frames;
   if (!Array.isArray(raw) || raw.length === 0) {
@@ -93,15 +92,10 @@ function parseFrames(ent) {
   }
   return raw.map((f, i) => {
     if (!f.file) throw new Error(`parseSheet: frame ${i} of "${ent.anim}" missing file`);
-    const b = f.bbox;
-    if (!Array.isArray(b) || b.length !== 4) {
-      throw new Error(`parseSheet: frame ${i} of "${ent.anim}" has bad bbox`);
-    }
-    const [x, y, w, h] = b.map(Number);
-    if (!(w > 0) || !(h > 0)) {
-      throw new Error(`parseSheet: frame ${i} of "${ent.anim}" has zero-size bbox`);
-    }
-    return { file: f.file, bbox: { x, y, w, h }, offset: parsePoint(f.offset), scale: parseFrameScale(f.scale) };
+    // Per-frame tuning is OPTIONAL: size/position come from the image's
+    // natural size + offset/scale (anchor space). Sheets without tuning render
+    // via the legacy placement (centered, bottom on the anchor line).
+    return { file: f.file, offset: parsePoint(f.offset), scale: parseFrameScale(f.scale) };
   });
 }
 
@@ -158,14 +152,17 @@ function parseFrameScale(s) {
 }
 
 /**
- * The scaling reference box for an animation (sprites.md §4, v1 rule):
- * the anim's authored collision box when present, else the first frame's bbox.
+ * The scaling reference box for an animation (sprites.md §4): the anim's
+ * authored collision box. Every sheet must carry one — there is no fallback.
  *
  * @param {object} animData AnimData from parseSheet()
  * @returns {{x:number,y:number,w:number,h:number}}
  */
 export function scaleReference(animData) {
-  return animData.collisionBox ?? animData.frames[0].bbox;
+  if (!animData.collisionBox) {
+    throw new Error('scaleReference: anim has no collision box (sheets must author one — sprites.md §4)');
+  }
+  return animData.collisionBox;
 }
 
 /**

@@ -60,7 +60,7 @@ export const COIN_BARREL_DEF = {
 };
 
 // --- Sprite data (sprites.md runtime wiring, v1) ------------------------------
-// Barrel art: three single-frame sheets share one frames_dir. The frame bbox is
+// Barrel art: three single-frame sheets share one frames_dir. The frame's natural size is
 // the scaling reference (§4 v1) — setAnim() fits it onto the 48px box height.
 //
 // Loading strategy: async boot (initBarrelSprites / initCheckpointSprites).
@@ -144,7 +144,7 @@ export class GameObj extends Entity {
     this.hitFlash = 0;             // white-flash timer when struck (render reads it)
     this.destroyed = false;        // latched once HP hits 0 (prevents double-explode)
 
-    // Sprite data (v1): one anim per barrel type, bbox-scaled to the box.
+    // Sprite data (v1): one anim per barrel type, scaled from the collision box (§4).
     // `frames` is a LIVE accessor — it always reads the shared cache, so
     // entities constructed before initBarrelSprites() resolves still pick up
     // the images the moment they land. draw() falls back to the debug rect
@@ -284,7 +284,7 @@ export class Checkpoint extends Entity {
     this.triggered = false;
     this.flashTimer = 0; // brief white flash after triggering (render reads it)
 
-    // Sprite data (v1): level vs boss flag art, bbox-scaled to the box.
+    // Sprite data (v1): level vs boss flag art, scaled from the collision box (§4).
     // `frames` is a LIVE accessor (see barrel above) so late-loaded images are
     // picked up automatically.
     const spriteData = getCheckpointSpriteData();

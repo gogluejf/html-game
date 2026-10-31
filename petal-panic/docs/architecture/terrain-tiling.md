@@ -125,10 +125,10 @@ on the anchor (bottom-center), so `uniformScale` = rect height / box height =
 Per-frame tuning (`frame.offset` + `frame.scale` in the sheet JSON, the
 Animation Studio contract) does the actual placement:
 
-- `offset` = where the frame's **TOP-LEFT corner** sits in anchor space
-  (y-up, anchor at the tile's bottom-center) — the same convention as the
-  collision box's x/y. All terrain frames use `x: -w/2` (centered on the
-  column) and `y: -h` (bottom edge on the anchor line).
+- `offset` = where the frame's **CENTER** sits in anchor space (y-up, anchor
+  at the tile's bottom-center) — exactly how the sprite editor displays
+  frames (`rect = offset − w/2, h/2`). All terrain frames use `x: 0`
+  (centered on the column) and `y: -h/2` (bottom edge on the anchor line).
 - `scale` fits the frame's crop onto the tile rect: blocks fill their row
   (96×48/96/144 px), platforms fill their cell (48/96/144 × 48 px). Crops are
   non-square source art, so sx ≠ sy by design — this is per-frame TUNING, not

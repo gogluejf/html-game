@@ -233,7 +233,26 @@ export function getFloorEntity(s, level) {
 export function drawFloor(ctx, s, level) {
   const e = getFloorEntity(s, level);
   if (!e?.sprite?.frames?.size) return false;
-  return e.drawSprite(ctx);
+  const ok = e.drawSprite(ctx);
+  // TEMP on-screen debug (mobile has no console): show exactly what the fg
+  // pipeline computed this frame. Remove after diagnosis.
+  try {
+    const data = e.spriteAnimData;
+    const fr = data?.frames[e.spriteFrameIndex % (data?.frames.length ?? 1)];
+    const img = e.sprite.frames.get(fr?.file);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(8, 140, 330, 92);
+    ctx.fillStyle = '#7f7';
+    ctx.font = '11px monospace';
+    ctx.fillText(`FG drawn=${ok} scale=${e._spriteScale.toFixed(4)}`, 14, 154);
+    ctx.fillText(`img ${img ? `${img.complete} ${img.naturalWidth}x${img.naturalHeight}` : 'MISSING'} src=${img?.src?.split('/').slice(-2).join('/') ?? '-'}`, 14, 168);
+    ctx.fillText(`frame off=${JSON.stringify(fr?.offset)} scale=${JSON.stringify(fr?.scale)}`, 14, 182);
+    ctx.fillText(`entity ${Math.round(e.x)},${Math.round(e.y)} ${Math.round(e.w)}x${Math.round(e.h)} anchor=${Math.round(e.x + e.w / 2)},${Math.round(e.y + e.h)}`, 14, 196);
+    ctx.restore();
+  } catch { /* never break the render loop */ }
+  return ok;
 }
 
 /**

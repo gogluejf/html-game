@@ -25,8 +25,8 @@ test('level1 block_single parses: 1 anim, 2 frames', () => {
   const anim = data.anims[names[0]];
   assert.equal(anim.frames.length, 2); // frame count from JSON only
   for (const f of anim.frames) {
-    assert.ok(f.bbox.w > 0 && f.bbox.h > 0);
     assert.match(f.file, /^block_single_f\d\.png$/);
+    assert.equal(f.bbox, undefined, 'no bbox at runtime — crop is a build-time concern');
   }
 });
 
@@ -79,12 +79,12 @@ test('explicit playback fields are honored', () => {
   assert.equal(anim.timing, 'relative');
 });
 
-test('bad enums / zero-size bbox / missing frames throw', () => {
+test('bad enums / missing file / missing frames throw', () => {
   const base = (over = {}) => ({
-    entities: [{ name: 'x', anim: 'a', frames: [{ file: 'f.png', bbox: [0, 0, 5, 5] }], ...over }],
+    entities: [{ name: 'x', anim: 'a', frames: [{ file: 'f.png' }], ...over }],
   });
-  assert.throws(() => parseSheet({ entities: [{ name: 'x', anim: 'a', mode: 'yoyo', frames: [{ file: 'f.png', bbox: [0, 0, 5, 5] }] }] }), /mode/);
-  assert.throws(() => parseSheet(base({ frames: [{ file: 'f.png', bbox: [0, 0, 0, 5] }] })), /zero-size/);
+  assert.throws(() => parseSheet({ entities: [{ name: 'x', anim: 'a', mode: 'yoyo', frames: [{ file: 'f.png' }] }] }), /mode/);
+  assert.throws(() => parseSheet(base({ frames: [{ bbox: [0, 0, 5, 5] }] })), /missing file/);
   assert.throws(() => parseSheet(base({ frames: [] })), /no frames/);
   assert.throws(() => parseSheet({}), /entities/);
 });
@@ -100,18 +100,23 @@ test('collisionBox with zero height throws (§4 validation)', () => {
 });
 
 // --- Scaling reference (§4 v1: bbox as reference) ------------------------------
-test('scaleReference falls back to first frame bbox; prefers collisionBox', () => {
+test('scaleReference is the authored collision box (no fallback)', () => {
   const data = parseSheet(sheet('objects/checkpoint/level_sheet.json'));
-  const anim = data.anims.level;
-  assert.deepEqual(scaleReference(anim), anim.frames[0].bbox);
+  assert.deepEqual(scaleReference(data.anims.level), data.anims.level.collisionBox);
 
   const withBox = parseSheet({
     entities: [{
       name: 'x', anim: 'a', collisionBox: [2, 3, 20, 40],
-      frames: [{ file: 'f.png', bbox: [0, 0, 99, 99] }],
+      frames: [{ file: 'f.png' }],
     }],
   }).anims.a;
   assert.deepEqual(scaleReference(withBox), { x: 2, y: 3, w: 20, h: 40 });
+
+  // A sheet without a collision box cannot be scaled (§4) — hard error.
+  const noBox = parseSheet({
+    entities: [{ name: 'x', anim: 'a', frames: [{ file: 'f.png' }] }],
+  }).anims.a;
+  assert.throws(() => scaleReference(noBox), /no collision box/);
 });
 
 test('uniformScale fits reference height onto target height (one scalar)', () => {

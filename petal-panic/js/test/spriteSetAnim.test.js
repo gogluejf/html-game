@@ -78,15 +78,13 @@ test('drawSprite renders the frame via per-frame tuning (offset/scale) when pres
   };
   assert.equal(e.drawSprite(ctx), true);
   assert.equal(drawn.img, fakeImg);
-  // Source crop copied at full size...
-  const bb = data.anims.wooden.frames[0].bbox;
-  assert.deepEqual([drawn.sx, drawn.sy, drawn.sw, drawn.sh], [bb.x, bb.y, bb.w, bb.h]);
-  // ...and placed in anchor space from the authored tuning: TOP-LEFT at
-  // offset, size = crop * frame.scale. Barrel tuning: offset (-152.5,-386),
-  // scale 1 → dst rect spans x -152.5..+152.5, y -386..0 (bottom on the
-  // anchor line, centered).
+  // Full image drawn (no sheet crop at runtime)...
+  assert.deepEqual([drawn.sx, drawn.sy, drawn.sw, drawn.sh], [0, 0, 305, 386]);
+  // ...and placed in anchor space from the authored tuning: CENTER at offset,
+  // size = crop * frame.scale. Barrel tuning: offset (0,-193), scale 1 →
+  // dst rect spans x -152.5..+152.5, y -386..0 (bottom on the anchor line).
   const f = data.anims.wooden.frames[0];
-  const w = bb.w * f.scale.sx, h = bb.h * f.scale.sy;
+  const w = 305 * f.scale.sx, h = 386 * f.scale.sy;
   assert.deepEqual([drawn.dx, drawn.dy, drawn.dw, drawn.dh],
-    [f.offset.x, f.offset.y - h, w, h]);
+    [f.offset.x - w / 2, f.offset.y - h / 2, w, h]);
 });

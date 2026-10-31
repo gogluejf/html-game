@@ -60,7 +60,7 @@ async function parseAsset(level, name) {
     json = sheets.map((s) => ({
       entities: (s.entities ?? []).map((e) => ({
         ...e,
-        frames: e.frames.map((f) => ({ file: f.file, bbox: f.bbox, offset: f.offset ?? null, scale: f.scale ?? null })),
+        frames: e.frames.map((f) => ({ file: f.file, offset: f.offset ?? null, scale: f.scale ?? null })),
       })),
     }));
   } else {

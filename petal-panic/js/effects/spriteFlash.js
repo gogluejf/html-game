@@ -48,8 +48,8 @@
 //                    render() is a no-op in BOX mode.
 //
 // carrier: entity whose sprite to tint. In FRAME mode the carrier must expose
-// `spriteFrame()` returning { img, bbox, scale, anchorX, anchorY, mirrorX,
-// mirrorY, rotation, tile, widthUnits } (see Entity.spriteFrame()). In BOX
+// `spriteFrame()` returning { img, w, h, dx, dy, scale, anchorX, anchorY,
+// mirrorX, mirrorY, rotation, tile, widthUnits } (see Entity.spriteFrame()). In BOX
 // mode geometry is read at DRAW time via carrier.worldBox() ({ x, y, w, h })
 // when available, falling back to carrier.origin()/size() (carrier contract),
 // then to factory-time params.box. A null carrier falls back to params.box
@@ -155,15 +155,15 @@ export function spriteFlash(params = {}, carrier = null) {
             if (f.rotation) c2d.rotate(f.rotation);
             c2d.scale(f.scale, f.scale);
             if (f.tile) {
-              const fw = f.bbox.w;
+              const fw = f.w;
               const left = -f.widthUnits / 2 / f.scale;
               const right = f.widthUnits / 2 / f.scale;
               const first = Math.floor(left / fw);
               for (let i = first; i * fw < right; i++) {
-                c2d.drawImage(tinted, f.bbox.x + i * fw, f.bbox.y - f.bbox.h, f.bbox.w, f.bbox.h);
+                c2d.drawImage(tinted, 0, 0, tinted.width, tinted.height, f.dx + i * fw, f.dy, f.w, f.h);
               }
             } else {
-              c2d.drawImage(tinted, f.bbox.x - f.bbox.w / 2, f.bbox.y - f.bbox.h, f.bbox.w, f.bbox.h);
+              c2d.drawImage(tinted, 0, 0, tinted.width, tinted.height, f.dx, f.dy, f.w, f.h);
             }
             c2d.restore();
             return;
