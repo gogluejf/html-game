@@ -164,7 +164,7 @@ function resetAnimation(){
   for (let i=0;i<st.frames.length;i++){
     const f = st.frames[i], im = app.cur.imgs[i];
     f.scale.sx = 1; f.scale.sy = 1;
-    if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
+    if (im){ f.offset.x = 0; f.offset.y = -Math.round(im.naturalHeight); }
     else { f.offset.x = 0; f.offset.y = 0; }
     f.boxes = [];
   }
@@ -182,7 +182,7 @@ function resetFrame(){
   const st = app.cur.st, fi = curFrameIdx(), f = st.frames[fi];
   const im = app.cur.imgs[fi];
   f.scale.sx = 1; f.scale.sy = 1;
-  if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
+  if (im){ f.offset.x = 0; f.offset.y = -Math.round(im.naturalHeight); }
   else { f.offset.x = 0; f.offset.y = 0; }
   f.boxes = [];
   // markers are animation-level — clear them too so a frame reset is clean

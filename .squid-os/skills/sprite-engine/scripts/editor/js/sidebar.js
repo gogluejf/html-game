@@ -93,11 +93,11 @@ export function layoutAt(st, imgs, W, H, mode){
     const f = st.frames[i], im = imgs[i];
     if (!f || !im) continue;
     const w = im.naturalWidth * f.scale.sx, h = im.naturalHeight * f.scale.sy;
-    // current sprite-box center (offset places the frame so its center sits there)
+    // current sprite-box top-left (offset IS the top-left position)
     const ccx = f.offset.x, ccy = f.offset.y;
     // target position of the anchor point
-    const tx = (mode==='center' || mode==='centerbottom') ? 0 : w/2;   // center-x for center/centerbottom ; left edge at 0 for leftbottom
-    const ty = mode==='center' ? 0 : -h/2;          // center→0 ; leftbottom→bottom at 0 (offset.y = -h/2)
+    const tx = (mode==='center' || mode==='centerbottom') ? -w/2 : 0;   // center-x for center/centerbottom ; left edge at 0 for leftbottom
+    const ty = mode==='center' ? -h/2 : -h;          // center→-h/2 ; leftbottom→bottom at 0 (top-left y = -h)
     const dx = tx - ccx, dy = ty - ccy;             // this frame's shift
     if (i === fi){ curDx = dx; curDy = dy; }        // remember the current frame's shift
     f.offset.x += dx; f.offset.y += dy;

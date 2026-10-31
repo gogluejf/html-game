@@ -22,8 +22,8 @@ function filmBounds(st){
   for (let i=0;i<st.frames.length;i++){
     const f=st.frames[i], im=app.cur.imgs[i]; if(!im) continue;
     const w=im.naturalWidth*f.scale.sx, h=im.naturalHeight*f.scale.sy;
-    minX=Math.min(minX,f.offset.x-w/2); minY=Math.min(minY,f.offset.y-h/2);
-    maxX=Math.max(maxX,f.offset.x+w/2); maxY=Math.max(maxY,f.offset.y+h/2);
+    minX=Math.min(minX,f.offset.x); minY=Math.min(minY,f.offset.y);
+    maxX=Math.max(maxX,f.offset.x+w); maxY=Math.max(maxY,f.offset.y+h);
     const bxArr = f.boxes || [];
     for (const m of bxArr){
       minX=Math.min(minX,m.x); minY=Math.min(minY,m.y);
@@ -97,7 +97,7 @@ export function drawFilm(){
     }
     if (im){
       const w=im.naturalWidth*f.scale.sx, h=im.naturalHeight*f.scale.sy;
-      const sxp=X(f.offset.x-w/2), syp=Y(f.offset.y-h/2);
+      const sxp=X(f.offset.x), syp=Y(f.offset.y);
       g.drawImage(im, sxp, syp, w*scale, h*scale);
       g.fillStyle='rgba(180,123,255,.06)'; g.fillRect(sxp,syp,w*scale,h*scale);
       g.strokeStyle='rgba(180,123,255,.7)'; g.strokeRect(sxp,syp,w*scale,h*scale);

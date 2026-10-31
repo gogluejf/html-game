@@ -19,7 +19,7 @@ export function frameRect(st, fi){
   const im = app.cur.imgs[fi]; if (!im) return null;
   const f = st.frames[fi];
   const w = im.naturalWidth*f.scale.sx, h = im.naturalHeight*f.scale.sy;
-  return { x: f.offset.x - w/2, y: f.offset.y - h/2, w, h };
+  return { x: f.offset.x, y: f.offset.y, w, h };
 }
 
 // box rects (stored directly in sprite-space)

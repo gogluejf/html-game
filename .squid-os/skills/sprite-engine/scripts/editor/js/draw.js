@@ -103,7 +103,7 @@ export function draw(){
   if (im){
     const f = st.frames[fi];
     const w = im.naturalWidth*f.scale.sx, h = im.naturalHeight*f.scale.sy;
-    const [dx, dy] = s2c(f.offset.x - w/2, f.offset.y - h/2);
+    const [dx, dy] = s2c(f.offset.x, f.offset.y);
     ctx.drawImage(im, dx, dy, w*app.zoom, h*app.zoom);
   }
   // ALL FRAMES ghost view: while paused, draw every frame's image at its own
@@ -116,7 +116,7 @@ export function draw(){
       const gim = cur.imgs[i]; if (!gim) continue;
       const gf = st.frames[i];
       const gw = gim.naturalWidth*gf.scale.sx, gh = gim.naturalHeight*gf.scale.sy;
-      const [gdx, gdy] = s2c(gf.offset.x - gw/2, gf.offset.y - gh/2);
+      const [gdx, gdy] = s2c(gf.offset.x, gf.offset.y);
       ctx.drawImage(gim, gdx, gdy, gw*app.zoom, gh*app.zoom);
     }
     ctx.restore();

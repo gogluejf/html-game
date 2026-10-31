@@ -38,8 +38,8 @@ export function scaleAllAbout(rx, ry){
   for (let i=0;i<st.frames.length;i++){
     const f=st.frames[i], im=app.cur.imgs[i]; if(!im) continue;
     const w=im.naturalWidth*f.scale.sx, h=im.naturalHeight*f.scale.sy;
-    minX=Math.min(minX,f.offset.x-w/2); minY=Math.min(minY,f.offset.y-h/2);
-    maxX=Math.max(maxX,f.offset.x+w/2); maxY=Math.max(maxY,f.offset.y+h/2);
+    minX=Math.min(minX,f.offset.x); minY=Math.min(minY,f.offset.y);
+    maxX=Math.max(maxX,f.offset.x+w); maxY=Math.max(maxY,f.offset.y+h);
     const bxArr = f.boxes || [];
     for (const b of bxArr){
       minX=Math.min(minX,b.x); minY=Math.min(minY,b.y);
@@ -50,8 +50,8 @@ export function scaleAllAbout(rx, ry){
   for (let i=0;i<st.frames.length;i++){
     const fr=st.frames[i];
     fr.scale.sx=Math.max(.05,fr.scale.sx*rx); fr.scale.sy=Math.max(.05,fr.scale.sy*ry);
-    fr.offset.x=Math.round(cx+(fr.offset.x-cx)*rx);
-    fr.offset.y=Math.round(cy+(fr.offset.y-cy)*ry);
+    fr.offset.x=Math.round(fr.offset.x*rx);
+    fr.offset.y=Math.round(fr.offset.y*ry);
   }
   // collision (shared across frames)
   const ccx=c0.x+c0.w/2, ccy=c0.y+c0.h/2;

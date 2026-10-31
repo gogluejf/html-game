@@ -115,10 +115,10 @@ function finishHover(prev){
 // ---------- BOX behavior table (snap/move/resize per element type) ----------
 export const BOX = {
   sprite: {
-    snap(st, fi){ const f=st.frames[fi], im=app.cur.imgs[fi]; return { x:f.offset.x-im.naturalWidth*f.scale.sx/2, y:f.offset.y-im.naturalHeight*f.scale.sy/2, w:im.naturalWidth*f.scale.sx, h:im.naturalHeight*f.scale.sy }; },
+    snap(st, fi){ const f=st.frames[fi], im=app.cur.imgs[fi]; return { x:f.offset.x, y:f.offset.y, w:im.naturalWidth*f.scale.sx, h:im.naturalHeight*f.scale.sy }; },
     move(d, sx, sy){
       const st=app.cur.st;
-      const tx=Math.round(sx-d.ox+d.orig.w/2), ty=Math.round(sy-d.oy+d.orig.h/2);
+      const tx=Math.round(sx-d.ox), ty=Math.round(sy-d.oy);
       moveElement('sprite', tx, ty);
     },
     resize(d, sx, sy){
@@ -168,10 +168,9 @@ export const BOX = {
         if (R-L<1){ if(d.anchor.includes('w'))L=R-1; else R=L+1; }
         if (B-T<1){ if(d.anchor.includes('n'))T=B-1; else B=T+1; }
         const nsx=Math.max(.05,(R-L)/ow), nsy=Math.max(.05,(B-T)/oh);
-        const ncx=Math.round((L+R)/2), ncy=Math.round((T+B)/2);
         // current frame exact; then scale the WHOLE body about one shared center.
         const st=app.cur.st, fi=curFrameIdx();
-        const f0=st.frames[fi]; f0.scale.sx=nsx; f0.scale.sy=nsy; f0.offset.x=ncx; f0.offset.y=ncy;
+        const f0=st.frames[fi]; f0.scale.sx=nsx; f0.scale.sy=nsy; f0.offset.x=L; f0.offset.y=T;
         if (app.show.allFrames && d.before){
           const rx=nsx/d.before.frames[fi].sx, ry=nsy/d.before.frames[fi].sy;
           scaleAllAboutLocal(st, d.before, rx, ry);
@@ -231,8 +230,8 @@ function sharedScaleCenter(st, before){
     const f=st.frames[i], im=app.cur.imgs[i]; if(!im) continue;
     const b=before.frames[i];
     const w=im.naturalWidth*b.sx, h=im.naturalHeight*b.sy;
-    minX=Math.min(minX,b.ox-w/2); minY=Math.min(minY,b.oy-h/2);
-    maxX=Math.max(maxX,b.ox+w/2); maxY=Math.max(maxY,b.oy+h/2);
+    minX=Math.min(minX,b.ox); minY=Math.min(minY,b.oy);
+    maxX=Math.max(maxX,b.ox+w); maxY=Math.max(maxY,b.oy+h);
     const bxArr = b.bx || [];
     for (const m of bxArr){
       minX=Math.min(minX,m.x); minY=Math.min(minY,m.y);
@@ -246,8 +245,8 @@ function scaleAllAboutLocal(st, before, rx, ry){
   for (let i=0;i<st.frames.length;i++){
     const b=before.frames[i], fr=st.frames[i];
     fr.scale.sx=Math.max(.05,b.sx*rx); fr.scale.sy=Math.max(.05,b.sy*ry);
-    fr.offset.x=Math.round(C.cx+(b.ox-C.cx)*rx);
-    fr.offset.y=Math.round(C.cy+(b.oy-C.cy)*ry);
+    fr.offset.x=Math.round(b.ox*rx);
+    fr.offset.y=Math.round(b.oy*ry);
   }
   // collision (shared across frames)
   const b0=before.col;
