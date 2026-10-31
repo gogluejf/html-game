@@ -34,6 +34,12 @@
       "type": "powerup",
       "x": 16,
       "y": 2
+    },
+    {
+      "slot": "barrel-1",
+      "type": "barrel",
+      "x": 13,
+      "y": 2
     }
   ]
 }

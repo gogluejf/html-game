@@ -116,6 +116,54 @@
       "x": 14,
       "type": "barrel",
       "y": 3
+    },
+    {
+      "slot": "barrel-1",
+      "type": "barrel",
+      "x": 27,
+      "y": 3
+    },
+    {
+      "slot": "barrel-2",
+      "type": "barrel",
+      "x": 47,
+      "y": 2
+    },
+    {
+      "slot": "barrel-3",
+      "type": "barrel",
+      "x": 62,
+      "y": 4
+    },
+    {
+      "slot": "barrel-4",
+      "type": "barrel",
+      "x": 73,
+      "y": 6
+    },
+    {
+      "slot": "barrel-5",
+      "type": "barrel",
+      "x": 6,
+      "y": 0
+    },
+    {
+      "slot": "barrel-6",
+      "type": "barrel",
+      "x": 28,
+      "y": 0
+    },
+    {
+      "slot": "barrel-7",
+      "type": "barrel",
+      "x": 34,
+      "y": 0
+    },
+    {
+      "slot": "barrel-8",
+      "type": "barrel",
+      "x": 35,
+      "y": 0
     }
   ]
 }

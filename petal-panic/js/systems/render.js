@@ -109,8 +109,8 @@ export function render(ctx) {
       }
       const allTiles = collectTileEntities(getSolids(), level, seed);
       allTiles.sort((a, b) =>
-        (b.x + b.w / 2) - (a.x + a.w / 2) ||   // right first
-        (b.y + b.h)     - (a.y + a.h));         // bottom first
+        (b.y + b.h)     - (a.y + a.h) ||         // bottom first (lower = behind)
+        (b.x + b.w / 2) - (a.x + a.w / 2));       // right first (tiebreak)
       drawTileSprites(ctx, allTiles);
     } else {
       // Primitive: flat colored rects per solid.

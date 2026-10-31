@@ -65,6 +65,30 @@
       "x": 10,
       "type": "barrel",
       "y": 6
+    },
+    {
+      "slot": "barrel-1",
+      "type": "barrel",
+      "x": 6,
+      "y": 2
+    },
+    {
+      "slot": "barrel-2",
+      "type": "barrel",
+      "x": 12,
+      "y": 2
+    },
+    {
+      "slot": "barrel-3",
+      "type": "barrel",
+      "x": 19,
+      "y": 0
+    },
+    {
+      "slot": "barrel-4",
+      "type": "barrel",
+      "x": 21,
+      "y": 0
     }
   ]
 }

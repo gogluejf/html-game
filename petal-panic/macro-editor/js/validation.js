@@ -60,8 +60,10 @@ function unsupportedSlots(macro){
   const slots = macro.placements || [];
   const units = macro.units || [];
   slots.forEach((p) => {
-    // Every newly authored opportunity sits exactly one row above terrain.
-    // Existing canonical anomalies are grandfathered by slotSupportError.
+    // Every newly authored opportunity sits exactly one row above terrain
+    // or on the ground (y=0). Existing canonical anomalies are grandfathered
+    // by slotSupportError.
+    if (p.y === 0) return; // ground is a support surface
     const supported = units.some(u => {
       if (p.x < u.x || p.x >= u.x + u.width) return false;
       const surface = u.kind === 'block' ? u.y + u.height : u.y + 1;
