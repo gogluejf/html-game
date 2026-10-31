@@ -106,7 +106,7 @@ the unit changes. Documented here so future audits don't "fix" them.
 | js/systems/render.js (~70 literals) | HUD offsets, shake magnitudes, particle sizes, debug rects, colors |
 | js/debug/* (theater scenes) | standalone debug stage coordinates |
 | Viewport 960×540 | display constraint, not a game quantity |
-| Sheet JSON bbox/offset/pivot values | source-art native space; scaled at runtime via uniformScale — correct as-is |
+| Sheet JSON bbox/offset/pivot values | ~~source-art native space; scaled at runtime via uniformScale~~ **SUPERSEDED (a4758fac):** bbox is dead at runtime (standalone PNGs, natural size); offset/scale are per-frame tuning in anchor space |
 
 ---
 

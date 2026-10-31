@@ -134,8 +134,9 @@ Animation Studio contract) does the actual placement:
   non-square source art, so sx ≠ sy by design — this is per-frame TUNING, not
   a §4 rescale; the §4 scalar stays one per animation.
 
-`drawSprite()` uses this path whenever `frame.offset` is present; sheets
-without tuning keep the legacy bbox fallback (untuned object sheets).
+`drawSprite()` uses tuned placement whenever `frame.offset` is present;
+sheets without tuning fall back to the legacy placement (centered on the
+anchor x, bottom edge on the anchor line) at the image's natural size.
 
 - **Platforms:** the drawn slab is pinned to the landing face — `tileSprite.js`
   multiplies the anim scale by `PLATFORM_DRAW_H / UNIT_PX_Y` (≈0.125) for

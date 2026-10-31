@@ -42,8 +42,18 @@ A sprite animation contains:
 - per-animation target collision-box height (logical cells)
 - animation-level collision box
 - animation-level pivot point
-- per-frame sprite data
+- per-frame sprite data: `offset` (where the frame's CENTER sits in anchor
+  space, y-up — optional; absent → legacy placement: centered on the anchor
+  x, bottom edge on the anchor line) and `scale` (`{sx, sy}` multiplier on
+  the image's natural size — optional, default 1)
 - per-frame spatial markers
+
+Frame PNGs are standalone files: each frame IS its own image, drawn whole at
+its natural size. There is no sheet/crop rect at runtime — cropping happened
+at asset-creation time and the game never sees it. Frame SIZE comes from the
+PNG's natural dimensions × per-frame scale; frame POSITION comes from
+`offset`; the §4 scalar (from the animation's collision box) scales both
+together so art and geometry stay locked.
 
 The runtime must reproduce the Animation Studio export exactly.
 
@@ -233,7 +243,9 @@ Sprite Box is PER FRAME.
 
 Different frames may have different source PNG dimensions or crop bounds.
 
-The Sprite Box exists to normalize those differences at runtime.
+The Sprite Box exists to normalize those differences at runtime. At runtime
+it is realized by the frame's natural PNG size × per-frame `scale`, placed
+by per-frame `offset` (§2) under the §4 uniform scalar.
 
 Changing the Sprite Box must NOT implicitly modify gameplay collision geometry.
 

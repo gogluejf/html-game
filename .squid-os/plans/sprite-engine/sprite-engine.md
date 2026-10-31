@@ -1,5 +1,14 @@
 # EPIC: Sprite Animation Engine — Runtime Wiring (v1)
 Why: Entities currently render placeholder rects; the Animation Studio sheet JSONs (frames, bbox, timing) exist in assets but nothing in the game consumes them. The 2026-10-27 session proposed the entity.sprite contract (anchor + anims dict + setAnim) but it was never written down or built.
+> **STATUS (2026-10-30, commit a4758fac):** the bbox-based frame contract in
+> this plan (M1/M2: `frames: [{file, bbox}]`, bbox as scale reference,
+> drawImage of frame bboxes) is **SUPERSEDED**. bbox was removed from the
+> runtime entirely: frames are standalone PNGs drawn whole at natural size;
+> size = collision box + §4 uniform scalar; position = per-frame `offset`
+> (center, anchor space) + optional `scale`. Current contract:
+> `docs/architecture/sprites.md` §2/§9 and `docs/architecture/terrain-tiling.md`.
+> Text below is kept as the original plan record.
+
 Outcomes: Real sprite frames on entities driven by sheet JSON; uniform per-animation scaling from target height (48px/Y-unit); fixed physical anchor with collision box re-resolution; playback mode/direction/timing per docs/architecture/sprites.md; every entity type wired through one generic setAnim() path.
 
 ## MILESTONE: 1 - Sheet Loader
