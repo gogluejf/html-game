@@ -76,10 +76,11 @@ test('setAnim never MOVES the entity — position fixed, size derives (§3)', ()
   e.setAnim('level');
   // Position (the physical anchor) is untouched...
   assert.deepEqual({ x: e.x, y: e.y }, before);
-  // ...size now comes from the sheet box × §4 scale (box 332×525, target 48):
-  const s = 48 / 525;
+  // ...size now comes from the sheet box × §4 scale:
+  const cb = data.anims.level.collisionBox;
+  const s = 48 / cb.h;
   assert.ok(Math.abs(e.h - 48) < 1e-9, 'h = target height exactly');
-  assert.ok(Math.abs(e.w - 332 * s) < 1e-9, 'w keeps the sheet ratio');
+  assert.ok(Math.abs(e.w - cb.w * s) < 1e-9, 'w keeps the sheet ratio');
 });
 
 test('unknown anim throws with a clear message', () => {

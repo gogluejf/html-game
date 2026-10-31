@@ -13,7 +13,8 @@
 // unit-testable without a DOM.
 
 import { Entity } from '../core/entity.js';
-import { tintedImage } from '../effects/spriteFlash.js';
+import { spriteColorPulse } from '../effects/spriteColorPulse.js';
+import { spriteOutline } from '../effects/spriteOutline.js';
 import { isHighGraphic } from '../core/renderMode.js';
 import { LAYER } from '../consts.js';
 import { BARREL_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
@@ -283,8 +284,8 @@ export class Checkpoint extends Entity {
     this.type = 'checkpoint';
     this.checkpointId = id;
     this.triggered = false;
-    this.flashTimer = 0; // brief white flash after triggering (render reads it)
-    this._pulseTime = 0;  // clock for the idle pre-trigger pulse
+    this._outline = null; // spriteOutline instance (persistent)
+    this._tint = null;    // spriteColorPulse instance (idle or captured)
 
     // Sprite data (v1): level vs boss flag art, scaled from the collision box (§4).
     // `frames` is a LIVE accessor (see barrel above) so late-loaded images are
@@ -295,12 +296,18 @@ export class Checkpoint extends Entity {
       Object.defineProperty(this.sprite, 'frames', { get: () => checkpointFrames });
       setAnimSafe(this, 'level');
     }
+    // Persistent 2px black outline (follows silhouette + any shake/rotation).
+    this._outline = spriteOutline({ color: '#000000', thickness: 6, opacity: 1.0 }, this);
+    // Idle tint: infinite yellow pulse (transparent → 0.8 yellow → transparent).
+    this._tint = spriteColorPulse({
+      colorA: 'transparent', colorB: '#ffe600',
+      duration: 1.3, cycles: -1, opacity: 0.8, easing: 'easeInOut',
+    }, this);
   }
 
-  /** Per-frame step: advance the idle pulse clock. */
+  /** Per-frame step: advance effects. */
   update(dt) {
-    if (this.flashTimer > 0) this.flashTimer = Math.max(0, this.flashTimer - dt);
-    if (!this.triggered) this._pulseTime += dt;
+    if (this._tint && !this._tint.done) this._tint.update(dt);
   }
 
   /**
@@ -316,7 +323,11 @@ export class Checkpoint extends Entity {
     // REVISION-zones-as-data §4: respawn position is zone data (feet on the
     // floor), not the flag's sprite box. Fallback keeps legacy flags working.
     hero.checkpoint = this.spawnPos ?? { x: this.x, y: this.y };
-    this.flashTimer = 0.4;
+    // Swap idle pulse for a solid yellow tint (colorA === colorB = no fade).
+    this._tint = spriteColorPulse({
+      colorA: '#ffe600', colorB: '#ffe600',
+      duration: 1, cycles: -1, opacity: 0.8, easing: 'linear',
+    }, this);
     // SFX: checkpoint
     return true;
   }
@@ -325,38 +336,16 @@ export class Checkpoint extends Entity {
    * Draw the flag body + tint overlay.
    * - Before trigger: slow looping yellow pulse (attracts attention).
    * - After trigger: solid yellow tint stays permanently (activated state).
-   * Both use the silhouette pipeline (tintedImage) so the color follows the art.
+   * Both use the silhouette pipeline so the color follows the art.
    * @param {CanvasRenderingContext2D} ctx
    */
   draw(ctx) {
     if (!this.alive) return;
     super.draw(ctx);
-    // Silhouette tint only in high-graphic mode (primitive/debug shows plain rect).
+    // Silhouette effects only in high-graphic mode (primitive/debug shows plain rect).
     if (!isHighGraphic()) return;
-    if (typeof this.spriteFrame !== 'function') return;
-    const f = this.spriteFrame();
-    if (!f || !f.img) return;
-    let alpha;
-    if (this.triggered || this.isEntry) {
-      // Solid yellow at peak opacity — captured/activated state.
-      // Entry flags are ALWAYS activated (the hero starts there).
-      alpha = 0.8;
-    } else {
-      // Slow idle pulse: ~2s cycle, sine wave 0→0.8→0.
-      alpha = 0.4 + 0.4 * Math.sin(this._pulseTime * Math.PI);
-    }
-    if (alpha <= 0.01) return;
-    const tinted = tintedImage(f.img, '#ffe600');
-    if (!tinted) return;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.translate(f.anchorX, f.anchorY);
-    if (f.mirrorX) ctx.scale(-1, 1);
-    if (f.mirrorY) ctx.scale(1, -1);
-    if (f.rotation) ctx.rotate(f.rotation);
-    ctx.scale(f.scale, f.scale);
-    ctx.drawImage(tinted, 0, 0, tinted.width, tinted.height, f.dx, f.dy, f.w, f.h);
-    ctx.restore();
+    if (this._outline && !this._outline.done) this._outline.render(ctx);
+    if (this._tint && !this._tint.done) this._tint.render(ctx);
   }
 }
 
@@ -375,6 +364,14 @@ export function makeCheckpoint(id, x, y, extra = {}) {
   const c = new Checkpoint(id, x, y);
   c.isEntry = extra.isEntry ?? false;
   c.appearance = extra.appearance ?? 'entry';
+  // Entry flags are ALWAYS activated (the hero starts there) — solid tint,
+  // not the idle pulse.
+  if (c.isEntry && c._tint) {
+    c._tint = spriteColorPulse({
+      colorA: '#ffe600', colorB: '#ffe600',
+      duration: 1, cycles: -1, opacity: 0.8, easing: 'linear',
+    }, c);
+  }
   // Boss-zone flags use the boss flag art (2-anim dict: level/boss).
   if (c.sprite && c.appearance === 'boss-checkpoint') setAnimSafe(c, 'boss');
   // Restart position stored on hero.checkpoint when this flag triggers:

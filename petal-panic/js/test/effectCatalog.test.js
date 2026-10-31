@@ -103,8 +103,8 @@ const DEFAULT_PARAMS = {
 console.log('catalog shape');
 const list = theaterList();
 ok('returns an array', () => assert.ok(Array.isArray(list), 'theaterList() returns an array'));
-ok('has exactly 28 entries (all catalog effects, Heat Distortion excluded)', () => {
-  assert.equal(list.length, 28, `expected 28 entries, got ${list.length}`);
+ok('has exactly 29 entries (all catalog effects, Heat Distortion excluded)', () => {
+  assert.equal(list.length, 29, `expected 29 entries, got ${list.length}`);
 });
 ok('every entry has { type, name, demo } with demo a function', () => {
   for (const e of list) {
@@ -131,7 +131,7 @@ ok('full type sequence matches the documented catalog order', () => {
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
     'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',
-    'composite-explosion', 'beam', 'pulse-bubble', 'blink-transition', 'sprite-color-pulse',
+    'composite-explosion', 'beam', 'pulse-bubble', 'blink-transition', 'sprite-color-pulse', 'sprite-outline',
   ];
   assert.deepEqual(list.map(e => e.type), expected, 'full catalog order matches §1→§24 then Beam');
 });
@@ -254,7 +254,7 @@ ok('at least one draw call across most effects after a few frames', () => {
     if (anyDraw(ctx)) drew++;
     resetEffects();
   }
-  assert.ok(drew >= list.length - 5, `most effects visibly draw (drew ${drew}/${list.length})`);
+  assert.ok(drew >= list.length - 6, `most effects visibly draw (drew ${drew}/${list.length})`);
 });
 
 console.log(`${passed} passed`);

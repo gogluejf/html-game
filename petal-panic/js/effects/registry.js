@@ -97,3 +97,6 @@ registerEffect('blink-transition', blinkTransition);
 
 import { spriteColorPulse } from './spriteColorPulse.js';
 registerEffect('sprite-color-pulse', spriteColorPulse);
+
+import { spriteOutline } from './spriteOutline.js';
+registerEffect('sprite-outline', spriteOutline);

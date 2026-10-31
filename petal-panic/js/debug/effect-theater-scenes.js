@@ -247,6 +247,12 @@ const SCENES = {
     fire(c, entry) { return fireManual({ type: entry.type, params: { ...entry.params } }, c.enemy); },
     draw(ctx, c) { c.enemy.draw(ctx); },
   },
+  // 30. Sprite Outline: enemy gets a black contour
+  'sprite-outline': {
+    setup() { return { enemy: enemyBox(STAGE_X - 16, STAGE_Y - 20) }; },
+    fire(c, entry) { return fireManual({ type: entry.type, params: { ...entry.params } }, c.enemy); },
+    draw(ctx, c) { c.enemy.draw(ctx); },
+  },
   // 13. Camera Shake — full screen proxy
   'camera-shake': {
     setup() { return {}; },

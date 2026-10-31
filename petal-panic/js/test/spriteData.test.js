@@ -120,14 +120,15 @@ test('scaleReference is the authored collision box (no fallback)', () => {
 });
 
 test('uniformScale fits reference height onto target height (one scalar)', () => {
-  // Checkpoint flag art is 525px tall in source; entity box is 48px → scale 48/525.
+  // Checkpoint flag: read actual collision box height from the sheet.
   const data = parseSheet(sheet('objects/checkpoint/level_sheet.json'));
+  const refH = data.anims.level.collisionBox.h;
   const s = uniformScale(data.anims.level, 48);
-  assert.ok(Math.abs(s - 48 / 525) < 1e-9);
+  assert.ok(Math.abs(s - 48 / refH) < 1e-9);
   // Barrel: use the actual collision box height from the sheet.
   const barrel = parseSheet(sheet('objects/barrel/wooden_sheet.json'));
-  const refH = barrel.anims.wooden.collisionBox.h;
-  assert.ok(Math.abs(uniformScale(barrel.anims.wooden, 48) - 48 / refH) < 1e-9);
+  const bRefH = barrel.anims.wooden.collisionBox.h;
+  assert.ok(Math.abs(uniformScale(barrel.anims.wooden, 48) - 48 / bRefH) < 1e-9);
 });
 
 // --- Frame loader (node: no DOM → safe empty resolution) ------------------------

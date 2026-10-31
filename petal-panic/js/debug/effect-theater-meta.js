@@ -350,4 +350,12 @@ export const EFFECT_META = {
       { key: 'opacity',  config: true, kind: 'num', desc: 'Peak alpha (0-1)' },
     ],
   },
+  'sprite-outline': {
+    desc: 'Solid-color contour around sprite silhouette. Selection highlights, target indicators.',
+    params: [
+      { key: 'color',     config: true, kind: 'str', desc: 'Outline color' },
+      { key: 'thickness', config: true, kind: 'int', desc: 'Width (px)' },
+      { key: 'opacity',   config: true, kind: 'num', desc: 'Alpha (0-1)' },
+    ],
+  },
 };
