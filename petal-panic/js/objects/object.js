@@ -297,7 +297,7 @@ export class Checkpoint extends Entity {
       setAnimSafe(this, 'level');
     }
     // Persistent 2px black outline (follows silhouette + any shake/rotation).
-    this._outline = spriteOutline({ color: '#000000', thickness: 6, opacity: 1.0 }, this);
+    this._outline = spriteOutline({ color: '#000000', thickness: 3, opacity: 1.0 }, this);
     // Idle tint: infinite yellow pulse (transparent → 0.8 yellow → transparent).
     this._tint = spriteColorPulse({
       colorA: 'transparent', colorB: '#ffe600',
