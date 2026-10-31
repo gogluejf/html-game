@@ -20,7 +20,7 @@ import { drawHUD } from '../systems/hud.js';
 import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../world/level.js';
 import { isHighGraphic } from '../core/renderMode.js';
 import { tileSolid, loadTerrainFrames, drawFloor, getFloorEntity } from '../world/terrainTiles.js';
-import { getTileSprites, drawTileSprites, drawSheetBox } from '../world/tileSprite.js';
+import { getTileSprites, drawTileSprites } from '../world/tileSprite.js';
 import { getLastWorldSeed } from '../world/build.js';
 import { drawParallaxBg } from '../world/parallax.js';
 import { bombAttacks, getActiveZone } from './update.js';
@@ -392,28 +392,6 @@ export function render(ctx) {
       if (!s.alive) continue;
       const frac = s.ttlFrac;
       drawLabel(ctx, s.x + s.w / 2, s.y - 10, s.type, frac, layerColor(s));
-    }
-    ctx.restore();
-  }
-
-  // Temporary blue diagnostic: same visibility as the terrain tile boxes,
-  // independent of Debug.enabled and collision-layer classification.
-  if (isHighGraphic()) {
-    ctx.save();
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = '#2f6fff';
-    for (const b of getBarrels()) {
-      if (b.alive && b.visible !== false) drawSheetBox(ctx, b);
-    }
-    const level = getActiveZone(getHero())?.level ?? 1;
-    for (const solid of getSolids()) {
-      if (solid.kind !== 'floor') continue;
-      const floor = getFloorEntity(solid, level);
-      if (!floor.spriteAnimData?.collisionBox) continue;
-      // Floor repeats horizontally across the macro-owned span.
-      // Its displayed collision spans that same world width.
-      ctx.fillRect(floor.x, floor.y, solid.w,
-        floor.spriteAnimData.collisionBox.h * floor._spriteScale);
     }
     ctx.restore();
   }

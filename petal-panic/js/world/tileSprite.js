@@ -12,7 +12,6 @@
 
 import { getLevelAsset } from './levelAssets.js';
 import { Entity } from '../core/entity.js';
-import { isHighGraphic } from '../core/renderMode.js';
 
 /** kind → variant anim names (merged block/platform SpriteData). */
 const VARIANT_ANIMS = {
@@ -85,19 +84,6 @@ export function drawTileSprites(ctx, pool) {
     // Fallback: flat rect at the tile footprint (legacy look, no stretch).
     ctx.fillStyle = e.debugColor ?? '#a86';
     ctx.fillRect(e.x, e.y, e.w, e.h);
-  }
-  // Sheet-box overlay (debug): blue 75% alpha rect where the SHEET's collision
-  // box lands under the delta rule — compare against orange (physical solid)
-  // and the art. All three agreeing = contract holding.
-  if (typeof CanvasRenderingContext2D !== 'undefined' && isHighGraphic()) {
-    ctx.save();
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = '#2f6fff';
-    for (const e of pool) {
-      if (!e) continue;
-      drawSheetBox(ctx, e);
-    }
-    ctx.restore();
   }
   return drew;
 }
