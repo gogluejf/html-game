@@ -46,26 +46,19 @@ test('block_single tile scales from the sheet collision box (§4)', async () => 
   assert.equal(e._spriteScale, expected, 'scale comes from the authored collision box');
 });
 
-test('platform_single tile pins its slab to the landing face (PLATFORM_DRAW_H)', async () => {
+test('platform_single tile scales from the sheet collision box (§4)', async () => {
   const data = parseSheet(await readSheet('platform_single_sheet.json'));
-  // The sheet's collision box is editor-tuned (art reference, not the tile
-  // footprint), so the §4 target for terrain tiles is the TILE RECT height,
-  // not the sheet box height: base scale = 1u / box.h, then the one-way pin
-  // × PLATFORM_DRAW_H/UNIT_PX_Y makes the drawn slab a thin strip at the
-  // platform's top face (build.js R5.1).
-  // The sheet box is now 1/8 of the authored art reference. The one-way pin
-  // targets PLATFORM_DRAW_H, then cancels the 8x increase so the art scale is
-  // identical to the pre-thinning value.
+  // Same rule as blocks: scale = tile rect height / sheet collision box h.
+  // Platform tile rect h = PLATFORM_DRAW_H (the thin collision slab).
   const refH = data.anims.platform_single.collisionBox.h;
-  const expected = (UNIT_PX_Y / refH) * PLATFORM_DRAW_H / UNIT_PX_Y / 8;
-  assert.ok(Math.abs(expected - PLATFORM_DRAW_H / (refH * 8)) < 1e-9, `reference: ${PLATFORM_DRAW_H} / original collision h ${refH * 8}`);
+  const expected = uniformScale(data.anims.platform_single, PLATFORM_DRAW_H);
+  assert.ok(Math.abs(expected - PLATFORM_DRAW_H / refH) < 1e-9, `reference: ${PLATFORM_DRAW_H} / collision h ${refH}`);
 
   await loadLevelAsset(1, 'platform');
   _clearAllTilePools();
-  const s = { x: 0, y: 200, w: UNIT_PX_X, h: UNIT_PX_Y, oneWay: true };
+  const s = { x: 0, y: 200, w: UNIT_PX_X, h: PLATFORM_DRAW_H, oneWay: true };
   const pool = getTileSprites(s, 1, tileSolid(s, 1, 42));
-  // 1 unit wide → single variant. (float: two-step multiply vs one-step)
-  assert.ok(Math.abs(pool[0]._spriteScale - expected) < 1e-12);
+  assert.equal(pool[0]._spriteScale, expected, 'scale comes from the authored collision box');
 });
 
 test('drawTileSprites falls back to flat rects when frames are unloaded (node)', async () => {
@@ -82,7 +75,7 @@ test('drawTileSprites falls back to flat rects when frames are unloaded (node)',
   // Fallback rect matches the tile footprint exactly.
   // Right→left draw order: first fallback rect is the right-most triple (x4–7u).
   // Right→left draw order: first fallback rect is the single at x6–7u.
-  assert.deepEqual(rects[0].rect, [6 * UNIT_PX_X, 200, 1 * UNIT_PX_X, UNIT_PX_Y]);
+  assert.deepEqual(rects[0].rect, [6 * UNIT_PX_X, 200, 1 * UNIT_PX_X, PLATFORM_DRAW_H]);
 });
 
 test('pool is reused for identical solids, rebuilt when the rect changes', async () => {

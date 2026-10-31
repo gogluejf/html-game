@@ -6,7 +6,7 @@ import { test } from 'node:test';
 
 import { tileSolid, buildTerrainTiles, loadTerrainFrames } from '../world/terrainTiles.js';
 import { decomposeVariant } from '../world/squareGrid.js';
-import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
+import { UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H } from '../world/macros.js';
 
 // --- Width decomposition (longest-first) ---------------------------------------
 // Decomposition lives in the shared footprint contract (squareGrid.js); the
@@ -45,7 +45,7 @@ test('tileSolid: 1x1 one-way solid → one single tile at full size', async () =
   assert.equal(t.x, 0);
   assert.equal(t.y, 100);
   assert.equal(t.w, UNIT_PX_X);
-  assert.equal(t.h, UNIT_PX_Y);
+  assert.equal(t.h, PLATFORM_DRAW_H);
   assert.ok(t.imgKey?.startsWith('platform_single_f'));
 });
 
@@ -108,9 +108,8 @@ test('tileSolid: 7-unit platform → triple+triple+single right-to-left', async 
   assert.deepEqual([...tiles].sort((a, b) => a.x - b.x).map((t) => t.variant), [3, 3, 1]);
   // Total width covered.
   assert.equal(tiles.reduce((a, t) => a + t.w, 0), 7 * UNIT_PX_X);
-  // Tile rect is the full 1u collision rect; the 6px slab pinning happens in
-  // tileSprite.js (targetH = PLATFORM_DRAW_H), not here.
-  for (const t of tiles) assert.equal(t.h, UNIT_PX_Y);
+  // Tile rect height is PLATFORM_DRAW_H — same as the collision box.
+  for (const t of tiles) assert.equal(t.h, PLATFORM_DRAW_H);
 });
 
 test('tileSolid: 4-tall 2-wide block stacks height rows bottom-up ([3,1])', async () => {

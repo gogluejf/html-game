@@ -10,7 +10,6 @@
 // terrainTiles.js; this module only turns those decisions into drawable
 // entities. Pool is rebuilt when the solid rect changes (zone transitions).
 
-import { UNIT_PX_Y, PLATFORM_DRAW_H } from './macros.js';
 import { getLevelAsset } from './levelAssets.js';
 import { Entity } from '../core/entity.js';
 import { isHighGraphic } from '../core/renderMode.js';
@@ -61,15 +60,10 @@ export function getTileSprites(s, level, tiles) {
       // standard bottom-center anchor do the rest. Per-frame tuning in the
       // sheet JSON (offset/scale) then places each frame exactly as authored
       // in the editor — blocks fill their row, platforms pin a thin slab to
-      // the landing face (build.js R5.1 thins the solid to PLATFORM_DRAW_H
-      // at that same face).
+      // the landing face (tile h = PLATFORM_DRAW_H, same as the collision box).
       e.sprite = { anchor: 'bottom-center', anims: asset.data.anims, boxFromSheet: false }; // macro grid owns tile solids
       Object.defineProperty(e.sprite, 'frames', { get: () => asset.frames });
       e.setAnim(animName);
-      // Platform sheet collision heights were reduced to 1/8 without
-      // changing the art. Cancel the resulting 8x scale increase so existing
-      // image size and top-left deltas remain unchanged.
-      if (s.oneWay) e._spriteScale *= PLATFORM_DRAW_H / UNIT_PX_Y / 8;
       pool[i] = e;
     }
     // Frame pick can change on rebuild (new seed/rect): retarget without rescale.

@@ -145,7 +145,7 @@ export function tileSolid(s, level, seed) {
         x: colX,
         y: s.y,
         w: colW * UNIT_PX_X,
-        h: UNIT_PX_Y,
+        h: PLATFORM_DRAW_H,
         frame,
         kind,
         variant: colW,
