@@ -48,6 +48,11 @@ export class Entity {
    *                                   If present, targetH=h/48.
    */
   constructor(opts = {}) {
+    Entity.prototype.initialize.call(this, opts);
+  }
+
+  /** Initialize base state on this identity; pooled subclasses call this on reuse. */
+  initialize(opts = {}) {
     // --- Position -----------------------------------------------------------
     this.x = opts.x ?? 0;
     this.y = opts.y ?? 0;
@@ -89,6 +94,7 @@ export class Entity {
     // --- Sprite data (sprites.md runtime wiring, v1) -------------------------
     this.sprite = opts.sprite ?? null;
     this._spriteAnim = null;
+    this._player = null;
     this._spriteScale = 1;
 
     // --- Collision ----------------------------------------------------------

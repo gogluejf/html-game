@@ -97,7 +97,12 @@ export class Projectile extends Entity {
    * @param {boolean} [friendly=true] true = hero's shot, false = enemy/boss shot
    */
   constructor(x, y, dir, friendly = true) {
-    super({
+    super();
+    this.initialize(x, y, dir, friendly);
+  }
+
+  initialize(x, y, dir, friendly = true) {
+    super.initialize({
       x, y,
       targetH: PROJECTILE_TARGET_H, // pure size model — width is sheet-owned (§4)
       layer: friendly ? LAYER.PROJ_ALLY : LAYER.PROJ_FOE,
@@ -166,6 +171,7 @@ export class Projectile extends Entity {
     this._impactPoint = null;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
+    this.tickAnim(dt);
     this.life -= dt;
     if (this.life <= 0) this.alive = false;
   }
@@ -174,7 +180,7 @@ export class Projectile extends Entity {
 
 /**
  * Fixed-size object pool. Objects are pre-allocated once; spawn() reuses any
- * inactive slot by copying a fresh instance over it (Object.assign), so no new
+ * inactive slot by initializing it in place, so no new
  * objects are created during gameplay. When every slot is live, spawn() returns
  * null and the caller simply skips firing (soft cap).
  */
@@ -195,7 +201,7 @@ export class Pool {
   }
 
   /**
-   * Reuse an inactive slot with a freshly-built instance.
+   * Reuse an inactive slot in place, preserving effect/carrier identity.
    * @returns {object|null} the live item, or null if the pool is exhausted.
    */
   spawn(...args) {
@@ -206,7 +212,9 @@ export class Pool {
         // must not append the same object a second time (double physics).
         // Remove extension fields from the previous attack generation.
         for (const key of Object.keys(item)) delete item[key];
-        Object.assign(item, new this.ClassRef(...args));
+        // Reinitialize the LIVE slot: copying a temporary instance leaves
+        // effect closures bound to that unmoving temporary carrier.
+        item.initialize(...args);
         item.alive = true;
         if (!this.active.includes(item)) this.active.push(item);
         return item;
@@ -261,11 +269,16 @@ export class Special extends Entity {
    * @param {string} type special weapon id (see SPECIAL_WEAPONS registry)
    */
   constructor(x, y, dir, type) {
+    super();
+    this.initialize(x, y, dir, type);
+  }
+
+  initialize(x, y, dir, type) {
     // Parked pool slots are built with no type; they stay inert until spawn()
     // copies a fully-built instance over them via Object.assign.
     const meta = type != null ? specialById[type] : null;
     if (type != null && !meta) throw new Error(`Unknown special weapon: ${type}`);
-    super({
+    super.initialize({
       x, y,
       targetH: (meta?.size ?? 16) / UNIT_PX_Y, // pure size model — square specials
       layer: LAYER.PROJ_ALLY,
@@ -324,6 +337,8 @@ export class Special extends Entity {
     }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
+
+    this.tickAnim(dt);
 
     // TTL countdown.
     const wasAlive = this.alive;

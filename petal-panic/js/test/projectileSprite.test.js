@@ -95,7 +95,7 @@ test('T6: no raw w:/h: literals in entity constructors (audit gate)', () => {
   for (const rel of AUDIT_FILES) {
     const src = rfs(join(HERE, '..', rel), 'utf8');
     // Find the super({ ... }) block(s) and assert they carry targetH, not w/h.
-    const supers = [...src.matchAll(/super\(\{([\s\S]*?)\}\)/g)].map((m) => m[1]);
+    const supers = [...src.matchAll(/super(?:\.initialize)?\(\{([\s\S]*?)\}\)/g)].map((m) => m[1]);
     assert.ok(supers.length >= 1, `${rel}: expected a super({...}) call`);
     for (const body of supers) {
       assert.ok(!/^\s*w:\s*\d/.test(body) && !/\bw:\s*\d+\s*,\s*h:/.test(body),
