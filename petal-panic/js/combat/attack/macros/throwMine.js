@@ -28,7 +28,6 @@ defineMacro('throwMine', {
     // Same rectangular body for collision and visual; Special remains the only integrator.
     const cx = ent.x + ent.w / 2, cy = ent.y + ent.h / 2;
     Object.assign(ent, { x: cx - 12, y: cy - 4, w: 24, h: 8, _attackVisualOwned: true });
-    Object.assign(ent.box, { ox: 0, oy: 0, bw: 24, bh: 8 });
     const box = h.state.box;
     const sync = () => { box.x = ent.x; box.y = ent.y; };
     sync();
