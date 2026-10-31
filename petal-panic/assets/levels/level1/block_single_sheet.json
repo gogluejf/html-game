@@ -20,7 +20,17 @@
             0,
             463,
             327
-          ]
+          ],
+          "offset": {
+            "x": 0,
+            "y": -163.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "block_single_f2.png",
@@ -31,15 +41,33 @@
             327,
             464,
             286
-          ]
+          ],
+          "offset": {
+            "x": 0,
+            "y": -143
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         }
       ],
       "collision": {
-        "x": -232,
-        "y": -232,
-        "w": 464,
-        "h": 232
-      }
+        "x": -209,
+        "y": -248,
+        "w": 423,
+        "h": 211
+      },
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "pivot": {
+        "x": 0,
+        "y": -116
+      },
+      "markers": []
     }
   ],
   "updated": "2026-10-30T03:18:55",

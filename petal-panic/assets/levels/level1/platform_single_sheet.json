@@ -20,7 +20,17 @@
             0,
             248,
             229
-          ]
+          ],
+          "offset": {
+            "x": 124,
+            "y": -114.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "platform_single_f2.png",
@@ -31,7 +41,17 @@
             229,
             249,
             252
-          ]
+          ],
+          "offset": {
+            "x": 124.5,
+            "y": -126
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "platform_single_f3.png",
@@ -42,7 +62,17 @@
             481,
             254,
             260
-          ]
+          ],
+          "offset": {
+            "x": 127,
+            "y": -130
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "platform_single_f4.png",
@@ -53,7 +83,17 @@
             741,
             249,
             184
-          ]
+          ],
+          "offset": {
+            "x": 124.5,
+            "y": -92
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "platform_single_f5.png",
@@ -64,7 +104,17 @@
             925,
             247,
             194
-          ]
+          ],
+          "offset": {
+            "x": 123.5,
+            "y": -97
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "platform_single_f6.png",
@@ -75,15 +125,33 @@
             1119,
             253,
             179
-          ]
+          ],
+          "offset": {
+            "x": 126.5,
+            "y": -89.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         }
       ],
       "collision": {
-        "x": -127,
-        "y": -254,
-        "w": 254,
-        "h": 254
-      }
+        "x": 30,
+        "y": -164,
+        "w": 196,
+        "h": 196
+      },
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "pivot": {
+        "x": 120,
+        "y": -110
+      },
+      "markers": []
     }
   ],
   "updated": "2026-10-30"
