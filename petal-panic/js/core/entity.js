@@ -277,20 +277,33 @@ export class Entity {
     const ay = this.y + this.h;
     // Frame geometry comes from the IMAGE itself (each frame is its own PNG —
     // the crop happened at asset-creation time; there is no sheet to cut into)
-    // plus per-frame TUNING from the sheet JSON: offset (where the frame's
-    // CENTER sits in anchor space, y-up — exactly how the sprite editor
-    // displays frames) and scale (multiplier on the natural size). The §4
-    // uniform scalar `s` scales everything together, so art and collision
-    // box stay locked. No tuning → legacy placement (centered, bottom on the
-    // anchor line) so untuned sheets render as before.
+    // plus per-frame TUNING from the sheet JSON. DELTA RULE: the editor
+    // authors frame.offset relative to ITS origin (which depends on the layout
+    // button used — bottom-left, center, …), so the game never trusts offset
+    // as an absolute anchor-space position. Instead it uses the delta between
+    // the frame center and the BOX'S BOTTOM-CENTER (the true anchor):
+    //   spriteCenter = anchor + (offset − boxBottomCenter) × s
+    // Move box+frame together in the editor → delta unchanged → render
+    // unchanged. Nudge the picture relative to the box → render follows.
+    // Editor view = game view, regardless of which layout button was used.
+    // No tuning → legacy placement (centered, bottom on the anchor line).
     const nw = img.naturalWidth;
     const nh = img.naturalHeight;
     const fsx = frame.scale?.sx ?? 1;
     const fsy = frame.scale?.sy ?? 1;
     const w = nw * fsx;
     const h = nh * fsy;
-    const dx = frame.offset ? frame.offset.x - w / 2 : -w / 2;
-    const dy = frame.offset ? frame.offset.y - h / 2 : -h;
+    let dx, dy;
+    if (frame.offset && data.collisionBox) {
+      const cb = data.collisionBox;
+      const bcx = cb.x + cb.w / 2;          // box bottom-center in sheet space
+      const bcy = cb.y + cb.h;              // (y-up: bottom = top + height)
+      dx = (frame.offset.x - bcx) * s - w / 2;
+      dy = (frame.offset.y - bcy) * s - h / 2;
+    } else {
+      dx = -w / 2;
+      dy = -h;
+    }
 
     ctx.save();
     ctx.translate(ax, ay);
@@ -324,9 +337,10 @@ export class Entity {
    * pipeline instead of a rect over worldBox(). Returns null when no sheet
    * frame is loaded (primitive fallback active) — effects fall back to box
    * mode. All geometry in ANCHOR SPACE matching drawSprite(): the frame's
-   * natural size (× per-frame tuning scale) is centered on offset.x and its
-   * bottom sits at offset.y (or on the anchor line when untuned), scaled by
-   * `scale`, mirrored/rotated per the entity state.
+   * natural size (× per-frame tuning scale) is placed by the DELTA RULE —
+   * (offset − box bottom-center) × s from the anchor (or legacy centered/
+   * bottom-on-anchor when untuned) — scaled by `scale`, mirrored/rotated per
+   * the entity state.
    * @returns {?{img:object, w:number, h:number, dx:number, dy:number,
    *             scale:number, anchorX:number, anchorY:number, mirrorX:boolean,
    *             mirrorY:boolean, rotation:number, tile:boolean, widthUnits:number}}
@@ -342,8 +356,17 @@ export class Entity {
     const fsy = frame.scale?.sy ?? 1;
     const w = img.naturalWidth * fsx;
     const h = img.naturalHeight * fsy;
-    const dx = frame.offset ? frame.offset.x - w / 2 : -w / 2;
-    const dy = frame.offset ? frame.offset.y - h / 2 : -h;
+    let dx, dy;
+    if (frame.offset && data.collisionBox) {
+      // Delta rule (same as drawSprite): offset is editor-origin-relative,
+      // so place the frame by its delta from the box bottom-center.
+      const cb = data.collisionBox;
+      dx = (frame.offset.x - (cb.x + cb.w / 2)) * this._spriteScale - w / 2;
+      dy = (frame.offset.y - (cb.y + cb.h)) * this._spriteScale - h / 2;
+    } else {
+      dx = -w / 2;
+      dy = -h;
+    }
     return {
       img,
       w, h, dx, dy,

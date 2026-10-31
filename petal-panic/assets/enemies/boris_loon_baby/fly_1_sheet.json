@@ -1,73 +1,137 @@
 {
- "file": "petal-panic/assets/enemies/boris_loon_baby/fly_1_sheet.png",
- "size": "1482x259",
- "rows": 1,
- "cols": 5,
- "kind": "animation",
- "description": "boris_loon_baby fly_1 (5 frames) \u2014 reassembled from frames",
- "entities": [
-  {
-   "name": "boris_loon_baby",
-   "anim": "fly_1",
-   "frames": [
+  "file": "petal-panic/assets/enemies/boris_loon_baby/fly_1_sheet.png",
+  "size": "1482x259",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "boris_loon_baby fly_1 (5 frames) \u2014 reassembled from frames",
+  "entities": [
     {
-     "file": "fly_1_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      2,
-      301,
-      255
-     ]
-    },
-    {
-     "file": "fly_1_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      301,
-      9,
-      299,
-      240
-     ]
-    },
-    {
-     "file": "fly_1_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      600,
-      9,
-      262,
-      240
-     ]
-    },
-    {
-     "file": "fly_1_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      862,
-      0,
-      314,
-      259
-     ]
-    },
-    {
-     "file": "fly_1_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1176,
-      12,
-      306,
-      235
-     ]
+      "name": "boris_loon_baby",
+      "anim": "fly_1",
+      "frames": [
+        {
+          "file": "fly_1_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            2,
+            301,
+            255
+          ],
+          "offset": {
+            "x": 150.5,
+            "y": -127.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "fly_1_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            301,
+            9,
+            299,
+            240
+          ],
+          "offset": {
+            "x": 149.5,
+            "y": -120
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "fly_1_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            600,
+            9,
+            262,
+            240
+          ],
+          "offset": {
+            "x": 131,
+            "y": -120
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "fly_1_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            862,
+            0,
+            314,
+            259
+          ],
+          "offset": {
+            "x": 157,
+            "y": -129.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "fly_1_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1176,
+            12,
+            306,
+            235
+          ],
+          "offset": {
+            "x": 153,
+            "y": -117.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/enemies/boris_loon_baby",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -247,
+        "w": 293,
+        "h": 247
+      },
+      "pivot": {
+        "x": 147,
+        "y": -123
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/enemies/boris_loon_baby"
-  }
- ],
- "updated": "2026-10-21"
+  ],
+  "updated": "2026-10-21"
 }

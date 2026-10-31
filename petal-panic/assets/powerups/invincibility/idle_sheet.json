@@ -1,62 +1,116 @@
 {
- "file": "petal-panic/assets/powerups/invincibility/idle_sheet.png",
- "size": "1412x154",
- "rows": 1,
- "cols": 4,
- "kind": "animation",
- "description": "invincibility idle (4 frames) \u2014 reassembled from frames",
- "entities": [
-  {
-   "name": "invincibility",
-   "anim": "idle",
-   "frames": [
+  "file": "petal-panic/assets/powerups/invincibility/idle_sheet.png",
+  "size": "1412x154",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "invincibility idle (4 frames) \u2014 reassembled from frames",
+  "entities": [
     {
-     "file": "idle_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      1,
-      320,
-      151
-     ]
-    },
-    {
-     "file": "idle_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      320,
-      1,
-      353,
-      151
-     ]
-    },
-    {
-     "file": "idle_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      673,
-      0,
-      412,
-      154
-     ]
-    },
-    {
-     "file": "idle_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1085,
-      1,
-      327,
-      151
-     ]
+      "name": "invincibility",
+      "anim": "idle",
+      "frames": [
+        {
+          "file": "idle_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            1,
+            320,
+            151
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "idle_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            320,
+            1,
+            353,
+            151
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "idle_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            673,
+            0,
+            412,
+            154
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "idle_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1085,
+            1,
+            327,
+            151
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/powerups/invincibility",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 4,
+        "y": -151,
+        "w": 316,
+        "h": 147
+      },
+      "pivot": {
+        "x": 162,
+        "y": -77
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/powerups/invincibility"
-  }
- ],
- "updated": "2026-10-21"
+  ],
+  "updated": "2026-10-21"
 }

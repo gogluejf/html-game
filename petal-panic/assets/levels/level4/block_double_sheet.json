@@ -20,7 +20,17 @@
             0,
             462,
             621
-          ]
+          ],
+          "offset": {
+            "x": 0,
+            "y": -310.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "block_double_f2.png",
@@ -31,15 +41,33 @@
             621,
             465,
             461
-          ]
+          ],
+          "offset": {
+            "x": 0,
+            "y": -230.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         }
       ],
       "collision": {
-        "x": -233,
-        "y": -465,
-        "w": 465,
-        "h": 465
-      }
+        "x": -224.5,
+        "y": -449,
+        "w": 449,
+        "h": 449
+      },
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "pivot": {
+        "x": 0,
+        "y": -224
+      },
+      "markers": []
     }
   ],
   "updated": "2026-10-30T03:19:00",

@@ -1,73 +1,137 @@
 {
- "file": "petal-panic/assets/enemies/lanky_bully/throw_sheet.png",
- "size": "1961x741",
- "rows": 1,
- "cols": 5,
- "kind": "animation",
- "description": "lanky_bully throw (5f)",
- "entities": [
-  {
-   "name": "lanky_bully",
-   "anim": "throw",
-   "frames_dir": "petal-panic/assets/enemies/lanky_bully",
-   "frames": [
+  "file": "petal-panic/assets/enemies/lanky_bully/throw_sheet.png",
+  "size": "1961x741",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "lanky_bully throw (5f)",
+  "entities": [
     {
-     "file": "throw_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      18,
-      314,
-      705
-     ]
-    },
-    {
-     "file": "throw_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      314,
-      38,
-      338,
-      665
-     ]
-    },
-    {
-     "file": "throw_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      652,
-      0,
-      369,
-      741
-     ]
-    },
-    {
-     "file": "throw_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1021,
-      46,
-      567,
-      649
-     ]
-    },
-    {
-     "file": "throw_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1588,
-      34,
-      373,
-      673
-     ]
+      "name": "lanky_bully",
+      "anim": "throw",
+      "frames_dir": "petal-panic/assets/enemies/lanky_bully",
+      "frames": [
+        {
+          "file": "throw_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            18,
+            314,
+            705
+          ],
+          "offset": {
+            "x": 157,
+            "y": -352.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "throw_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            314,
+            38,
+            338,
+            665
+          ],
+          "offset": {
+            "x": 169,
+            "y": -332.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "throw_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            652,
+            0,
+            369,
+            741
+          ],
+          "offset": {
+            "x": 184.5,
+            "y": -370.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "throw_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1021,
+            46,
+            567,
+            649
+          ],
+          "offset": {
+            "x": 283.5,
+            "y": -324.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "throw_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1588,
+            34,
+            373,
+            673
+          ],
+          "offset": {
+            "x": 186.5,
+            "y": -336.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 6,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -697,
+        "w": 306,
+        "h": 697
+      },
+      "pivot": {
+        "x": 153,
+        "y": -348
+      },
+      "markers": []
     }
-   ]
-  }
- ],
- "updated": "2026-10-27"
+  ],
+  "updated": "2026-10-27"
 }

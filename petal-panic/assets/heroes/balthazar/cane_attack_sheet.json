@@ -20,7 +20,17 @@
             125,
             339,
             301
-          ]
+          ],
+          "offset": {
+            "x": 169.5,
+            "y": -150.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "cane_attack_f2.png",
@@ -31,7 +41,17 @@
             89,
             317,
             373
-          ]
+          ],
+          "offset": {
+            "x": 158.5,
+            "y": -186.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "cane_attack_f3.png",
@@ -42,7 +62,17 @@
             105,
             393,
             341
-          ]
+          ],
+          "offset": {
+            "x": 196.5,
+            "y": -170.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "cane_attack_f4.png",
@@ -53,7 +83,17 @@
             119,
             441,
             314
-          ]
+          ],
+          "offset": {
+            "x": 220.5,
+            "y": -157
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "cane_attack_f5.png",
@@ -64,7 +104,17 @@
             105,
             458,
             342
-          ]
+          ],
+          "offset": {
+            "x": 229,
+            "y": -171
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "cane_attack_f6.png",
@@ -75,9 +125,33 @@
             124,
             410,
             304
-          ]
+          ],
+          "offset": {
+            "x": 205,
+            "y": -152
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         }
-      ]
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -293,
+        "w": 331,
+        "h": 293
+      },
+      "pivot": {
+        "x": 166,
+        "y": -146
+      },
+      "markers": []
     }
   ]
 }

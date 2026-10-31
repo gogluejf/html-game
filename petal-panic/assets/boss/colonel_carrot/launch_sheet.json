@@ -1,73 +1,137 @@
 {
- "file": "petal-panic/assets/boss/colonel_carrot/launch_sheet.png",
- "size": "2235x690",
- "rows": 1,
- "cols": 5,
- "kind": "animation",
- "description": "colonel_carrot launch (5 frames)",
- "entities": [
-  {
-   "name": "colonel_carrot",
-   "anim": "launch",
-   "frames_dir": "petal-panic/assets/boss/colonel_carrot",
-   "frames": [
+  "file": "petal-panic/assets/boss/colonel_carrot/launch_sheet.png",
+  "size": "2235x690",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "colonel_carrot launch (5 frames)",
+  "entities": [
     {
-     "file": "launch_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      39,
-      109,
-      368,
-      472
-     ]
-    },
-    {
-     "file": "launch_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      453,
-      119,
-      435,
-      452
-     ]
-    },
-    {
-     "file": "launch_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      906,
-      114,
-      422,
-      462
-     ]
-    },
-    {
-     "file": "launch_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1341,
-      55,
-      447,
-      579
-     ]
-    },
-    {
-     "file": "launch_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1802,
-      0,
-      418,
-      690
-     ]
+      "name": "colonel_carrot",
+      "anim": "launch",
+      "frames_dir": "petal-panic/assets/boss/colonel_carrot",
+      "frames": [
+        {
+          "file": "launch_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            39,
+            109,
+            368,
+            472
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "launch_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            453,
+            119,
+            435,
+            452
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "launch_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            906,
+            114,
+            422,
+            462
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "launch_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1341,
+            55,
+            447,
+            579
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "launch_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1802,
+            0,
+            418,
+            690
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": -180,
+        "y": -232,
+        "w": 360,
+        "h": 464
+      },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "markers": []
     }
-   ]
-  }
- ],
- "updated": "2026-10-22"
+  ],
+  "updated": "2026-10-22"
 }

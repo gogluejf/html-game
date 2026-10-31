@@ -20,7 +20,17 @@
             28,
             311,
             304
-          ]
+          ],
+          "offset": {
+            "x": 155.5,
+            "y": -152
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "attack_f2.png",
@@ -31,7 +41,17 @@
             41,
             534,
             278
-          ]
+          ],
+          "offset": {
+            "x": 267,
+            "y": -139
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "attack_f3.png",
@@ -42,7 +62,17 @@
             0,
             534,
             361
-          ]
+          ],
+          "offset": {
+            "x": 273,
+            "y": -122
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "attack_f4.png",
@@ -53,7 +83,17 @@
             33,
             463,
             294
-          ]
+          ],
+          "offset": {
+            "x": 231.5,
+            "y": -147
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "attack_f5.png",
@@ -64,9 +104,33 @@
             30,
             330,
             301
-          ]
+          ],
+          "offset": {
+            "x": 165,
+            "y": -150.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         }
-      ]
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -296,
+        "w": 303,
+        "h": 296
+      },
+      "pivot": {
+        "x": 152,
+        "y": -148
+      },
+      "markers": []
     }
   ],
   "updated": "2026-10-27",

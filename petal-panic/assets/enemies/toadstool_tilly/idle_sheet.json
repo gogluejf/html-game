@@ -1,73 +1,137 @@
 {
- "file": "petal-panic/assets/enemies/toadstool_tilly/idle_sheet.png",
- "size": "1228x252",
- "rows": 1,
- "cols": 5,
- "kind": "animation",
- "description": "toadstool_tilly idle (5 frames) \u2014 reassembled from frames",
- "entities": [
-  {
-   "name": "toadstool_tilly",
-   "anim": "idle",
-   "frames": [
+  "file": "petal-panic/assets/enemies/toadstool_tilly/idle_sheet.png",
+  "size": "1228x252",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "toadstool_tilly idle (5 frames) \u2014 reassembled from frames",
+  "entities": [
     {
-     "file": "idle_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      3,
-      242,
-      246
-     ]
-    },
-    {
-     "file": "idle_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      242,
-      3,
-      240,
-      246
-     ]
-    },
-    {
-     "file": "idle_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      482,
-      2,
-      248,
-      248
-     ]
-    },
-    {
-     "file": "idle_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      730,
-      0,
-      252,
-      252
-     ]
-    },
-    {
-     "file": "idle_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      982,
-      1,
-      246,
-      249
-     ]
+      "name": "toadstool_tilly",
+      "anim": "idle",
+      "frames": [
+        {
+          "file": "idle_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            3,
+            242,
+            246
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "idle_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            242,
+            3,
+            240,
+            246
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "idle_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            482,
+            2,
+            248,
+            248
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "idle_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            730,
+            0,
+            252,
+            252
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "idle_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            982,
+            1,
+            246,
+            249
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/enemies/toadstool_tilly",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": -117,
+        "y": -119,
+        "w": 234,
+        "h": 238
+      },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/enemies/toadstool_tilly"
-  }
- ],
- "updated": "2026-10-21"
+  ],
+  "updated": "2026-10-21"
 }

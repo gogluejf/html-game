@@ -1,62 +1,116 @@
 {
- "file": "petal-panic/assets/boss/tusko_wobble/trunk_blast_sheet.png",
- "size": "1615x214",
- "rows": 1,
- "cols": 4,
- "kind": "animation",
- "description": "tusko_wobble trunk_blast (4 frames) \u2014 reassembled from frames",
- "entities": [
-  {
-   "name": "tusko_wobble",
-   "anim": "trunk_blast",
-   "frames": [
+  "file": "petal-panic/assets/boss/tusko_wobble/trunk_blast_sheet.png",
+  "size": "1615x214",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "tusko_wobble trunk_blast (4 frames) \u2014 reassembled from frames",
+  "entities": [
     {
-     "file": "trunk_blast_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      2,
-      318,
-      209
-     ]
-    },
-    {
-     "file": "trunk_blast_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      318,
-      1,
-      643,
-      211
-     ]
-    },
-    {
-     "file": "trunk_blast_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      961,
-      0,
-      342,
-      214
-     ]
-    },
-    {
-     "file": "trunk_blast_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1303,
-      4,
-      312,
-      206
-     ]
+      "name": "tusko_wobble",
+      "anim": "trunk_blast",
+      "frames": [
+        {
+          "file": "trunk_blast_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            2,
+            318,
+            209
+          ],
+          "offset": {
+            "x": 159,
+            "y": -104.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "trunk_blast_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            318,
+            1,
+            643,
+            211
+          ],
+          "offset": {
+            "x": 321.5,
+            "y": -105.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "trunk_blast_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            961,
+            0,
+            342,
+            214
+          ],
+          "offset": {
+            "x": 171,
+            "y": -107
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "trunk_blast_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1303,
+            4,
+            312,
+            206
+          ],
+          "offset": {
+            "x": 156,
+            "y": -103
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/boss/tusko_wobble",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 4,
+        "y": -205,
+        "w": 310,
+        "h": 201
+      },
+      "pivot": {
+        "x": 159,
+        "y": -104
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/boss/tusko_wobble"
-  }
- ],
- "updated": "2026-10-21"
+  ],
+  "updated": "2026-10-21"
 }

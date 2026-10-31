@@ -1,160 +1,161 @@
 {
- "label": "boss",
- "file": "petal-panic/assets/boss/ratchet_rumbelow/ground_slam_sheet.png",
- "rows": 2,
- "cols": 3,
- "size": "1539x868",
- "description": "Ratchet Rumbelow boss, sheet 2/5 \u2014 6 frames (ground_slam x2 rows)",
- "entities": [
-  {
-   "name": "ratchet_rumbelow",
-   "anim": "ground_slam",
-   "frames": [
+  "label": "boss",
+  "file": "petal-panic/assets/boss/ratchet_rumbelow/ground_slam_sheet.png",
+  "rows": 2,
+  "cols": 3,
+  "size": "1539x868",
+  "description": "Ratchet Rumbelow boss, sheet 2/5 \u2014 6 frames (ground_slam x2 rows)",
+  "entities": [
     {
-     "file": "ground_slam_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      8,
-      35,
-      493,
-      391
-     ],
-     "offset": {
-      "x": 99,
-      "y": -57
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "ground_slam_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      522,
-      0,
-      485,
-      461
-     ],
-     "offset": {
-      "x": 242.5,
-      "y": -230.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "ground_slam_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      1036,
-      1,
-      487,
-      459
-     ],
-     "offset": {
-      "x": 243.5,
-      "y": -229.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "ground_slam_f4.png",
-     "row": 1,
-     "col": 0,
-     "bbox": [
-      0,
-      464,
-      509,
-      400
-     ],
-     "offset": {
-      "x": 254.5,
-      "y": -200
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "ground_slam_f5.png",
-     "row": 1,
-     "col": 1,
-     "bbox": [
-      509,
-      461,
-      512,
-      407
-     ],
-     "offset": {
-      "x": 256,
-      "y": -203.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "ground_slam_f6.png",
-     "row": 1,
-     "col": 2,
-     "bbox": [
-      1021,
-      473,
-      518,
-      382
-     ],
-     "offset": {
-      "x": 259,
-      "y": -191
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
+      "name": "ratchet_rumbelow",
+      "anim": "ground_slam",
+      "frames": [
+        {
+          "file": "ground_slam_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            8,
+            35,
+            493,
+            391
+          ],
+          "offset": {
+            "x": 246.5,
+            "y": -195.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "ground_slam_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            522,
+            0,
+            485,
+            461
+          ],
+          "offset": {
+            "x": 242.5,
+            "y": -230.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "ground_slam_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1036,
+            1,
+            487,
+            459
+          ],
+          "offset": {
+            "x": 243.5,
+            "y": -229.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "ground_slam_f4.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            464,
+            509,
+            400
+          ],
+          "offset": {
+            "x": 254.5,
+            "y": -200
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "ground_slam_f5.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            509,
+            461,
+            512,
+            407
+          ],
+          "offset": {
+            "x": 256,
+            "y": -203.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "ground_slam_f6.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            1021,
+            473,
+            518,
+            382
+          ],
+          "offset": {
+            "x": 259,
+            "y": -191
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "collision": {
+        "x": 4,
+        "y": -387,
+        "w": 485,
+        "h": 383
+      },
+      "pivot": {
+        "x": 247,
+        "y": -195
+      },
+      "markers": [],
+      "frames_dir": "petal-panic/assets/boss/ratchet_rumbelow",
+      "direction": "forward"
     }
-   ],
-   "speed": 8,
-   "playback": "loop",
-   "collision": {
-    "x": 4,
-    "y": -387,
-    "w": 485,
-    "h": 383
-   },
-   "pivot": {
-    "x": 247,
-    "y": -195
-   },
-   "markers": [],
-   "frames_dir": "petal-panic/assets/boss/ratchet_rumbelow"
-  }
- ],
- "crop": {
-  "pass": "/tmp/redo-ratchet_rumbelow-ground_slam-v1"
- },
- "kind": "animation"
+  ],
+  "crop": {
+    "pass": "/tmp/redo-ratchet_rumbelow-ground_slam-v1"
+  },
+  "kind": "animation"
 }

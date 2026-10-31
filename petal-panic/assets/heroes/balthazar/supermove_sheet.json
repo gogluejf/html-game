@@ -1,245 +1,310 @@
 {
- "label": "heroes",
- "file": "petal-panic/assets/heroes/balthazar/supermove_sheet.png",
- "size": "2042x889",
- "rows": 2,
- "cols": 5,
- "description": "Balthazhar tiger ringmaster hero sheet 7, supermove \u2014 forward dash/slide (row1) + glide deceleration (row2), 2x5",
- "original_prompt": "Balthazhar supermove sheet \u2014 forward dash slide + glide, 2x5, hand-painted circus style",
- "entities": [
-  {
-   "name": "balthazar",
-   "anim": "supermove",
-   "frames": [
+  "label": "heroes",
+  "file": "petal-panic/assets/heroes/balthazar/supermove_sheet.png",
+  "size": "2042x889",
+  "rows": 2,
+  "cols": 5,
+  "description": "Balthazhar tiger ringmaster hero sheet 7, supermove \u2014 forward dash/slide (row1) + glide deceleration (row2), 2x5",
+  "original_prompt": "Balthazhar supermove sheet \u2014 forward dash slide + glide, 2x5, hand-painted circus style",
+  "entities": [
     {
-     "file": "supermove_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      4,
-      18,
-      344,
-      346
-     ],
-     "offset": {
-      "x": 172,
-      "y": -173
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      353,
-      28,
-      466,
-      327
-     ],
-     "offset": {
-      "x": 233,
-      "y": -163.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      819,
-      66,
-      474,
-      251
-     ],
-     "offset": {
-      "x": 237,
-      "y": -125.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1312,
-      3,
-      275,
-      377
-     ],
-     "offset": {
-      "x": 137.5,
-      "y": -188.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1606,
-      0,
-      436,
-      383
-     ],
-     "offset": {
-      "x": 218,
-      "y": -191.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f6.png",
-     "row": 1,
-     "col": 0,
-     "bbox": [
-      0,
-      507,
-      353,
-      258
-     ],
-     "offset": {
-      "x": 176.5,
-      "y": -129
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f7.png",
-     "row": 1,
-     "col": 1,
-     "bbox": [
-      423,
-      452,
-      325,
-      368
-     ],
-     "offset": {
-      "x": 162.5,
-      "y": -184
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f8.png",
-     "row": 1,
-     "col": 2,
-     "bbox": [
-      909,
-      406,
-      294,
-      460
-     ],
-     "offset": {
-      "x": 147,
-      "y": -230
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f9.png",
-     "row": 1,
-     "col": 3,
-     "bbox": [
-      1293,
-      411,
-      313,
-      450
-     ],
-     "offset": {
-      "x": 156.5,
-      "y": -225
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f10.png",
-     "row": 1,
-     "col": 4,
-     "bbox": [
-      1670,
-      383,
-      308,
-      506
-     ],
-     "offset": {
-      "x": 154,
-      "y": -253
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
+      "name": "balthazar",
+      "anim": "supermove",
+      "frames": [
+        {
+          "file": "supermove_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            4,
+            18,
+            344,
+            346
+          ],
+          "offset": {
+            "x": 172,
+            "y": -179
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            353,
+            28,
+            466,
+            327
+          ],
+          "offset": {
+            "x": 233,
+            "y": -163.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 307,
+              "y": -313,
+              "w": 184,
+              "h": 138
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            819,
+            66,
+            474,
+            251
+          ],
+          "offset": {
+            "x": 237,
+            "y": -125.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 337,
+              "y": -200,
+              "w": 173,
+              "h": 156
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1312,
+            3,
+            275,
+            377
+          ],
+          "offset": {
+            "x": 137.5,
+            "y": -188.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 153,
+              "y": -404,
+              "w": 135,
+              "h": 310
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1606,
+            0,
+            436,
+            383
+          ],
+          "offset": {
+            "x": 218,
+            "y": -191.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 304,
+              "y": -358,
+              "w": 170,
+              "h": 193
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f6.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            507,
+            353,
+            258
+          ],
+          "offset": {
+            "x": 176.5,
+            "y": -129
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f7.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            423,
+            452,
+            325,
+            368
+          ],
+          "offset": {
+            "x": 162.5,
+            "y": -184
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 125,
+              "y": -405,
+              "w": 140,
+              "h": 153
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f8.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            909,
+            406,
+            294,
+            460
+          ],
+          "offset": {
+            "x": 147,
+            "y": -230
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": -27,
+              "y": -474,
+              "w": 335,
+              "h": 421
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f9.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1293,
+            411,
+            313,
+            450
+          ],
+          "offset": {
+            "x": 156.5,
+            "y": -225
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 115,
+              "y": -486,
+              "w": 142,
+              "h": 170
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f10.png",
+          "row": 1,
+          "col": 4,
+          "bbox": [
+            1670,
+            383,
+            308,
+            506
+          ],
+          "offset": {
+            "x": 154,
+            "y": -253
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 162,
+              "y": -557,
+              "w": 172,
+              "h": 172
+            }
+          ],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "collision": {
+        "x": 34,
+        "y": -353,
+        "w": 265,
+        "h": 347
+      },
+      "pivot": {
+        "x": 172,
+        "y": -173
+      },
+      "markers": [],
+      "frames_dir": "petal-panic/assets/heroes/balthazar",
+      "direction": "forward"
     }
-   ],
-   "speed": 8,
-   "playback": "loop",
-   "collision": {
-    "x": 4,
-    "y": -342,
-    "w": 336,
-    "h": 338
-   },
-   "pivot": {
-    "x": 172,
-    "y": -173
-   },
-   "markers": [],
-   "frames_dir": "petal-panic/assets/heroes/balthazar"
-  }
- ],
- "crop": {
-  "pass": "/tmp/balthazar_supermove-v9"
- },
- "kind": "animation"
+  ],
+  "crop": {
+    "pass": "/tmp/balthazar_supermove-v9"
+  },
+  "kind": "animation"
 }

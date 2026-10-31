@@ -112,11 +112,17 @@ test('drawSprite renders the frame via per-frame tuning (offset/scale) when pres
   assert.equal(drawn.img, fakeImg);
   // Full image drawn (no sheet crop at runtime)...
   assert.deepEqual([drawn.sx, drawn.sy, drawn.sw, drawn.sh], [0, 0, 305, 386]);
-  // ...and placed in anchor space from the authored tuning: CENTER at offset,
-  // size = crop * frame.scale. Barrel tuning: offset (0,-193), scale 1 →
-  // dst rect spans x -152.5..+152.5, y -386..0 (bottom on the anchor line).
+  // ...and placed by the DELTA RULE: spriteCenter = anchor +
+  // (offset − boxBottomCenter) × s. Barrel box (-152.5,-386,305,386) has
+  // bottom-center at (0,0); offset (0,-193) → delta (0,-193) × s(48/386)
+  // → center at (0, -23.97); size 305×386 (scale 1).
   const f = data.anims.wooden.frames[0];
+  const cb = data.anims.wooden.collisionBox;
+  const s = e._spriteScale;
   const w = 305 * f.scale.sx, h = 386 * f.scale.sy;
-  assert.deepEqual([drawn.dx, drawn.dy, drawn.dw, drawn.dh],
-    [f.offset.x - w / 2, f.offset.y - h / 2, w, h]);
+  const exDx = (f.offset.x - (cb.x + cb.w / 2)) * s - w / 2;
+  const exDy = (f.offset.y - (cb.y + cb.h)) * s - h / 2;
+  assert.ok(Math.abs(drawn.dx - exDx) < 1e-9, `dx ${drawn.dx} vs ${exDx}`);
+  assert.ok(Math.abs(drawn.dy - exDy) < 1e-9, `dy ${drawn.dy} vs ${exDy}`);
+  assert.deepEqual([drawn.dw, drawn.dh], [w, h]);
 });

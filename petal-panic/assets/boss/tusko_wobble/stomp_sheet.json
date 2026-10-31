@@ -1,73 +1,137 @@
 {
- "file": "petal-panic/assets/boss/tusko_wobble/stomp_sheet.png",
- "size": "1543x242",
- "rows": 1,
- "cols": 5,
- "kind": "animation",
- "description": "tusko_wobble stomp (5 frames) \u2014 reassembled from frames",
- "entities": [
-  {
-   "name": "tusko_wobble",
-   "anim": "stomp",
-   "frames": [
+  "file": "petal-panic/assets/boss/tusko_wobble/stomp_sheet.png",
+  "size": "1543x242",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "tusko_wobble stomp (5 frames) \u2014 reassembled from frames",
+  "entities": [
     {
-     "file": "stomp_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      11,
-      288,
-      220
-     ]
-    },
-    {
-     "file": "stomp_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      288,
-      7,
-      297,
-      227
-     ]
-    },
-    {
-     "file": "stomp_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      585,
-      6,
-      327,
-      229
-     ]
-    },
-    {
-     "file": "stomp_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      912,
-      0,
-      331,
-      242
-     ]
-    },
-    {
-     "file": "stomp_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1243,
-      9,
-      300,
-      224
-     ]
+      "name": "tusko_wobble",
+      "anim": "stomp",
+      "frames": [
+        {
+          "file": "stomp_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            11,
+            288,
+            220
+          ],
+          "offset": {
+            "x": 144,
+            "y": -110
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "stomp_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            288,
+            7,
+            297,
+            227
+          ],
+          "offset": {
+            "x": 148.5,
+            "y": -113.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "stomp_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            585,
+            6,
+            327,
+            229
+          ],
+          "offset": {
+            "x": 163.5,
+            "y": -114.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "stomp_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            912,
+            0,
+            331,
+            242
+          ],
+          "offset": {
+            "x": 165.5,
+            "y": -121
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "stomp_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1243,
+            9,
+            300,
+            224
+          ],
+          "offset": {
+            "x": 150,
+            "y": -112
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/boss/tusko_wobble",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -212,
+        "w": 280,
+        "h": 212
+      },
+      "pivot": {
+        "x": 140,
+        "y": -106
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/boss/tusko_wobble"
-  }
- ],
- "updated": "2026-10-21"
+  ],
+  "updated": "2026-10-21"
 }

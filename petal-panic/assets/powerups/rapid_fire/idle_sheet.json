@@ -1,62 +1,116 @@
 {
- "file": "petal-panic/assets/powerups/rapid_fire/idle_sheet.png",
- "size": "1247x172",
- "rows": 1,
- "cols": 4,
- "kind": "animation",
- "description": "rapid_fire idle (4 frames) \u2014 reassembled from frames",
- "entities": [
-  {
-   "name": "rapid_fire",
-   "anim": "idle",
-   "frames": [
+  "file": "petal-panic/assets/powerups/rapid_fire/idle_sheet.png",
+  "size": "1247x172",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "rapid_fire idle (4 frames) \u2014 reassembled from frames",
+  "entities": [
     {
-     "file": "idle_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      312,
-      172
-     ]
-    },
-    {
-     "file": "idle_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      312,
-      1,
-      311,
-      170
-     ]
-    },
-    {
-     "file": "idle_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      623,
-      10,
-      312,
-      152
-     ]
-    },
-    {
-     "file": "idle_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      935,
-      0,
-      312,
-      172
-     ]
+      "name": "rapid_fire",
+      "anim": "idle",
+      "frames": [
+        {
+          "file": "idle_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            312,
+            172
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "idle_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            312,
+            1,
+            311,
+            170
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "idle_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            623,
+            10,
+            312,
+            152
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "idle_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            935,
+            0,
+            312,
+            172
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/powerups/rapid_fire",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 4,
+        "y": -172,
+        "w": 308,
+        "h": 168
+      },
+      "pivot": {
+        "x": 158,
+        "y": -88
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/powerups/rapid_fire"
-  }
- ],
- "updated": "2026-10-21"
+  ],
+  "updated": "2026-10-21"
 }

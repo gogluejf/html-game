@@ -1,95 +1,179 @@
 {
- "file": "petal-panic/assets/enemies/popper/pop_sheet.png",
- "size": "1807x464",
- "rows": 1,
- "cols": 7,
- "kind": "animation",
- "description": "popper pop (7 frames)",
- "entities": [
-  {
-   "name": "popper",
-   "anim": "pop",
-   "frames_dir": "petal-panic/assets/enemies/popper",
-   "frames": [
+  "file": "petal-panic/assets/enemies/popper/pop_sheet.png",
+  "size": "1807x464",
+  "rows": 1,
+  "cols": 7,
+  "kind": "animation",
+  "description": "popper pop (7 frames)",
+  "entities": [
     {
-     "file": "pop_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      136,
-      249,
-      191
-     ]
-    },
-    {
-     "file": "pop_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      249,
-      107,
-      275,
-      250
-     ]
-    },
-    {
-     "file": "pop_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      524,
-      94,
-      275,
-      276
-     ]
-    },
-    {
-     "file": "pop_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      799,
-      59,
-      269,
-      346
-     ]
-    },
-    {
-     "file": "pop_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1068,
-      24,
-      251,
-      416
-     ]
-    },
-    {
-     "file": "pop_f6.png",
-     "row": 0,
-     "col": 5,
-     "bbox": [
-      1319,
-      5,
-      252,
-      453
-     ]
-    },
-    {
-     "file": "pop_f7.png",
-     "row": 0,
-     "col": 6,
-     "bbox": [
-      1571,
-      0,
-      236,
-      464
-     ]
+      "name": "popper",
+      "anim": "pop",
+      "frames_dir": "petal-panic/assets/enemies/popper",
+      "frames": [
+        {
+          "file": "pop_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            136,
+            249,
+            191
+          ],
+          "offset": {
+            "x": 0,
+            "y": -95.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "pop_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            249,
+            107,
+            275,
+            250
+          ],
+          "offset": {
+            "x": 0,
+            "y": -125
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "pop_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            524,
+            94,
+            275,
+            276
+          ],
+          "offset": {
+            "x": 0,
+            "y": -138
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "pop_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            799,
+            59,
+            269,
+            346
+          ],
+          "offset": {
+            "x": 0,
+            "y": -173
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "pop_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1068,
+            24,
+            251,
+            416
+          ],
+          "offset": {
+            "x": 0,
+            "y": -208
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "pop_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1319,
+            5,
+            252,
+            453
+          ],
+          "offset": {
+            "x": 0,
+            "y": -226.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "pop_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            1571,
+            0,
+            236,
+            464
+          ],
+          "offset": {
+            "x": 0,
+            "y": -232
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 11,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": -120.5,
+        "y": -183,
+        "w": 241,
+        "h": 183
+      },
+      "pivot": {
+        "x": 0,
+        "y": -91
+      },
+      "markers": []
     }
-   ]
-  }
- ],
- "updated": "2026-10-24"
+  ],
+  "updated": "2026-10-24"
 }

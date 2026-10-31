@@ -20,7 +20,17 @@
             26,
             291,
             197
-          ]
+          ],
+          "offset": {
+            "x": 145.5,
+            "y": -98.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "glide_f2.png",
@@ -31,7 +41,17 @@
             28,
             265,
             193
-          ]
+          ],
+          "offset": {
+            "x": 132.5,
+            "y": -96.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "glide_f3.png",
@@ -42,7 +62,17 @@
             24,
             296,
             202
-          ]
+          ],
+          "offset": {
+            "x": 148,
+            "y": -101
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "glide_f4.png",
@@ -53,7 +83,17 @@
             16,
             309,
             218
-          ]
+          ],
+          "offset": {
+            "x": 154.5,
+            "y": -109
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "glide_f5.png",
@@ -64,9 +104,33 @@
             0,
             262,
             250
-          ]
+          ],
+          "offset": {
+            "x": 131,
+            "y": -125
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         }
-      ]
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -189,
+        "w": 283,
+        "h": 189
+      },
+      "pivot": {
+        "x": 142,
+        "y": -94
+      },
+      "markers": []
     }
   ],
   "updated": "2026-10-27"

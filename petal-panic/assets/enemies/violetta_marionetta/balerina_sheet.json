@@ -1,73 +1,137 @@
 {
- "file": "petal-panic/assets/enemies/violetta_marionetta/balerina_sheet.png",
- "size": "1984x709",
- "rows": 1,
- "cols": 5,
- "kind": "animation",
- "description": "violetta_marionetta balerina (5 frames)",
- "entities": [
-  {
-   "name": "violetta_marionetta",
-   "anim": "balerina",
-   "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
-   "frames": [
+  "file": "petal-panic/assets/enemies/violetta_marionetta/balerina_sheet.png",
+  "size": "1984x709",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "violetta_marionetta balerina (5 frames)",
+  "entities": [
     {
-     "file": "balerina_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      7,
-      397,
-      695
-     ]
-    },
-    {
-     "file": "balerina_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      397,
-      1,
-      405,
-      706
-     ]
-    },
-    {
-     "file": "balerina_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      802,
-      0,
-      401,
-      709
-     ]
-    },
-    {
-     "file": "balerina_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1203,
-      8,
-      433,
-      692
-     ]
-    },
-    {
-     "file": "balerina_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1636,
-      18,
-      348,
-      673
-     ]
+      "name": "violetta_marionetta",
+      "anim": "balerina",
+      "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
+      "frames": [
+        {
+          "file": "balerina_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            7,
+            397,
+            695
+          ],
+          "offset": {
+            "x": 198.5,
+            "y": -347.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "balerina_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            397,
+            1,
+            405,
+            706
+          ],
+          "offset": {
+            "x": 202.5,
+            "y": -353
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "balerina_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            802,
+            0,
+            401,
+            709
+          ],
+          "offset": {
+            "x": 200.5,
+            "y": -354.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "balerina_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1203,
+            8,
+            433,
+            692
+          ],
+          "offset": {
+            "x": 216.5,
+            "y": -346
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "balerina_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1636,
+            18,
+            348,
+            673
+          ],
+          "offset": {
+            "x": 174,
+            "y": -336.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -687,
+        "w": 389,
+        "h": 687
+      },
+      "pivot": {
+        "x": 195,
+        "y": -343
+      },
+      "markers": []
     }
-   ]
-  }
- ],
- "updated": "2026-10-23"
+  ],
+  "updated": "2026-10-23"
 }

@@ -20,7 +20,17 @@
             0,
             342,
             217
-          ]
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "shoot_f2.png",
@@ -31,7 +41,17 @@
             2,
             348,
             212
-          ]
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "shoot_f3.png",
@@ -42,7 +62,17 @@
             1,
             355,
             214
-          ]
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "shoot_f4.png",
@@ -53,7 +83,17 @@
             8,
             332,
             200
-          ]
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "shoot_f5.png",
@@ -64,7 +104,17 @@
             9,
             338,
             199
-          ]
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "shoot_f6.png",
@@ -75,9 +125,33 @@
             8,
             310,
             200
-          ]
+          ],
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         }
-      ]
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "ping_pong",
+      "collision": {
+        "x": -167,
+        "y": -104.5,
+        "w": 334,
+        "h": 209
+      },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "markers": []
     }
   ],
   "updated": "2026-10-23"

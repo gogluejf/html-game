@@ -5,19 +5,155 @@
   "cols": 6,
   "kind": "animation",
   "description": "Metal Head death \u2014 stagger, fall, explode into parts + smoke",
-  "entities": [{
-    "name": "metal_head",
-    "anim": "death",
-    "frames_dir": "petal-panic/assets/enemies/metal_head",
-    "frames": [
-      {"file": "death_f1.png", "row": 0, "col": 0, "bbox": [20, 180, 336, 405]},
-      {"file": "death_f2.png", "row": 0, "col": 1, "bbox": [369, 195, 346, 402]},
-      {"file": "death_f3.png", "row": 0, "col": 2, "bbox": [698, 281, 380, 308]},
-      {"file": "death_f4.png", "row": 0, "col": 3, "bbox": [1058, 292, 397, 314]},
-      {"file": "death_f5.png", "row": 0, "col": 4, "bbox": [1430, 295, 362, 327]},
-      {"file": "death_f6.png", "row": 0, "col": 5, "bbox": [1791, 416, 359, 214]}
-    ]
-  }],
+  "entities": [
+    {
+      "name": "metal_head",
+      "anim": "death",
+      "frames_dir": "petal-panic/assets/enemies/metal_head",
+      "frames": [
+        {
+          "file": "death_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            20,
+            180,
+            336,
+            405
+          ],
+          "offset": {
+            "x": 0,
+            "y": -202.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "death_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            369,
+            195,
+            346,
+            402
+          ],
+          "offset": {
+            "x": 0,
+            "y": -201
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "death_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            698,
+            281,
+            380,
+            308
+          ],
+          "offset": {
+            "x": 0,
+            "y": -154
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "death_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1058,
+            292,
+            397,
+            314
+          ],
+          "offset": {
+            "x": 0,
+            "y": -157
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "death_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1430,
+            295,
+            362,
+            327
+          ],
+          "offset": {
+            "x": 0,
+            "y": -163.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "death_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1791,
+            416,
+            359,
+            214
+          ],
+          "offset": {
+            "x": 0,
+            "y": -107
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "once",
+      "direction": "forward",
+      "collision": {
+        "x": -164,
+        "y": -397,
+        "w": 328,
+        "h": 397
+      },
+      "pivot": {
+        "x": 0,
+        "y": -198
+      },
+      "markers": []
+    }
+  ],
   "updated": "2026-10-27T18:14:57",
   "crop": {
     "frames_dir": "petal-panic/assets/enemies/metal_head",

@@ -1,73 +1,161 @@
 {
- "file": "petal-panic/assets/heroes/balthazar/attack_sheet.png",
- "size": "1677x320",
- "rows": 1,
- "cols": 5,
- "kind": "animation",
- "description": "balthazar attack (5 frames) \u2014 reassembled from frames",
- "entities": [
-  {
-   "name": "balthazar",
-   "anim": "attack",
-   "frames": [
+  "file": "petal-panic/assets/heroes/balthazar/attack_sheet.png",
+  "size": "1677x320",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "balthazar attack (5 frames) \u2014 reassembled from frames",
+  "entities": [
     {
-     "file": "attack_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      18,
-      329,
-      283
-     ]
-    },
-    {
-     "file": "attack_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      329,
-      10,
-      321,
-      299
-     ]
-    },
-    {
-     "file": "attack_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      650,
-      16,
-      375,
-      288
-     ]
-    },
-    {
-     "file": "attack_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1025,
-      18,
-      327,
-      284
-     ]
-    },
-    {
-     "file": "attack_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1352,
-      0,
-      325,
-      320
-     ]
+      "name": "balthazar",
+      "anim": "attack",
+      "frames": [
+        {
+          "file": "attack_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            18,
+            329,
+            283
+          ],
+          "offset": {
+            "x": 164.5,
+            "y": -141.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "attack_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            329,
+            10,
+            321,
+            299
+          ],
+          "offset": {
+            "x": 160.5,
+            "y": -149.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 23,
+              "y": -310,
+              "w": 347,
+              "h": 182
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "attack_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            650,
+            16,
+            375,
+            288
+          ],
+          "offset": {
+            "x": 187.5,
+            "y": -144
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 246,
+              "y": -299,
+              "w": 145,
+              "h": 118
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "attack_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1025,
+            18,
+            327,
+            284
+          ],
+          "offset": {
+            "x": 163.5,
+            "y": -142
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 161,
+              "y": -102,
+              "w": 190,
+              "h": 124
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "attack_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1352,
+            0,
+            325,
+            320
+          ],
+          "offset": {
+            "x": 162.5,
+            "y": -160
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/heroes/balthazar",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 4,
+        "y": -279,
+        "w": 321,
+        "h": 275
+      },
+      "pivot": {
+        "x": 165,
+        "y": -141
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/heroes/balthazar"
-  }
- ],
- "updated": "2026-10-21"
+  ],
+  "updated": "2026-10-21"
 }

@@ -1,84 +1,158 @@
 {
- "file": "petal-panic/assets/enemies/drawny/death_sheet.png",
- "size": "1511x270",
- "rows": 1,
- "cols": 6,
- "kind": "animation",
- "description": "drawny death (6 frames)",
- "entities": [
-  {
-   "name": "drawny",
-   "anim": "death",
-   "frames_dir": "petal-panic/assets/enemies/drawny",
-   "frames": [
+  "file": "petal-panic/assets/enemies/drawny/death_sheet.png",
+  "size": "1511x270",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "drawny death (6 frames)",
+  "entities": [
     {
-     "file": "death_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      254,
-      270
-     ]
-    },
-    {
-     "file": "death_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      254,
-      19,
-      250,
-      232
-     ]
-    },
-    {
-     "file": "death_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      504,
-      6,
-      272,
-      258
-     ]
-    },
-    {
-     "file": "death_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      776,
-      12,
-      272,
-      245
-     ]
-    },
-    {
-     "file": "death_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1048,
-      19,
-      251,
-      231
-     ]
-    },
-    {
-     "file": "death_f6.png",
-     "row": 0,
-     "col": 5,
-     "bbox": [
-      1299,
-      44,
-      212,
-      182
-     ]
+      "name": "drawny",
+      "anim": "death",
+      "frames_dir": "petal-panic/assets/enemies/drawny",
+      "frames": [
+        {
+          "file": "death_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            254,
+            270
+          ],
+          "offset": {
+            "x": 127,
+            "y": -135
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "death_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            254,
+            19,
+            250,
+            232
+          ],
+          "offset": {
+            "x": 125,
+            "y": -116
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "death_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            504,
+            6,
+            272,
+            258
+          ],
+          "offset": {
+            "x": 136,
+            "y": -129
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "death_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            776,
+            12,
+            272,
+            245
+          ],
+          "offset": {
+            "x": 136,
+            "y": -122.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "death_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1048,
+            19,
+            251,
+            231
+          ],
+          "offset": {
+            "x": 125.5,
+            "y": -115.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "death_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1299,
+            44,
+            212,
+            182
+          ],
+          "offset": {
+            "x": 106,
+            "y": -91
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -262,
+        "w": 246,
+        "h": 262
+      },
+      "pivot": {
+        "x": 123,
+        "y": -131
+      },
+      "markers": []
     }
-   ]
-  }
- ],
- "updated": "2026-10-24"
+  ],
+  "updated": "2026-10-24"
 }
