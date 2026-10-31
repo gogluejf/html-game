@@ -214,8 +214,8 @@ const floorEntities = new Map();
 export function getFloorEntity(s, level) {
   let e = floorEntities.get(level);
   if (!e || e.w !== s.w || e.x !== s.x || e.y !== s.y) {
-    e = new Entity({ x: s.x, y: s.y, w: s.w, h: s.h, debugColor: '#8f6' });
-    e.sprite = { anchor: 'bottom-center', targetH: ZONE_FLOOR_UNITS, tile: true, anims: {}, frames: new Map(), boxFromSheet: false }; // zone floor rect is macro-owned
+    e = new Entity({ x: s.x, y: s.y, targetH: ZONE_FLOOR_UNITS, baseW: s.w, debugColor: '#8f6' });
+    e.sprite = { anchor: 'bottom-center', tile: true, anims: {}, frames: new Map() };
     floorEntities.set(level, e);
   }
   // Wire sprite data once the shared fg asset has settled (fire-and-forget;

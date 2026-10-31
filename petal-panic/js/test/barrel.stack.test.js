@@ -26,6 +26,7 @@ const { ctx } = await import('../world/context.js');
 const DT = 1 / 60;
 const hero = U.getHero();
 const FLOOR_TOP = U.getSolids()[0].y; // ground surface y
+const BARREL_W = makeWoodBarrel(0, 0).w; // read actual width from the entity
 
 // Keep the real hero far away so it never interferes with the test barrels.
 setState(S.PLAY);
@@ -40,9 +41,9 @@ hero.invincibleTimer = 999;
 const usedColumns = new Set();
 function emptyColumns(n) {
   const out = [];
-  for (let cx = 500; cx < 3800 && out.length < n; cx += 32) {
+  for (let cx = 500; cx < 3800 && out.length < n; cx += BARREL_W) {
     let blocked = false;
-    for (const s of U.SOLIDS) if (s.y < FLOOR_TOP && s.x <= cx + 32 && s.x + s.w >= cx) blocked = true;
+    for (const s of U.SOLIDS) if (s.y < FLOOR_TOP && s.x <= cx + BARREL_W && s.x + s.w >= cx) blocked = true;
     for (const b of [...ctx.barrels, ...ctx.woodBarrels, ...ctx.coinBarrels])
       if (b.alive && Math.abs(b.x - cx) < 64) blocked = true;
     if (!blocked && !usedColumns.has(cx)) { usedColumns.add(cx); out.push(cx); }

@@ -54,7 +54,7 @@ export function getTileSprites(s, level, tiles) {
     if (!data) continue; // sheet missing this variant — skip tile
     let e = pool[i];
     if (!e) {
-      e = new Entity({ x: t.x, y: t.y, w: t.w, h: t.h, debugColor: '#a86' });
+      e = new Entity({ x: t.x, y: t.y, targetH: t.h / 48, baseW: t.w, debugColor: '#a86' });
       // The tile rect IS the placement unit (from the macro grid). Scale the
       // sheet's collision box onto that rect height (uniform §4) and let the
       // standard bottom-center anchor do the rest. Per-frame tuning in the

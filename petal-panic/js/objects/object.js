@@ -14,6 +14,7 @@
 
 import { Entity } from '../core/entity.js';
 import { tintedImage } from '../effects/spriteFlash.js';
+import { isHighGraphic } from '../core/renderMode.js';
 import { LAYER } from '../consts.js';
 import { BARREL_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
 import { flashTarget } from '../combat/damage.js';
@@ -127,8 +128,7 @@ export class GameObj extends Entity {
   constructor(def, x = 0, y = 0) {
     super({
       x, y,
-      w: def.w ?? 32,
-      h: def.h ?? 48,
+      targetH: (def.h ?? 48) / 48,
       layer: LAYER.SOLID,          // barrels block movement (destructible solids)
       debugColor: '#f39c12',
       gravity: 0,                  // objects sit still; they don't fall
@@ -152,7 +152,7 @@ export class GameObj extends Entity {
     // until then.
     const spriteData = getBarrelSpriteData();
     if (def.spriteAnim && spriteData?.anims[def.spriteAnim]) {
-      this.sprite = { anchor: 'bottom-center', targetH: 1.0, anims: spriteData.anims };
+      this.sprite = { anchor: 'bottom-center', anims: spriteData.anims };
       Object.defineProperty(this.sprite, 'frames', { get: () => barrelFrames });
       setAnimSafe(this, def.spriteAnim);
     }
@@ -259,9 +259,10 @@ export function makeCoinBarrel(x, y) {
 // respawn point. Triggering latches per-checkpoint so re-walking over it does
 // nothing; a fresh run gets fresh instances.
 
+export const CHECKPOINT_TARGET_H = 1.5; // units (72px) — single source of truth
+
 const CHECKPOINT_DEF = {
   id: 'checkpoint',
-  w: 24, h: 48,
 };
 
 export class Checkpoint extends Entity {
@@ -273,8 +274,7 @@ export class Checkpoint extends Entity {
   constructor(id, x, y) {
     super({
       x, y,
-      w: CHECKPOINT_DEF.w,
-      h: CHECKPOINT_DEF.h,
+      targetH: CHECKPOINT_TARGET_H,
       layer: LAYER.CHECKPOINT,
       debugColor: '#ffd700',
       gravity: 0,
@@ -291,7 +291,7 @@ export class Checkpoint extends Entity {
     // picked up automatically.
     const spriteData = getCheckpointSpriteData();
     if (spriteData?.anims.level) {
-      this.sprite = { anchor: 'bottom-center', targetH: 1.5, anims: spriteData.anims };
+      this.sprite = { anchor: 'bottom-center', anims: spriteData.anims };
       Object.defineProperty(this.sprite, 'frames', { get: () => checkpointFrames });
       setAnimSafe(this, 'level');
     }
@@ -331,7 +331,8 @@ export class Checkpoint extends Entity {
   draw(ctx) {
     if (!this.alive) return;
     super.draw(ctx);
-    // Silhouette tint: needs spriteFrame() + a loaded image.
+    // Silhouette tint only in high-graphic mode (primitive/debug shows plain rect).
+    if (!isHighGraphic()) return;
     if (typeof this.spriteFrame !== 'function') return;
     const f = this.spriteFrame();
     if (!f || !f.img) return;

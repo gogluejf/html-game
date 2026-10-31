@@ -245,9 +245,10 @@ export class Entity {
     if (!data) throw new Error(`setAnim: unknown anim "${name}"`);
     this._spriteAnim = name;
     // §4: target height in Y-units → px. Scale fits the sheet's collision box
-    // height onto targetH × UNIT_PX. Width is derived by the getter (sheet
-    // aspect ratio × scale) or fixed at baseW — setAnim never writes w/h.
-    const targetUnits = this.sprite.targetH ?? this._targetH;
+    // height onto targetH × UNIT_PX. Width is derived by the getter:
+    //   - baseW set → fixed width (constructor-owned, art scales to fit)
+    //   - no baseW  → sheet aspect ratio × scale (sheet-owned)
+    const targetUnits = this._targetH;
     this._spriteScale = uniformScale(data, targetUnits * UNIT_PX);
   }
 

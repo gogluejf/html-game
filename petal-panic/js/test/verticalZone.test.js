@@ -27,7 +27,7 @@ import { test } from 'node:test';
 
 import { Camera } from '../core/camera.js';
 import { VIEW_H } from '../core/view.js';
-import { LEVELS, buildLevelZones, roomFloorTop } from '../world/level.js';
+import { LEVELS, buildLevelZones, roomFloorTop, ZONE_FLAG_H } from '../world/level.js';
 
 // --- Minimal DOM stub so systems/update.js (a browser module) loads in node. --
 // Same pattern as camera.test.js / clearSequence.test.js.
@@ -181,7 +181,7 @@ test('restart: hero respawns at the bottom-platform entry, not mid-climb', () =>
   // the entry (foot at bottom) is a safe, non-lethal start.
   const entryFlag = vzone.entryFlag;
   assert.ok(entryFlag, 'the vertical zone has an entry flag on the bottom platform');
-  assert.equal(entryFlag.y, bottom - 48, 'entry flag top sits on the bottom platform');
+  assert.equal(entryFlag.y, bottom - ZONE_FLAG_H, 'entry flag top sits on the bottom platform');
 
   // Respawn at the checkpoint (bottom entry) and confirm the hero is NOT below
   // the lethal bottom — i.e. the restart is a safe start. The kill line is the
@@ -190,7 +190,7 @@ test('restart: hero respawns at the bottom-platform entry, not mid-climb', () =>
   const cam = U.camera;
   cam.setZoneBounds(vzone);
   cam.y = cam.maxY; // fresh climb: camera at its lowest position
-  const respawned = { y: entryFlag.y - hero.h + 48, h: hero.h }; // feet at bottom
+  const respawned = { y: entryFlag.y + ZONE_FLAG_H - hero.h, h: hero.h }; // feet on flag bottom
   assert.equal(respawned.y + respawned.h, bottom, 'respawn feet rest on the bottom platform');
   assert.ok(respawned.y < cam.y + VIEW_H, 'respawned hero top is above the kill line');
   assert.equal(

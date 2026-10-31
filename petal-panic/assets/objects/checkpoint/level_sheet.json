@@ -19,16 +19,34 @@
             0,
             332,
             525
-          ]
+          ],
+          "offset": {
+            "x": -166,
+            "y": -525
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         }
       ],
       "frames_dir": "petal-panic/assets/objects/checkpoint",
       "collision": {
-        "x": 0,
-        "y": 0,
+        "x": -166,
+        "y": -525,
         "w": 332,
-        "h": 525
-      }
+        "h": 498
+      },
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "pivot": {
+        "x": 0,
+        "y": -262
+      },
+      "markers": []
     }
   ],
   "crop": {

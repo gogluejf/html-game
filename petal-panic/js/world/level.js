@@ -34,6 +34,7 @@ import {
   HORIZONTAL_ZONE_HEIGHT_UNITS,
 } from './macros.js';
 import { createRng } from './terrain.js';
+import { CHECKPOINT_TARGET_H } from '../objects/object.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 
 // ---------------------------------------------------------------------------
@@ -169,7 +170,7 @@ export const ZONE_EXIT_X = ZONE_WIDTH_VERTICAL - ZONE_EXIT_PAD;
  */
 export const BOSS_TRIGGER_X = BOSS_TRIGGER_UNITS * UNIT_PX_X; // column 30 = 1440px (authored x2)
 /** Checkpoint flag height: exactly one vertical unit. */
-export const ZONE_FLAG_H = UNIT_PX_Y;
+export const ZONE_FLAG_H = CHECKPOINT_TARGET_H * UNIT_PX_Y; // derived from the checkpoint's targetH
 /**
  * World height of a horizontal zone (px). A horizontal area is a single-screen
  * walk, so its world is exactly one view tall (VIEW_H).

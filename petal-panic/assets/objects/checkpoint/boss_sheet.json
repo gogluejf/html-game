@@ -1,32 +1,56 @@
 {
- "label": "objects",
- "file": "petal-panic/assets/objects/checkpoint/boss_sheet.png",
- "rows": 1,
- "cols": 1,
- "size": "395x427",
- "description": "Checkpoint boss target drum (single image)",
- "entities": [
-  {
-   "name": "checkpoint",
-   "anim": "boss",
-   "frames": [
+  "label": "objects",
+  "file": "petal-panic/assets/objects/checkpoint/boss_sheet.png",
+  "rows": 1,
+  "cols": 1,
+  "size": "395x427",
+  "description": "Checkpoint boss target drum (single image)",
+  "entities": [
     {
-     "file": "boss_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      395,
-      427
-     ]
+      "name": "checkpoint",
+      "anim": "boss",
+      "frames": [
+        {
+          "file": "boss_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            395,
+            427
+          ],
+          "offset": {
+            "x": -197.5,
+            "y": -427
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/checkpoint",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": -193,
+        "y": -419,
+        "w": 387,
+        "h": 389
+      },
+      "pivot": {
+        "x": 0,
+        "y": -209
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/objects/checkpoint"
-  }
- ],
- "crop": {
-  "pass": "/tmp/redo-single"
- },
- "kind": "entity_variant"
+  ],
+  "crop": {
+    "pass": "/tmp/redo-single"
+  },
+  "kind": "entity_variant"
 }
