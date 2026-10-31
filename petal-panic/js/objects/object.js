@@ -13,7 +13,7 @@
 // unit-testable without a DOM.
 
 import { Entity } from '../core/entity.js';
-import { spriteColorPulse } from '../effects/spriteColorPulse.js';
+import { tintedImage } from '../effects/spriteFlash.js';
 import { LAYER } from '../consts.js';
 import { BARREL_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
 import { flashTarget } from '../combat/damage.js';
@@ -152,7 +152,7 @@ export class GameObj extends Entity {
     // until then.
     const spriteData = getBarrelSpriteData();
     if (def.spriteAnim && spriteData?.anims[def.spriteAnim]) {
-      this.sprite = { anchor: 'bottom-center', targetH: 1.5, anims: spriteData.anims };
+      this.sprite = { anchor: 'bottom-center', targetH: 1.0, anims: spriteData.anims };
       Object.defineProperty(this.sprite, 'frames', { get: () => barrelFrames });
       setAnimSafe(this, def.spriteAnim);
     }
@@ -284,23 +284,23 @@ export class Checkpoint extends Entity {
     this.checkpointId = id;
     this.triggered = false;
     this.flashTimer = 0; // brief white flash after triggering (render reads it)
-    this._pulse = null;  // spriteColorPulse instance (triggered once)
+    this._pulseTime = 0;  // clock for the idle pre-trigger pulse
 
     // Sprite data (v1): level vs boss flag art, scaled from the collision box (§4).
     // `frames` is a LIVE accessor (see barrel above) so late-loaded images are
     // picked up automatically.
     const spriteData = getCheckpointSpriteData();
     if (spriteData?.anims.level) {
-      this.sprite = { anchor: 'bottom-center', targetH: 1.0, anims: spriteData.anims };
+      this.sprite = { anchor: 'bottom-center', targetH: 1.5, anims: spriteData.anims };
       Object.defineProperty(this.sprite, 'frames', { get: () => checkpointFrames });
       setAnimSafe(this, 'level');
     }
   }
 
-  /** Per-frame step: decay the trigger flash timer + advance pulse. */
+  /** Per-frame step: advance the idle pulse clock. */
   update(dt) {
     if (this.flashTimer > 0) this.flashTimer = Math.max(0, this.flashTimer - dt);
-    if (this._pulse && !this._pulse.done) this._pulse.update(dt);
+    if (!this.triggered) this._pulseTime += dt;
   }
 
   /**
@@ -317,29 +317,45 @@ export class Checkpoint extends Entity {
     // floor), not the flag's sprite box. Fallback keeps legacy flags working.
     hero.checkpoint = this.spawnPos ?? { x: this.x, y: this.y };
     this.flashTimer = 0.4;
-    // Color pulse: transparent → yellow → transparent, ease-in start / fast peak / decel end.
-    this._pulse = spriteColorPulse({
-      colorA: 'transparent',
-      colorB: '#ffe600',
-      duration: 0.5,
-      easing: 'easeInOut',
-    }, this);
     // SFX: checkpoint
     return true;
   }
 
   /**
-   * Draw the flag body. Debug rect fallback until real sprites land; a white
-   * flash overlay plays for FLASH duration right after triggering.
+   * Draw the flag body + tint overlay.
+   * - Before trigger: slow looping yellow pulse (attracts attention).
+   * - After trigger: solid yellow tint stays permanently (activated state).
+   * Both use the silhouette pipeline (tintedImage) so the color follows the art.
    * @param {CanvasRenderingContext2D} ctx
    */
   draw(ctx) {
     if (!this.alive) return;
     super.draw(ctx);
-    // Color pulse (silhouette-accurate yellow flash on trigger).
-    if (this._pulse && !this._pulse.done) {
-      this._pulse.render(ctx);
+    // Silhouette tint: needs spriteFrame() + a loaded image.
+    if (typeof this.spriteFrame !== 'function') return;
+    const f = this.spriteFrame();
+    if (!f || !f.img) return;
+    let alpha;
+    if (this.triggered || this.isEntry) {
+      // Solid yellow at peak opacity — captured/activated state.
+      // Entry flags are ALWAYS activated (the hero starts there).
+      alpha = 0.8;
+    } else {
+      // Slow idle pulse: ~2s cycle, sine wave 0→0.8→0.
+      alpha = 0.4 + 0.4 * Math.sin(this._pulseTime * Math.PI);
     }
+    if (alpha <= 0.01) return;
+    const tinted = tintedImage(f.img, '#ffe600');
+    if (!tinted) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(f.anchorX, f.anchorY);
+    if (f.mirrorX) ctx.scale(-1, 1);
+    if (f.mirrorY) ctx.scale(1, -1);
+    if (f.rotation) ctx.rotate(f.rotation);
+    ctx.scale(f.scale, f.scale);
+    ctx.drawImage(tinted, 0, 0, tinted.width, tinted.height, f.dx, f.dy, f.w, f.h);
+    ctx.restore();
   }
 }
 

@@ -339,4 +339,15 @@ export const EFFECT_META = {
       { key: 'duration',      config: true, kind: 'num',   desc: 'Total lifetime (s)' },
     ],
   },
+  'sprite-color-pulse': {
+    desc: 'Smooth color fade A→B→A on sprite silhouette. Checkpoint triggers, powerup glows.',
+    params: [
+      { key: 'colorA',   config: true, kind: 'str', desc: 'Start/end color' },
+      { key: 'colorB',   config: true, kind: 'str', desc: 'Peak color (50%)' },
+      { key: 'duration', config: true, kind: 'num', desc: 'Cycle lifetime (s)' },
+      { key: 'cycles',   config: true, kind: 'int', desc: 'Pulse count (neg = loop)', negativeMeans: '∞' },
+      { key: 'easing',   config: true, kind: 'enum', desc: 'Curve' },
+      { key: 'opacity',  config: true, kind: 'num', desc: 'Peak alpha (0-1)' },
+    ],
+  },
 };

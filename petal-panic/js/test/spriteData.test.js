@@ -124,9 +124,10 @@ test('uniformScale fits reference height onto target height (one scalar)', () =>
   const data = parseSheet(sheet('objects/checkpoint/level_sheet.json'));
   const s = uniformScale(data.anims.level, 48);
   assert.ok(Math.abs(s - 48 / 525) < 1e-9);
-  // Barrel art 386px tall → 48px box.
+  // Barrel: use the actual collision box height from the sheet.
   const barrel = parseSheet(sheet('objects/barrel/wooden_sheet.json'));
-  assert.ok(Math.abs(uniformScale(barrel.anims.wooden, 48) - 48 / 386) < 1e-9);
+  const refH = barrel.anims.wooden.collisionBox.h;
+  assert.ok(Math.abs(uniformScale(barrel.anims.wooden, 48) - 48 / refH) < 1e-9);
 });
 
 // --- Frame loader (node: no DOM → safe empty resolution) ------------------------

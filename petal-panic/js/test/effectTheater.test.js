@@ -83,8 +83,8 @@ const anyDraw = (ctx) => ['fill', 'stroke', 'rect', 'fillRect', 'arc', 'gradL', 
 console.log('theaterList shape');
 const list = theaterList();
 ok('returns an array', () => assert.ok(Array.isArray(list), 'theaterList() returns an array'));
-ok('has exactly 27 entries (all catalog effects, Heat Distortion excluded)', () => {
-  assert.equal(list.length, 27, `expected 27 entries, got ${list.length}`);
+ok('has exactly 28 entries (all catalog effects, Heat Distortion excluded)', () => {
+  assert.equal(list.length, 28, `expected 28 entries, got ${list.length}`);
 });
 ok('every entry has { type, name, demo } with demo a function', () => {
   for (const e of list) {
@@ -103,8 +103,8 @@ console.log('catalog ordering');
 ok('first three are particle-burst, explosion, debris (§1,§2,§3)', () => {
   assert.deepEqual(list.slice(0, 3).map(e => e.type), ['particle-burst', 'explosion', 'debris']);
 });
-ok('last entry is blink-transition (§28)', () => {
-  assert.equal(list.at(-1).type, 'blink-transition', `last is blink-transition (got ${list.at(-1).type})`);
+ok('last entry is sprite-color-pulse (§29)', () => {
+  assert.equal(list.at(-1).type, 'sprite-color-pulse', `last is sprite-color-pulse (got ${list.at(-1).type})`);
 });
 ok('sections are strictly increasing (catalog order preserved)', () => {
   // Re-derive section numbers from the registry-independent catalog by index:
@@ -116,7 +116,7 @@ ok('sections are strictly increasing (catalog order preserved)', () => {
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
     'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',
-    'composite-explosion', 'beam', 'pulse-bubble', 'blink-transition',
+    'composite-explosion', 'beam', 'pulse-bubble', 'blink-transition', 'sprite-color-pulse',
   ];
   assert.deepEqual(list.map(e => e.type), expected, 'full catalog order matches §1→§24 then Beam');
 });

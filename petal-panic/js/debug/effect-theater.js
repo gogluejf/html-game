@@ -44,7 +44,7 @@ export const Theater = createTheater({
   stepByKey: STEP_BY_KEY,
   enumValues: {
     direction: ['forward', 'reverse'],
-    easing: ['linear', 'easeIn', 'easeInCubic'],
+    easing: ['linear', 'easeIn', 'easeOut', 'easeInOut'],
     curve: ['linear', 'easeIn', 'easeOut'],
     mode: ['shrink', 'grow', 'skip'],
   },

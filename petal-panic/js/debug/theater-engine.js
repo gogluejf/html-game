@@ -131,7 +131,9 @@ export function drawPanel(ctx, panelX, w, h, { panelW, desc, params, getValue, p
       if (p.kind === 'angle') {
         valStr = `${Math.round(val * 180 / Math.PI)}°`;
       } else if (p.kind === 'int') {
-        valStr = String(Math.round(val));
+        if (p.zeroMeans && val === 0) valStr = p.zeroMeans;
+        else if (p.negativeMeans && val < 0) valStr = p.negativeMeans;
+        else valStr = String(Math.round(val));
       } else {
         valStr = String(Math.round(val * 1000) / 1000);
       }

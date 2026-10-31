@@ -2,8 +2,25 @@
 //
 // The Entity is the SINGLE SOURCE OF TRUTH for an object's position and look:
 //   - where it is      → x, y (+ vx, vy, gravity)
+//   - how big it is    → targetH (units) + optional baseW (px)
 //   - how it looks     → facing, mirrorX/Y, rotation, scale, anim
-//   - what it collides → layer bitmask + box (offset AABB)
+//   - what it collides → layer bitmask
+//
+// SIZE MODEL (single source of truth):
+//   Every entity has a `targetH` (height in Y-units, 1 unit = 48px).
+//   Width is determined by ONE of two owners:
+//     • SHEET-OWNED (default): no `baseW` passed. When a sprite anim is set
+//       via setAnim(), width = sheetCollisionBox.w × scale. Before setAnim()
+//       the width defaults to targetH × 48 (square).
+//     • CONSTRUCTOR-OWNED: `baseW` passed. Width is fixed at baseW regardless
+//       of sprite data. Used by terrain tiles, floor, projectiles, coins,
+//       hazards — anything whose logical size comes from the macro grid or
+//       a fixed design spec, not from a sheet's aspect ratio.
+//
+//   `w` and `h` are GETTERS that resolve from the above. They are never
+//   stored independently — no duplication, no stale cache. worldBox() reads
+//   the same getters so physics, debug rects, and sprite rendering can never
+//   drift apart.
 //
 // Every hero, enemy, projectile, coin, powerup, and object inherits from this.
 // Subclasses override update() / draw() as needed; the defaults here give a
@@ -14,17 +31,38 @@ import { Timers } from './timers.js';
 import { uniformScale } from './spriteData.js';
 import { isHighGraphic } from './renderMode.js';
 
+const UNIT_PX = 48; // mirrors macros.js UNIT_PX_Y (avoids circular import)
+
 export class Entity {
   /**
-   * @param {object} opts all fields optional; see design §3 for semantics.
+   * @param {object} opts
+   * @param {number} [opts.x]          top-left x (world px)
+   * @param {number} [opts.y]          top-left y (world px)
+   * @param {number} [opts.targetH]    height in Y-units (1 = 48px). Default 1.
+   * @param {number} [opts.baseW]      fixed width in px (constructor-owned size).
+   *                                   Omit for sheet-owned width.
+   * @param {number} [opts.w]          DEPRECATED: use targetH + baseW.
+   *                                   If present, baseW=w and targetH=h/48.
+   * @param {number} [opts.h]          DEPRECATED: use targetH.
+   *                                   If present, targetH=h/48.
    */
   constructor(opts = {}) {
-    // --- Position & size ---------------------------------------------------
-    // x,y = top-left of the collision box (NOT necessarily the image size).
+    // --- Position -----------------------------------------------------------
     this.x = opts.x ?? 0;
     this.y = opts.y ?? 0;
-    this.w = opts.w ?? 0;
-    this.h = opts.h ?? 0;
+
+    // --- Size (single source of truth) --------------------------------------
+    // targetH: height in Y-units. Drives both the getter `h` and setAnim() scale.
+    // baseW:   fixed width in px, OR null for sheet-owned width.
+    // Legacy w/h in opts are translated: w→baseW, h→targetH.
+    if (opts.targetH != null) {
+      this._targetH = opts.targetH;
+    } else if (opts.h != null) {
+      this._targetH = opts.h / UNIT_PX;
+    } else {
+      this._targetH = 1;
+    }
+    this._baseW = opts.baseW ?? (opts.w != null ? opts.w : null);
 
     // --- Velocity -----------------------------------------------------------
     this.vx = opts.vx ?? 0;
@@ -39,68 +77,76 @@ export class Entity {
     this.scale = opts.scale ?? 1;
 
     // --- Base sprite angle ----------------------------------------------------
-    // Optional offset for art that does NOT point right by default. Most sprites
-    // face right (0 rad); set once per entity type if the raw art points up/down.
     this.baseSpriteAngle = opts.baseSpriteAngle ?? 0;
 
     // --- Physics ------------------------------------------------------------
     this.weight = opts.weight ?? 1;     // knockback / push strength
 
     // --- Animation ----------------------------------------------------------
-    // AnimationController ref (design §11). null = no sprite animation yet;
-    // draw() falls back to a debug rect.
     this.anim = opts.anim ?? null;
 
     // --- Sprite data (sprites.md runtime wiring, v1) -------------------------
-    // entity.sprite = {
-    //   anchor: 'bottom-center',          // physical anchor (§3); default bottom-center
-    //   targetH: 1.0,                     // target height in Y-units (§4)
-    //   tile: false,                      // repeat frame across width (M7)
-    //   anims: { [name]: AnimData },      // from parseSheet(); dict keyed by state name
-    //   frames: Map<file, HTMLImageElement>,  // filled by loadFrames() (may be empty)
-    // }
-    // When set, the ACTIVE anim is tracked in this._spriteAnim (name) and
-    // this._spriteScale (uniform scalar, §4). The legacy this.anim path still
-    // works for entities that never adopt sprite data.
     this.sprite = opts.sprite ?? null;
     this._spriteAnim = null;
     this._spriteScale = 1;
 
     // --- Collision ----------------------------------------------------------
     this.layer = opts.layer ?? 0;       // bitmask (see LAYER in consts.js)
-    // Offset collision box relative to origin. Defaults to full w×h.
-    // NEVER mirrored: the AABB is symmetric regardless of facing.
-    this.box = opts.box ?? { ox: 0, oy: 0, bw: this.w, bh: this.h };
+    // Optional offset for sub-region collision (rare). Size always from getters.
+    this._boxOx = opts.box?.ox ?? 0;
+    this._boxOy = opts.box?.oy ?? 0;
 
     // --- State ----------------------------------------------------------------
     this.alive = true;
-    this.visible = true;   // false = engine skips its sprite AND its collision box
-    this.intangible = false;  // true = enemy hitboxes pass through, no damage taken
+    this.visible = true;
+    this.intangible = false;
     this.debugColor = opts.debugColor ?? '#fff';
 
     // --- Time-to-live (TTL) ---------------------------------------------------
-    // Unified labeled timer set. An entity can carry MANY concurrent countdowns
-    // (life, fuse, death, rec, inv, rapid, ...) — see timers.js. The legacy
-    // scalar `maxTtl`/`ttl` are plain fields kept in sync with the 'life' timer
-    // so existing coin/projectile code keeps working while we migrate. They are
-    // PLAIN FIELDS (not accessors) because the object pools copy instances via
-    // Object.assign, which cannot define getter-only properties.
     this.timers = new Timers();
     this._maxTtl = 0;
-    this.maxTtl = 0;   // legacy alias (total life seconds); 0 = no expiry
-    this.ttl = 0;      // legacy alias (remaining life seconds)
+    this.maxTtl = 0;
+    this.ttl = 0;
     this.ttlSpeed = opts.ttlSpeed ?? 1;
     if ((opts.maxTtl ?? 0) > 0) this.setLife(opts.maxTtl);
 
     // --- Effect radius --------------------------------------------------------
-    // Generic "zone of effect" radius in logical px. Used by:
-    //   - enemies: aggro/detection radius
-    //   - barrels: explosion AoE radius
-    //   - projectiles/bombs: blast radius
-    //   - powerups: pickup radius (future)
-    // Debug overlay draws a dashed circle for any entity with radius > 0.
-    // Subclasses may alias this (e.g. Enemy.aggroRadius → this.radius).
     this.radius = opts.radius ?? 0;
+  }
+
+  // --- Size getters (single derivation, no stored duplication) ---------------
+
+  /** Height in world px. Always targetH × 48. */
+  get h() { return this._targetH * UNIT_PX; }
+  set h(px) { this._targetH = px / UNIT_PX; }
+
+  /**
+   * Width in world px.
+   * - Constructor-owned (baseW set): returns baseW.
+   * - Sheet-owned (no baseW): if a sprite anim with collisionBox is active,
+   *   width = collisionBox.w × scale (aspect ratio from the sheet).
+   *   Otherwise falls back to targetH × 48 (square).
+   */
+  get w() {
+    if (this._baseW != null) return this._baseW;
+    const cb = this.spriteAnimData?.collisionBox;
+    if (cb && this._spriteScale) return cb.w * this._spriteScale;
+    return this._targetH * UNIT_PX;
+  }
+  set w(px) { this._baseW = px; }
+
+  /**
+   * World-space AABB. Reads the live getters — always in sync with the
+   * current size owner (sheet or constructor).
+   * @returns {{x:number, y:number, w:number, h:number}}
+   */
+  worldBox() {
+    return {
+      x: this.x + this._boxOx,
+      y: this.y + this._boxOy,
+      w: this.w,
+      h: this.h,
+    };
   }
 
   /**
@@ -142,20 +188,6 @@ export class Entity {
   get ttlFrac() {
     if (this._maxTtl <= 0) return 1;
     return this.timers.fraction(this._ttlLabel ?? 'life');
-  }
-
-  /**
-   * World-space AABB derived from the offset box.
-   * Always symmetric — independent of mirror/rotation/scale.
-   * @returns {{x:number, y:number, w:number, h:number}}
-   */
-  worldBox() {
-    return {
-      x: this.x + this.box.ox,
-      y: this.y + this.box.oy,
-      w: this.box.bw,
-      h: this.box.bh,
-    };
   }
 
   /**
@@ -212,21 +244,11 @@ export class Entity {
     const data = this.sprite.anims[name];
     if (!data) throw new Error(`setAnim: unknown anim "${name}"`);
     this._spriteAnim = name;
-    // §4: target height in Y-units → px (48px/unit). Width follows uniformly.
-    const UNIT = 48; // mirrors macros.js UNIT_PX_Y (avoids circular import)
-    const targetUnits = this.sprite.targetH ?? (this.h / UNIT);
-    this._spriteScale = uniformScale(data, targetUnits * UNIT);
-    // Sheet box owns the SHAPE (universal contract): unless the entity has
-    // another size owner (terrain tiles/floor opt out via boxFromSheet:false —
-    // their solids come from the macro grid), the physics box derives from the
-    // same §4 scalar: h lands exactly on targetH×48, w keeps the sheet's ratio.
-    // Render and physics can never drift apart. Pre-load (no data yet) the
-    // constructor w/h stays as fallback.
-    if (data.collisionBox && this.sprite.boxFromSheet !== false) {
-      const s = this._spriteScale;
-      this.w = data.collisionBox.w * s;
-      this.h = data.collisionBox.h * s;
-    }
+    // §4: target height in Y-units → px. Scale fits the sheet's collision box
+    // height onto targetH × UNIT_PX. Width is derived by the getter (sheet
+    // aspect ratio × scale) or fixed at baseW — setAnim never writes w/h.
+    const targetUnits = this.sprite.targetH ?? this._targetH;
+    this._spriteScale = uniformScale(data, targetUnits * UNIT_PX);
   }
 
   /** Active sprite AnimData (or null when no sprite anim is set/known). */

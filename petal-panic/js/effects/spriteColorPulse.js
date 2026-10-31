@@ -8,12 +8,15 @@
 // same eased progress so at 0% and 100% the sprite shows no tint (or colorA
 // at full opacity if colorA is opaque).
 //
-// params: { colorA?, colorB?, duration?, easing?, box? }
+// params: { colorA?, colorB?, duration?, cycles?, easing?, opacity?, box? }
 //   colorA       — start/end CSS color (default 'transparent' = no tint)
 //   colorB       — peak CSS color (default '#ffffff')
-//   duration     — total lifetime in seconds (default 0.6)
+//   duration     — total lifetime of ONE cycle in seconds (default 0.6)
+//   cycles       — number of A→B→A pulses (default 1). -1 = infinite loop.
 //   easing       — easing name: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut'
 //                  (default 'easeInOut')
+//   opacity      — peak alpha multiplier 0..1 (default 0.9). Scales the final
+//                  tint alpha so the pulse never fully obscures the art.
 //   box          — fallback geometry {x,y,w,h} for carriers without spriteFrame()
 //
 // carrier: entity with spriteFrame() for silhouette mode, or worldBox()/origin()+size()
@@ -64,10 +67,14 @@ function toCSS([r, g, b, a]) {
  * @returns {{update:Function, render:Function, complete:Function, done:boolean}}
  */
 export function spriteColorPulse(params = {}, carrier = null) {
-  const duration = Math.max(0.01, params.duration ?? 0.6);
+  const cycleDuration = Math.max(0.01, params.duration ?? 0.6);
+  const cycles = params.cycles ?? 1; // -1 = infinite
+  const infinite = cycles === -1;
+  const totalDuration = infinite ? Infinity : cycleDuration * Math.max(1, cycles);
   const easingFn = EASINGS[params.easing] ?? EASINGS.easeInOut;
   const colA = parseColor(params.colorA ?? 'transparent');
   const colB = parseColor(params.colorB ?? '#ffffff');
+  const peakOpacity = Math.min(1, Math.max(0, params.opacity ?? 0.9));
 
   return {
     space: 'world',
@@ -76,18 +83,23 @@ export function spriteColorPulse(params = {}, carrier = null) {
     update(dt) {
       if (this.done) return;
       this.elapsed += dt;
-      if (this.elapsed >= duration - 1e-9) {
-        this.elapsed = duration;
+      if (!infinite && this.elapsed >= totalDuration - 1e-9) {
+        this.elapsed = totalDuration;
         this.done = true;
       }
     },
-    /** Current blended color at this.elapsed. */
+    /** Current blended color at this.elapsed, with peakOpacity applied. */
     currentColor() {
-      // Progress 0→1 maps to A→B→A: first half lerps A→B, second half B→A.
-      const raw = Math.min(1, this.elapsed / duration);
+      // Which cycle are we in? Progress within that cycle drives A→B→A.
+      const cycleIdx = Math.floor(this.elapsed / cycleDuration);
+      const cycleProgress = (this.elapsed % cycleDuration) / cycleDuration;
+      const raw = Math.min(1, cycleProgress);
       const eased = easingFn(raw);
       const t = eased < 0.5 ? eased * 2 : (1 - eased) * 2;
-      return toCSS(lerpColor(colA, colB, t));
+      const [r, g, b, a] = lerpColor(colA, colB, t);
+      // Scale alpha by peakOpacity so the tint never fully obscures the art.
+      const finalA = Math.round(a * peakOpacity);
+      return toCSS([r, g, b, finalA]);
     },
     render(ctx) {
       if (this.done) return;
