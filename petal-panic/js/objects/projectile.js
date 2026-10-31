@@ -129,9 +129,9 @@ export class Projectile extends Entity {
       Object.defineProperty(this.sprite, 'frames', { get: () => projectileFrames });
       try { this.setAnim('shoot'); } catch { /* legacy rect path stays active */ }
     }
-    // Persistent 5px white outline (same effect as the checkpoint flag —
+    // Persistent 6px white outline (same effect as the checkpoint flag —
     // follows silhouette + rotation; box fallback when no sheet frame loaded).
-    this._outline = spriteOutline({ color: '#ffffff', thickness: 5, opacity: 1.0 }, this);
+    this._outline = spriteOutline({ color: '#ffffff', thickness: 6, opacity: 1.0 }, this);
 
     // Drawer: optional render override. Contract: (ctx, entity) => void.
     // null = use default draw (sheet sprite or debug rect). Set per-shot by
