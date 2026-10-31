@@ -149,7 +149,9 @@ export const Home = {
   draw(ctx) {
     const t = this.parallaxOffset;
 
-    // Smooth scaling for the large art assets.
+    // Smooth scaling for the large art assets — scoped: save/restore so the
+    // smoothing state does NOT leak into gameplay (context state is sticky).
+    ctx.save();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
@@ -373,7 +375,7 @@ export const Home = {
       drawPrompt(ctx, 'PRESS ENTER', HOME_W / 2, HOME_H - 24, 30, { blink });
     }
 
-    ctx.restore(); // end 4:3 clip
+    ctx.restore(); // end 4:3 clip + smoothing scope
   },
 
   /** Handle semantic input. During intro: skip to next card. After intro: go to MENU. */

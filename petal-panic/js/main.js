@@ -33,6 +33,10 @@ function resolveCanvas() {
   if (!canvas) {
     canvas = document.getElementById('game');
     ctx = canvas.getContext('2d');
+    // Pixel-art default: nearest-neighbor scaling. Cheaper than bilinear
+    // resampling on every drawImage AND the correct crisp look. Screens that
+    // need smooth scaling (home bg art) must set/restore it themselves.
+    ctx.imageSmoothingEnabled = false;
   }
   return canvas;
 }
