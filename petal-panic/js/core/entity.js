@@ -216,6 +216,17 @@ export class Entity {
     const UNIT = 48; // mirrors macros.js UNIT_PX_Y (avoids circular import)
     const targetUnits = this.sprite.targetH ?? (this.h / UNIT);
     this._spriteScale = uniformScale(data, targetUnits * UNIT);
+    // Sheet box owns the SHAPE (universal contract): unless the entity has
+    // another size owner (terrain tiles/floor opt out via boxFromSheet:false —
+    // their solids come from the macro grid), the physics box derives from the
+    // same §4 scalar: h lands exactly on targetH×48, w keeps the sheet's ratio.
+    // Render and physics can never drift apart. Pre-load (no data yet) the
+    // constructor w/h stays as fallback.
+    if (data.collisionBox && this.sprite.boxFromSheet !== false) {
+      const s = this._spriteScale;
+      this.w = data.collisionBox.w * s;
+      this.h = data.collisionBox.h * s;
+    }
   }
 
   /** Active sprite AnimData (or null when no sprite anim is set/known). */

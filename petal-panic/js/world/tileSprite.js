@@ -62,7 +62,7 @@ export function getTileSprites(s, level, tiles) {
       // in the editor — blocks fill their row, platforms pin a thin slab to
       // the landing face (build.js R5.1 thins the solid to PLATFORM_DRAW_H
       // at that same face).
-      e.sprite = { anchor: 'bottom-center', anims: asset.data.anims };
+      e.sprite = { anchor: 'bottom-center', anims: asset.data.anims, boxFromSheet: false }; // macro grid owns tile solids
       Object.defineProperty(e.sprite, 'frames', { get: () => asset.frames });
       e.setAnim(animName);
       if (s.oneWay) e._spriteScale *= PLATFORM_DRAW_H / UNIT_PX_Y;

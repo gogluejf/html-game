@@ -15,7 +15,7 @@ const sheet = (p) => JSON.parse(readFileSync(join(HERE, '..', '..', 'assets', p)
 
 function makeSpriteEntity(w, h, anims) {
   const e = new Entity({ x: 100, y: 200, w, h });
-  e.sprite = { anchor: 'bottom-center', anims, frames: new Map() };
+  e.sprite = { anchor: 'bottom-center', targetH: 1.0, anims, frames: new Map() };
   return e;
 }
 
@@ -28,12 +28,44 @@ test('setAnim computes uniform scale from bbox height onto box height', () => {
   assert.equal(e.spriteAnimData, data.anims.wooden);
 });
 
-test('setAnim never moves the entity (anchor fixed, §3)', () => {
+test('setAnim derives w/h from the sheet box × §4 scale (boxFromSheet default)', () => {
+  const data = parseSheet(sheet('objects/barrel/wooden_sheet.json'));
+  // Box 305×386, targetH 1.0 → s = 48/386; h lands exactly on 48, w keeps ratio.
+  const e = makeSpriteEntity(999, 999, data.anims);
+  e.setAnim('wooden');
+  const s = 48 / 386;
+  assert.ok(Math.abs(e.h - 386 * s) < 1e-9, `h = ${e.h} (want 48)`);
+  assert.ok(Math.abs(e.w - 305 * s) < 1e-9, `w = ${e.w} (want ${305 * s})`);
+});
+
+test('boxFromSheet:false keeps macro-owned sizes (terrain contract)', () => {
+  const data = parseSheet(sheet('objects/barrel/wooden_sheet.json'));
+  const e = new Entity({ x: 0, y: 0, w: 96, h: 144 });
+  e.sprite = { anchor: 'bottom-center', anims: data.anims, frames: new Map(), boxFromSheet: false };
+  e.setAnim('wooden');
+  assert.equal(e.w, 96, 'width untouched');
+  assert.equal(e.h, 144, 'height untouched');
+});
+
+test('setAnim without a collision box leaves w/h alone (§4 requires a box for scale)', () => {
+  const data = parseSheet({ entities: [{ name: 'x', anim: 'a', frames: [{ file: 'f.png' }] }] });
+  const e = makeSpriteEntity(32, 48, data.anims);
+  assert.throws(() => e.setAnim('a'), /no collision box/);
+  assert.equal(e.w, 32);
+  assert.equal(e.h, 48);
+});
+
+test('setAnim never MOVES the entity — position fixed, size derives (§3)', () => {
   const data = parseSheet(sheet('objects/checkpoint/level_sheet.json'));
-  const e = makeSpriteEntity(24, 48, data.anims);
-  const before = { x: e.x, y: e.y, w: e.w, h: e.h };
+  const e = makeSpriteEntity(999, 999, data.anims);
+  const before = { x: e.x, y: e.y };
   e.setAnim('level');
-  assert.deepEqual({ x: e.x, y: e.y, w: e.w, h: e.h }, before);
+  // Position (the physical anchor) is untouched...
+  assert.deepEqual({ x: e.x, y: e.y }, before);
+  // ...size now comes from the sheet box × §4 scale (box 332×525, target 48):
+  const s = 48 / 525;
+  assert.ok(Math.abs(e.h - 525 * s) < 1e-9, 'h = target height exactly');
+  assert.ok(Math.abs(e.w - 332 * s) < 1e-9, 'w keeps the sheet ratio');
 });
 
 test('unknown anim throws with a clear message', () => {
