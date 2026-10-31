@@ -99,7 +99,15 @@
      ]
     }
    ],
-   "frames_dir": "petal-panic/assets/projectiles/pea"
+   "frames_dir": "petal-panic/assets/projectiles/pea",
+   "fps": 14,
+   "mode": "loop",
+   "collision": [
+    15,
+    10,
+    150,
+    150
+   ]
   }
  ],
  "updated": "2026-10-21"

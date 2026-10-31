@@ -4,9 +4,10 @@
 // index holding any id from SPECIAL_TYPES. N never fires — it only rotates the
 // selection (hero.rotateWeapon, called by the update step).
 
-import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS } from '../objects/projectile.js';
+import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS, PROJECTILE_TARGET_H } from '../objects/projectile.js';
 import { specialById, isSpecialType } from '../objects/specialWeapons.js';
 import { dirAngle } from '../core/vec.js';
+import { UNIT_PX_Y } from '../consts.js';
 import { damage } from './damage.js';
 import { record } from '../stats.js';
 import { Effects } from '../effects.js';
@@ -40,10 +41,12 @@ function fireThorn(h, input, dt) {
   const dir = h.resolveAim(input);
 
   const { x: cx, y: cy } = h.bodyCenter();
-  const size = 12;
+  // Spawn offset from the entity's REAL box (pure target model — no literal
+  // size here). Pre-spawn estimate: w == h for the square pea collision box.
+  const halfH = (PROJECTILE_TARGET_H * UNIT_PX_Y) / 2;
   const ox = Math.cos(dirAngle(dir)) * 16;
   const oy = Math.sin(dirAngle(dir)) * 16;
-  const p = projectilePool.spawn(cx - size / 2 + ox, cy - size / 2 + oy, dir, true);
+  const p = projectilePool.spawn(cx - halfH + ox, cy - halfH + oy, dir, true);
   if (!p) return;
 
   record(h, { kind: 'projectile', subtype: 'thorn' });

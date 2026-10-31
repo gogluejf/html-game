@@ -16,6 +16,7 @@ import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { resolveMarker } from '../context.js';
 import { AttackHandle } from '../engine.js';
 import { dirAngle } from '../../../core/vec.js';
+import { aimRotation } from '../../../objects/projectile.js';
 import { fireDeclared } from '../../../effects/index.js';
 
 // Declared effect types for THIS registration (single source of truth:
@@ -83,6 +84,8 @@ export function spawnProjectile(p, ctx, h) {
   if (ent) {
     ent.vx = cos * p.speed;
     ent.vy = sin * p.speed;
+    // Re-aim the sprite nose to the exact (possibly non-8-way) angle.
+    ent.rotation = aimRotation(ent.vx, ent.vy);
     ent.damage = p.damage;
     ent.life = p.ttl;
   }
