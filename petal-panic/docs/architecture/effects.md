@@ -745,3 +745,49 @@ existing defaults `speed:2`, `endSpeed:30`, `acceleration:2`; `blinkDuration`
 configures duration. Since hold defaults true, detonation/cancellation explicitly
 calls the effect instance's `complete()`. The macro owns detonation timing;
 the normal effect engine owns visual updates, so hosts must step both normally.
+
+---
+
+## 29. Sprite Color Pulse (`sprite-color-pulse`)
+
+Smoothly fades a sprite's tint from color A → color B → color A over its lifetime,
+clipped to the sprite silhouette (same `tintedImage` pipeline as Sprite Flash).
+Useful for checkpoint triggers, powerup pickups, state-change glows, and any
+"pulse of energy" that should follow the art shape exactly.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `colorA` | `'transparent'` | Start/end CSS color (no tint when transparent) |
+| `colorB` | `'#ffffff'` | Peak CSS color at 50% progress |
+| `duration` | `0.6` | Total lifetime in seconds |
+| `easing` | `'easeInOut'` | Curve: `'linear'`, `'easeIn'`, `'easeOut'`, `'easeInOut'` |
+| `box` | none | Fallback rect `{x,y,w,h}` for carriers without `spriteFrame()` |
+
+The pulse is one smooth cycle: 0% = colorA, 50% = colorB, 100% = colorA.
+The eased progress drives a single lerp between A and B (first half A→B, second
+half B→A). At 0% and 100% the sprite shows no extra tint (when colorA is
+transparent). Supports two opaque colors or one color + transparent.
+
+**Silhouette mode:** when the carrier exposes `spriteFrame()`, the tint is
+applied via `source-in` compositing on an offscreen canvas (cached per
+frame+color), then drawn through the entity's transform pipeline. The flash
+follows the art silhouette exactly — no rectangle.
+
+**Box fallback:** carriers without `spriteFrame()` use `worldBox()` /
+`origin()+size()` / `params.box` (same resolution order as Sprite Flash).
+
+```js
+import { spriteColorPulse } from './effects/spriteColorPulse.js';
+
+const pulse = spriteColorPulse({
+  colorA: 'transparent',
+  colorB: '#ffe600',
+  duration: 0.5,
+  easing: 'easeInOut',
+}, checkpointEntity);
+// In update: if (!pulse.done) pulse.update(dt);
+// In render: if (!pulse.done) pulse.render(ctx);
+```
+
+**Checkpoint usage:** entry/exit flags fire a yellow pulse
+(`transparent → #ffe600 → transparent`, 0.5s, easeInOut) on first trigger.

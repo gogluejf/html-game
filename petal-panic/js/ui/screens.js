@@ -487,10 +487,10 @@ export const Select = {
 
       // Stat bars (small table): SPD / ATK / DEF / JUMP / ENERGY.
       const rows = [
-        ['SPEED',  hero.stats.speed,    300],
+        ['SPEED',  hero.stats.speed,    6],
         ['ATTACK', hero.stats.attack,   25],
         ['DEFENSE',hero.stats.defense,  8],
-        ['JUMP',   hero.stats.jump,     560],
+        ['JUMP',   hero.stats.jump,     12],
         ['ENERGY', hero.stats.stamina,  120],
       ];
       let by = plqY + 34 + 34;
@@ -520,7 +520,7 @@ export const Select = {
         ctx.fillStyle = CREAM;
         ctx.font = `12px ${FONT_UI}`;
         ctx.textAlign = 'right';
-        ctx.fillText(String(val), infoX + infoW, by + 7);
+        ctx.fillText(Number(val).toFixed(1), infoX + infoW, by + 7);
         ctx.restore();
         by += 26;
       }

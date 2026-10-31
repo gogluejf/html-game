@@ -1,5 +1,9 @@
 // Self-contained sprite replacement: hide the original while this owns drawing.
 // Retains its destination until complete(), or hands off via onFinish with hold=false.
+// When the carrier exposes spriteFrame(), frames are drawn through the entity's
+// transform pipeline (silhouette-accurate). Otherwise falls back to box stretch.
+import { tintedImage } from './spriteFlash.js';
+
 const positive = (v, fallback) => Number.isFinite(v) && v > 0 ? v : fallback;
 
 export function blinkTransition(params = {}, carrier = null) {
@@ -35,6 +39,26 @@ export function blinkTransition(params = {}, carrier = null) {
       if (this.done) return;
       const frame = this.frame();
       if (frame == null) return;
+      // Silhouette mode: carrier has spriteFrame() and frame is a color string.
+      // Tint the actual PNG silhouette (same pipeline as spriteFlash).
+      if (carrier && typeof carrier.spriteFrame === 'function' && typeof frame === 'string') {
+        const f = carrier.spriteFrame();
+        if (f && f.img) {
+          const tinted = tintedImage(f.img, frame);
+          if (tinted) {
+            ctx.save();
+            ctx.translate(f.anchorX, f.anchorY);
+            if (f.mirrorX) ctx.scale(-1, 1);
+            if (f.mirrorY) ctx.scale(1, -1);
+            if (f.rotation) ctx.rotate(f.rotation);
+            ctx.scale(f.scale, f.scale);
+            ctx.drawImage(tinted, 0, 0, tinted.width, tinted.height, f.dx, f.dy, f.w, f.h);
+            ctx.restore();
+            return;
+          }
+        }
+      }
+      // Box fallback: stretch frame into the bounding rect.
       let box = carrier?.worldBox?.();
       if (!box && carrier?.origin && carrier?.size) {
         const o = carrier.origin(), s = carrier.size();

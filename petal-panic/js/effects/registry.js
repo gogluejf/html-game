@@ -94,3 +94,6 @@ registerEffect('pulse-bubble', pulseBubble);
 
 import { blinkTransition } from './blinkTransition.js';
 registerEffect('blink-transition', blinkTransition);
+
+import { spriteColorPulse } from './spriteColorPulse.js';
+registerEffect('sprite-color-pulse', spriteColorPulse);

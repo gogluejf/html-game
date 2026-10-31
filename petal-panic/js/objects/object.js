@@ -13,6 +13,7 @@
 // unit-testable without a DOM.
 
 import { Entity } from '../core/entity.js';
+import { spriteColorPulse } from '../effects/spriteColorPulse.js';
 import { LAYER } from '../consts.js';
 import { BARREL_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
 import { flashTarget } from '../combat/damage.js';
@@ -151,7 +152,7 @@ export class GameObj extends Entity {
     // until then.
     const spriteData = getBarrelSpriteData();
     if (def.spriteAnim && spriteData?.anims[def.spriteAnim]) {
-      this.sprite = { anchor: 'bottom-center', targetH: 1.0, anims: spriteData.anims };
+      this.sprite = { anchor: 'bottom-center', targetH: 1.5, anims: spriteData.anims };
       Object.defineProperty(this.sprite, 'frames', { get: () => barrelFrames });
       setAnimSafe(this, def.spriteAnim);
     }
@@ -283,6 +284,7 @@ export class Checkpoint extends Entity {
     this.checkpointId = id;
     this.triggered = false;
     this.flashTimer = 0; // brief white flash after triggering (render reads it)
+    this._pulse = null;  // spriteColorPulse instance (triggered once)
 
     // Sprite data (v1): level vs boss flag art, scaled from the collision box (§4).
     // `frames` is a LIVE accessor (see barrel above) so late-loaded images are
@@ -295,9 +297,10 @@ export class Checkpoint extends Entity {
     }
   }
 
-  /** Per-frame step: decay the trigger flash timer. */
+  /** Per-frame step: decay the trigger flash timer + advance pulse. */
   update(dt) {
     if (this.flashTimer > 0) this.flashTimer = Math.max(0, this.flashTimer - dt);
+    if (this._pulse && !this._pulse.done) this._pulse.update(dt);
   }
 
   /**
@@ -314,6 +317,13 @@ export class Checkpoint extends Entity {
     // floor), not the flag's sprite box. Fallback keeps legacy flags working.
     hero.checkpoint = this.spawnPos ?? { x: this.x, y: this.y };
     this.flashTimer = 0.4;
+    // Color pulse: transparent → yellow → transparent, ease-in start / fast peak / decel end.
+    this._pulse = spriteColorPulse({
+      colorA: 'transparent',
+      colorB: '#ffe600',
+      duration: 0.5,
+      easing: 'easeInOut',
+    }, this);
     // SFX: checkpoint
     return true;
   }
@@ -326,13 +336,9 @@ export class Checkpoint extends Entity {
   draw(ctx) {
     if (!this.alive) return;
     super.draw(ctx);
-    if (this.flashTimer > 0) {
-      const b = this.worldBox();
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, this.flashTimer * 2.5);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(b.x - 4, b.y - 4, b.w + 8, b.h + 8);
-      ctx.restore();
+    // Color pulse (silhouette-accurate yellow flash on trigger).
+    if (this._pulse && !this._pulse.done) {
+      this._pulse.render(ctx);
     }
   }
 }
