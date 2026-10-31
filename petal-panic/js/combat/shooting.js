@@ -4,13 +4,16 @@
 // index holding any id from SPECIAL_TYPES. N never fires — it only rotates the
 // selection (hero.rotateWeapon, called by the update step).
 
-import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS } from '../objects/projectile.js';
+import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS, getProjectileSpriteData, PROJECTILE_TARGET_H } from '../objects/projectile.js';
+import { UNIT_PX_Y } from '../consts.js';
 import { specialById, isSpecialType } from '../objects/specialWeapons.js';
 import { dirAngle } from '../core/vec.js';
 import { damage } from './damage.js';
 import { record } from '../stats.js';
 import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
+import { invoke } from './attack/engine.js';
+import '../combat/attack/primitives/projectile.js'; // registers the 'projectile' primitive
 
 import { ctx } from '../world/context.js';
 
@@ -32,26 +35,69 @@ export function tryFire(h, input, dt) {
   }
 }
 
-/** Fire one Thorn (default weapon): projectilePool + fireCooldown. The
- * default weapon is built-in and infinite (special-weapons.md) — no pool. */
+/** Fire one Thorn (default weapon): routed through the Attack Engine's
+ * `projectile` primitive. The default weapon is built-in and infinite — no
+ * ammo pool; only the fireCooldown gates rate of fire.
+ *
+ * The primitive spawns into the SAME projectilePool with the SAME defaults the
+ * old inline path used (speed 600, damage 10, ttl 2, solidBehavior 'phase'), so
+ * trajectory/damage/lifetime are identical. Aim comes from resolveAim() (an
+ * 8-way index); the engine never takes a target entity. */
 function fireThorn(h, input, dt) {
   if (h.fireCooldown > 0) return;
 
   const dir = h.resolveAim(input);
-
+  const angle = dirAngle(dir);
   const { x: cx, y: cy } = h.bodyCenter();
-  const ox = Math.cos(dirAngle(dir)) * 16;
-  const oy = Math.sin(dirAngle(dir)) * 16;
-  const p = projectilePool.spawn(cx + ox, cy + oy, dir, true);
-  if (!p) return;
-  // Center using the sheet-derived box, never assume width equals height.
-  p.x -= p.w / 2;
-  p.y -= p.h / 2;
+  // Muzzle point: 16px out along the aim from the body center (matches the old
+  // offset). The shot's BOX must be CENTERED on this muzzle point.
+  //
+  // The engine primitive's spawnPoint() treats `origin` as a box top-left and
+  // subtracts half of its default size (12) — so to land the real sheet-derived
+  // box centered on the muzzle we pass (centered muzzle + 6), which cancels that
+  // baked-in −6 exactly. This reproduces the legacy `spawn(...); p.x -= p.w/2;
+  // p.y -= p.h/2` re-centering with the real art box (not a forced square).
+  const ox = Math.cos(angle) * 16;
+  const oy = Math.sin(angle) * 16;
+  const data = getProjectileSpriteData();
+  const cb = data?.anims?.shoot?.collisionBox;
+  const scale = cb ? (PROJECTILE_TARGET_H * UNIT_PX_Y) / cb.h : 0;
+  const bw = cb ? cb.w * scale : 12;                 // sheet thorn width (≈37.6)
+  const bh = cb ? PROJECTILE_TARGET_H * UNIT_PX_Y : 12; // ≈15.4
+  const SPAWN_HALF = 6; // half of the primitive's default size (12)
+
+  const shot = invoke('projectile', {
+    origin: { x: cx + ox - bw / 2 + SPAWN_HALF, y: cy + oy - bh / 2 + SPAWN_HALF },
+    direction: angle,      // radians (the engine expects radians, NOT an 8-way index)
+    speed: 600,            // PROJECTILE_SPEED
+    damage: 10,            // PROJECTILE_DAMAGE
+    ttl: 2,                // PROJECTILE_LIFETIME
+    team: 'ally',
+    solidBehavior: 'phase',// thorns fly through terrain (old default)
+    size: null,            // keep the entity's natural sheet box (not a 12×12 square)
+  }, makeHeroContext(h));
+  if (!shot?.entity) return; // pool exhausted (soft cap) → skip, like the old `if (!p)`
+  // Restore the 8-way aim index on the entity (the engine spawns with dir=0 and
+  // overwrites velocity from radians; p.dir is read by collision/debug code).
+  shot.entity.dir = dir;
 
   record(h, { kind: 'projectile', subtype: 'thorn' });
 
   const base = 1 / h.stats.projectile_freq;
   h.fireCooldown = h.rapidTimer > 0 ? base * 0.5 : base;
+}
+
+/** Build the Attack Engine context for a hero-fired shot. Supplies the shared
+ * pools + collision world so the spawned projectile registers for real gameplay
+ * collision (the same routing the bomb host uses). The engine reads
+ * ctx.pools.projectilePool and ctx.collisionWorld. */
+function makeHeroContext(h) {
+  return {
+    attacker: h,
+    pools: { projectilePool, specialPool },
+    collisionWorld: ctx.collisionWorld,
+    world: { targets: [...(ctx.realEnemies ?? []), ...(ctx.boss && ctx.boss.alive ? [ctx.boss] : [])] },
+  };
 }
 
 /**

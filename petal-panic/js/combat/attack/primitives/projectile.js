@@ -92,9 +92,19 @@ export function spawnProjectile(p, ctx, h) {
 
   // Explicit box dimensions (non-square shots). Everything downstream — AABB
   // collision, reflectVelocity, drawers reading e.w/e.h — works off these.
+  // When NO explicit size is given (size/width/height all null), keep the
+  // entity's NATURAL box: for pooled projectiles that's the sheet-derived
+  // collision box set by initialize() (e.g. the thorn's 37.6×15.4 art box),
+  // NOT a forced square. Callers that want an exact box still pass size/width/
+  // height explicitly and get exactly that.
   const s = p.size ?? 12;
-  ent.w = p.width ?? s;
-  ent.h = p.height ?? s;
+  if (p.width != null || p.height != null) {
+    ent.w = p.width ?? s;
+    ent.h = p.height ?? s;
+  } else if (p.size != null) {
+    ent.w = s;
+    ent.h = s;
+  }
 
   // Data-only transport: the existing collision handler reads this flag.
   // Always set explicitly — pool slots are recycled via Object.assign from a

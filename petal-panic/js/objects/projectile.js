@@ -25,7 +25,7 @@ const PROJECTILE_SPEED = 600;             // px/s
 const PROJECTILE_DAMAGE = 10;             // base damage per thorn hit
 /** Thorn collision height in units. Width derives solely from the authored
  *  sheet collision aspect ratio; never force a square. */
-export const PROJECTILE_TARGET_H = 0.32;
+export const PROJECTILE_TARGET_H = 0.22;
 /** The thorn art's nose points RIGHT — the standard facing-right
  *  convention, so aiming the nose along velocity v needs NO offset:
  *  rotation = atan2(vy, vx). Orientation is rotation-only for projectiles

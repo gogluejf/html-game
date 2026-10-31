@@ -20,6 +20,11 @@ import { loadLevelAsset, getLevelAsset } from './levelAssets.js';
 /** Background drift speed relative to the camera (higher = slower drift). */
 export const BG_PARALLAX_DIVISOR = 4;
 
+/** Background brightness (0..1). Kept LOW so the art stays dark and the
+ * foreground — hero, enemies, blocks, platforms — reads clearly on top.
+ * 1.0 = full-brightness art; lower values dim the whole bg layer. */
+export const BG_BRIGHTNESS = 0.35;
+
 
 /**
  * Get (and lazily load) a background image for a level + orientation.
@@ -85,6 +90,7 @@ export function drawParallaxBg(ctx, cam, level, orientation) {
     const w = VIEW_W;
     const h = Math.max(1, Math.round(img.naturalHeight * scale));
     ctx.save();
+    ctx.globalAlpha = BG_BRIGHTNESS;
     ctx.beginPath();
     ctx.rect(0, 0, VIEW_W, VIEW_H);
     ctx.clip();
@@ -99,8 +105,11 @@ export function drawParallaxBg(ctx, cam, level, orientation) {
     const w = Math.max(1, Math.round(img.naturalWidth * scale));
     // First tile that overlaps the visible window [winX, winX+winW).
     const first = Math.floor((winX - offX) / w);
+    ctx.save();
+    ctx.globalAlpha = BG_BRIGHTNESS;
     for (let i = first; i * w + offX < winX + winW; i++) {
       ctx.drawImage(img, offX + i * w, 0, w, h);
     }
+    ctx.restore();
   }
 }
