@@ -1,10 +1,9 @@
 // ---------- undo / redo (global: crosses frames AND animations) ----------
 import { app } from './state.js';
 import { $ } from './viewport.js';
-import { syncPanel } from './panel.js';
-import { draw } from './draw.js';
 import { selectEntity } from './sidebar.js';
 import { saveState } from './save.js';
+import { renderAll } from './render.js';
 
 function snap(){ return { name: app.cur.name, st: JSON.stringify(app.cur.st), fi: app.cur.st.frameIdx }; }
 
@@ -24,7 +23,7 @@ async function restore(entry){
   app.cur.st = JSON.parse(entry.st);
   app.cur.st.frameIdx = entry.fi % app.cur.st.frames.length;
   app._selectedBox = null;
-  syncPanel(); draw();
+  renderAll();
 }
 
 export function doUndo(){

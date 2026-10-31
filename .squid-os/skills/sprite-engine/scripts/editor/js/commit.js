@@ -6,10 +6,9 @@
 // sequence themselves — that duplication is how desync bugs were born.
 
 import { app } from './state.js';
-import { draw } from './draw.js';
-import { syncPanel } from './panel.js';
 import { pushUndo } from './undo.js';
 import { markGameDataChanged } from './save.js';
+import { renderAll } from './render.js';
 
 // Commit a game-data mutation. `mutate` runs with the undo snapshot already
 // taken; if it throws, nothing is marked changed and the caller can abort.
@@ -18,6 +17,5 @@ export function commit(mutate){
   pushUndo();
   mutate();
   markGameDataChanged();
-  syncPanel();
-  draw();
+  renderAll();
 }
