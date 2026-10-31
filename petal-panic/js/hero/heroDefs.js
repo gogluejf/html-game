@@ -60,6 +60,7 @@ export const HEROES = {
   scarlet: {
     id: 'scarlet',
     name: 'Scarlet Vale',
+    specialName: 'Cartwheel',
     w: 32, h: 48,
     stats: {
       weight: 1,
@@ -91,6 +92,7 @@ export const HEROES = {
   balthazar: {
     id: 'balthazar',
     name: 'Balthazhar',
+    specialName: 'Leg Sweep',
     w: 36, h: 52,
     stats: {
       weight: 1.3,

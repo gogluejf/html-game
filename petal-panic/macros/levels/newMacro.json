@@ -59,13 +59,46 @@
       "kind": "block",
       "height": 1,
       "y": 5,
-      "x": 38,
+      "x": 40,
       "width": 2
     }
   ],
-  "placements": [],
-  "clearance": {
-    "status": "cleared",
-    "contentSignature": "ae27389d"
-  }
+  "placements": [
+    {
+      "slot": "barrel-1",
+      "type": "barrel",
+      "x": 4,
+      "y": 0
+    },
+    {
+      "slot": "barrel-2",
+      "type": "barrel",
+      "x": 5,
+      "y": 0
+    },
+    {
+      "slot": "barrel-3",
+      "type": "barrel",
+      "x": 9,
+      "y": 2
+    },
+    {
+      "slot": "barrel-4",
+      "type": "barrel",
+      "x": 10,
+      "y": 2
+    },
+    {
+      "slot": "barrel-5",
+      "type": "barrel",
+      "x": 22,
+      "y": 4
+    },
+    {
+      "slot": "barrel-6",
+      "type": "barrel",
+      "x": 23,
+      "y": 4
+    }
+  ]
 }
