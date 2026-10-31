@@ -160,3 +160,70 @@ test('top-left placement: final canvas coordinates, one scale, no Y flip', () =>
     assert.ok(Math.abs(f.anchorY+f.dy*f.scale-c.expected[1])<1e-9);
   }
 });
+
+// --- T3.2: SpritePlayer wiring -------------------------------------------------
+
+test('setAnim builds a player for playback anims; frameIndex advances via update()', () => {
+  const data = parseSheet(sheet('objects/barrel/wooden_sheet.json')); // mode loop, fps 12
+  const e = makeSpriteEntity(1.0, data.anims);
+  e.setAnim('wooden');
+  assert.ok(e._player, 'loop anim must get a SpritePlayer');
+  const n = data.anims.wooden.frames.length;
+  const fps = data.anims.wooden.fps;
+  const seen = new Set();
+  // Run one full traversal + margin at fixed dt; record every index visited.
+  const steps = Math.ceil((n / fps) * 60) + 30;
+  for (let i = 0; i < steps; i++) { e.update(1 / 60); seen.add(e.spriteFrameIndex); }
+  for (let f = 0; f < n; f++) assert.ok(seen.has(f), `frame ${f} was visited`);
+});
+
+test('mode none → no player; _tileFrame still wins (terrain contract)', () => {
+  const data = parseSheet(sheet('objects/barrel/wooden_sheet.json'));
+  data.anims.wooden.mode = 'none'; // simulate a pool declaration
+  const e = makeSpriteEntity(1.0, data.anims);
+  e.setAnim('wooden');
+  assert.equal(e._player, null, 'pool anims must not build a player');
+  e._tileFrame = 1;
+  e.update(1); // a whole second of ticks must not move a pool frame
+  assert.equal(e.spriteFrameIndex, 1 % data.anims.wooden.frames.length);
+});
+
+test('once anim: animDone flips after terminal frame; resetAnim rewinds', () => {
+  const data = parseSheet({
+    entities: [{
+      name: 'boom', anim: 'boom', fps: 10, mode: 'once',
+      frames: [0, 1, 2].map((i) => ({ file: `b${i}.png` })),
+      collision: [0, 0, 10, 10],
+    }],
+  });
+  const e = makeSpriteEntity(1.0, data.anims);
+  e.setAnim('boom');
+  assert.equal(e.animDone, false);
+  for (let i = 0; i < 29; i++) e.update(1 / 60); // 0.483s < 0.3s? no — 3×0.1=0.3s
+  assert.equal(e.animDone, true, 'once anim completes after terminal duration');
+  assert.equal(e.spriteFrameIndex, 2, 'holds terminal frame');
+  e.resetAnim();
+  assert.equal(e.animDone, false);
+  assert.equal(e.spriteFrameIndex, 0);
+});
+
+test('setProgress drives relative-timing anims', () => {
+  const data = parseSheet({
+    entities: [{
+      name: 'slide', anim: 'slide', fps: 10, mode: 'loop', timing: 'relative',
+      frames: [0, 1, 2, 3].map((i) => ({ file: `s${i}.png` })),
+      collision: [0, 0, 10, 10],
+    }],
+  });
+  const e = makeSpriteEntity(1.0, data.anims);
+  e.setAnim('slide');
+  e.setProgress(0);
+  assert.equal(e.spriteFrameIndex, 0);
+  e.setProgress(0.5);
+  assert.equal(e.spriteFrameIndex, 1, 'p=0.5 → slot (L-1)·p = 1.5 → floor 1');
+  e.setProgress(1);
+  assert.equal(e.spriteFrameIndex, 3);
+  // clock ticks must NOT drive a relative anim (it stays where progress put it)
+  e.update(1);
+  assert.equal(e.spriteFrameIndex, 3);
+});

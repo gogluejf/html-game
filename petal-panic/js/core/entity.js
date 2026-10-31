@@ -29,6 +29,7 @@
 import { GRAVITY, MAX_FALL_SPEED } from '../consts.js';
 import { Timers } from './timers.js';
 import { uniformScale } from './spriteData.js';
+import { SpritePlayer } from './spritePlayer.js';
 import { isHighGraphic } from './renderMode.js';
 
 const UNIT_PX = 48; // mirrors macros.js UNIT_PX_Y (avoids circular import)
@@ -250,6 +251,10 @@ export class Entity {
     //   - no baseW  → sheet aspect ratio × scale (sheet-owned)
     const targetUnits = this._targetH;
     this._spriteScale = uniformScale(data, targetUnits * UNIT_PX);
+    // Playback (T3.2): build a SpritePlayer ONLY for anims that declare a
+    // playback mode. mode 'none' = frame POOL (terrain tiles etc.) — frames
+    // are picked externally via _tileFrame, never played on a clock.
+    this._player = data.mode && data.mode !== 'none' ? new SpritePlayer(data) : null;
   }
 
   /** Active sprite AnimData (or null when no sprite anim is set/known). */
@@ -257,15 +262,39 @@ export class Entity {
     return this.sprite?.anims?.[this._spriteAnim] ?? null;
   }
 
-  /** Current frame index of the active sprite anim (v1: static first frame;
-   *  the SpritePlayer milestone drives this for multi-frame anims). */
+  /** Current frame index of the active sprite anim. Resolution order:
+   *  1. _tileFrame != null → pattern/pool-owned (terrain tiler picks frames)
+   *  2. _player           → time-driven traversal (SpritePlayer, T3.1)
+   *  3. 0                 → static single-frame / no playback declared */
   get spriteFrameIndex() {
     const data = this.spriteAnimData;
     if (!data) return 0;
-    // Terrain tiles (tileSprite.js) pin a specific frame via _tileFrame;
-    // everything else uses v1 static first frame until SpritePlayer lands.
     if (this._tileFrame != null) return this._tileFrame % data.frames.length;
-    return 0; // TODO(sprite-engine 3.1): SpritePlayer-driven traversal
+    if (this._player) return this._player.frameIndex % data.frames.length;
+    return 0;
+  }
+
+  /** True once the active 'once' anim has finished its terminal frame.
+   *  Gameplay reacts to this (death anims, attack recovery, …). */
+  get animDone() {
+    return this._player?.isDone ?? false;
+  }
+
+  /** Advance the active sprite playback by dt (no-op without a player).
+   *  Called from Entity.update so every entity ticks uniformly; subclasses
+   *  that override update() must call super.update(dt) to keep it running. */
+  tickAnim(dt) {
+    if (this._player && !this._player.isDone) this._player.tick(dt);
+  }
+
+  /** Relative-timing anims: gameplay maps [0,1] progress onto traversal (§7). */
+  setProgress(p) {
+    if (this._player) this._player.setProgress(p);
+  }
+
+  /** Rewind active playback (pool respawn path — no reallocation). */
+  resetAnim() {
+    if (this._player) this._player.reset();
   }
 
   /**
@@ -406,6 +435,7 @@ export class Entity {
     }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
+    this.tickAnim(dt); // sprite playback advances with every entity step
   }
 
   /**
