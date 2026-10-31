@@ -98,18 +98,28 @@ export function drawTileSprites(ctx, pool) {
     ctx.fillStyle = '#2f6fff';
     for (const e of pool) {
       if (!e) continue;
-      const data = e.spriteAnimData;
-      if (!data?.collisionBox) continue;
-      const s = e._spriteScale;
-      const cb = data.collisionBox;
-      const ax = e.x + e.w / 2, ay = e.y + e.h; // anchor (bottom-center)
-      // delta rule: box drawn relative to its own bottom-center vs anchor
-      const bcx = cb.x + cb.w / 2, bcy = cb.y + cb.h;
-      ctx.fillRect(ax + (cb.x - bcx) * s, ay + (cb.y - bcy) * s, cb.w * s, cb.h * s);
+      drawSheetBox(ctx, e);
     }
     ctx.restore();
   }
   return drew;
+}
+
+/**
+ * Universal sheet-collision-box overlay (debug): draws the SHEET's collision
+ * box in blue at exactly where drawSprite() places it — for ANY entity that
+ * has sprite data (terrain tiles, floor, barrels, enemies, bosses…). Use it
+ * next to the orange physical box to compare sheet vs physics placement.
+ */
+export function drawSheetBox(ctx, e) {
+  const data = e.spriteAnimData;
+  if (!data?.collisionBox || !e._spriteScale) return;
+  const s = e._spriteScale;
+  const cb = data.collisionBox;
+  // THE collision box: entity x/y IS the box top-left; size prorated by §4 scale.
+  // Identical to the orange physics rect — this overlay exists only so you can
+  // see the sheet box next to the art.
+  ctx.fillRect(e.x, e.y, cb.w * s, cb.h * s);
 }
 
 /** Drop pools for a level (call on zone transition to free stale rects). */

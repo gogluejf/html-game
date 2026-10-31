@@ -112,17 +112,35 @@ test('drawSprite renders the frame via per-frame tuning (offset/scale) when pres
   assert.equal(drawn.img, fakeImg);
   // Full image drawn (no sheet crop at runtime)...
   assert.deepEqual([drawn.sx, drawn.sy, drawn.sw, drawn.sh], [0, 0, 305, 386]);
-  // ...and placed by the DELTA RULE: spriteCenter = anchor +
-  // (offset − boxBottomCenter) × s. Barrel box (-152.5,-386,305,386) has
-  // bottom-center at (0,0); offset (0,-193) → delta (0,-193) × s(48/386)
-  // → center at (0, -23.97); size 305×386 (scale 1).
+  // Check world coordinates against the authored top-left delta.
   const f = data.anims.wooden.frames[0];
   const cb = data.anims.wooden.collisionBox;
   const s = e._spriteScale;
   const w = 305 * f.scale.sx, h = 386 * f.scale.sy;
-  const exDx = (f.offset.x - (cb.x + cb.w / 2)) * s - w / 2;
-  const exDy = (f.offset.y - (cb.y + cb.h)) * s - h / 2;
-  assert.ok(Math.abs(drawn.dx - exDx) < 1e-9, `dx ${drawn.dx} vs ${exDx}`);
-  assert.ok(Math.abs(drawn.dy - exDy) < 1e-9, `dy ${drawn.dy} vs ${exDy}`);
+  const worldX = e.x + e.w / 2 + drawn.dx * s;
+  const worldY = e.y + e.h + drawn.dy * s;
+  assert.ok(Math.abs(worldX - (e.x + (f.offset.x - cb.x) * s)) < 1e-9);
+  assert.ok(Math.abs(worldY - (e.y + (f.offset.y - cb.y) * s)) < 1e-9);
   assert.deepEqual([drawn.dw, drawn.dh], [w, h]);
+});
+
+// Synthetic fixtures avoid depending on mutable editor tuning.
+test('top-left placement: final canvas coordinates, one scale, no Y flip', () => {
+  const cases = [
+    { box: {x:-40,y:-40,w:400,h:400}, off:{x:-60,y:-60}, iw:800, ih:800, target:96, expected:[95.2,195.2,192,192] },
+    { box: {x:0,y:-181,w:2163,h:175}, off:{x:0,y:-287}, iw:2171, ih:287, target:175, expected:[100,94,2171,287] },
+    { box: {x:-152.5,y:-386,w:305,h:386}, off:{x:-152.5,y:-386}, iw:305, ih:386, target:48, expected:[100,200,305*48/386,48] },
+  ];
+  for (const c of cases) {
+    const e = new Entity({x:100,y:200,w:96,h:c.target});
+    e.sprite = {anims:{test:{collisionBox:c.box,frames:[{file:'test.png',offset:c.off,scale:{sx:1,sy:1}}]}},frames:new Map([['test.png',{complete:true,naturalWidth:c.iw,naturalHeight:c.ih}]])};
+    e.setAnim('test');
+    let tx=0,ty=0,sx=1,sy=1,actual;
+    const ctx={save(){},restore(){},translate(x,y){tx+=x*sx;ty+=y*sy;},scale(x,y){sx*=x;sy*=y;},rotate(a){assert.equal(a,0);},drawImage(im,a,b,cw,ch,x,y,w,h){actual=[tx+x*sx,ty+y*sy,w*sx,h*sy];}};
+    e.drawSprite(ctx);
+    actual.forEach((v,i)=>assert.ok(Math.abs(v-c.expected[i])<1e-9, `${v} != ${c.expected[i]}`));
+    const f=e.spriteFrame();
+    assert.ok(Math.abs(f.anchorX+f.dx*f.scale-c.expected[0])<1e-9);
+    assert.ok(Math.abs(f.anchorY+f.dy*f.scale-c.expected[1])<1e-9);
+  }
 });
