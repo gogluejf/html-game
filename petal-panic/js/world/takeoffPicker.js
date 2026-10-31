@@ -272,11 +272,20 @@ function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world,
     // Trigger measures distance to the CURRENT SURFACE's edge in the travel
     // direction — the point where the hero would walk off and fall. Jumping
     // here (not at the goal's edge) makes the arc launch from the right spot.
+    // BUT a SOLID BLOCK can sit ON the source surface ahead of that edge (a
+    // 1-row block stacked on a platform: newMacro #3→#7). The surface edge
+    // then lies BEHIND the block's face, so measuring to it walks the hero
+    // straight into the block and wall-pins before the jump ever arms (every
+    // candidate hard-misses → no-rest). Cap the trigger distance at the
+    // nearest solid wall face so the jump launches from just in front of the
+    // block instead. Steering is retained for the whole arc (dir stays latched),
+    // so the hero still drifts onto the block top as it rises.
     let toEdge;
     if (goalAboveOverlap){
       toEdge = 0;
     } else if (surfRef){
-      toEdge = dir > 0 ? Math.max(0, surfRef.x1 - f.x) : Math.max(0, f.x - surfRef.x0);
+      const surfEdge = dir > 0 ? Math.max(0, surfRef.x1 - f.x) : Math.max(0, f.x - surfRef.x0);
+      toEdge = world ? Math.min(surfEdge, nearestWallFacePx(h, world, dir)) : surfEdge;
     } else if (world){
       // One-way goals have no wall face. Approach their near edge on the
       // floor, then jump; Infinity otherwise leaves every candidate walking

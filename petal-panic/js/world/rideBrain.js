@@ -143,6 +143,7 @@ export function advanceGoal(b){
   b._pickFromKey = null;
   b._pickFrame = 0;
   b._fallbackDir = null;
+  b._hopFrom = null; // fresh hop: re-capture the start surface on next decideInput
 }
 
 /** Find which landing surface (if any) the hero's feet are currently on. */
@@ -180,6 +181,13 @@ export function decideInput(b, hero, world){
 
   const f = feetPos(hero);
   const standingOn = surfaceUnder(hero, world);
+  // Remember the surface we STARTED this hop on, BEFORE walk-to-edge can move
+  // the hero off it. The backtrack re-plan needs a valid `fromUnit`; using the
+  // live standingOn here fails once walk-to-edge has walked the hero off the
+  // source lip (standingOn → null → fromUnit -1 → backtrack skipped). This is
+  // why "go back to an intermediate to reach the goal" stopped working after
+  // the square-grid migration made more hops hard-miss.
+  if (standingOn && b._hopFrom == null) b._hopFrom = standingOn.index;
 
   // A pick is stale when: none yet, goal changed, OR the hero is grounded and
   // the surface-under changed. NOTE: we must NOT require "grounded" for the
@@ -211,7 +219,32 @@ export function decideInput(b, hero, world){
     if (!goalAbove && !goalBelowOverlap){
       // Walk to the goal's center if it's above our span (in-place jump spot);
       // otherwise walk to the nearest edge (lateral hop).
-      const targetX = goalAboveSpan ? gcx : (gcx >= f.x ? standingOn.x1 : standingOn.x0);
+      let targetX = goalAboveSpan ? gcx : (gcx >= f.x ? standingOn.x1 : standingOn.x0);
+      // A SOLID BLOCK can sit ON the source surface between us and the goal
+      // center (newMacro #3→#7: a 1-row block stacked on the platform). Walking
+      // to the goal center then runs straight into the block's face and
+      // wall-pins before any pick is made → every candidate hard-misses. When a
+      // solid face blocks the path to targetX, clamp the walk target just in
+      // front of that face so the hero stops where it can actually launch over
+      // the block (the picker's jump trigger now arms there too).
+      if (world.solids?.length){
+        const wb = hero.worldBox();
+        const dirToTarget = targetX > f.x ? 1 : targetX < f.x ? -1 : 0;
+        if (dirToTarget !== 0){
+          let blockFace = null;
+          for (const s of world.solids){
+            if (s.oneWay) continue;
+            if (s.y >= f.y - 2) continue;                 // floor under feet doesn't block X
+            if (s.y + s.h <= wb.y || s.y >= wb.y + wb.h) continue; // no vertical overlap
+            const face = dirToTarget > 0 ? s.x : s.x + s.w;
+            const d = dirToTarget > 0 ? face - f.x : f.x - face;
+            if (d > 0 && (blockFace == null || d < blockFace.d)) blockFace = { d, face };
+          }
+          if (blockFace && (dirToTarget > 0 ? blockFace.face < targetX : blockFace.face > targetX)){
+            targetX = blockFace.face - dirToTarget * 6; // stop ~6px short of the face
+          }
+        }
+      }
       if (!b.mem._walkEdge || Math.abs(f.x - b.mem._walkEdge.targetX) > 4){
         b.mem._walkEdge = { targetX, dir: targetX > f.x ? 1 : -1 };
       }
@@ -254,8 +287,10 @@ export function decideInput(b, hero, world){
     if (b._pick.best == null || b._pick.best.score > 150){
       // Can't reach the current goal cleanly: hard miss (null) OR a poor
       // near-miss (score > 150 = lands far off). Find the real path via
-      // findPathBetween and retarget to the next step on that path.
-      const fromUnit = standingOn?.index ?? -1;
+      // findPathBetween and retarget to the next step on that path. Use the
+      // hop's START surface (_hopFrom) when the hero has already walked off
+      // the source lip — that's the surface the route should re-plan FROM.
+      const fromUnit = standingOn?.index ?? b._hopFrom ?? -1;
       if (fromUnit >= 0 && b._units?.length){
         const tagged = b._units.map((u, i) => ({ ...u, _editorIndex: u._editorIndex ?? i }));
         const path = findPathBetween({ orientation: b._orientation, units: tagged }, fromUnit, g.index);

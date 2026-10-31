@@ -32,36 +32,40 @@
     {
       "kind": "platform",
       "y": 4,
-      "x": 36,
+      "x": 34,
       "width": 12
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 46,
+      "x": 44,
       "width": 2
     },
     {
       "kind": "block",
       "height": 3,
       "y": 5,
-      "x": 48,
+      "x": 46,
       "width": 2
     },
     {
       "kind": "platform",
       "y": 6,
-      "x": 50,
+      "x": 48,
       "width": 2
     },
     {
       "kind": "block",
       "height": 1,
       "y": 5,
-      "x": 40,
+      "x": 38,
       "width": 2
     }
   ],
-  "placements": []
+  "placements": [],
+  "clearance": {
+    "status": "cleared",
+    "contentSignature": "ae27389d"
+  }
 }

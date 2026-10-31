@@ -6,10 +6,6 @@
   "variations": [],
   "follows": [],
   "followedBy": [],
-  "clearance": {
-    "status": "cleared",
-    "contentSignature": "e34f42eb"
-  },
   "schemaVersion": "square-grid-v1",
   "units": [
     {
@@ -21,31 +17,31 @@
     {
       "kind": "platform",
       "y": 1,
-      "x": 58,
+      "x": 55,
       "width": 2
     },
     {
       "kind": "platform",
       "y": 2,
-      "x": 62,
+      "x": 59,
       "width": 2
     },
     {
       "kind": "platform",
       "y": 5,
-      "x": 58,
+      "x": 55,
       "width": 2
     },
     {
       "kind": "platform",
       "y": 4,
-      "x": 54,
+      "x": 51,
       "width": 2
     },
     {
       "kind": "platform",
       "y": 3,
-      "x": 46,
+      "x": 43,
       "width": 8
     },
     {
