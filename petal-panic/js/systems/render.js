@@ -19,8 +19,8 @@ import { drawScreen, screenUpdate } from '../ui/screens.js';
 import { drawHUD } from '../systems/hud.js';
 import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../world/level.js';
 import { isHighGraphic } from '../core/renderMode.js';
-import { tileSolid, loadTerrainFrames, drawFloor, getFloorEntity } from '../world/terrainTiles.js';
-import { getTileSprites, drawTileSprites } from '../world/tileSprite.js';
+import { drawFloor, getFloorEntity } from '../world/terrainTiles.js';
+import { collectTileEntities, drawTileSprites } from '../world/tileSprite.js';
 import { getLastWorldSeed } from '../world/build.js';
 import { drawParallaxBg } from '../world/parallax.js';
 import { bombAttacks, getActiveZone } from './update.js';
@@ -99,19 +99,22 @@ export function render(ctx) {
     const seed = getLastWorldSeed() ?? 0;
     const zone = getActiveZone(getHero());
     const level = zone?.level ?? 1;
-    for (const s of getSolids()) {
-      if (isHighGraphic()) {
-        // High-graphic: sheet sprites for terrain.
-        if (s.kind === 'floor') {
-          drawFloor(ctx, s, level);
-          continue;
-        }
-        const kind = s.oneWay ? 'platform' : 'block';
-        loadTerrainFrames(level, kind);
-        const tiles = tileSolid(s, level, seed);
-        drawTileSprites(ctx, getTileSprites(s, level, tiles));
-      } else {
-        // Primitive: flat colored rects per solid.
+    if (isHighGraphic()) {
+      // High-graphic: sheet sprites for terrain. Floor is its own kind —
+      // drawn first (it's always behind). All block/platform tiles are
+      // collected into ONE array and sorted right→left, bottom→top so
+      // left/top tiles overdraw regardless of solid or kind.
+      for (const s of getSolids()) {
+        if (s.kind === 'floor') drawFloor(ctx, s, level);
+      }
+      const allTiles = collectTileEntities(getSolids(), level, seed);
+      allTiles.sort((a, b) =>
+        (b.x + b.w / 2) - (a.x + a.w / 2) ||   // right first
+        (b.y + b.h)     - (a.y + a.h));         // bottom first
+      drawTileSprites(ctx, allTiles);
+    } else {
+      // Primitive: flat colored rects per solid.
+      for (const s of getSolids()) {
         ctx.fillStyle = s.oneWay ? '#ffb86c' : '#ff9f43';
         ctx.fillRect(s.x, s.y, s.w, s.h);
       }

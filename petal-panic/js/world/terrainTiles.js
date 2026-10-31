@@ -61,10 +61,10 @@ export function loadTerrainFrames(level, kind) {
 function pickFrame(rng, frameCount, kind) {
   let plainPool, decoPool;
   if (kind === 'block') {
-    // f1 (index 0) is the plain frame; everything after is decorated.
-    plainPool = [0];
-    decoPool = [];
-    for (let i = 1; i < frameCount; i++) decoPool.push(i);
+    // f1 (index 0) is decorated; f2..end are plain.
+    plainPool = [];
+    for (let i = 1; i < frameCount; i++) plainPool.push(i);
+    decoPool = [0];
   } else {
     // Platform: f4..end (last three slots of a 6-frame sheet) are the empty
     // pool; everything before (f1–f3) is decorated.

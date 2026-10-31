@@ -11,6 +11,7 @@
 // entities. Pool is rebuilt when the solid rect changes (zone transitions).
 
 import { getLevelAsset } from './levelAssets.js';
+import { tileSolid, loadTerrainFrames } from './terrainTiles.js';
 import { Entity } from '../core/entity.js';
 
 /** kind → variant anim names (merged block/platform SpriteData). */
@@ -69,6 +70,28 @@ export function getTileSprites(s, level, tiles) {
     e._tileFrame = t.frame % data.frames.length;
   }
   return pool;
+}
+
+/**
+ * Collect tile entities for ALL non-floor solids, ready for a single global
+ * draw pass. Pools are built/reused per solid (same as getTileSprites); the
+ * returned array is flat and unsorted — the caller sorts right→left,
+ * bottom→top so left/top tiles always overdraw regardless of kind.
+ *
+ * @param {Array<{x:number,y:number,w:number,h:number,oneWay?:boolean,kind?:string}>} solids
+ * @param {number} level 1-based level index
+ * @param {number|string} seed per-game seed
+ * @returns {Entity[]} all live tile entities across every solid
+ */
+export function collectTileEntities(solids, level, seed) {
+  const out = [];
+  for (const s of solids) {
+    if (s.kind === 'floor') continue;
+    loadTerrainFrames(level, s.oneWay ? 'platform' : 'block');
+    const pool = getTileSprites(s, level, tileSolid(s, level, seed));
+    for (const e of pool) if (e) out.push(e);
+  }
+  return out;
 }
 
 /**
