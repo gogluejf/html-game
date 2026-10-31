@@ -122,7 +122,7 @@ export class Projectile extends Entity {
     this.vx = Math.cos(angle) * this.speed;
     this.vy = Math.sin(angle) * this.speed;
     // Orientation: nose along velocity (rotation-only, no mirror).
-    this.rotation = aimRotation(this.vx, this.vy);
+    this.orientSprite(this.vx, this.vy);
 
     // Sprite (SOTA): thorn sheet via the standard pipeline. `frames` is a LIVE
     // accessor so boot-time image loading is picked up without rebuilds.
@@ -169,6 +169,7 @@ export class Projectile extends Entity {
     this._impactPoint = null;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
+    this.orientSprite(this.vx, this.vy);
     this.tickAnim(dt);
     this.life -= dt;
     if (this.life <= 0) this.alive = false;

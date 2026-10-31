@@ -132,8 +132,8 @@ test('drawSprite renders the frame via per-frame tuning (offset/scale) when pres
   const cb = data.anims.wooden.collisionBox;
   const s = e._spriteScale;
   const w = 305 * f.scale.sx, h = 386 * f.scale.sy;
-  const worldX = e.x + e.w / 2 + drawn.dx * s;
-  const worldY = e.y + e.h + drawn.dy * s;
+  const worldX = e.spriteFrame().anchorX + drawn.dx * s;
+  const worldY = e.spriteFrame().anchorY + drawn.dy * s;
   assert.ok(Math.abs(worldX - (e.x + (f.offset.x - cb.x) * s)) < 1e-9);
   assert.ok(Math.abs(worldY - (e.y + (f.offset.y - cb.y) * s)) < 1e-9);
   assert.deepEqual([drawn.dw, drawn.dh], [w, h]);

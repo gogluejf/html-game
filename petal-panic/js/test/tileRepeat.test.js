@@ -57,8 +57,8 @@ test('tile=true: a wide floor entity repeats the frame to cover its full width',
     assert.deepEqual([sx, sy, sw, sh], [0, 0, 2171, 287]); // full image, no crop
     assert.equal(dw, 2171); // natural width (ctx is pre-scaled by s)
     assert.equal(dh, 287);
-    minX = Math.min(minX, dx * s + e.x + e.w / 2);
-    maxX = Math.max(maxX, (dx + 2171) * s + e.x + e.w / 2);
+    minX = Math.min(minX, dx * s + e.spriteFrame().anchorX);
+    maxX = Math.max(maxX, (dx + 2171) * s + e.spriteFrame().anchorX);
   }
   assert.ok(minX <= e.x + 1, `coverage starts at left edge (got ${minX})`);
   assert.ok(maxX >= e.x + e.w - 1, `coverage reaches right edge (got ${maxX})`);

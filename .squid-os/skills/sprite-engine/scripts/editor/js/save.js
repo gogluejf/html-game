@@ -38,7 +38,7 @@ export function collectGameData(st){
     playback: st.playback || 'loop',
     direction: st.direction || 'forward',
     collision: st.collision,
-    pivot: st.pivot,
+    pivot: st.pivot ?? { x: st.collision.x + st.collision.w / 2, y: st.collision.y + st.collision.h / 2 },
     markers: st.markers || [],
     frames: st.frames.map(f => ({
       offset: f.offset,

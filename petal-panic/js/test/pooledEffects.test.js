@@ -30,7 +30,7 @@ test('pooled outline follows live slot after motion and reuse; playback advances
         p.drawSprite(ctx);
         p._outline.render(ctx);
         assert.equal(depth, 0, 'sprite + outline must balance canvas stack');
-        assert.deepEqual(translations.at(-1), [p.x + p.w / 2, p.y + p.h]);
+        assert.deepEqual(translations.at(-1), [p.x + p.w / 2, p.y + p.h / 2]);
         assert.equal(rotations.at(-1), p.rotation);
       }
       p.alive = false;

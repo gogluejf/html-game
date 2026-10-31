@@ -209,6 +209,12 @@ export async function selectEntity(li, ei, opts){
       if (gf.durUnits >= 1) st.frames[i].durUnits = gf.durUnits;
     });
   }
+  // A sheet/draft without an authored pivot uses its FINAL collision center,
+  // not the factory box center from before disk tuning was merged.
+  if (!(gd?.pivot || en.tuning?.pivot)) {
+    st.pivot = { x: st.collision.x + st.collision.w / 2,
+      y: st.collision.y + st.collision.h / 2 };
+  }
   resetSequence(st);
   app.S.set(app.cur.name, st);
   app.cur.st = st;

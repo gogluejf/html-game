@@ -234,6 +234,15 @@ export class Entity {
     this.mirrorX = (this.facing === -1);
   }
 
+  /** Orient right-facing artwork toward a world vector. Canvas applies
+   * mirror before rotation, so solve the angle in mirrored local space. */
+  orientSprite(vx, vy) {
+    if (Math.hypot(vx, vy) < 1e-9) return;
+    this.mirrorX = vx < -1e-9;
+    this.mirrorY = false;
+    this.rotation = Math.atan2(vy, this.mirrorX ? -vx : vx);
+  }
+
   /**
    * Set the active sprite animation (sprites.md runtime wiring, v1).
    *
@@ -313,45 +322,10 @@ export class Entity {
    * @param {CanvasRenderingContext2D} ctx
    */
   drawSprite(ctx) {
-    const data = this.spriteAnimData;
-    const frames = this.sprite?.frames;
-    if (!data || !frames || frames.size === 0) {
-      // One-time diagnostic: tells us WHY the sprite fell back to the rect.
-      if (data && !this._spriteWarned) {
-        this._spriteWarned = true;
-        const frame = data.frames[0];
-        console.warn(`[sprite] ${this.type ?? 'entity'} anim "${this._spriteAnim}" has no loaded frames`,
-          { expectedFile: frame?.file, cacheSize: frames?.size });
-      }
-      return false;
-    }
-    const frame = data.frames[this.spriteFrameIndex % data.frames.length];
-    const img = frames.get(frame.file);
-    if (!img || !(img.complete && img.naturalWidth > 0)) return false;
-
-    const s = this._spriteScale;
-    // Anchor at bottom-center of the collision box (default physical anchor).
-    const ax = this.x + this.w / 2;
-    const ay = this.y + this.h;
-    // Saved offsets and collision x/y are top-left coordinates, Y down.
-    // World sprite origin = entity origin + (offset - collision origin) * s.
-    // Keep the existing bottom-center pivot for mirrors/rotation; compensate
-    // in LOCAL units below. ctx.scale applies s exactly once.
-    const nw = img.naturalWidth;
-    const nh = img.naturalHeight;
-    const fsx = frame.scale?.sx ?? 1;
-    const fsy = frame.scale?.sy ?? 1;
-    const w = nw * fsx;
-    const h = nh * fsy;
-    let dx, dy;
-    if (frame.offset && data.collisionBox) {
-      const cb = data.collisionBox;
-      dx = frame.offset.x - cb.x - this.w / (2 * s);
-      dy = frame.offset.y - cb.y - this.h / s;
-    } else {
-      dx = -w / 2;
-      dy = -h;
-    }
+    const f = this.spriteFrame();
+    if (!f) return false;
+    const { img, w, h, dx, dy, scale: s, anchorX: ax, anchorY: ay } = f;
+    const nw = img.naturalWidth, nh = img.naturalHeight;
 
     ctx.save();
     ctx.translate(ax, ay);
@@ -366,8 +340,8 @@ export class Entity {
       // natural (scaled) width is the repeat period; start one period left of
       // the left edge so coverage always begins at x = -w/2.
       const fw = w;
-      const left = -this.w / 2 / s; // entity left edge in scaled local units
-      const right = this.w / 2 / s; // entity right edge (local units)
+      const left = (this.x - ax) / s; // entity left edge relative to sheet pivot
+      const right = (this.x + this.w - ax) / s; // entity right edge
       const first = Math.floor((left - dx) / fw);
       for (let i = first; dx + i * fw < right; i++) {
         ctx.drawImage(img, 0, 0, nw, nh, dx + i * fw, dy, w, h);
@@ -404,22 +378,19 @@ export class Entity {
     const fsy = frame.scale?.sy ?? 1;
     const w = img.naturalWidth * fsx;
     const h = img.naturalHeight * fsy;
-    let dx, dy;
-    if (frame.offset && data.collisionBox) {
-      // Identical local transform to drawSprite (scale applied by consumer).
-      const cb = data.collisionBox;
-      dx = frame.offset.x - cb.x - this.w / (2 * this._spriteScale);
-      dy = frame.offset.y - cb.y - this.h / this._spriteScale;
-    } else {
-      dx = -w / 2;
-      dy = -h;
-    }
+    const s = this._spriteScale;
+    const cb = data.collisionBox;
+    // Sheet coordinates are top-left, y-down. Missing pivots default to the
+    // collision center; the same transform serves sprites and all effects.
+    const pivot = data.pivot ?? { x: cb.x + cb.w / 2, y: cb.y + cb.h / 2 };
+    const anchorX = this.x + (pivot.x - cb.x) * s;
+    const anchorY = this.y + (pivot.y - cb.y) * s;
+    const dx = frame.offset ? frame.offset.x - pivot.x
+      : (this.x + this.w / 2 - anchorX) / s - w / 2;
+    const dy = frame.offset ? frame.offset.y - pivot.y
+      : (this.y + this.h - anchorY) / s - h;
     return {
-      img,
-      w, h, dx, dy,
-      scale: this._spriteScale,
-      anchorX: this.x + this.w / 2,
-      anchorY: this.y + this.h,
+      img, w, h, dx, dy, scale: s, anchorX, anchorY,
       mirrorX: !!this.mirrorX,
       mirrorY: !!this.mirrorY,
       rotation: this.rotation ?? 0,

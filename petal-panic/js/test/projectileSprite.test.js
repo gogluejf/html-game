@@ -50,7 +50,7 @@ test('T5: constructor aims the nose along velocity for all 8 directions', () => 
     const vAng = Math.atan2(p.vy, p.vx);
     // Nose direction in world space = rotation + baseSpriteAngle(0) + art-up offset.
     // The art's up-vector rotated by `rotation` must align with velocity.
-    const nose = p.rotation; // art faces right: nose direction == rotation
+    const nose = p.mirrorX ? Math.PI - p.rotation : p.rotation;
     const dot = Math.cos(nose - vAng);
     assert.ok(dot > 0.999, `dir ${dir}: nose·velocity = ${dot}`);
   }
@@ -79,7 +79,7 @@ test('T5: pool respawn resets player state (no stale frame/done)', () => {
   }
   // Orientation re-derived from the NEW velocity (dir 4 = left).
   const vAng = Math.atan2(recycled.vy, recycled.vx);
-  assert.ok(Math.abs(Math.cos(recycled.rotation - vAng)) > 0.999);
+  assert.ok(Math.abs(Math.cos((recycled.mirrorX ? Math.PI - recycled.rotation : recycled.rotation) - vAng)) > 0.999);
 });
 
 // --- T6: size-model audit gate -------------------------------------------------
