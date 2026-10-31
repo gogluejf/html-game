@@ -53,9 +53,12 @@ test('platform_single tile pins its slab to the landing face (PLATFORM_DRAW_H)',
   // not the sheet box height: base scale = 1u / box.h, then the one-way pin
   // × PLATFORM_DRAW_H/UNIT_PX_Y makes the drawn slab a thin strip at the
   // platform's top face (build.js R5.1).
+  // The sheet box is now 1/8 of the authored art reference. The one-way pin
+  // targets PLATFORM_DRAW_H, then cancels the 8x increase so the art scale is
+  // identical to the pre-thinning value.
   const refH = data.anims.platform_single.collisionBox.h;
-  const expected = (UNIT_PX_Y / refH) * PLATFORM_DRAW_H / UNIT_PX_Y;
-  assert.ok(Math.abs(expected - PLATFORM_DRAW_H / refH) < 1e-9, `reference: ${PLATFORM_DRAW_H} / collision h ${refH}`);
+  const expected = (UNIT_PX_Y / refH) * PLATFORM_DRAW_H / UNIT_PX_Y / 8;
+  assert.ok(Math.abs(expected - PLATFORM_DRAW_H / (refH * 8)) < 1e-9, `reference: ${PLATFORM_DRAW_H} / original collision h ${refH * 8}`);
 
   await loadLevelAsset(1, 'platform');
   _clearAllTilePools();
