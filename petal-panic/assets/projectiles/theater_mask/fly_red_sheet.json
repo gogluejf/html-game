@@ -20,7 +20,17 @@
             0,
             351,
             292
-          ]
+          ],
+          "offset": {
+            "x": -175.5,
+            "y": -292
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "fly_red_f2.png",
@@ -31,7 +41,17 @@
             0,
             380,
             293
-          ]
+          ],
+          "offset": {
+            "x": -190,
+            "y": -293
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "fly_red_f3.png",
@@ -42,7 +62,17 @@
             3,
             404,
             286
-          ]
+          ],
+          "offset": {
+            "x": -202,
+            "y": -286
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         },
         {
           "file": "fly_red_f4.png",
@@ -53,9 +83,33 @@
             6,
             376,
             280
-          ]
+          ],
+          "offset": {
+            "x": -188,
+            "y": -280
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
         }
-      ]
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": -171.5,
+        "y": -284,
+        "w": 343,
+        "h": 284
+      },
+      "pivot": {
+        "x": 0,
+        "y": -142
+      },
+      "markers": []
     }
   ],
   "updated": "2026-10-28"
