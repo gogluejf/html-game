@@ -1,32 +1,38 @@
 {
- "label": "objects",
- "file": "petal-panic/assets/objects/checkpoint/level_sheet.png",
- "rows": 1,
- "cols": 1,
- "size": "332x525",
- "description": "Checkpoint flag pole prop (single image)",
- "entities": [
-  {
-   "name": "checkpoint",
-   "anim": "level",
-   "frames": [
+  "label": "objects",
+  "file": "petal-panic/assets/objects/checkpoint/level_sheet.png",
+  "rows": 1,
+  "cols": 1,
+  "size": "332x525",
+  "description": "Checkpoint flag pole prop (single image)",
+  "entities": [
     {
-     "file": "level_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      332,
-      525
-     ]
+      "name": "checkpoint",
+      "anim": "level",
+      "frames": [
+        {
+          "file": "level_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            332,
+            525
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/checkpoint",
+      "collision": {
+        "x": 0,
+        "y": 0,
+        "w": 332,
+        "h": 525
+      }
     }
-   ],
-   "frames_dir": "petal-panic/assets/objects/checkpoint"
-  }
- ],
- "crop": {
-  "pass": "/tmp/redo-single"
- },
- "kind": "entity_variant"
+  ],
+  "crop": {
+    "pass": "/tmp/redo-single"
+  },
+  "kind": "entity_variant"
 }

@@ -261,8 +261,6 @@ export class Entity {
     if (!img || !(img.complete && img.naturalWidth > 0)) return false;
 
     const s = this._spriteScale;
-    const w = frame.bbox.w * s;
-    const h = frame.bbox.h * s;
     // Anchor at bottom-center of the collision box (default physical anchor).
     const ax = this.x + this.w / 2;
     const ay = this.y + this.h;
@@ -273,7 +271,20 @@ export class Entity {
     if (this.mirrorY) ctx.scale(1, -1);
     ctx.rotate(this.rotation);
     ctx.scale(s, s);
-    if (this.sprite.tile) {
+    // Per-frame tuning (Animation Studio contract): when the sheet carries
+    // frame.offset (+ optional frame.scale), the frame is drawn in ANCHOR
+    // SPACE — its TOP-LEFT corner lands at offset (same convention as the
+    // collision box's x/y: top-left, y-up from the anchor) and its size is
+    // crop * scale. bbox stays a CROP rect (where to cut the PNG) and is
+    // never used as sprite geometry on this path.
+    if (frame.offset) {
+      const fsx = frame.scale?.sx ?? 1;
+      const fsy = frame.scale?.sy ?? 1;
+      const w = frame.bbox.w * fsx;
+      const h = frame.bbox.h * fsy;
+      ctx.drawImage(img, frame.bbox.x, frame.bbox.y, frame.bbox.w, frame.bbox.h,
+        frame.offset.x, frame.offset.y - h, w, h);
+    } else if (this.sprite.tile) {
       // Tile repeat: draw the frame bbox repeatedly across the entity width so
       // one wide entity (e.g. a full-zone floor) fills its whole span with the
       // same uniform scale — no stretching, no per-tile math. The frame's

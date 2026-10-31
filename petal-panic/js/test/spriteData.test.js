@@ -30,10 +30,10 @@ test('level1 block_single parses: 1 anim, 2 frames', () => {
   }
 });
 
-test('level1 platform_single parses: 4 frames', () => {
+test('level1 platform_single parses: 6 frames (3 decorated + 3 plain pool)', () => {
   const data = parseSheet(sheet('levels/level1/platform_single_sheet.json'));
   const anim = Object.values(data.anims)[0];
-  assert.equal(anim.frames.length, 4);
+  assert.equal(anim.frames.length, 6);
 });
 
 test('checkpoint level + boss sheets merge into one SpriteData', () => {

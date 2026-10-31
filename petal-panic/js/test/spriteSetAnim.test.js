@@ -64,7 +64,7 @@ test('drawSprite returns false until frames are loaded (fallback intact)', () =>
   assert.equal(e.drawSprite(ctx), false); // empty frame map → legacy fallback
 });
 
-test('drawSprite renders the frame bottom-aligned to the anchor when loaded', () => {
+test('drawSprite renders the frame via per-frame tuning (offset/scale) when present', () => {
   const data = parseSheet(sheet('objects/barrel/wooden_sheet.json'));
   const e = makeSpriteEntity(32, 48, data.anims);
   e.setAnim('wooden');
@@ -74,11 +74,19 @@ test('drawSprite renders the frame bottom-aligned to the anchor when loaded', ()
   let drawn = null;
   const ctx = {
     save() {}, restore() {}, translate() {}, scale() {}, rotate() {},
-    drawImage(img, sx, sy, sw, sh) { drawn = { img, sx, sy, sw, sh }; },
+    drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) { drawn = { img, sx, sy, sw, sh, dx, dy, dw, dh }; },
   };
   assert.equal(e.drawSprite(ctx), true);
   assert.equal(drawn.img, fakeImg);
-  // Source bbox copied at full size (ctx is pre-scale).
+  // Source crop copied at full size...
   const bb = data.anims.wooden.frames[0].bbox;
-  assert.deepEqual([drawn.sx, drawn.sy, drawn.sw, drawn.sh], [bb.x, bb.y - bb.h, bb.w, bb.h]);
+  assert.deepEqual([drawn.sx, drawn.sy, drawn.sw, drawn.sh], [bb.x, bb.y, bb.w, bb.h]);
+  // ...and placed in anchor space from the authored tuning: TOP-LEFT at
+  // offset, size = crop * frame.scale. Barrel tuning: offset (-152.5,-386),
+  // scale 1 → dst rect spans x -152.5..+152.5, y -386..0 (bottom on the
+  // anchor line, centered).
+  const f = data.anims.wooden.frames[0];
+  const w = bb.w * f.scale.sx, h = bb.h * f.scale.sy;
+  assert.deepEqual([drawn.dx, drawn.dy, drawn.dw, drawn.dh],
+    [f.offset.x, f.offset.y - h, w, h]);
 });

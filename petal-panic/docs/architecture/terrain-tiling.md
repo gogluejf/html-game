@@ -117,23 +117,32 @@ so walls keep their character, with the empty f2 as the 25% variation.
 
 Each tile is a real Entity running the standard sprite pipeline
 (`setAnim()` → `uniformScale(collisionBox.h)` → `drawSprite()`). The authored
-collision box in the sheet JSON (written via the sprite-engine ratio rule:
-width = max frame width, height pro-rata) is the scale reference — one uniform
-scalar, never stretched independently.
+collision box in the sheet JSON is **the tile's true footprint** — blocks:
+2 cells wide × variant height; platforms: variant width × 1 cell — centered
+on the anchor (bottom-center), so `uniformScale` = rect height / box height =
+**exactly 1** for every terrain anim. One uniform scalar, never stretched.
 
-- **Blocks:** anchor `bottom-center`. Per sprites.md §4 the target is ALWAYS
-  **1 unit (48px)** — the tile's logical footprint — and the ratio collision
-  box does the rest: single (h≈W/2) → scale ≈0.2, double (h≈W) → ≈0.1,
-  triple (h≈1.5W) → ≈0.07. The drawn art therefore fills exactly one cell of
-  width per column and its proportional height; a 5-tall column stacks a
-  triple tile + a double tile, each rendered from its own sheet at its own
-  §4 scale. No ad-hoc scaling, no stretching — one scalar per animation.
-- **Platforms:** same rule, no special-casing — anchor `bottom-center`, scale
-  = 1u rect height / collision box height. Because the ratio box is tall
-  (h ≈ frame width), the scale is small and the drawn slab is thin; its
-  BOTTOM edge sits on the rect's bottom edge, which is the landing face
-  (build.js R5.1 thins the solid to `PLATFORM_DRAW_H` at that same face). A
-  platform at level y=1 therefore renders its slab right at the y=1 surface.
+Per-frame tuning (`frame.offset` + `frame.scale` in the sheet JSON, the
+Animation Studio contract) does the actual placement:
+
+- `offset` = where the frame's **TOP-LEFT corner** sits in anchor space
+  (y-up, anchor at the tile's bottom-center) — the same convention as the
+  collision box's x/y. All terrain frames use `x: -w/2` (centered on the
+  column) and `y: -h` (bottom edge on the anchor line).
+- `scale` fits the frame's crop onto the tile rect: blocks fill their row
+  (96×48/96/144 px), platforms fill their cell (48/96/144 × 48 px). Crops are
+  non-square source art, so sx ≠ sy by design — this is per-frame TUNING, not
+  a §4 rescale; the §4 scalar stays one per animation.
+
+`drawSprite()` uses this path whenever `frame.offset` is present; sheets
+without tuning keep the legacy bbox fallback (untuned object sheets).
+
+- **Platforms:** the drawn slab is pinned to the landing face — `tileSprite.js`
+  multiplies the anim scale by `PLATFORM_DRAW_H / UNIT_PX_Y` (≈0.125) for
+  one-way solids, so the full-cell art renders as a thin strip whose BOTTOM
+  sits on the rect's bottom edge = the landing face (build.js R5.1 thins the
+  solid to `PLATFORM_DRAW_H` at that same face). A platform at level y=1
+  therefore renders its slab right at the y=1 surface.
 
 ## Integration points
 

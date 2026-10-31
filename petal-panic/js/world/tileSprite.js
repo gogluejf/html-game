@@ -57,14 +57,15 @@ export function getTileSprites(s, level, tiles) {
       e = new Entity({ x: t.x, y: t.y, w: t.w, h: t.h, debugColor: '#a86' });
       // The tile rect IS the placement unit (from the macro grid). Scale the
       // sheet's collision box onto that rect height (uniform §4) and let the
-      // standard bottom-center anchor do the rest — no special-casing:
-      //   blocks:    colBox.h == row height → scale ×1, art fills its row
-      //   platforms: colBox.h = ratio height → thin slab, bottom of the 1u
-      //              rect = the landing face (build.js R5.1 thins the solid
-      //              to PLATFORM_DRAW_H at that same face)
+      // standard bottom-center anchor do the rest. Per-frame tuning in the
+      // sheet JSON (offset/scale) then places each frame exactly as authored
+      // in the editor — blocks fill their row, platforms pin a thin slab to
+      // the landing face (build.js R5.1 thins the solid to PLATFORM_DRAW_H
+      // at that same face).
       e.sprite = { anchor: 'bottom-center', anims: asset.data.anims };
       Object.defineProperty(e.sprite, 'frames', { get: () => asset.frames });
       e.setAnim(animName);
+      if (s.oneWay) e._spriteScale *= PLATFORM_DRAW_H / UNIT_PX_Y;
       pool[i] = e;
     }
     // Frame pick can change on rebuild (new seed/rect): retarget without rescale.

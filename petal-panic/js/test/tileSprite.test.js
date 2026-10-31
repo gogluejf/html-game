@@ -46,14 +46,14 @@ test('block_single tile scales from the sheet collision box (§4)', async () => 
   assert.equal(e._spriteScale, expected, 'scale comes from the authored collision box');
 });
 
-test('platform_single tile scales its collision box onto the 1u rect (§4)', async () => {
+test('platform_single tile pins its slab to the landing face (PLATFORM_DRAW_H)', async () => {
   const data = parseSheet(await readSheet('platform_single_sheet.json'));
   const refH = data.anims.platform_single.collisionBox.h;
-  // Same rule as blocks: scale = rect height / collision box height. The
-  // ratio box (h ≈ frame width) makes the drawn slab thin; its bottom sits
-  // on the rect's bottom edge = the landing face (build.js R5.1).
-  const expected = uniformScale(data.anims.platform_single, UNIT_PX_Y);
-  assert.ok(Math.abs(expected - UNIT_PX_Y / refH) < 1e-9, `reference: 48 / collision h ${refH}`);
+  // Base scale fits the collision box onto the 1u rect (§4), then the one-way
+  // pin multiplies by PLATFORM_DRAW_H/UNIT_PX_Y so the drawn slab is a thin
+  // strip anchored to the platform's top face (build.js R5.1).
+  const expected = uniformScale(data.anims.platform_single, UNIT_PX_Y) * PLATFORM_DRAW_H / UNIT_PX_Y;
+  assert.ok(Math.abs(expected - PLATFORM_DRAW_H / refH) < 1e-9, `reference: ${PLATFORM_DRAW_H} / collision h ${refH}`);
 
   await loadLevelAsset(1, 'platform');
   _clearAllTilePools();

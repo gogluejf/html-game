@@ -101,7 +101,7 @@ function parseFrames(ent) {
     if (!(w > 0) || !(h > 0)) {
       throw new Error(`parseSheet: frame ${i} of "${ent.anim}" has zero-size bbox`);
     }
-    return { file: f.file, bbox: { x, y, w, h } };
+    return { file: f.file, bbox: { x, y, w, h }, offset: parsePoint(f.offset), scale: parseFrameScale(f.scale) };
   });
 }
 
@@ -147,6 +147,14 @@ function parsePoint(p) {
   const x = Number(p.x), y = Number(p.y);
   if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('parseSheet: bad pivot');
   return { x, y };
+}
+
+/** Parse an optional per-frame {sx,sy} scale; null when absent. */
+function parseFrameScale(s) {
+  if (s == null) return null;
+  const sx = Number(s.sx), sy = Number(s.sy);
+  if (!(sx > 0) || !(sy > 0)) throw new Error(`parseSheet: bad frame scale (${JSON.stringify(s)})`);
+  return { sx, sy };
 }
 
 /**
