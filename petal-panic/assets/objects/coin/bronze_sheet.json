@@ -21,8 +21,8 @@
             192
           ],
           "offset": {
-            "x": 0,
-            "y": 0
+            "x": -98,
+            "y": -96
           },
           "scale": {
             "sx": 1,
@@ -42,8 +42,8 @@
             219
           ],
           "offset": {
-            "x": 0,
-            "y": 0
+            "x": -42,
+            "y": -109.5
           },
           "scale": {
             "sx": 1,
@@ -63,8 +63,8 @@
             215
           ],
           "offset": {
-            "x": 0,
-            "y": 0
+            "x": -107.5,
+            "y": -107.5
           },
           "scale": {
             "sx": 1,
@@ -84,8 +84,8 @@
             219
           ],
           "offset": {
-            "x": 0,
-            "y": 0
+            "x": -42.5,
+            "y": -109.5
           },
           "scale": {
             "sx": 1,
@@ -96,8 +96,9 @@
         }
       ],
       "frames_dir": "petal-panic/assets/objects/coin",
-      "speed": 8,
+      "speed": 5,
       "playback": "loop",
+      "startFrame": "random",
       "direction": "forward",
       "collision": {
         "x": -94,

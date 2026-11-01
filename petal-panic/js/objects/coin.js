@@ -17,6 +17,8 @@
 import { Entity } from '../core/entity.js';
 import { isHighGraphic } from '../core/renderMode.js';
 import { LAYER, GRAVITY, MAX_FALL_SPEED, COIN_TTL, TTL_SPEED, UNIT_PX_Y } from '../consts.js';
+import { parseSheet } from '../core/spriteData.js';
+import { loadFrames } from '../core/frameLoader.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const MAX_COINS = 30;                 // hard cap on live coins (§17 perf param)
@@ -36,8 +38,41 @@ export const COIN_TYPES = Object.freeze({
   gold:   { value: 50, weight: 1.3, color: '#ffd700', size: 14 },
 });
 
-/**
- * Probability table for a single coin's type. Used by rollCoinType() and
+// --- Sprite data (SOTA) ------------------------------------------------------
+// One sheet per coin type (gold/silver/bronze), 4-frame spin anim each. The
+// sheets ship with authored collision boxes + center pivots, so setAnim()
+// scales via the standard §4 uniform-scale contract — no hardcoded pixel math.
+// `frames` is a LIVE accessor on this.sprite so coins constructed before
+// initCoinSprites() resolves pick up the images the moment they land.
+let coinSpriteData = null;
+let coinFrames = new Map(); // shared frame cache, filled by initCoinSprites()
+
+export function getCoinSpriteData() { return coinSpriteData; }
+
+/** Node-only JSON reader for file: URLs (browser uses fetch instead). */
+async function readFileJson(url) {
+  const { readFile } = await import('node:fs/promises');
+  const { fileURLToPath } = await import('node:url');
+  return JSON.parse(await readFile(fileURLToPath(url), 'utf8'));
+}
+
+export function initCoinSprites() {
+  if (coinSpriteData || typeof fetch === 'undefined') return Promise.resolve();
+  const base = new URL('../../assets/objects/coin/', import.meta.url).href;
+  const files = ['gold_sheet.json', 'silver_sheet.json', 'bronze_sheet.json'];
+  const load = base.startsWith('file:')
+    ? Promise.all(files.map((f) => readFileJson(new URL(f, base))))
+    : Promise.all(files.map((f) => fetch(base + f).then((r) => r.json())));
+  return load
+    .then((sheets) => {
+      coinSpriteData = parseSheet(sheets);
+      return loadFrames(coinSpriteData, base);
+    })
+    .then((imgs) => { if (imgs && imgs.size > 0) coinFrames = imgs; })
+    .catch((e) => console.warn('[sprite] coin sheets failed to load', e));
+}
+
+/** Probability table for a single coin's type. Used by rollCoinType() and
  * dropCoins(). Can be overridden per-entity via coinDrop.types weights.
  */
 const DEFAULT_TYPE_WEIGHTS = { bronze: 0.7, silver: 0.25, gold: 0.05 };
@@ -89,6 +124,17 @@ export class Coin extends Entity {
     // registers the 'life' timer on the unified engine (see Entity).
     this.setLife(COIN_TTL);
     this.ttlSpeed = 1; // reads global TTL_SPEED each frame via tickTtl override below
+
+    // Sprite (SOTA): per-type sheet anim via the standard pipeline. The sheet's
+    // authored collision box drives §4 scaling — no hardcoded sizes. `frames`
+    // is a LIVE accessor so boot-time image loading is picked up without
+    // rebuilds. Node / pre-boot: sprite data null → primitive fallback stays.
+    const spriteData = getCoinSpriteData();
+    if (spriteData?.anims[type]) {
+      this.sprite = { anchor: 'center', anims: spriteData.anims };
+      Object.defineProperty(this.sprite, 'frames', { get: () => coinFrames });
+      try { this.setAnim(type); } catch { /* primitive path stays active */ }
+    }
   }
 
   /**
@@ -117,6 +163,10 @@ export class Coin extends Entity {
 
     // Visual spin (render reads this; doesn't affect physics).
     this.spinAngle += SPIN_RATE * dt;
+
+    // Sheet anim playback (SpritePlayer via the standard Entity hook). No-op
+    // when no sprite data is loaded (primitive path).
+    this.tickAnim(dt);
 
     // Rolling friction on the ground: once settled, decay vx toward rest.
     if (this.settled && this.vy === 0) {
@@ -161,9 +211,9 @@ export class Coin extends Entity {
   }
 
   /**
-   * Draw the coin. Uses the per-type color + a simple elliptical squash driven
-   * by spinAngle to fake a spinning disc. Falls back to a filled circle when
-   * the canvas is too small for detail.
+   * Draw the coin. High-graphic: sheet frame (per-type spin anim) + white
+   * outline, scaled by the sheet's authored collision box (§4). Primitive /
+   * pre-boot: spinning circle with rim highlight (unchanged fallback).
    * @param {CanvasRenderingContext2D} ctx
    */
   draw(ctx) {
