@@ -24,7 +24,6 @@ import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { LAYER } from '../../../consts.js';
 import { fireDeclared } from '../../../effects/index.js';
-import { bombDrawer, rockDrawer } from '../drawers/index.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -50,7 +49,10 @@ const DEFAULTS = Object.freeze({
   width: null,          // explicit collision box width px (overrides carrier default)
   height: null,         // explicit collision box height px (overrides carrier default)
   origin: null,         // marker label | {x,y} | null → attacker center
-  drawer: null,         // (ctx, entity) => void — defaults to bombDrawer if null
+  weaponType: null,     // special-weapon id ('bomb') for carriers that keep a
+                        // real sheet + orientation; null = typeless rock body
+  drawer: null,         // (ctx, entity) => void — explicit per-shot override only;
+                        // the entity draws itself when absent (dual-mode contract)
   bounceHeight: null,   // px — constant-apex rebound mode (see stepBombTerrain).
                         // When set, every ground rebound resets vy from this
                         // height (vy = -sqrt(2·g·h)) instead of decaying impact
@@ -74,11 +76,25 @@ export function spawnBomb(p, ctx, h = null) {
     ox = m ? m.x : a.x + a.w / 2; oy = m ? m.y : a.y + a.h / 2;
   } else { ox = a.x + a.w / 2; oy = a.y + a.h / 2; }
 
-  const size = 18; // bomb box (matches Special default)
-  const ent = ctx.pools.specialPool?.spawn(ox - size / 2, oy - size / 2, 0, 'bomb');
+  const size = 18; // generic ballistic carrier box
+  // TYPELESS carrier by default: no weapon identity → no sheet art. The
+  // ballistic primitive is a dumb physics body (rocks, mines, thrown enemies);
+  // its look comes from the entity's own draw() — Special's neutral rock body
+  // for typeless slots, the real sheet when p.weaponType opts in (the
+  // throw-bomb passes 'bomb'). Weapon-specific carriers never get a forced
+  // drawer (visual-identity contract: one look-owner per entity type).
+  const ent = ctx.pools.specialPool?.spawn(ox - size / 2, oy - size / 2, 0, p.weaponType ?? null);
   if (!ent) return null;
+  // Typeless Special defaults its box to 16 — restore the 18px carrier box so
+  // spawn centering and collision match the bomb-sized physics body.
+  ent.w = size;
+  ent.h = size;
   ent.vx = Math.cos(p.direction) * p.speed;
   ent.vy = Math.sin(p.direction) * p.speed;
+  // Orient the art nose along velocity (same contract as Projectile). A
+  // typeless carrier has no sheet art, but drawers (rock) read e.rotation —
+  // keep it live so tumbling reads correctly in both theater and gameplay.
+  ent.orientSprite(ent.vx, ent.vy);
   ent.gravityValue = p.arc;
   ent.damage = p.damage;
   ent.friendly = p.team !== 'foe';
@@ -102,10 +118,11 @@ export function spawnBomb(p, ctx, h = null) {
   // the entity so stepBombTerrain() can recompute each rebound from a fixed
   // height instead of decaying impact velocity.
   ent.bounceHeight = p.bounceHeight ?? null;
-  // Drawer: EXPLICIT param only. No default — when the caller doesn't pass
-  // one, the entity draws itself (Special's dual-mode contract: sheet in high
-  // graphic mode, procedural fallback otherwise). Forcing a drawer here would
-  // hide the entity's own art (e.g. the bomb sheet) in BOTH modes.
+  // Drawer: EXPLICIT param only (visual-identity contract — primitives are
+  // look-blind, one look-owner per entity type). A weapon-typed carrier
+  // (weaponType) draws its own sheet/procedural art via Special.draw(); a
+  // typeless carrier falls back to Special's neutral rock body. Never a
+  // forced default drawer here.
   if (p.drawer) ent.drawer = p.drawer;
   ent._attackId = 'ballistic';
   ent._attackDone = false;
@@ -263,6 +280,7 @@ registerPrimitive('ballistic', {
       { key: 'width', desc: 'collision box width px (overrides carrier default)' },
       { key: 'height', desc: 'collision box height px (overrides carrier default)' },
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
+      { key: 'weaponType', desc: "special-weapon id for sheet art ('bomb'); null = rock" },
     ],
   },
   impl(params, ctx) {

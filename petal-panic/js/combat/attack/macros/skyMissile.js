@@ -48,7 +48,7 @@ const DEFAULTS = Object.freeze({
   dropHeight: 260,    // px above the impact point where the missile becomes visible
   fallSpeed: 500,     // px/s descent speed
   damage: 30,         // carrier contact + blast damage (one value, like explosiveProjectile)
-  team: 'foe',        // who the falling carrier hurts
+  team: 'ally',       // who the falling carrier hurts
   blastTeam: 'neutral', // who the blast hurts
   size: 14,           // carrier box size (px)
   markerStyle: null,  // surface-target-marker effect override
@@ -159,7 +159,7 @@ defineMacro('skyMissile', {
         napalm: () => ({ fireWidth: blast.fireWidth }),
       }[p.blastType === 'shockwave' ? 'shockwave' : p.blastType === 'napalm' ? 'napalm' : 'explosionRadius']();
       const m = invoke(payloadId, {
-        origin: { x: pt.x - p.size / 2, y: spawnY },
+        origin: { x: pt.x, y: spawnY },
         direction: Math.PI / 2,
         speed: p.fallSpeed,
         ttl: fallTtl,

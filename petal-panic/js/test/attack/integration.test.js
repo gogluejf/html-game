@@ -37,8 +37,9 @@ function ok(name, fn) {
 }
 
 const ALL_PRIMITIVES = [
-  'projectile', 'bomb', 'explosion', 'meleeHitbox', 'charge', 'bodyContact',
+  'projectile', 'ballistic', 'explosion', 'meleeHitbox', 'charge', 'bodyContact',
   'beam', 'fireArea', 'spike', 'orbit', 'boomerang', 'shockwave',
+  'surfaceStrike', 'surfaceWave',
 ];
 
 const ALL_MACROS = [
@@ -53,7 +54,7 @@ function pools() {
     return {
       activeItems: items,
       spawn(...args) {
-        const e = { alive: true, x: args[0], y: args[1], w: 12, h: 12, vx: 0, vy: 0, layer: LAYER.PROJ_ALLY, setLife() {}, timers: new Map() };
+        const e = { alive: true, x: args[0], y: args[1], w: 12, h: 12, vx: 0, vy: 0, layer: LAYER.PROJ_ALLY, orientSprite() {}, setLife() {}, timers: new Map() };
         items.push(e);
         return e;
       },
@@ -66,7 +67,7 @@ function pools() {
 ok('all 12 primitives are registered', () => {
   const ids = listPrimitives();
   for (const id of ALL_PRIMITIVES) assert.ok(ids.includes(id), `missing '${id}'`);
-  assert.equal(ids.length, 12, `expected exactly 12, got ${ids.length}: ${ids.join(',')}`);
+  assert.equal(ids.length, 14, `expected exactly 14, got ${ids.length}: ${ids.join(',')}`);
 });
 
 ok('every registration carries meta + default params', () => {
@@ -128,7 +129,7 @@ ok("resolveEffects: macros inherit invoked primitives' effects dynamically", () 
 ok('explosiveBomb: macro composes bomb → explosion and inherits honest effects', () => {
   const def = getMacro('explosiveBomb');
   assert.ok(def?.meta?.name, 'registered with meta.name');
-  assert.deepEqual([...def.meta.invokes].sort(), ['bomb', 'explosion'], 'declares both invokes');
+  assert.deepEqual([...def.meta.invokes].sort(), ['ballistic', 'explosion'], 'declares both invokes');
   // The macro declares NO native effects — every row is inherited from the
   // invoked attacks (same pattern as bodyExplosion/spawnSplit).
   assert.deepEqual(def.meta.effects ?? [], [], 'macro owns no effects of its own');
@@ -154,7 +155,7 @@ ok('explosiveProjectile: macro composes projectile → explosion', () => {
 ok('primitives that fire VFX declare meta.effects', () => {
   // The five primitives that own their own effect firing must declare it;
   // the rest may omit the field entirely (no VFX owned).
-  for (const id of ['projectile', 'bomb', 'explosion', 'beam', 'meleeHitbox', 'spike']) {
+  for (const id of ['projectile', 'ballistic', 'explosion', 'beam', 'meleeHitbox', 'spike']) {
     const def = getPrimitive(id);
     assert.ok(Array.isArray(def?.meta?.effects) && def.meta.effects.length > 0,
       `${id} declares meta.effects`);

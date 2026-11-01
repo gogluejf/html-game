@@ -494,7 +494,18 @@ export class Special extends Entity {
       if (this._outline && !this._outline.done) this._outline.render(ctx);
       return;
     }
-    const meta = specialById[this.type];
+    const meta = specialById[this.type] ?? null;
+    if (!meta) {
+      // Typeless pooled slot (ballistic carrier): no weapon identity, so the
+      // procedural fallback is a neutral rock — the generic ballistic look.
+      ctx.save();
+      ctx.fillStyle = '#8d7b6b';
+      ctx.beginPath();
+      ctx.arc(this.x + this.w / 2, this.y + this.h / 2, this.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
     const cx = this.x + this.w / 2;
     const cy = this.y + this.h / 2;
     ctx.save();

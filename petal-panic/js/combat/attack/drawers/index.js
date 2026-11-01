@@ -7,7 +7,6 @@
 //   zone/        — persistent area effects (fire, dust, spike...)
 
 // Projectile
-export { spreadDrawer } from './projectile/spread.js';
 export { boomerangDrawer } from './projectile/boomerang.js';
 
 // Ballistic

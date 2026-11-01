@@ -77,6 +77,8 @@ defineMacro('explosiveBomb', {
       ttl: p.ttl,
       damage: p.damage,
       radius: p.radius,
+      origin: p.origin, // cluster/spawnSplit pass the SPLIT POINT — must reach the carrier
+      weaponType: 'bomb', // the throw-bomb IS a bomb — real sheet + orientation
     }, ctx);
 
     if (!carrier?.entity) {

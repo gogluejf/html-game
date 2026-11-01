@@ -25,7 +25,6 @@
 
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
-import { spreadDrawer } from '../drawers/index.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -86,9 +85,12 @@ defineMacro('spreadShot', {
     h.angles = angles;
 
     const spawnOne = (a) => {
+      // No drawer, no size: the shot is a REAL Special('spread') entity —
+      // its class owns the look (sheet + outline in high mode, procedural
+      // pellet in primitive mode) and keeps its natural sheet box.
       const shot = invoke('projectile', {
         direction: a, speed: p.speed, ttl: p.ttl, damage: p.damage,
-        drawer: spreadDrawer,
+        specialType: 'spread',
       }, ctx);
       if (shot?.entity) {
         h.handles.push(shot);
