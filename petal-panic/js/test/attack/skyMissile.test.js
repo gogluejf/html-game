@@ -89,11 +89,12 @@ ok('explicit groundY param overrides the column lookup', () => {
 
 ok('sequence: warning → drop → complete', () => {
   const c = ctx();
-  const h = invoke('skyMissile', { x: 500, timeToTarget: 0.2, dropHeight: 120, fallSpeed: 600 }, c);
+  const h = invoke('skyMissile', { x: 500, timeToTarget: 0.2, fallSpeed: 600 }, c);
   const phases = new Set();
   let finished = false;
   for (let i = 0; i < 600 && !finished; i++) {
-    c.pools.projectilePool.updateAll(DT); // real bullet flight + TTL death
+    c.pools.projectilePool.updateAll(DT);
+    c.pools.specialPool.updateAll(DT); // carrier is a Special (specialPool)
     finished = h.step(DT, []);
     phases.add(h.state.phase);
   }
@@ -110,7 +111,7 @@ ok('impact point is resolved at invoke and exposed on state', () => {
 });
 
 ok('zero timeToTarget drops immediately (no warning window)', () => {
-  const h = invoke('skyMissile', { x: 500, timeToTarget: 0, dropHeight: 120, fallSpeed: 600 }, ctx());
+  const h = invoke('skyMissile', { x: 500, timeToTarget: 0, fallSpeed: 600 }, ctx());
   h.step(DT, []);
   assert.equal(h.state.phase, 'drop', `phase after first step (${h.state.phase})`);
   assert.ok(h.state.missile, 'missile launched');
@@ -120,10 +121,11 @@ ok('a target standing at the marked spot takes the blast', () => {
   const e = dummyEnemy(500 - 12, GROUND_Y - 24); // centered under the drop x
   const c = ctx();
   c.world.targets = [e];
-  const h = invoke('skyMissile', { x: 500, timeToTarget: 0.1, dropHeight: 120, fallSpeed: 600, damage: 30, radius: 60 }, c);
+  const h = invoke('skyMissile', { x: 500, timeToTarget: 0.1, fallSpeed: 600, damage: 30, radius: 60 }, c);
   let finished = false;
   for (let i = 0; i < 600 && !finished; i++) {
     c.pools.projectilePool.updateAll(DT);
+    c.pools.specialPool.updateAll(DT); // carrier is a Special (specialPool)
     finished = h.step(DT, [e]);
     // Sandbox-style contact resolution: the falling carrier body vs the
     // target (the theater/gameplay collision handler does this in-engine).
@@ -144,10 +146,11 @@ ok('a target far from the marked spot is untouched', () => {
   const e = dummyEnemy(900, GROUND_Y - 24); // nowhere near x=500
   const c = ctx();
   c.world.targets = [e];
-  const h = invoke('skyMissile', { x: 500, timeToTarget: 0.1, dropHeight: 120, fallSpeed: 600, damage: 30, radius: 60 }, c);
+  const h = invoke('skyMissile', { x: 500, timeToTarget: 0.1, fallSpeed: 600, damage: 30, radius: 60 }, c);
   let finished = false;
   for (let i = 0; i < 600 && !finished; i++) {
     c.pools.projectilePool.updateAll(DT);
+    c.pools.specialPool.updateAll(DT); // carrier is a Special (specialPool)
     finished = h.step(DT, [e]);
   }
   assert.ok(finished);
@@ -160,7 +163,7 @@ ok('the missile detonates ON the platform top, not below it (marker/blast agree)
   // the blast lands BELOW the marker. The death point must be the impact line.
   const platTop = GROUND_Y - 70;
   const c = ctx({ platforms: [{ x: 450, y: platTop, w: 100 }] });
-  const h = invoke('skyMissile', { x: 500, timeToTarget: 0.1, dropHeight: 200, fallSpeed: 400, damage: 30, radius: 60 }, c);
+  const h = invoke('skyMissile', { x: 500, timeToTarget: 0.1, fallSpeed: 400, damage: 30, radius: 60 }, c);
   let deathY = null;
   h.state.missile?.on?.('detonate', ({ y }) => { deathY = y; });
   // Watch the carrier entity directly: record its bottom when it dies.
@@ -168,6 +171,7 @@ ok('the missile detonates ON the platform top, not below it (marker/blast agree)
   for (let i = 0; i < 600 && !finished; i++) {
     const ent = h.state.missile?.entity;
     c.pools.projectilePool.updateAll(DT);
+    c.pools.specialPool.updateAll(DT); // carrier is a Special (specialPool)
     finished = h.step(DT, []);
     if (ent && !ent.alive && deathY == null) deathY = ent.y + ent.h;
   }
