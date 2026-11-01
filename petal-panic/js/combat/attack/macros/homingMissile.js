@@ -38,6 +38,8 @@ const DEFAULTS = Object.freeze({
   damage: 10,            // projectile damage
   target: null,          // entity to chase (default ctx.target)
   turnRate: 3,           // rad/s max heading correction
+  reTarget: null,        // (x,y) => entity|null — called from the missile's
+                         // position when the locked target dies; null = give up
   origin: null,
   team: 'ally',
   solidBehavior: 'phase',
@@ -69,12 +71,12 @@ defineMacro('homingMissile', {
       { key: 'ttl', desc: 'seconds before giving up' },
       { key: 'damage', desc: 'projectile damage' },
       { key: 'turnRate', desc: 'rad/s max heading correction' },
+      { key: 'reTarget', desc: '(x,y)=>entity|null re-acquire hook on target death (missile position); null = fly straight' },
       { key: 'specialType', desc: "special-weapon id for sheet art ('homing'); null = thorn" },
     ],
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const tgt = () => p.target ?? ctx.target;
 
     // 1. Spawn the bullet (the projectile primitive owns flight + collision).
     // specialType routes to the Special pool with sheet art (hero weapons);
@@ -99,6 +101,19 @@ defineMacro('homingMissile', {
     // Forward the projectile's terminal events so hosts see hit/expire once.
     shot.on('hit', (...a) => h._emit('hit', ...a));
     shot.on('expire', () => { h.state.done = true; h._complete({ tracked: true }); });
+
+    // Target resolution: the LOCKED target while it lives; when it dies the
+    // reTarget hook (caller-provided, e.g. enemies-first → nearest barrel)
+    // picks a replacement from the MISSILE's position. No hook → give up and
+    // fly straight (theater default).
+    const tgt = () => {
+      if (p.target && p.target.alive !== false) return p.target;
+      if (typeof p.reTarget === 'function') {
+        const next = p.reTarget(ent.x + ent.w / 2, ent.y + ent.h / 2);
+        if (next) { p.target = next; return next; }
+      }
+      return null;
+    };
 
     h.step = (dt) => {
       const s = h.state;

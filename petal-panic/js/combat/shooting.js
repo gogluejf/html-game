@@ -98,6 +98,19 @@ function nearestEnemyTo(x, y) {
   return best;
 }
 
+/** Nearest live destructible object (barrel) to the given point. Homing
+ * missiles use this ONLY as a second-priority target: while any enemy is
+ * alive, barrels are never chosen. */
+function nearestObjectTo(x, y) {
+  let best = null, bestD = Infinity;
+  for (const b of ctx.barrels ?? []) {
+    if (!b || !b.alive || b.destroyed) continue;
+    const d = Math.hypot(b.x + b.w / 2 - x, b.y + b.h / 2 - y);
+    if (d < bestD) { bestD = d; best = b; }
+  }
+  return best;
+}
+
 /**
  * Fire the hero's selected special weapon (special-weapons.md). The selected
  * slot must hold a weapon id from SPECIAL_TYPES — firing is gated by the
@@ -134,6 +147,10 @@ function fireSpecial(h, input) {
       origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
       speed: meta.speed, ttl: meta.lifetime, damage: meta.damage,
       turnRate: meta.turnRate ?? 3, target: nearestEnemyTo(cx, cy),
+      // Re-acquire on target death: enemies first (or boss), barrels only as
+      // a second priority when no enemy is alive. Resolved from the MISSILE's
+      // position, not the hero's.
+      reTarget: (x, y) => nearestEnemyTo(x, y) ?? nearestObjectTo(x, y),
     }, h);
     if (!attack.entity) return;
   } else if (type === 'explosive' && ctx.bombAttacks) {
