@@ -214,7 +214,7 @@ export class Projectile extends Entity {
     }
     // Persistent 6px white outline (same effect as the checkpoint flag —
     // follows silhouette + rotation; box fallback when no sheet frame loaded).
-    this._outline = spriteOutline({ color: '#ffffff', thickness: 6, opacity: 1.0 }, this);
+    this._outline = spriteOutline({ color: '#ffffff', thickness: 4, opacity: 1.0 }, this);
 
     // Drawer: optional render override. Contract: (ctx, entity) => void.
     // null = use default draw (sheet sprite or debug rect). Set per-shot by
@@ -406,7 +406,13 @@ export class Special extends Entity {
       if (data?.anims[cfg.anim]) {
         this.sprite = { anchor: 'center', anims: data.anims };
         Object.defineProperty(this.sprite, 'frames', { get: () => specialSpriteFrames.get(type) });
-        try { this.setAnim(cfg.anim); } catch { /* procedural path stays active */ }
+        try {
+          this.setAnim(cfg.anim);
+          // White outline like the thorn — keeps fast small shots readable.
+          // Saw + spread get the heavier 6px (small, fast, busy backgrounds);
+          // other specials stay at 4.
+          this._outline = spriteOutline({ color: '#ffffff', thickness: 4, opacity: 1.0 }, this);
+        } catch { /* procedural path stays active */ }
       }
     }
 
@@ -453,7 +459,11 @@ export class Special extends Entity {
     }
     // Sheet sprite (Step A): real art when frames are loaded; procedural
     // fallback below keeps node/pre-boot rendering identical to before.
-    if (this.drawSprite(ctx)) return;
+    if (this.drawSprite(ctx)) {
+      // White outline on top of the sprite (high-graphic only, like thorn).
+      if (isHighGraphic() && this._outline && !this._outline.done) this._outline.render(ctx);
+      return;
+    }
     const meta = specialById[this.type];
     const cx = this.x + this.w / 2;
     const cy = this.y + this.h / 2;

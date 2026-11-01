@@ -25,16 +25,19 @@ export function loadFrames(spriteData, baseDir) {
   const jobs = [];
   for (const anim of Object.values(spriteData.anims)) {
     for (const frame of anim.frames) {
-      const key = frame.file;
-      if (out.has(key)) continue;
-      let img = frameCache.get(key);
+      // Cache key MUST be the resolved URL: different sheets reuse the same
+      // frame filenames (thorn/saw/spread all ship shoot_f1..f8.png), so a
+      // bare-filename key cross-contaminates sheets AND loses onload events
+      // (a cached image that already fired onload for another file never
+      // resolves this caller's promise → boot hangs on a black screen).
+      const src = new URL(`./${frame.file}`, baseDir).href;
+      let img = frameCache.get(src);
       if (!img) {
         img = new Image();
-        // Resolve relative to baseDir (a URL built by the caller).
-        img.src = new URL(`./${frame.file}`, baseDir).href;
-        frameCache.set(key, img);
+        img.src = src;
+        frameCache.set(src, img);
       }
-      out.set(key, img);
+      out.set(frame.file, img);
       if (!(img.complete && img.naturalWidth > 0)) {
         jobs.push(new Promise((resolve) => {
           img.onload = resolve;

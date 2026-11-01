@@ -123,6 +123,8 @@ function fireSpecial(h, input) {
       if (!s) break; // pool exhausted — stop spawning remaining shots
       s.vx = Math.cos(a) * s.speed;
       s.vy = Math.sin(a) * s.speed;
+      // Re-aim the art nose at the fan angle (spawn dir is a placeholder).
+      s.orientSprite(s.vx, s.vy);
     }
   } else {
     const s = specialPool.spawn(cx - halfSize + ox, cy - halfSize + oy, dir, type);
