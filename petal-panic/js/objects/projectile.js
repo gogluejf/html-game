@@ -395,7 +395,14 @@ export class Special extends Entity {
     this.vx = Math.cos(angle) * this.speed;
     this.vy = Math.sin(angle) * this.speed;
     // Orient the art nose along velocity (same contract as Projectile).
-    this.orientSprite(this.vx, this.vy);
+    // Bombs fly fuse-forward: mirrorX flips for leftward throws so the art
+    // faces its travel direction; rotation follows the velocity tangent.
+    if (type === 'bomb') {
+      this.mirrorX = this.vx < -1e-9;
+      this.rotation = Math.atan2(this.vy, this.mirrorX ? -this.vx : this.vx);
+    } else {
+      this.orientSprite(this.vx, this.vy);
+    }
 
     // Sprite (Step A): per-type sheet via the standard pipeline. `frames` is a
     // LIVE accessor so boot-time image loading is picked up without rebuilds.
@@ -438,6 +445,28 @@ export class Special extends Entity {
     }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
+
+    // Bomb orientation (sheet art): while flying, the fuse trails the motion —
+    // rotation follows the velocity tangent and mirrorX tracks horizontal
+    // direction. Once settled (resting on a surface), ease back to upright so
+    // the fuse sits on top instead of frozen at the landing angle.
+    if (this.type === 'bomb' && this.sprite) {
+      const speed = Math.hypot(this.vx, this.vy);
+      if (speed > 1 || !this._bombSettled) {
+        if (speed > 1) {
+          this.mirrorX = this.vx < -1e-9;
+          this.rotation = Math.atan2(this.vy, this.mirrorX ? -this.vx : this.vx);
+        }
+      }
+      if (this._bombSettled && speed <= 1) {
+        const target = 0; // upright: fuse up
+        const diff = target - this.rotation;
+        // Shortest-arc ease (~120ms at 60fps).
+        const step = Math.sign(diff) * Math.min(Math.abs(diff), 12 * dt);
+        this.rotation += step;
+        if (Math.abs(this.rotation) < 0.01) this.rotation = 0;
+      }
+    }
 
     this.tickAnim(dt);
 
