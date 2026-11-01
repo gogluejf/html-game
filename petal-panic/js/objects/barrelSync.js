@@ -7,7 +7,9 @@ import { VIEW_W, VIEW_H } from '../core/view.js';
 import { roomFloorTop } from '../world/level.js';
 import { Effects } from '../effects.js';
 import { particles, coins } from '../effects/particles.js';
-import { resolveExplosion } from '../combat/explosion.js';
+import { BARREL_DAMAGE } from './object.js';
+import { invoke } from '../combat/attack/engine.js';
+import '../combat/attack/primitives/explosion.js'; // registers the 'explosion' primitive
 import { isSpecialType } from '../objects/specialWeapons.js';
 import { record } from '../stats.js';
 import { Debug } from '../debug/debug.js';
@@ -32,32 +34,25 @@ export function handleBarrelDestroyed(barrel) {
   const { cx, cy } = { cx: barrel.x + barrel.w / 2, cy: barrel.y + barrel.h / 2 };
 
   if (barrel.explosion) {
-    // AoE damage to every live entity in radius (enemies + hero). The pure
-    // resolveExplosion() routes through central damage(); we pass the full live set.
-    // A barrel is a NEUTRAL blast: it hurts whoever stands in range (hero AND enemies)
-    // and shoves everyone radially. Hero knockback is routed through takeHit('explosion')
-    // inside resolveExplosion, preserving the exact pre-refactor rec/intangible behavior.
-    // Same generic path as any other detonating entity — only the trigger differs.
-    const targets = [hero, ...ctx.realEnemies];
-    const result = resolveExplosion({
-      ...barrel.explosion,
-      cx, cy,
+    // Engine-owned blast: the explosion primitive resolves damage AND owns all
+    // VFX (particle burst, explode sheet art, screen flash, camera shake) —
+    // same path as the bomb macro. A barrel is a NEUTRAL blast: it hurts whoever
+    // stands in range (hero AND enemies) and shoves everyone radially.
+    const h = invoke('explosion', {
+      x: cx, y: cy,
+      radius: barrel.explosion.radius,
+      damage: barrel.explosion.damage ?? BARREL_DAMAGE,
+      team: barrel.explosion.team ?? 'neutral',
+      knockback: barrel.explosion.knockback,
       self: barrel,
-      ctx: { hero },
-    }, targets);
+      targets: [hero, ...ctx.realEnemies],
+    }, { attacker: barrel, world: { hero, targets: [hero, ...ctx.realEnemies] } });
     // Real enemies killed by the blast already ran their internal death pipeline
-    // via takeDamage() inside resolveExplosion — no manual die() needed here.
+    // via takeDamage() inside the primitive — no manual die() needed here.
     // track if the hero was hit by the explosion (design §4.1).
-    if (result.hit.includes(hero)) {
+    if (h._lastResult?.hit?.includes(hero)) {
       record(hero, { kind: 'hitTaken', source: 'explosion' });
     }
-    // Legacy barrel explosion roll (pre-migration spawnExplosionVFX, preserved
-    // verbatim): 12 + floor(rand*4) → 12–15 particles.
-    const barrelCount = 12 + Math.floor(Math.random() * 4);
-    Effects.spawnExplosion(cx, cy, result.radius, barrelCount); // engine path — warm fire burst sized to AoE
-    Effects.bigExplosion(); // brief white screen flash (design §12)
-    Effects.triggerShake(8); // engine path — barrel explosion shake
-    // SFX: explosion
   } else if (barrel.coinDrop) {
     // Coin barrel (or any object with a coinDrop config): spawn the burst.
     coins.dropCoins(barrel.coinDrop, cx, cy);
