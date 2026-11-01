@@ -57,10 +57,22 @@ export function parseSheet(sheetJson) {
       // Later sheets with the same anim name replace earlier ones (explicit
       // override), which keeps multi-sheet parsing order-predictable.
       anims[name] = {
-        fps: numIn(ent.fps, 1, 1000, 'fps') ?? SPRITE_DEFAULTS.fps,
-        mode: enumIn(ent.mode, MODES, 'mode'),
+        // fps: the sheet-schema field is `speed` (editor writes it, "frames per
+        // second"); `fps` is accepted as an alias for hand-authored sheets.
+        // speed wins when both are present (it's the editor's source of truth).
+        fps: numIn(ent.speed, 1, 1000, 'speed') ?? numIn(ent.fps, 1, 1000, 'fps') ?? SPRITE_DEFAULTS.fps,
+        // mode: the sheet-schema field is `playback` (editor writes it);
+        // `mode` is accepted as an alias for hand-authored sheets. Both
+        // absent → default 'loop' (enumIn returns the default on null).
+        mode: enumIn(ent.playback ?? ent.mode, MODES, 'mode'),
         direction: enumIn(ent.direction, DIRECTIONS, 'direction'),
         timing: enumIn(ent.timing, TIMINGS, 'timing'),
+        // Optional start offset for the playback loop: "random" (resolved per
+        // setAnim call — pooled entities like coins get a random phase so N
+        // instances don't play in lockstep) or an int slot index. Absent = 0
+        // (today's behavior; authored start pose for hero/enemy anims).
+        startFrame: ent.startFrame === 'random' ? 'random'
+          : (Number.isInteger(ent.startFrame) && ent.startFrame >= 0 ? ent.startFrame : 0),
         frames,
         // Optional richer geometry (Animation Studio revision): per-anim
         // collision box + pivot in source coordinates. Null until exported.

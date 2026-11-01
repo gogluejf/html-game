@@ -56,12 +56,37 @@ test('barrel sheets each parse with a single frame', () => {
 
 // --- Defaults & validation ----------------------------------------------------
 test('defaults: fps 12, loop, forward, fps-timing when fields absent', () => {
-  const data = parseSheet(sheet('objects/barrel/wooden_sheet.json'));
-  const anim = data.anims.wooden;
+  // Synthetic entity with NO timing fields at all (the real barrel sheets
+  // carry editor-saved speed/playback, so they can't prove the defaults).
+  const data = parseSheet({ entities: [{ name: 'x', anim: 'idle', frames: [{ file: 'a.png', bbox: [0, 0, 10, 10] }] }] });
+  const anim = data.anims.idle;
   assert.equal(anim.fps, SPRITE_DEFAULTS.fps);
   assert.equal(anim.mode, 'loop');
   assert.equal(anim.direction, 'forward');
   assert.equal(anim.timing, 'fps');
+  assert.equal(anim.startFrame, 0);
+});
+
+test('editor field names are honored: speed→fps, playback→mode', () => {
+  const json = {
+    entities: [{
+      name: 'x', anim: 'attack',
+      speed: 30, playback: 'once',
+      frames: [{ file: 'a.png', bbox: [0, 0, 10, 10] }],
+    }],
+  };
+  const anim = parseSheet(json).anims.attack;
+  assert.equal(anim.fps, 30);
+  assert.equal(anim.mode, 'once');
+});
+
+test('startFrame: "random" passes through, int clamps, junk → 0', () => {
+  const mk = (sf) => parseSheet({ entities: [{ name: 'x', anim: 'a', ...(sf != null ? { startFrame: sf } : {}), frames: [{ file: 'a.png', bbox: [0, 0, 10, 10] }] }] }).anims.a;
+  assert.equal(mk('random').startFrame, 'random');
+  assert.equal(mk(2).startFrame, 2);
+  assert.equal(mk(-1).startFrame, 0);
+  assert.equal(mk('bogus').startFrame, 0);
+  assert.equal(mk(undefined).startFrame, 0);
 });
 
 test('explicit playback fields are honored', () => {
