@@ -99,7 +99,17 @@
      ]
     }
    ],
-   "frames_dir": "petal-panic/assets/projectiles/spread"
+   "frames_dir": "petal-panic/assets/projectiles/spread",
+   "collision": {
+    "x": 4,
+    "y": 5,
+    "w": 281,
+    "h": 221
+   },
+   "pivot": {
+    "x": 144.5,
+    "y": 115.5
+   }
   }
  ],
  "updated": "2026-10-21"

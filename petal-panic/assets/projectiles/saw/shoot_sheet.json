@@ -99,7 +99,17 @@
      ]
     }
    ],
-   "frames_dir": "petal-panic/assets/projectiles/saw"
+   "frames_dir": "petal-panic/assets/projectiles/saw",
+   "collision": {
+    "x": 0,
+    "y": 0,
+    "w": 238,
+    "h": 199
+   },
+   "pivot": {
+    "x": 119.0,
+    "y": 99.5
+   }
   }
  ],
  "updated": "2026-10-21"
