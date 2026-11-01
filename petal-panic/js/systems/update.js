@@ -1055,8 +1055,8 @@ export function update(dt) {
   const wb = hero.worldBox();
   const az0 = getActiveZone(hero);
   const zw = az0.rooms.find((r) => r.id === az0.activeRoom) ?? az0.rooms[0];
-  if (wb.x < zw.x) { hero.x = zw.x - hero.box.ox; hero.vx = 0; }
-  else if (wb.x + wb.w > zw.x + zw.w) { hero.x = zw.x + zw.w - hero.box.ox - hero.box.bw; hero.vx = 0; }
+  if (wb.x < zw.x) { hero.x = zw.x - hero._boxOx; hero.vx = 0; }
+  else if (wb.x + wb.w > zw.x + zw.w) { hero.x = zw.x + zw.w - hero._boxOx - hero.w; hero.vx = 0; }
 
   // Battle room lock (boss-arena.md §3): while the room is locked (LOCKED
   // through COMBAT) the hero cannot scroll past the boss or leave through
@@ -1066,8 +1066,8 @@ export function update(dt) {
   if (bossZone.roomLocked()) {
     const min = bossZone.roomX;
     const max = bossZone.roomX + bossZone.roomW;
-    if (wb.x < min) { hero.x = min - hero.box.ox; hero.vx = 0; }
-    else if (wb.x + wb.w > max) { hero.x = max - hero.box.ox - hero.box.bw; hero.vx = 0; }
+    if (wb.x < min) { hero.x = min - hero._boxOx; hero.vx = 0; }
+    else if (wb.x + wb.w > max) { hero.x = max - hero._boxOx - hero.w; hero.vx = 0; }
   }
 
   // 4. camera follows the hero (clamped to level bounds, facing look-ahead).

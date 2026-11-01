@@ -72,6 +72,8 @@ export function spriteBurst(params = {}) {
     throw new Error('spriteBurst: requires an anim with frames + collisionBox, or a fallback drawer');
   }
   const frames = hasSheet ? anim.frames : null;
+  // Scale reference: the authored collision box height (§4). The VFX is
+  // centered on (x,y) either way — the box only sizes the art.
   const scale = hasSheet ? size / anim.collisionBox.h : 1;
   let t = 0;
   return {

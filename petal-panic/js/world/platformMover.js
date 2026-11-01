@@ -780,8 +780,8 @@ export function moveToward(hero, goal, world, params, opts = {}){
 /** Reset hero to a standing pose at a given feet position (retry recovery). */
 function respawnAt(hero, x, y, world, params){
   const wb = hero.worldBox();
-  hero.x = x - wb.w / 2 - hero.box.ox;
-  hero.y = y - wb.h - hero.box.oy;
+  hero.x = x - wb.w / 2 - hero._boxOx;
+  hero.y = y - wb.h - hero._boxOy;
   hero.vx = 0; hero.vy = 0;
   hero.grounded = true;
   hero.jumpsUsed = 0;

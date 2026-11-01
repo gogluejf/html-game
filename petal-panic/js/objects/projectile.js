@@ -17,6 +17,17 @@ import { loadFrames } from '../core/frameLoader.js';
 import { spriteOutline } from '../effects/spriteOutline.js';
 import { isHighGraphic } from '../core/renderMode.js';
 import { specialById, isSpecialType } from './specialWeapons.js';
+import { rockDrawer, bombDrawer, explosiveDrawer, homingDrawer, sawDrawer, spreadDrawer } from '../combat/attack/drawers/index.js';
+
+/** Primitive-mode look per weapon identity (visual-identity contract): one
+ *  drawer file per special under combat/attack/drawers/. No inline branches. */
+const SPECIAL_FALLBACK_DRAWERS = Object.freeze({
+  bomb: bombDrawer,
+  explosive: explosiveDrawer,
+  homing: homingDrawer,
+  saw: sawDrawer,
+  spread: spreadDrawer,
+});
 
 // --- Tunables ----------------------------------------------------------------
 export const MAX_PROJECTILES = 64;        // hard cap on live projectiles (perf param, §17)
@@ -45,13 +56,12 @@ let projectileSpriteData = null;
 let projectileFrames = new Map(); // shared frame cache, filled at boot
 export function getProjectileSpriteData() { return projectileSpriteData; }
 
-// Special-weapon sheets (Step A): per-type shoot anim + bomb's explode anim.
-// Sheets are authored WITHOUT a collision box (unlike thorn), so each type
-// carries its own target height in units; the loader derives the px scale and
-// patches a synthetic collision box from the max frame bbox so the standard
-// uniformScale pipeline works unchanged. The COLLISION BOX stays the authored
-// square (meta.size, baseW-owned) — only the ART is sheet-driven; gameplay
-// boxes never change.
+// Special-weapon sheets (Step A): per-type shoot/fly anim + bomb's explode
+// anim. The SHEET IS THE SOURCE OF TRUTH: the editor-authored collision box
+// is the scaling reference (§4) and the entity box derives from it — width =
+// collisionBox.w × scale, no baseW, no synthetic fallback. A sheet without an
+// authored box is an asset bug: setAnim() → uniformScale() throws loudly.
+// Each type carries its target height in units (the box height in world px).
 const SPECIAL_SPRITE_TARGETS = Object.freeze({
   saw: { anim: 'shoot', targetH: 40 / UNIT_PX_Y },
   spread: { anim: 'shoot', targetH: 14 / UNIT_PX_Y },
@@ -74,7 +84,9 @@ export function initSpecialSprites() {
     jobs.push(load
       .then((sheet) => {
         const data = parseSheet(sheet);
-        patchSpecialAnim(data.anims[cfg.anim], sheet.entities?.[0]?.frames, cfg.targetH * UNIT_PX_Y);
+        // SHEET IS THE SOURCE OF TRUTH: the editor-authored collision box +
+        // pivot are used as-is. No synthetic fallback — a sheet without an
+        // authored box is an asset bug and must fail loudly (scaleReference).
         data.anims[cfg.anim]._frames = null; // filled by loadFrames below
         specialSpriteData.set(type, data);
         return loadFrames(data, base);
@@ -95,7 +107,7 @@ export function initSpecialSprites() {
   jobs.push(bload
     .then((sheet) => {
       const data = parseSheet(sheet);
-      patchSpecialAnim(data.anims.explode, sheet.entities?.[0]?.frames, 64);
+      // Sheet is the source of truth (see above): authored box/pivot as-is.
       data.anims.explode._frames = null;
       specialSpriteData.set('bomb_explode', data);
       return loadFrames(data, bbase);
@@ -108,23 +120,6 @@ export function initSpecialSprites() {
     })
     .catch((e) => console.warn('[sprite] bomb explode sheet failed to load', e)));
   return Promise.all(jobs);
-}
-/** Derive a synthetic collision box (max frame bbox) + center pivot + fps/mode
- *  so an un-authored sheet flows through the standard scale/spriteFrame path.
- *  `rawFrames` is the raw entity frames array from the sheet JSON (parseSheet
- *  drops the crop bboxes — they are needed here to size the reference box). */
-function patchSpecialAnim(anim, rawFrames, targetHeightPx) {
-  if (!anim) throw new Error('patchSpecialAnim: missing anim');
-  let w = 0, h = 0;
-  for (const f of rawFrames ?? []) {
-    const bb = f.bbox ?? f.box;
-    if (bb) { w = Math.max(w, bb[2]); h = Math.max(h, bb[3]); }
-  }
-  if (!(w > 0 && h > 0)) throw new Error('patchSpecialAnim: no frame bboxes found');
-  anim.collisionBox = { x: 0, y: 0, w, h };
-  anim.pivot = { x: w / 2, y: h / 2 };
-  if (!anim.fps || anim.fps <= 0) anim.fps = 14;
-  if (!anim.mode) anim.mode = 'loop';
 }
 export function initProjectileSprites() {
   if (projectileSpriteData || typeof fetch === 'undefined') return Promise.resolve();
@@ -361,8 +356,11 @@ export class Special extends Entity {
     if (type != null && !meta) throw new Error(`Unknown special weapon: ${type}`);
     super.initialize({
       x, y,
-      targetH: (meta?.size ?? 16) / UNIT_PX_Y, // pure size model — square specials
-      baseW: meta?.size ?? 16,                  // box stays the authored square; art scales to fit
+      // SHEET-OWNED size (sprites.md contract): no baseW. Height = targetH × 48
+      // from the type's authored unit height; width follows the active anim's
+      // collision box via setAnim(). Pre-boot fallback is the natural square
+      // (targetH × 48) until the sheet loads — never a meta.size square.
+      targetH: SPECIAL_SPRITE_TARGETS[type]?.targetH ?? (meta?.size ?? 16) / UNIT_PX_Y,
       layer: LAYER.PROJ_ALLY,
       debugColor: meta?.color ?? '#888',
       gravity: (meta?.gravity ?? 0) > 0 ? 1 : 0,
@@ -509,51 +507,11 @@ export class Special extends Entity {
       if (this._outline && !this._outline.done) this._outline.render(ctx);
       return;
     }
-    const meta = specialById[this.type] ?? null;
-    if (!meta) {
-      // Typeless pooled slot (ballistic carrier): no weapon identity, so the
-      // procedural fallback is a neutral rock — the generic ballistic look.
-      ctx.save();
-      ctx.fillStyle = '#8d7b6b';
-      ctx.beginPath();
-      ctx.arc(this.x + this.w / 2, this.y + this.h / 2, this.w / 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-      return;
-    }
-    const cx = this.x + this.w / 2;
-    const cy = this.y + this.h / 2;
-    ctx.save();
-    if (meta.explode) {
-      // Bomb (orange circle with fuse spark).
-      ctx.fillStyle = meta.color;
-      ctx.beginPath();
-      ctx.arc(cx, cy, this.w / 2, 0, Math.PI * 2);
-      ctx.fill();
-      // Fuse spark (blinks faster as TTL decreases).
-      const blinkRate = this.ttlFrac < 0.3 ? 0.05 : 0.15;
-      if (Math.floor(performance.now() * blinkRate) % 2 === 0) {
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(cx, cy - this.h / 2 - 3, 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    } else {
-      // Spinning saw blade / spread pellet (colored disc + teeth).
-      ctx.translate(cx, cy);
-      ctx.rotate(performance.now() * 0.01);
-      ctx.fillStyle = meta.color;
-      ctx.beginPath();
-      ctx.arc(0, 0, this.w / 2, 0, Math.PI * 2);
-      ctx.fill();
-      // Teeth.
-      ctx.fillStyle = '#fff';
-      for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
-        ctx.fillRect(Math.cos(a) * this.w * 0.4 - 2, Math.sin(a) * this.w * 0.4 - 2, 4, 4);
-      }
-    }
-    ctx.restore();
+    // Primitive look: ONE drawer per weapon identity (visual-identity
+    // contract). No inline branches — every special owns its file under
+    // combat/attack/drawers/. Typeless pooled slot → generic rock.
+    const drawer = SPECIAL_FALLBACK_DRAWERS[this.type] ?? rockDrawer;
+    drawer(ctx, this);
   }
 }
 
