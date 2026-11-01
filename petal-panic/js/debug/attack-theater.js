@@ -94,14 +94,14 @@ const SANDBOX_PRESETS = {
   projectile: { direction: 0, speed: 600, ttl: 2, damage: 10, solidBehavior: 'phase', gravity: 0 },
   bomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 2, damage: 40, radius: 70 }, // speed from registry default (500)
   explosiveBomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 2, damage: 40, radius: 70 }, // speed from registry default (500)
-  explosiveProjectile: { specialType: 'explosive', direction: 0, speed: 700, ttl: 2, damage: 15, radius: 70, gravity: 0 },
+  explosiveProjectile: { direction: 0, speed: 250, ttl: 2, damage: 15, radius: 70, gravity: 0 },
   explosion: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, radius: 70, damage: 40, team: 'neutral' },
   meleeHitbox: { activeFrames: 10, w: 48, h: 44, offset: { x: 44, y: 0 }, damage: 12 },
   charge: { direction: 0, speed: 700, distanceType: 'fixed', distance: 300, acceleration: 1000, announceMarker: false, announceDelay: 1.0 },
   bodyContact: { damage: 20, enabled: true, temporaryOverride: true },
   // --- Wave 2 -----------------------------------------------------------------
   reticleShot: { duration: 1.3, lockTime: 1.1, color: '#ff5555', radius: 30, tracking: true, speed: 500, ttl: 2, damage: 10, blastType: 'plain', blast: { explosionRadius: 70, shockRadius: 150, fireWidth: 96 } },
-  homingMissile: { specialType: 'homing', direction: -0.3, turnRate: 3, speed: 400, ttl: 2, damage: 10 },
+  homingMissile: { direction: -0.3, turnRate: 3, speed: 400, ttl: 2, damage: 10 },
   predictiveShot: { speed: 300, ttl: 3, damage: 10 },
   beam: { direction: 0, length: 1000, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
   fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, width: 96, duration: 2, tickRate: 5, damage: 8, team: 'ally' },

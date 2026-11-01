@@ -95,7 +95,7 @@ export const SPECIAL_WEAPONS = [
     name: 'Explosive Shot',
     icon: '💥',
     color: '#e74c3c',
-    speed: 700,
+    speed: 250,
     damage: 20,
     lifetime: 1.5,
     size: 16,

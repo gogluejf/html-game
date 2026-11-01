@@ -134,7 +134,6 @@ function fireSpecial(h, input) {
       origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
       speed: meta.speed, ttl: meta.lifetime, damage: meta.damage,
       turnRate: meta.turnRate ?? 3, target: nearestEnemyTo(cx, cy),
-      specialType: type,
     }, h);
     if (!attack.entity) return;
   } else if (type === 'explosive' && ctx.bombAttacks) {
@@ -145,7 +144,6 @@ function fireSpecial(h, input) {
       speed: meta.speed, ttl: meta.lifetime, damage: meta.damage,
       radius: meta.radius, solidBehavior: 'stop',
       team: 'ally', size: meta.size, blastTeam: 'neutral',
-      specialType: type,
     }, h);
     if (!attack.entity) return;
   } else if (meta.spread) {

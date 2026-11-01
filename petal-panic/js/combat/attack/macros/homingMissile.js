@@ -41,7 +41,7 @@ const DEFAULTS = Object.freeze({
   origin: null,
   team: 'ally',
   solidBehavior: 'phase',
-  specialType: null, // Caller chooses visual identity; forward to projectile unchanged.
+  specialType: 'homing', // Named weapon owns its default art; explicit type/null overrides it.
 });
 
 /** Rotate a velocity vector toward desiredAngle by at most maxTurn. */

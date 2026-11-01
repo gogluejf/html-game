@@ -19,7 +19,7 @@ const DEFAULTS = Object.freeze({
   team: 'ally',        // ally | foe — who the carrier shot hurts
   size: 12,             // box size
   blastTeam: 'neutral', // blast team: foe | ally | neutral
-  specialType: null, // Caller chooses visual identity; forward to projectile unchanged.
+  specialType: 'explosive', // Named weapon owns its default art; explicit type/null overrides it.
 });
 
 defineMacro('explosiveProjectile', {

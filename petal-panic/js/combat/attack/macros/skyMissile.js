@@ -28,6 +28,7 @@ import { invoke, AttackHandle } from '../engine.js';
 import { fireDeclared } from '../../../effects/index.js';
 import { VIEW_H } from '../../../core/view.js';
 // Ensure payload macros are registered (otherwise only pulled in by the theater).
+import './explosiveProjectile.js';
 import './shockwaveProjectile.js';
 import './napalm.js';
 import './throwMine.js';
@@ -113,6 +114,7 @@ defineMacro('skyMissile', {
       { key: 'team', desc: 'who the falling carrier hurts' },
       { key: 'blastTeam', desc: 'who the blast hurts' },
       { key: 'size', desc: 'carrier box size (px)' },
+      { key: 'specialType', desc: 'optional projectile style override; omitted inherits payload default, null selects plain projectile' },
       { key: 'mineTtl', desc: 'resting mine seconds; null = contact only' },
       { key: 'blinkDuration', desc: 'mine warning seconds' },
       { key: 'blastType', desc: 'explosion | shockwave | napalm | mine — payload on impact' },
@@ -170,6 +172,8 @@ defineMacro('skyMissile', {
         size: p.size,
         solidBehavior: 'stop',
         ...payloadSize,
+        // Do not pass an absent override: the named payload owns its default.
+        ...(p.specialType !== undefined ? { specialType: p.specialType } : {}),
         ...(p.blastType === 'mine' ? {
           origin: { x: pt.x, y: spawnY }, groundY: pt.y, arc: 0, bounce: false,
           ttl: p.mineTtl, blinkDuration: p.blinkDuration, mineType: p.mineType,
