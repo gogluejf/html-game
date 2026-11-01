@@ -99,11 +99,12 @@ function fireSpecial(h, input) {
   const dir = h.resolveAim(input);
   const { x: cx, y: cy } = h.bodyCenter();
   const baseAngle = dirAngle(dir);
-  const halfSize = meta.size / 2;
   const ox = Math.cos(baseAngle) * 20;
   const oy = Math.sin(baseAngle) * 20;
 
-  // Spread weapon: fan out multiple projectiles symmetrically around the aim.
+  // M4 Step B (Task 4.3): all specials spawn through the engine's projectile
+  // primitive with specialType — real Special entities, class-owned look,
+  // identical velocity/damage/ttl/box as the old inline specialPool.spawn.
   if (type === 'bomb' && ctx.bombAttacks) {
     const attack = ctx.bombAttacks.spawn('explosiveBomb', {
       origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
@@ -117,17 +118,30 @@ function fireSpecial(h, input) {
     for (let i = 0; i < count; i++) {
       const offset = (i - (count - 1) / 2) * step;
       const a = baseAngle + offset;
-      // Spawn with dir 0 (placeholder), then override velocity with the fan angle.
-      const s = specialPool.spawn(cx - halfSize + Math.cos(a) * 20, cy - halfSize + Math.sin(a) * 20, 0, type);
-      if (!s) break; // pool exhausted — stop spawning remaining shots
-      s.vx = Math.cos(a) * s.speed;
-      s.vy = Math.sin(a) * s.speed;
-      // Re-aim the art nose at the fan angle (spawn dir is a placeholder).
-      s.orientSprite(s.vx, s.vy);
+      const shot = invoke('projectile', {
+        origin: { x: cx + Math.cos(a) * 20, y: cy + Math.sin(a) * 20 },
+        direction: a,
+        speed: meta.speed,
+        damage: meta.damage,
+        ttl: meta.lifetime,
+        team: 'ally',
+        solidBehavior: meta.solidBehavior,
+        specialType: type,
+      }, makeHeroContext(h));
+      if (!shot?.entity) break; // pool exhausted — stop spawning remaining shots
     }
   } else {
-    const s = specialPool.spawn(cx - halfSize + ox, cy - halfSize + oy, dir, type);
-    if (!s) return;
+    const shot = invoke('projectile', {
+      origin: { x: cx + ox, y: cy + oy },
+      direction: baseAngle,
+      speed: meta.speed,
+      damage: meta.damage,
+      ttl: meta.lifetime,
+      team: 'ally',
+      solidBehavior: meta.solidBehavior,
+      specialType: type,
+    }, makeHeroContext(h));
+    if (!shot?.entity) return; // pool exhausted (soft cap) → skip
   }
 
   record(h, { kind: 'projectile', subtype: 'special' });
