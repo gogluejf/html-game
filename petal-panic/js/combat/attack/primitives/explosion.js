@@ -29,6 +29,36 @@ function declaredEffectsOf(id) {
   return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
 }
 
+/**
+ * Primitive-mode look for the detonation burst (sprite-burst `fallback`).
+ * Expanding flash core + shock ring, pure geometry — the "blast" read without
+ * any sheet asset. Called by the effect as (ctx, { x, y, size, t, duration,
+ * progress }); owns its own save/restore.
+ */
+function blastFallbackDrawer(ctx, s) {
+  if (typeof ctx.arc !== 'function') return; // headless ctx stubs
+  const { x, y, size, progress } = s;
+  const ease = 1 - Math.pow(1 - progress, 2); // ease-out: fast start, settle
+  const r = (size / 2) * ease;
+  if (r <= 0) return;
+  const alpha = Math.max(0, 1 - progress);
+  ctx.save();
+  // Flash core: warm white → orange fill, fading out.
+  ctx.globalAlpha = alpha * 0.85;
+  ctx.fillStyle = progress < 0.35 ? '#fff6d8' : '#ffb347';
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  // Shock ring just ahead of the fill edge.
+  ctx.globalAlpha = alpha * 0.6;
+  ctx.strokeStyle = '#ffd27a';
+  ctx.lineWidth = Math.max(1.5, size * 0.04);
+  ctx.beginPath();
+  ctx.arc(x, y, r * 1.15, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 const DEFAULTS = Object.freeze({
   x: 0,               // blast center (world coords)
   y: 0,
@@ -110,10 +140,11 @@ registerPrimitive('explosion', {
     // parent's juice isn't doubled). All three route through the guarded
     // declared-fire path — each type is declared in meta.effects above.
     if (params.burst !== false) fireDeclared({ type: 'explosion', params: { x: params.x, y: params.y, radius: params.radius } }, h.declaredEffectTypes());
-    // Detonation sheet art (bomb explode anim): plays at the blast center when
-    // the asset is loaded. Declared above so the guard + theater panel see it.
+    // Detonation burst art: sheet anim when the asset is loaded (high-graphic),
+    // procedural flash core + shock ring otherwise (primitive mode). The
+    // effect renders whichever input applies; this primitive owns both looks.
     const ex = getSpecialSpriteData('bomb_explode')?.anims.explode;
-    if (ex?._frames?.size) fireDeclared({ type: 'sprite-burst', params: { x: params.x, y: params.y, size: 64, duration: 0.5, anim: ex } }, h.declaredEffectTypes());
+    fireDeclared({ type: 'sprite-burst', params: { x: params.x, y: params.y, size: 64, duration: 0.5, anim: ex, fallback: blastFallbackDrawer } }, h.declaredEffectTypes());
     if (params.screenFlash !== false) fireDeclared({ type: 'screen-flash', params: { strength: 1, viewW: VIEW_W, viewH: VIEW_H } }, h.declaredEffectTypes());
     if (params.shake !== false) fireDeclared({ type: 'camera-shake', params: { intensity: 4 } }, h.declaredEffectTypes());
 

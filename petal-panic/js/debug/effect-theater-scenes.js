@@ -4,6 +4,31 @@
 
 import { fireManual, resetEffects, updateEffects, drawEffects, DEMO_VIEW, CATALOG } from '../effects/index.js';
 import { particles } from '../effects/particles.js';
+import { getSpecialSpriteData } from '../objects/projectile.js';
+
+// Procedural burst fallback for the sprite-burst demo (mirrors the explosion
+// primitive's drawer): expanding flash core + shock ring, no assets needed.
+function blastFallback(ctx, s) {
+  if (typeof ctx.arc !== 'function') return;
+  const { x, y, size, progress } = s;
+  const ease = 1 - Math.pow(1 - progress, 2);
+  const r = (size / 2) * ease;
+  if (r <= 0) return;
+  const alpha = Math.max(0, 1 - progress);
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.85;
+  ctx.fillStyle = progress < 0.35 ? '#fff6d8' : '#ffb347';
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = alpha * 0.6;
+  ctx.strokeStyle = '#ffd27a';
+  ctx.lineWidth = Math.max(1.5, size * 0.04);
+  ctx.beginPath();
+  ctx.arc(x, y, r * 1.15, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
 
 const STAGE_X = 160, STAGE_Y = 90;
 const BOX = { x: STAGE_X - 20, y: STAGE_Y - 25, w: 40, h: 50 };
@@ -252,6 +277,18 @@ const SCENES = {
     setup() { return { enemy: enemyBox(STAGE_X - 16, STAGE_Y - 20) }; },
     fire(c, entry) { return fireManual({ type: entry.type, params: { ...entry.params } }, c.enemy); },
     draw(ctx, c) { c.enemy.draw(ctx); },
+  },
+  // 31. Sprite Burst: bomb detonation art at the stage point. Uses the real
+  // bomb_explode anim when loaded; falls back to a procedural flash+ring
+  // drawer (same pattern as the explosion primitive) so the demo always
+  // shows something (node/pre-boot/primitive mode).
+  'sprite-burst': {
+    setup() {
+      const anim = getSpecialSpriteData('bomb_explode')?.anims.explode ?? null;
+      return { anim, fallback: blastFallback };
+    },
+    fire(c, entry) { fireManual({ type: entry.type, params: { ...entry.params, anim: c.anim, fallback: c.fallback } }, null); },
+    draw() {},
   },
   // 13. Camera Shake — full screen proxy
   'camera-shake': {

@@ -40,6 +40,7 @@ function makeCtx() {
     closePath() { calls.push(['closePath']); },
     rect(...a) { calls.push(['rect', ...a]); },
     fillRect(...a) { calls.push(['fillRect', ...a]); },
+    drawImage(...a) { calls.push(['drawImage', ...a]); },
     fill() { calls.push(['fill']); },
     stroke() { calls.push(['stroke']); },
     moveTo(...a) { calls.push(['moveTo', ...a]); },
@@ -68,7 +69,7 @@ function makeCtx() {
 }
 
 const has = (ctx, op) => ctx.calls.some(c => c[0] === op);
-const anyDraw = (ctx) => ['fill', 'stroke', 'rect', 'fillRect', 'arc', 'ellipse', 'gradL', 'gradR'].some(op => has(ctx, op));
+const anyDraw = (ctx) => ['fill', 'stroke', 'rect', 'fillRect', 'arc', 'ellipse', 'gradL', 'gradR', 'drawImage'].some(op => has(ctx, op));
 
 // Sensible default params per type (reused from the CATALOG defaults in
 // index.js) so a bare fireManual produces a visible, valid instance.
@@ -98,13 +99,15 @@ const DEFAULT_PARAMS = {
   'screen-overlay':       { color: '#ff5a5a', opacity: 0.5, duration: 1.0, fadeIn: 0.2, fadeOut: 0.2 },
   'composite-explosion':  { x: 160, y: 90, radius: 60, explosionCount: 6, duration: 1.0 },
   'beam':                 { x: 160, y: 90, length: 120, width: 18, gradientRadius: 14, color: '#7df', flashInTime: 0.04, holdTime: 0.4, fadeOutTime: 0.15 },
+  // sprite-burst requires a loaded anim — synthetic fallback for the headless test.
+  'sprite-burst':         { x: 160, y: 90, size: 64, duration: 0.5, anim: { fps: 20, mode: 'once', frames: [{ file: 'f0' }], collisionBox: { x: 0, y: 0, w: 32, h: 32 }, pivot: { x: 16, y: 16 }, _frames: new Map([['f0', {}]]) } },
 };
 
 console.log('catalog shape');
 const list = theaterList();
 ok('returns an array', () => assert.ok(Array.isArray(list), 'theaterList() returns an array'));
-ok('has exactly 29 entries (all catalog effects, Heat Distortion excluded)', () => {
-  assert.equal(list.length, 29, `expected 29 entries, got ${list.length}`);
+ok('has exactly 30 entries (all catalog effects, Heat Distortion excluded)', () => {
+  assert.equal(list.length, 30, `expected 30 entries, got ${list.length}`);
 });
 ok('every entry has { type, name, demo } with demo a function', () => {
   for (const e of list) {
@@ -131,7 +134,7 @@ ok('full type sequence matches the documented catalog order', () => {
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
     'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',
-    'composite-explosion', 'beam', 'pulse-bubble', 'blink-transition', 'sprite-color-pulse', 'sprite-outline',
+    'composite-explosion', 'beam', 'pulse-bubble', 'blink-transition', 'sprite-color-pulse', 'sprite-outline', 'sprite-burst',
   ];
   assert.deepEqual(list.map(e => e.type), expected, 'full catalog order matches §1→§24 then Beam');
 });

@@ -407,6 +407,7 @@ export const CATALOG = [
   { type: 'blink-transition', name: 'Blink Transition', section: 28, params: { box: BOX, frameA: '#ff3344', frameB: '#3388ff', duration: 2, speed: 2, endSpeed: 30, acceleration: 2, direction: 'forward', hold: true, singleFrame: false } },
   { type: 'sprite-color-pulse', name: 'Sprite Color Pulse', section: 29, params: { colorA: 'transparent', colorB: '#ffe600', duration: 1.0, cycles: 3, easing: 'easeInOut', opacity: 0.9, box: BOX } },
   { type: 'sprite-outline', name: 'Sprite Outline', section: 30, params: { color: '#000000', thickness: 2, opacity: 1.0, box: BOX } },
+  { type: 'sprite-burst', name: 'Sprite Burst', section: 31, params: { x: STAGE_X, y: STAGE_Y, size: 64, duration: 0.5 } },
 ];
 
 // Effects whose visual lives in the SHARED particle pool (one-shot bursts):

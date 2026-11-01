@@ -358,4 +358,13 @@ export const EFFECT_META = {
       { key: 'opacity',   config: true, kind: 'num', desc: 'Alpha (0-1)' },
     ],
   },
+  'sprite-burst': {
+    desc: 'Plays a sheet anim at a world point (bomb detonation art); procedural flash+ring fallback when no sheet. One-shot, fades out.',
+    params: [
+      { key: 'x',        config: true, kind: 'num', desc: 'Burst center X' },
+      { key: 'y',        config: true, kind: 'num', desc: 'Burst center Y' },
+      { key: 'size',     config: true, kind: 'num', desc: 'Rendered height (px)' },
+      { key: 'duration', config: true, kind: 'num', desc: 'Lifetime (s)' },
+    ],
+  },
 };
