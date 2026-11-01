@@ -19,7 +19,7 @@ const DEFAULTS = Object.freeze({
   origin: null,
   blastTeam: 'neutral',
   // Children
-  spawnType: 'ballistic',
+  spawnType: 'bomb',
   mineType: 'explosion',
   mineTtl: 2,
   blinkDuration: 2,

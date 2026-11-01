@@ -52,7 +52,7 @@ const DEFAULTS = Object.freeze({
   parentVx: 0,
   parentVy: 0,
   delay: 0,
-  spawnType: 'projectile', // 'projectile' | 'ballistic' | 'enemy'
+  spawnType: 'projectile', // 'projectile' | 'bomb' | 'enemy'
   mineType: 'explosion',
   mine: { ttl: 2, blinkDuration: 2 },
   enemyType: 'explosive_monkey',
@@ -76,7 +76,7 @@ export function splitChildren(p) {
     angle: a,
     spawnType: p.spawnType ?? 'projectile',
     enemyType: p.spawnType === 'enemy' ? (p.enemyType ?? 'explosive_monkey') : undefined,
-    ballistic: p.spawnType === 'ballistic' ? (p.ballistic ?? {}) : undefined,
+    ballistic: p.spawnType === 'bomb' ? (p.ballistic ?? {}) : undefined,
   }));
 }
 
@@ -119,7 +119,7 @@ defineMacro('spawnSplit', {
       { key: 'force', desc: 'launch speed (px/s)' },
       { key: 'mine', desc: 'throwMine params; ttl null = contact only' },
       { key: 'enemy', desc: 'nested throwEnemy config when spawnType=enemy (ttl, mineType, team, damage, radius, thrown…)' },
-      { key: 'ballistic', desc: 'ballistic params when spawnType=ballistic' },
+      { key: 'ballistic', desc: 'ballistic params when spawnType=bomb (children are exploding bombs)' },
     ],
   },
   impl(params, ctx) {
@@ -172,7 +172,7 @@ defineMacro('spawnSplit', {
           groundY: p.groundY, platforms: p.platforms,
         }, ctx);
         handles.push(child);
-      } else if (c.spawnType === 'ballistic') {
+      } else if (c.spawnType === 'bomb') {
         const b = p.ballistic ?? {};
         // Classic exploding bomb → the explosiveBomb macro (composition:
         // bomb flight + explosion payload). Primitives don't compose, so the

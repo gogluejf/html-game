@@ -386,12 +386,12 @@ export const STAGING = {
 
   spawnSplit: {
     setup(t) {
-      // Split demo: default to ballistic bombs that arc down, bounce off the
+      // Split demo: default to bomb children that arc down, bounce off the
       // ground, and detonate. But if the user explicitly retuned spawnType
       // (projectile/enemy) via the param list, honor that — don't clobber it.
       const chosen = t._params.spawnType;
       if (chosen !== 'enemy' && chosen !== 'projectile' && chosen !== 'mine') {
-        t._params.spawnType = 'ballistic';
+        t._params.spawnType = 'bomb';
         t._params.ballistic = { arc: 700, bounce: true, ttl: 1.5, damage: 25, radius: 60, explodeOnContact: true };
       }
       // Enemy children are THROWN (throwEnemy): ensure a nested config exists

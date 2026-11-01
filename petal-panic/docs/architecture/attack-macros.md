@@ -946,7 +946,7 @@ children run their own normal rules.
 ### Main parameters
 
 - **spawnType** — what the children become: `projectile` (straight shots),
-  `ballistic` (ballistic arc, bounce, detonate on impact — materialized as an
+  `bomb` (ballistic arc, bounce, detonate on impact — materialized as an
   explosiveBomb macro), or `enemy` (a live enemy entity that continues acting
   toward the attacker).
 - **count** — number created.
@@ -955,7 +955,7 @@ children run their own normal rules.
 - **force** — launch speed.
 - **inheritVelocity** — optional fraction of parent velocity added to each child.
 - **enemyType** — enemy id when `spawnType` is `enemy`.
-- **ballistic** — ballistic params override when `spawnType` is `ballistic`.
+- **ballistic** — ballistic params override when `spawnType` is `bomb`.
 
 ### Rules
 
