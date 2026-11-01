@@ -175,7 +175,7 @@ export async function selectEntity(li, ei, opts){
   const st = defaultState(app.cur.name, app.cur.imgs, app.cur.paths, app.cur.crops);
   if (en.tuning){
     const t = en.tuning;
-    if (t.speed != null) st.speed = t.speed;
+    if (t.fps != null) st.speed = t.fps;
     if (t.playback) st.playback = t.playback;
     if (t.direction) st.direction = t.direction;
     if (t.collision) st.collision = t.collision;
@@ -194,7 +194,7 @@ export async function selectEntity(li, ei, opts){
   const gd = readGameData(`${en.char}_${en.anim}`);   // null when no draft / corrupt
   if (gd && Array.isArray(gd.frames) && gd.frames.length === st.frames.length){
     Object.assign(st, {
-      speed: gd.speed ?? st.speed,
+      fps: gd.fps ?? st.speed,
       playback: gd.playback || st.playback,
       direction: gd.direction || 'forward',
       collision: gd.collision || st.collision,

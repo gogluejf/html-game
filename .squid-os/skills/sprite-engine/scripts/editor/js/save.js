@@ -34,7 +34,7 @@ export async function computeEntityChecksum(entityObj){
 // Extract ONLY the tuning/game fields from an entity's editor state.
 export function collectGameData(st){
   return {
-    speed: st.speed,
+    fps: st.speed,
     playback: st.playback || 'loop',
     direction: st.direction || 'forward',
     collision: st.collision,
@@ -131,7 +131,7 @@ export async function clearTuning(){
   } catch(e) { /* server might be down — local clear still worked */ }
   // Mirror the disk clear into the in-memory manifest so in-app navigation
   // doesn't re-merge the now-deleted tuning until a page refresh.
-  en.tuning = { speed: null, playback: null, direction: null, collision: null, pivot: null, markers: null,
+  en.tuning = { fps: null, playback: null, direction: null, collision: null, pivot: null, markers: null,
                 frames: en.frames.map(() => ({ offset:null, scale:null, boxes:null, durUnits:null })) };
   updateSaveButton();
   updateDirtyDots();
@@ -260,18 +260,17 @@ export async function saveToDisk(){
 
   // 5. Recompute checksum post-save, clear local game data, persist config.
   app.checksums[entityKey] = await computeEntityChecksum(freshEntity);
-  // Update the in-memory manifest tuning so in-app navigation (away + back)
-  // merges against the COMMITTED state, not the stale boot-time copy. Without
-  // this, selectEntity() would re-merge pre-save values until a page refresh.
+  // Refresh the in-memory manifest from the FRESH on-disk entity so in-app
+  // navigation merges against the committed state—not the stale boot-time copy.
   en.tuning = {
-    speed: gameData.speed,
-    playback: gameData.playback,
-    direction: gameData.direction,
-    collision: gameData.collision,
-    pivot: gameData.pivot,
-    markers: gameData.markers,
-    frames: gameData.frames.map(f => ({
-      offset: f.offset, scale: f.scale, boxes: f.boxes, durUnits: f.durUnits
+    fps: freshEntity.fps ?? null,
+    playback: freshEntity.playback ?? null,
+    direction: freshEntity.direction || 'forward',
+    collision: freshEntity.collision ?? null,
+    pivot: freshEntity.pivot ?? null,
+    markers: freshEntity.markers ?? null,
+    frames: (freshEntity.frames || []).map(f => ({
+      offset: f.offset ?? null, scale: f.scale ?? null, boxes: f.boxes ?? null, durUnits: f.durUnits ?? null
     }))
   };
   clearGameData(entityKey);   // disk now matches editor — drop the draft

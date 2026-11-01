@@ -68,7 +68,7 @@ function buildLabelEntities(labelName, sheets){
         sheetPath,
         // existing tuning data persisted in the sheet JSON (I3/L2)
         tuning: {
-          speed: e.speed ?? null,
+          fps: e.fps ?? e.speed ?? null,
           playback: e.playback ?? null,
           direction: e.direction || 'forward',
           collision: e.collision ?? null,

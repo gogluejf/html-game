@@ -12,7 +12,7 @@ import json
 import os
 import sys
 
-ANIM_FIELDS = ("speed", "playback", "direction", "collision", "pivot", "markers")
+ANIM_FIELDS = ("fps", "playback", "direction", "collision", "pivot", "markers")
 FRAME_FIELDS = ("offset", "scale", "boxes", "durUnits")
 
 SCHEMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -34,6 +34,8 @@ def load_sheet(path):
 def find_entity(sheet, name, anim):
     for ent in sheet.get("entities", []):
         if ent.get("name") == name and ent.get("anim") == anim:
+            if "speed" in ent:
+                ent.setdefault("fps", ent.pop("speed"))
             return ent
     return None
 
@@ -41,7 +43,7 @@ def find_entity(sheet, name, anim):
 def atomic_write(path, data):
     tmp = path + '.tmp'
     with open(tmp, 'w') as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=1)
         f.write('\n')
     os.replace(tmp, path)
 
