@@ -4,7 +4,7 @@
 // index holding any id from SPECIAL_TYPES. N never fires — it only rotates the
 // selection (hero.rotateWeapon, called by the update step).
 
-import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS } from '../objects/projectile.js';
+import { projectilePool, specialPool } from '../objects/projectile.js';
 import { specialById, isSpecialType } from '../objects/specialWeapons.js';
 import { dirAngle } from '../core/vec.js';
 import { damage } from './damage.js';

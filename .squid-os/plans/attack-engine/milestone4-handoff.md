@@ -241,5 +241,47 @@ Green-and-relevant: `projectile` (14), `contextualAim` (16), `spritePivot` (3),
 `explosion`, `bomb`, `compositeExplosion`, `homingMissile`, `predictiveShot`,
 `spawnSplit`, `spreadShot`.
 
+## Session log (2026-11-01, second pass) — Step B COMPLETE, 4.3 done
+
+### Committed
+- `e43fd4f3` — **Task 4.3:** gameplay `fireSpecial()` switched to the engine.
+  Saw + spread now spawn via `invoke('projectile', { specialType })` (real
+  Special entities); raw `specialPool.spawn` fan/single paths deleted from
+  shooting.js. Muzzle offset, fan math, soft-cap behavior preserved. Bomb
+  branch unchanged (already engine).
+- `c486c8e7` — sprite-burst dual-mode: `isHighGraphic()` gate (NOT asset-load
+  state) + procedural `fallback` drawer (explosion primitive passes flash
+  core + shock ring for primitive mode). Theater row §31 + meta + demo scene.
+- `b70e41be` — docs: effects.md §30 sprite-outline + §31 sprite-burst.
+- `a97c2034` — spawnType `'ballistic'` → `'bomb'` rename completed (macros,
+  theater, staging, tests, docs). Primitive id stays `ballistic`.
+
+### Status vs the agreed order
+| Step | State |
+|---|---|
+| 0 — spawn contract | ✅ `8ad2243c` |
+| A — special sprites | ✅ `8ad2243c` + `5ec7becd` |
+| B — saw+spread spawn via engine | ✅ `ce9fe01d` (plumbing) + `e43fd4f3` (gameplay switch) |
+| C — regression gate | ⏳ run full suite vs baseline below; update this doc |
+| D — damage/hit routing off legacy PROJ_ALLY | ❌ NOT STARTED — own focused session |
+
+### Task 4.4 regression gate (run 2026-11-01)
+Attack suite (35 files): all green except pre-existing canvas-stub failures:
+`bombHost` (ctx.createLinearGradient missing in mock), `fireArea` (no file at
+js/test/attack/fireArea.test.js — check path), `radialShot` (1 geometry
+assertion, stale since aca20dbb preset-tune — not caused by M4 work).
+Gameplay baseline: `bombGameplay` still fails on blockColumns width (pre-existing).
+`theaterParity` is GREEN (was on the old don't-chase list — baseline refreshed).
+
+### Remaining after C
+- **Task 4.5** — PARTIAL (2026-11-01): dead `SPECIAL_WEAPON_DEFS` import removed
+  from shooting.js. `explodeSpecial()` KEPT — still the live death path for
+  legacy-pooled specials (update.js TTL cull + collisionHandlers contact);
+  deleting it is Step D's job, not 4.5's.
+- **Step D** — HIGH RISK, own session: gameplay projectile host + move PROJ_ALLY
+  impact rules into engine layer; delete legacy collisionHandlers branch last.
+- Cleanup TODO (render-modes): move Special/Projectile inline procedural art
+  into `drawPrimitive()`.
+
 ## Suggested next step (new session)
-Commit the uncommitted batch (user-verified), then **Step B** per the design above.
+Task 4.5 cleanup (small), then **Step D** in a fresh focused session.
