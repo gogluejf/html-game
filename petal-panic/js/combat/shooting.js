@@ -84,6 +84,20 @@ function makeHeroContext(h) {
   };
 }
 
+/** Nearest live enemy (or boss during combat) to the given point — the homing
+ * missile's default chase target. Null when nothing is alive. */
+function nearestEnemyTo(x, y) {
+  let best = null, bestD = Infinity;
+  const consider = (t) => {
+    if (!t || !t.alive) return;
+    const d = Math.hypot(t.x + t.w / 2 - x, t.y + t.h / 2 - y);
+    if (d < bestD) { bestD = d; best = t; }
+  };
+  for (const e of ctx.realEnemies ?? []) consider(e);
+  if (ctx.bossZone?.bossCanTakeDamage?.()) consider(ctx.boss);
+  return best;
+}
+
 /**
  * Fire the hero's selected special weapon (special-weapons.md). The selected
  * slot must hold a weapon id from SPECIAL_TYPES — firing is gated by the
@@ -110,6 +124,28 @@ function fireSpecial(h, input) {
       origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
       speed: meta.speed, arc: meta.gravity, ttl: meta.lifetime,
       damage: meta.damage, radius: meta.radius, bounce: true, blastTeam: 'ally',
+    }, h);
+    if (!attack.entity) return;
+  } else if (type === 'homing' && ctx.bombAttacks) {
+    // Homing missile: macro owns flight + per-frame steering toward the
+    // nearest live enemy (resolved at fire time; the macro stops steering
+    // once its target dies). specialType gives the carrier its sheet art.
+    const attack = ctx.bombAttacks.spawn('homingMissile', {
+      origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
+      speed: meta.speed, ttl: meta.lifetime, damage: meta.damage,
+      turnRate: meta.turnRate ?? 3, target: nearestEnemyTo(cx, cy),
+      specialType: type,
+    }, h);
+    if (!attack.entity) return;
+  } else if (type === 'explosive' && ctx.bombAttacks) {
+    // Explosive shot: straight-line projectile carrier that detonates into a
+    // radial explosion at its death point (impact or fuse). No arc, no bounce.
+    const attack = ctx.bombAttacks.spawn('explosiveProjectile', {
+      origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
+      speed: meta.speed, ttl: meta.lifetime, damage: meta.damage,
+      radius: meta.radius, solidBehavior: 'stop',
+      team: 'ally', size: meta.size, blastTeam: 'neutral',
+      specialType: type,
     }, h);
     if (!attack.entity) return;
   } else if (meta.spread) {

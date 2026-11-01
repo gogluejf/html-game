@@ -86,15 +86,21 @@ export function spawnBomb(p, ctx, h = null) {
   const ent = ctx.pools.specialPool?.spawn(ox - size / 2, oy - size / 2, 0, p.weaponType ?? null);
   if (!ent) return null;
   // Typeless Special defaults its box to 16 — restore the 18px carrier box so
-  // spawn centering and collision match the bomb-sized physics body.
-  ent.w = size;
-  ent.h = size;
+  // spawn centering and collision match the bomb-sized physics body. A
+  // weapon-typed carrier keeps its OWN authored square box (meta.size) — the
+  // sheet art scales to fit it via the standard §4 pipeline.
+  if (!p.weaponType) {
+    ent.w = size;
+    ent.h = size;
+  }
   ent.vx = Math.cos(p.direction) * p.speed;
   ent.vy = Math.sin(p.direction) * p.speed;
   // Orient the art nose along velocity (same contract as Projectile). A
   // typeless carrier has no sheet art, but drawers (rock) read e.rotation —
   // keep it live so tumbling reads correctly in both theater and gameplay.
-  ent.orientSprite(ent.vx, ent.vy);
+  // Weapon-typed carriers with sheet art (homing) also want the nose along
+  // travel; bombs handle their own mirrorX orientation downstream.
+  if (p.weaponType !== 'bomb') ent.orientSprite(ent.vx, ent.vy);
   ent.gravityValue = p.arc;
   ent.damage = p.damage;
   ent.friendly = p.team !== 'foe';
@@ -280,7 +286,7 @@ registerPrimitive('ballistic', {
       { key: 'width', desc: 'collision box width px (overrides carrier default)' },
       { key: 'height', desc: 'collision box height px (overrides carrier default)' },
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
-      { key: 'weaponType', desc: "special-weapon id for sheet art ('bomb'); null = rock" },
+      { key: 'weaponType', desc: "special-weapon id for sheet art ('bomb'|'homing'|'explosive'); null = rock" },
     ],
   },
   impl(params, ctx) {

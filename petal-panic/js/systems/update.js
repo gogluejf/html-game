@@ -971,6 +971,14 @@ export function update(dt) {
 
   // Special projectiles: update + handle bomb explosions.
   specialPool.updateAll(dt);
+  // Engine-owned ballistic carriers (homing / explosive specials) fly on the
+  // macro's clock — cull them off-screen like thorns so a missed shot can't
+  // live forever chasing its target. The macro completes on entity death.
+  const engineCarriers = [];
+  for (const s of specialPool.activeItems) {
+    if (s._attackId === 'ballistic') engineCarriers.push(s);
+  }
+  cullOffScreen(engineCarriers);
   // Bomb terrain: the engine owns bounce (stepBombTerrain) — same rules
   // for gameplay and the sandbox. Reflect bombs rest on the ground (vy=0)
   // but stay alive; the fuse keeps running until TTL → explodeSpecial().

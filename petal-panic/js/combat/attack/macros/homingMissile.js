@@ -38,6 +38,10 @@ const DEFAULTS = Object.freeze({
   damage: 10,            // projectile damage
   target: null,          // entity to chase (default ctx.target)
   turnRate: 3,           // rad/s max heading correction
+  origin: null,
+  team: 'ally',
+  solidBehavior: 'phase',
+  specialType: null, // Caller chooses visual identity; forward to projectile unchanged.
 });
 
 /** Rotate a velocity vector toward desiredAngle by at most maxTurn. */
@@ -65,6 +69,7 @@ defineMacro('homingMissile', {
       { key: 'ttl', desc: 'seconds before giving up' },
       { key: 'damage', desc: 'projectile damage' },
       { key: 'turnRate', desc: 'rad/s max heading correction' },
+      { key: 'specialType', desc: "special-weapon id for sheet art ('homing'); null = thorn" },
     ],
   },
   impl(params, ctx) {
@@ -72,8 +77,12 @@ defineMacro('homingMissile', {
     const tgt = () => p.target ?? ctx.target;
 
     // 1. Spawn the bullet (the projectile primitive owns flight + collision).
+    // specialType routes to the Special pool with sheet art (hero weapons);
+    // null keeps the plain thorn path (enemy use).
     const shot = invoke('projectile', {
       direction: p.direction, speed: p.speed, ttl: p.ttl, damage: p.damage,
+      specialType: p.specialType,
+      origin: p.origin, team: p.team, solidBehavior: p.solidBehavior,
     }, ctx);
     const ent = shot?.entity;
     if (!ent) {

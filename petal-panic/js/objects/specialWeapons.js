@@ -71,6 +71,41 @@ export const SPECIAL_WEAPONS = [
     radius: 0,
     spread: { count: 3, angle: Math.PI / 3 }, // 3 shots, ±30° fan
   },
+  {
+    id: 'homing',
+    name: 'Homing Missile',
+    icon: '🚀',
+    color: '#3498db',
+    speed: 400,
+    damage: 15,
+    lifetime: 2,
+    size: 24,
+    fireCooldown: 0.8,
+    gravity: 0,
+    solidBehavior: 'phase',
+    explode: false,
+    radius: 0,
+    spread: null,
+    // Homing tuning (consumed by the homingMissile macro, not the Special class):
+    // turnRate — max heading correction rad/s; low = wide dodgeable arcs.
+    turnRate: 3,
+  },
+  {
+    id: 'explosive',
+    name: 'Explosive Shot',
+    icon: '💥',
+    color: '#e74c3c',
+    speed: 700,
+    damage: 20,
+    lifetime: 1.5,
+    size: 16,
+    fireCooldown: 0.9,
+    gravity: 0,
+    solidBehavior: 'stop',   // detonates on first impact (terrain or enemy)
+    explode: true,           // AoE at the death point (impact OR fuse)
+    radius: 70,
+    spread: null,
+  },
 ];
 
 /** Ordered list of all valid special weapon ids. */

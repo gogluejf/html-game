@@ -44,7 +44,7 @@ const DEFAULTS = Object.freeze({
                          // (sheet-derived collision box set by initialize())
   width: null,           // explicit box width px (overrides size); null = size
   height: null,          // explicit box height px (overrides size); null = size
-  specialType: null,     // special-weapon id ('saw'|'spread'|'bomb') → routes to
+  specialType: null,     // special-weapon id ('saw'|'spread'|'bomb'|'homing'|'explosive') → routes to
                          // specialPool with that type; null = Projectile/thorn path
   drawer: null,          // (ctx, entity) => void — custom render override
 });
@@ -234,7 +234,7 @@ registerPrimitive('projectile', {
       { key: 'size', desc: 'square box size px; null = keep the entity\'s natural sheet box' },
       { key: 'width', desc: 'explicit box width px (overrides size)' },
       { key: 'height', desc: 'explicit box height px (overrides size)' },
-      { key: 'specialType', desc: "special-weapon id ('saw'|'spread'|'bomb') → real Special entity; null = thorn path" },
+      { key: 'specialType', desc: "special-weapon id ('saw'|'spread'|'bomb'|'homing'|'explosive') → real Special entity; null = thorn path" },
     ],
   },
   impl(params, ctx) {

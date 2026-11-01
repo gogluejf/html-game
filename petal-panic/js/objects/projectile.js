@@ -56,6 +56,8 @@ const SPECIAL_SPRITE_TARGETS = Object.freeze({
   saw: { anim: 'shoot', targetH: 40 / UNIT_PX_Y },
   spread: { anim: 'shoot', targetH: 14 / UNIT_PX_Y },
   bomb: { anim: 'shoot', targetH: 18 / UNIT_PX_Y },
+  homing: { anim: 'fly', targetH: 26 / UNIT_PX_Y },
+  explosive: { anim: 'fly', targetH: 20 / UNIT_PX_Y },
 });
 const specialSpriteData = new Map();   // type → parsed sheet (anims patched)
 const specialSpriteFrames = new Map(); // type → frame image map
@@ -415,6 +417,12 @@ export class Special extends Entity {
         Object.defineProperty(this.sprite, 'frames', { get: () => specialSpriteFrames.get(type) });
         try {
           this.setAnim(cfg.anim);
+          // Re-aim AFTER setAnim: the sheet's authored start-frame offset can
+          // shift the pivot-derived angle, and pooled slots may carry stale
+          // orientation from their previous life. orientSprite() is idempotent
+          // (pure function of vx/vy), so re-applying it here guarantees the
+          // nose points along travel regardless of spawn path.
+          this.orientSprite(this.vx, this.vy);
           // White outline like the thorn — keeps fast small shots readable.
           // Saw + spread get the heavier 6px (small, fast, busy backgrounds);
           // other specials stay at 4.
@@ -445,6 +453,13 @@ export class Special extends Entity {
     }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
+
+    // Re-aim the art nose along velocity every frame. Engine-owned carriers
+    // (homing missiles steered by their macro, explosive shots) have vx/vy
+    // mutated OUTSIDE this class — without this, the sheet art would stay
+    // frozen at the launch angle while the body curves. Bombs handle their
+    // own fuse-forward orientation below (mirrorX + settle ease-back).
+    if (this.type !== 'bomb') this.orientSprite(this.vx, this.vy);
 
     // Bomb orientation (sheet art): while flying, the fuse trails the motion —
     // rotation follows the velocity tangent and mirrorX tracks horizontal

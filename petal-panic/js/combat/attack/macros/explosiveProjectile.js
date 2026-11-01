@@ -19,6 +19,7 @@ const DEFAULTS = Object.freeze({
   team: 'ally',        // ally | foe — who the carrier shot hurts
   size: 12,             // box size
   blastTeam: 'neutral', // blast team: foe | ally | neutral
+  specialType: null, // Caller chooses visual identity; forward to projectile unchanged.
 });
 
 defineMacro('explosiveProjectile', {
@@ -43,6 +44,7 @@ defineMacro('explosiveProjectile', {
       { key: 'team', desc: 'ally | foe — who the carrier shot hurts' },
       { key: 'size', desc: 'box size (px)' },
       { key: 'blastTeam', desc: 'foe | ally | neutral — who the blast hurts' },
+      { key: 'specialType', desc: "special-weapon id for sheet art ('explosive'); null = thorn" },
     ],
   },
   impl(params, ctx) {
@@ -82,6 +84,7 @@ defineMacro('explosiveProjectile', {
       gravity: p.gravity,
       team: p.team,
       size: p.size,
+      specialType: p.specialType,
     }, ctx);
 
     if (!carrier?.entity) {
