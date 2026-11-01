@@ -269,7 +269,16 @@ export class Entity {
     // Playback (T3.2): build a SpritePlayer ONLY for anims that declare a
     // playback mode. mode 'none' = frame POOL (terrain tiles etc.) — frames
     // are picked externally via _tileFrame, never played on a clock.
-    this._player = data.mode && data.mode !== 'none' ? new SpritePlayer(data) : null;
+    // startFrame: "random" resolves to a random traversal slot HERE (per
+    // setAnim call), so pooled entities re-roll their phase on every
+    // respawn/initialize; int = fixed slot; absent/0 = authored start.
+    let startSlot = 0;
+    if (data.startFrame === 'random') {
+      startSlot = Math.floor(Math.random() * data.frames.length);
+    } else if (Number.isInteger(data.startFrame)) {
+      startSlot = data.startFrame % data.frames.length;
+    }
+    this._player = data.mode && data.mode !== 'none' ? new SpritePlayer(data, startSlot) : null;
   }
 
   /** Active sprite AnimData (or null when no sprite anim is set/known). */

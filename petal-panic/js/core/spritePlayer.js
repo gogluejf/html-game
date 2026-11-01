@@ -22,9 +22,13 @@
 /**
  * @param {object} animData parsed AnimData (spriteData.js):
  *   { fps, mode, direction, timing, frames: [...], framesMeta?: [{duration,...}] }
+ * @param {number} [startSlot=0] traversal slot to begin at (0..order-1).
+ *   Lets pooled/short-lived entities (coins) start mid-cycle so N instances
+ *   don't play in lockstep. The rest of the playback math is unchanged —
+ *   it's the same loop, just entered at a different point.
  */
 export class SpritePlayer {
-  constructor(animData) {
+  constructor(animData, startSlot = 0) {
     if (!animData || !Array.isArray(animData.frames) || animData.frames.length === 0) {
       throw new Error('SpritePlayer: animData needs a non-empty frames array');
     }
@@ -47,8 +51,9 @@ export class SpritePlayer {
     // the other side as …,1,0,1,… which is correct: 0 is a turning point).
     this._order = this._buildOrder();
     // Position within _order (float: integer part = slot, fraction = time
-    // spent in that slot's frame).
-    this._pos = 0;
+    // spent in that slot's frame). startSlot lets the caller enter the loop
+    // mid-cycle (random phase for pooled entities); clamped to a valid slot.
+    this._pos = Math.max(0, Math.min(Math.floor(startSlot) || 0, this._order.length - 1));
     this.done = false;
   }
 
