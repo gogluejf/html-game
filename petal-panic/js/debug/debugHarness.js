@@ -84,9 +84,9 @@ function handleDebugToggle(e, source) {
     ctx.hero.dying = false;
     ctx.hero.deathTimer = 0;
     enableDebug(source);
-    // Debug default view = F3 mode 0 (primitive+collision): enter with the
-    // collision overlay visible, as before. Closing debug restores HIGH.
-    setGraphicMode(GRAPHIC_MODE.PRIMITIVE);
+    // Debug default view = F3 mode 3 (high+collision): HD sheet art with the
+    // collision overlay on top. Closing debug restores HIGH.
+    setGraphicMode(GRAPHIC_MODE.HIGH);
     tryTransition(S.PLAY);
     console.log(`[debug] ${source}: ${STATE_NAMES[s]} → PLAY`);
     return;
@@ -94,7 +94,7 @@ function handleDebugToggle(e, source) {
 
   if (!Debug.enabled) {
     enableDebug(source);
-    setGraphicMode(GRAPHIC_MODE.PRIMITIVE); // debug default view = mode 0 (primitive+collision)
+    setGraphicMode(GRAPHIC_MODE.HIGH); // debug default view = mode 3 (high+collision)
   } else {
     Debug.toggle();
     Debug.reset();
