@@ -26,7 +26,7 @@ import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER } f
 import { particles, coins } from '../effects/particles.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
-import { applyGodMode, updateTheaterGamepad, setHeroRefSetter } from '../debug/debugHarness.js';
+import { applyGodMode, setHeroRefSetter } from '../debug/debugHarness.js';
 import { buildWorld, captureAreaMap, newGameSeed } from '../world/build.js';
 import { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver };
@@ -447,8 +447,8 @@ export function processInput() {
       Debug.logEvent(`theater REPLAY → ${theater === AttackTheater ? AttackTheater.currentId() : Theater.current().type}`);
     }
     if (Theater.active) {
-      updateTheaterGamepad();
-      Theater.updateControls?.(); // param select + nudge (arrows/WASD held, I/O, L2/R2)
+      // Single navigation owner for keyboard AND gamepad (including touch pad).
+      Theater.updateControls?.(); // select + param nudge + held repeat
     }
     return;
   }

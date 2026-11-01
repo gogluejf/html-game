@@ -103,33 +103,6 @@ function handleDebugToggle(e, source) {
   }
 }
 
-// --- Effect Theater gamepad stepping ------------------------------
-// Tracks the previous held-direction so a step fires only on the edge (crossing
-// zero), preventing hold-to-spin. `wasHeld` is -1/0/+1 for prev/left/right.
-let theaterWasHeld = 0;
-
-/**
- * Gamepad-only stepping for the Effect Theater. Called once per frame from
- * processInput() while Theater.active. Reads input.state.moveX (d-pad +
- * left-stick, already normalized by the existing input remap) for left/right.
- * NOTE: keyboard arrows are handled by updateControls()'s select channel —
- * this function ONLY handles gamepad d-pad/stick to avoid double-stepping.
- */
-export function updateTheaterGamepad() {
-  // Only step from GAMEPAD source (not keyboard). updateControls() already
-  // handles keyboard arrows via its 'select' repeat channel. If we stepped
-  // here too, a single arrow tap would fire TWO steps (one from each path).
-  const s = input.state;
-  const isPad = s.source === 'gamepad';
-  if (!isPad) return;
-  const dir = s.moveX < -0.2 ? -1 : s.moveX > 0.2 ? 1 : 0;
-  if (dir !== 0 && dir !== theaterWasHeld) {
-    Theater.step(dir);
-    Debug.logEvent(`theater → ${Theater.current().type}`);
-  }
-  theaterWasHeld = dir;
-}
-
 // --- Debug & Test Harness ----------------------------------------------------
 // Everything below is gated behind `if (Debug.enabled)` so normal play pays only
 // a single boolean check per frame. The spawn table is populated once from the
@@ -254,7 +227,7 @@ function handleDebugKeys(e) {
       debugInjectPowerups();
       break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
-      // Theater stepping is handled by updateTheaterGamepad (reads input.state.moveX).
+      // Effect Theater stepping is owned by updateControls (keyboard + gamepad).
       // Don't double-step here. Only drive the anim scrubber when NO theater is
       // open (Effect OR Attack) — otherwise arrows leak into the scrubber and
       // fight the theater for the same keys.
