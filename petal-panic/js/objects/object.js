@@ -58,7 +58,7 @@ export const COIN_BARREL_DEF = {
   w: 32, h: 48,
   hp: 60,
   explosion: null,   // no damaging explosion — just a coin burst
-  coinDrop: { min: 4, max: 6, chance: 1.0, types: { bronze: 0.7, silver: 0.25, gold: 0.05 } },
+  coinDrop: { min: 4, max: 8, chance: 1.0, types: { bronze: 0.625, silver: 0.25, gold: 0.125 } },
   spriteAnim: 'coin',
 };
 
