@@ -238,7 +238,7 @@ ok('non-Down directions pass through untouched (up/right etc.)', () => {
 });
 
 console.log('bodyCenter — active-box origin (AC #2)');
-ok('crouched body center is lower than standing, derived from crouchBox', () => {
+ok('crouched body center is lower than standing, derived from hScale', () => {
   const h = makeHero();
   h.setGrounded(true);
   const stand = h.bodyCenter();
@@ -247,8 +247,8 @@ ok('crouched body center is lower than standing, derived from crouchBox', () => 
   assert.ok(h.crouching, 'should be crouched');
   const crouch = h.bodyCenter();
   assert.ok(crouch.y > stand.y, `crouch center y=${crouch.y} must be below standing y=${stand.y}`);
-  // Exact expectation from the box geometry: feet planted, top drops by h*0.4.
-  const expected = h.y + h.crouchBox.oy + h.crouchBox.bh / 2;
+  // Exact expectation from the box geometry: feet planted, height × 0.6.
+  const expected = h.y + h.h / 2;
   assert.ok(Math.abs(crouch.y - expected) < 1e-9, `expected ${expected}, got ${crouch.y}`);
   assert.ok(Math.abs(crouch.x - (h.x + h.w / 2)) < 1e-9, 'x stays at body midpoint');
 });
@@ -304,8 +304,9 @@ ok('pipeline: grounded crouch + shoot fires horizontally toward facing (not down
   for (let i = 0; i < 5; i++) U.update(DT);
   release('KeyD'); U.processInput();
   assert.equal(hero.facing, 1, 'should face right');
-  // Crouch + shoot: press Down first, run one frame so crouch commits (box =
-  // crouchBox), THEN press Shoot — bodyCenter() must be the crouched center.
+  // Crouch + shoot: press Down first, run one frame so crouch commits
+  // (height scaled by the crouch anim's hScale), THEN press Shoot —
+  // bodyCenter() must be the crouched center.
   press('KeyS'); U.processInput();
   for (let i = 0; i < 3; i++) U.update(DT); // settle: let crouch commit + floor resolve
   assert.ok(hero.crouching, 'hero must be crouched before shooting');
@@ -319,9 +320,11 @@ ok('pipeline: grounded crouch + shoot fires horizontally toward facing (not down
   assert.ok(Math.abs(Math.sin(angle)) < 1e-9, `shot must be horizontal, angle=${angle}`);
   assert.ok(Math.cos(angle) > 0, `shot must go right (facing), cos=${Math.cos(angle)}`);
   // Spawn origin must come from the CROUCHED body center (lower than standing).
-  // Compare against the hero position captured on the frame the shot appeared.
-  const standCenterY = heroYAtSpawn + hero.standBox.oy + hero.standBox.bh / 2;
-  const crouchCenterY = heroYAtSpawn + hero.crouchBox.oy + hero.crouchBox.bh / 2;
+  // heroYAtSpawn is the crouched top-left y (h already scaled by hScale), so
+  // the crouch center is y + h/2; the standing center of the SAME feet line is
+  // feet - 24 = y + h - 24.
+  const standCenterY = heroYAtSpawn + hero.h - 24;
+  const crouchCenterY = heroYAtSpawn + hero.h / 2;
   const spawnY = p.y + p.h / 2; // box top-left → center
   // Tolerance: heroYAtSpawn is captured on the frame the projectile appears,
   // which can lag the true crouch-frame origin by a sub-pixel gravity dip /

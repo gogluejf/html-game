@@ -113,11 +113,10 @@ export function resolve(entity, solids, opts = {}) {
       // here (the hero has already integrated below the top this frame, so the
       // upward penetration is smaller than the downward one). Landing is not a
       // "push out": snap the box's bottom to the platform top and zero vy.
-      // Box offset is baked into worldBox(): for an Entity the box is at
-      // (x + ox, y + oy) with height bh. Compute the box bottom's distance
-      // from entity.y and set entity.y so that bottom lands exactly on s.y —
-      // this works for standing AND crouching boxes alike (crouchBox has a
-      // non-zero oy), so a crouched hero still rests its feet on the surface.
+      // Compute the box bottom's distance from entity.y and set entity.y so
+      // that bottom lands exactly on s.y — this works for standing AND
+      // crouching heights alike (crouch shrinks h via the anim's hScale),
+      // so a crouched hero still rests its feet on the surface.
       const boxBottomOffset = b.y - entity.y + b.h;
       entity.y = s.y - boxBottomOffset;
       if (entity.vy > 0) entity.vy = 0;

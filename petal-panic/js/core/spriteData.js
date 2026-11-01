@@ -73,6 +73,10 @@ export function parseSheet(sheetJson) {
         // (today's behavior; authored start pose for hero/enemy anims).
         startFrame: ent.startFrame === 'random' ? 'random'
           : (Number.isInteger(ent.startFrame) && ent.startFrame >= 0 ? ent.startFrame : 0),
+        // Optional per-anim height scale (crouch = 0.6): multiplies the
+        // entity's collision height while this anim is active. Absent/1 =
+        // full height. Applied feet-planted by setAnim().
+        hScale: Number.isFinite(Number(ent.hScale)) && Number(ent.hScale) > 0 ? Number(ent.hScale) : 1,
         frames,
         // Optional richer geometry (Animation Studio revision): per-anim
         // collision box + pivot in source coordinates. Null until exported.

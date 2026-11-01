@@ -62,7 +62,7 @@ ok('jumping from crouch cancels crouch and jumps immediately (§12, no stand-fir
   assert.ok(h.vy < 0, 'should have upward velocity after the jump');
   assert.equal(h.crouching, false, 'crouch must be cancelled by the jump');
   assert.equal(h.sliding, false, 'slide flag must not linger after the jump');
-  assert.equal(h.box, h.standBox, 'standing hitbox must be restored on the same frame');
+  assert.equal(h._targetHScale, 1, 'standing height must be restored on the same frame');
 });
 
 console.log('Crouch / slide deceleration');

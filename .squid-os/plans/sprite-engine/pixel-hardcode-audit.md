@@ -110,6 +110,31 @@ the unit changes. Documented here so future audits don't "fix" them.
 
 ---
 
+## Tier 4 — Test suite (NOT YET AUDITED)
+
+The test files contain the SAME pixel-hardcode disease as the game code:
+absolute world-px assertions (`y === 466.0`, `±2px` tolerances, `FLOOR_TOP -
+hero.h - 4` spawn math, viewport-literal expectations). When `UNIT_PX_X/Y`
+becomes a free parameter (the point of this migration), every one of these
+breaks for zero behavioral reason.
+
+**Status: NO test file has been audited yet.** Before/while closing Tiers 1-3,
+run a full pass over `petal-panic/js/test/*.test.js` and flag every raw px
+literal in world space. Rewrite them to:
+- **relative deltas in units** ("crouched origin is 0.2u below standing"), or
+- **source-of-truth comparisons** (assert against `worldBox()` /
+  `bodyCenter()` / `UNIT_PX_*`-derived values, never recomputed literals).
+
+Known offenders seen during the hScale/crouch work (starting list, not
+exhaustive): `contextualAim.test.js` (spawn-y pixel math), `barrel.stack.test.js`,
+`bombGameplay.test.js`, `attackHitbox.test.js`, boss-card viewport tests,
+thorn pivot centering test, ride classification test.
+
+Next agent: treat this as open debt tied to the unit migration — do NOT add
+new pixel-literal assertions in tests.
+
+---
+
 ## Migration notes
 
 - Conversion is exact at current unit size: value_px / 48 (Y) or / 72 (X).

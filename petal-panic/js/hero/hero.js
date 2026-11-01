@@ -1,10 +1,9 @@
 // Petal Panic — Hero (design §4-5). The core playable character.
 // Wraps a hero definition (see heroDefs.js) and drives run/jump/crouch/slide,
-// gravity, ground friction, facing + mirrorX, and crouch-box shrink.
-// Collision model note: the hero's collision box is an OFFSET AABB (this.box)
-// relative to its origin. Crouching swaps in a shorter box (crouchBox) whose
-// top edge drops by h*0.4 while keeping the feet planted — this validates the
-// offset-box model end-to-end (the debug overlay shows the box get shorter).
+// gravity, ground friction, facing + mirrorX, and crouch height shrink.
+// Collision model note: the hero's collision box is worldBox() (x, y, w, h).
+// Crouching shrinks h via the crouch anim's `hScale` sheet field (per-anim
+// height scale, applied feet-planted by applyCrouchHeight()).
 
 import { Entity } from '../core/entity.js';
 import { isHighGraphic } from '../core/renderMode.js';
@@ -208,11 +207,8 @@ export class Hero extends Entity {
     // projectiles never touch this field.
     this._connectProtectFrames = 0;
 
-    // Offset collision boxes (relative to origin). Standing = full w×h.
-    // Crouch keeps feet planted: top drops by h*0.4, height becomes h*0.6.
-    this.standBox = { ox: 0, oy: 0, bw: this.w, bh: this.h };
-    this.crouchBox = { ox: 0, oy: this.h * 0.4, bw: this.w, bh: this.h * 0.6 };
-    this.box = this.standBox;
+    // Crouch height is per-anim data (sheet `hScale`, applied via
+    // applyCrouchHeight) — no code-side box objects.
 
     // --- Super move (design §22-§23) ------------------------------------------
     // Charges over time; when full the hero can dash forward. Triggered by the
@@ -412,7 +408,9 @@ export class Hero extends Entity {
       }
       if (input.down && !input.lockMove && this.grounded && !this.crouching) {
         this.crouching = true;
-        this.box = this.crouchBox;
+        // Height comes from the crouch anim's hScale (sheet data) — no code
+        // box swap. Without a sprite/crouch anim the body keeps full height.
+        this.applyCrouchHeight(true);
       }
     }
 
@@ -1120,21 +1118,38 @@ export class Hero extends Entity {
    * @returns {{x:number,y:number}} world-space body center
    */
   bodyCenter() {
-    const b = this.box ?? this.standBox;
-    return { x: this.x + b.ox + b.bw / 2, y: this.y + b.oy + b.bh / 2 };
+    const wb = this.worldBox();
+    return { x: wb.x + wb.w / 2, y: wb.y + wb.h / 2 };
   }
 
   /**
    * Single exit path for crouch/slide (design §11): state, movement
    * restrictions, hitbox and animation must all transition together — no
    * scattered flag clears. Locomotion restrictions lift automatically because
-   * update() reads the flags; the standing hitbox is restored so a hero who
+   * update() reads the flags; full body height is restored so a hero who
    * just stood up is never hit-tested with the short crouch box.
    */
   exitCrouch() {
     this.crouching = false;
     this.sliding = false;
-    this.box = this.standBox;
+    this.applyCrouchHeight(false);
+  }
+
+  /**
+   * Apply/clear the per-anim crouch height (sheet `hScale` on the 'crouch'
+   * anim). Feet stay planted: y adjusts by the height delta. When no sprite
+   * or crouch anim is loaded (tests, pre-boot), falls back to the legacy 0.6
+   * factor so crouch still shrinks the box.
+   * @param {boolean} crouching
+   */
+  applyCrouchHeight(crouching) {
+    const data = this.sprite?.anims?.['crouch'];
+    const hs = crouching ? (Number.isFinite(Number(data?.hScale)) && Number(data?.hScale) > 0 ? Number(data.hScale) : 0.6) : 1;
+    if (hs === this._targetHScale) return;
+    const prevH = this.h;
+    this._targetHScale = hs;
+    const newH = this.h;
+    if (newH !== prevH) this.y += prevH - newH;
   }
 
   /**
@@ -1352,20 +1367,19 @@ export class Hero extends Entity {
     this.drawPrimitive(ctx);
   }
 
-  /** Hero primitive: crouch-aware rect (feet-anchored when crouching). */
+  /** Hero primitive: rect at the live collision box (crouch height comes
+   *  from _targetHScale, so this is just worldBox()). */
   drawPrimitive(ctx) {
     ctx.save();
     const cx = this.x + this.w / 2;
-    const cy = this.crouching ? this.y + this.h : this.y + this.h / 2;
+    const cy = this.y + this.h / 2;
     ctx.translate(cx, cy);
     if (this.mirrorX) ctx.scale(-1, 1);
     if (this.mirrorY) ctx.scale(1, -1);
     ctx.rotate(this.rotation);
-    const scaleY = this.crouching ? 0.6 : 1;
-    ctx.scale(this.scale, this.scale * scaleY);
-    const offsetY = this.crouching ? -this.h : -this.h / 2;
+    ctx.scale(this.scale, this.scale);
     ctx.fillStyle = this.debugColor;
-    ctx.fillRect(-this.w / 2, offsetY, this.w, this.h * scaleY);
+    ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
     ctx.restore();
   }
 }

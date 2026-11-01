@@ -58,14 +58,14 @@ ok('jumping from crouch cancels crouch and initiates the jump the same frame', (
   let inp = noInput(); inp.down = true;
   h.update(DT, inp);
   assert.ok(h.crouching, 'should be crouched first');
-  assert.equal(h.box, h.crouchBox, 'crouch box active before the jump');
+  assert.equal(h._targetHScale, 0.6, 'crouch height scale active before the jump');
   inp.jump = true;
   h.update(DT, inp);
   assert.equal(h.jumpsUsed, 1, 'jump must fire without a stand-first requirement');
   assert.ok(h.vy < 0, 'upward velocity immediately after the jump');
   assert.equal(h.crouching, false, 'crouch state cancelled by the jump');
   assert.equal(h.sliding, false, 'no lingering slide flag');
-  assert.equal(h.box, h.standBox, 'airborne/standing hitbox restored same frame');
+  assert.equal(h._targetHScale, 1, 'full standing height restored same frame');
 });
 
 ok('anim reflects the jump, not the crouch, after jump-from-crouch (§29)', () => {
@@ -90,7 +90,7 @@ ok('releasing Down while moving exits crouch into run with standing hitbox same 
   let inp = noInput(); inp.down = true; inp.right = true;
   h.update(DT, inp);
   assert.ok(h.crouching, 'crouched after pressing down mid-run');
-  assert.equal(h.box, h.crouchBox, 'crouch hitbox active during the skid');
+  assert.equal(h._targetHScale, 0.6, 'crouch height scale active during the skid');
   settle(h); // grounded hero at rest before the second skid frame
   h.update(DT, inp);
   assert.ok(h.sliding, `sliding on the second skid frame (vx=${h.vx})`);
@@ -99,7 +99,7 @@ ok('releasing Down while moving exits crouch into run with standing hitbox same 
   h.update(DT, inp);
   assert.equal(h.crouching, false, 'crouch exited when Down is released');
   assert.equal(h.sliding, false, 'slide flag cleared the same frame');
-  assert.equal(h.box, h.standBox, 'standing hitbox active the same frame');
+  assert.equal(h._targetHScale, 1, 'standing height restored the same frame');
   assert.ok(h.vx > 200, `run resumes immediately (arcade snap), got vx=${h.vx}`);
   assert.equal(heroAnimName(h), 'run', 'anim is run, not crouch/slide, after exit');
 });
@@ -115,7 +115,7 @@ ok('pressing Down while running keeps run velocity on the entry frame; slide dec
   let inp = noInput(); inp.down = true; inp.right = true;
   h.update(DT, inp);
   assert.ok(h.crouching, 'crouch entered on the press frame');
-  assert.equal(h.box, h.crouchBox, 'crouch hitbox active from the press frame');
+  assert.equal(h._targetHScale, 0.6, 'crouch height scale active from the press frame');
   assert.ok(Math.abs(h.vx - 250) < 1, `grace frame retains run velocity (vx=${h.vx})`);
   // Frame 2: still holding Down + right. Crouch is now fully committed —
   // control is locked and linear slide decel bleeds off exactly SLIDE_DECEL*dt.
@@ -158,7 +158,7 @@ ok('after the slide ends, vx reaches 0 and the sliding flag stops together', () 
   h.update(DT, noInput());
   assert.equal(h.crouching, false);
   assert.equal(h.sliding, false);
-  assert.equal(h.box, h.standBox);
+  assert.equal(h._targetHScale, 1);
   assert.equal(heroAnimName(h), 'idle', 'back on feet → idle, no stale visual state');
 });
 
@@ -167,11 +167,11 @@ ok('exitCrouch clears state, slide flag and restores the standing hitbox togethe
   const h = makeHero();
   h.crouching = true;
   h.sliding = true;
-  h.box = h.crouchBox;
+  h._targetHScale = 0.6;
   h.exitCrouch();
   assert.equal(h.crouching, false);
   assert.equal(h.sliding, false);
-  assert.equal(h.box, h.standBox, 'hitbox restored atomically with the flags');
+  assert.equal(h._targetHScale, 1, 'height restored atomically with the flags');
 });
 
 console.log('heroAnimName §29 coverage — no stale visual state after transitions');

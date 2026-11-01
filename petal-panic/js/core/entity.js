@@ -70,6 +70,12 @@ export class Entity {
     }
     this._baseW = opts.baseW ?? (opts.w != null ? opts.w : null);
 
+    // Per-anim height scale (sheet field `hScale`, default 1). The ACTIVE
+    // anim's value multiplies the entity height: crouch sheets author 0.6 so
+    // the hitbox shrinks with the pose — pure data, no code-side box swaps.
+    // setAnim() applies it feet-planted (y adjusts so the bottom stays put).
+    this._targetHScale = 1;
+
     // --- Velocity -----------------------------------------------------------
     this.vx = opts.vx ?? 0;
     this.vy = opts.vy ?? 0;
@@ -123,8 +129,9 @@ export class Entity {
 
   // --- Size getters (single derivation, no stored duplication) ---------------
 
-  /** Height in world px. Always targetH × 48. */
-  get h() { return this._targetH * UNIT_PX; }
+  /** Height in world px. targetH × 48, multiplied by the ACTIVE anim's
+   *  hScale (per-anim box height — crouch sheets shrink it). */
+  get h() { return this._targetH * UNIT_PX * this._targetHScale; }
   set h(px) { this._targetH = px / UNIT_PX; }
 
   /**
@@ -260,6 +267,13 @@ export class Entity {
     const data = this.sprite.anims[name];
     if (!data) throw new Error(`setAnim: unknown anim "${name}"`);
     this._spriteAnim = name;
+    // Per-anim height scale: apply feet-planted so the box bottom (and the
+    // hero's feet) stay on the surface when an anim shrinks/grows the body.
+    const prevH = this.h;
+    const hs = Number(data.hScale);
+    this._targetHScale = Number.isFinite(hs) && hs > 0 ? hs : 1;
+    const newH = this.h;
+    if (newH !== prevH) this.y += prevH - newH;
     // §4: target height in Y-units → px. Scale fits the sheet's collision box
     // height onto targetH × UNIT_PX. Width is derived by the getter:
     //   - baseW set → fixed width (constructor-owned, art scales to fit)
@@ -318,6 +332,13 @@ export class Entity {
 
   /** Rewind active playback (pool respawn path — no reallocation). */
   resetAnim() {
+    this._spriteAnim = null;
+    this._player = null;
+    // Restore full height (hScale default) — feet stay planted.
+    const prevH = this.h;
+    this._targetHScale = 1;
+    const newH = this.h;
+    if (newH !== prevH) this.y += prevH - newH;
     if (this._player) this._player.reset();
   }
 
