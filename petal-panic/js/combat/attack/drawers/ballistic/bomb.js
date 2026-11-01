@@ -2,11 +2,14 @@
 
 /**
  * Bomb: orange circle + blinking fuse spark.
+ * Drawn at ~55% of the box: the sheet-owned bomb box is wider than the old
+ * 16px square, so this lands the visual close to the pre-sheet size while
+ * the hitbox stays honest.
  */
 export function bombDrawer(ctx, e) {
   const cx = e.x + e.w / 2;
   const cy = e.y + e.h / 2;
-  const r = e.w / 2;
+  const r = Math.min(e.w, e.h) / 2 * 0.55;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.fillStyle = '#f39c12';
