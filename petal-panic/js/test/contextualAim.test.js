@@ -347,7 +347,9 @@ ok('pipeline: airborne + Down + shoot fires straight down', () => {
   for (let i = 0; i < 90 && !p; i++) { U.update(DT); p = lastProjectile(); }
   releaseAllAndSync();
   assert.ok(p, 'a projectile should have spawned');
-  const angle = dirAngle(p.dir);
+  // Aim is verified from the actual velocity vector: the engine primitive
+  // overwrites vx/vy from radians and does not round back to an 8-way index.
+  const angle = Math.atan2(p.vy, p.vx);
   assert.ok(Math.abs(Math.cos(angle)) < 1e-9, `shot must be vertical, angle=${angle}`);
   assert.ok(Math.sin(angle) > 0, `shot must go down, sin=${Math.sin(angle)}`);
 });
@@ -361,7 +363,9 @@ ok('pipeline: lockMove + Down + shoot fires straight down with vx held at 0', ()
   for (let i = 0; i < 90 && !p; i++) { U.update(DT); p = lastProjectile(); }
   releaseAllAndSync();
   assert.ok(p, 'a projectile should have spawned');
-  const angle = dirAngle(p.dir);
+  // Aim is verified from the actual velocity vector: the engine primitive
+  // overwrites vx/vy from radians and does not round back to an 8-way index.
+  const angle = Math.atan2(p.vy, p.vx);
   assert.ok(Math.abs(Math.cos(angle)) < 1e-9, `shot must be vertical, angle=${angle}`);
   assert.ok(Math.sin(angle) > 0, `shot must go down, sin=${Math.sin(angle)}`);
   assert.equal(hero.vx, 0, `lockMove must hold vx at 0, got ${hero.vx}`);

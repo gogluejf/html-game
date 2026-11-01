@@ -100,3 +100,6 @@ registerEffect('sprite-color-pulse', spriteColorPulse);
 
 import { spriteOutline } from './spriteOutline.js';
 registerEffect('sprite-outline', spriteOutline);
+
+import { spriteBurst } from './spriteBurst.js';
+registerEffect('sprite-burst', spriteBurst);

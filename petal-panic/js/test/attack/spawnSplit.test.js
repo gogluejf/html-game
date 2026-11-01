@@ -59,7 +59,7 @@ ok('2π distribution produces a radial pattern', () => {
 });
 
 ok('macro materializes projectile children into live handles', () => {
-  const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:12,h:12,vx:0,vy:0,setLife(){},timers:new Map()};items.push(e);return e;}, updateAll(){} }; };
+  const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:12,h:12,vx:0,vy:0,orientSprite(){},setLife(){},timers:new Map()};items.push(e);return e;}, updateAll(){} }; };
   const ctx = makeContext(attacker(), { pools: { projectilePool: mk(), specialPool: mk() } });
   const h = invoke('spawnSplit', P, ctx); // default spawnType = projectile
   assert.equal(h.children.length, 3, 'raw vectors exposed');

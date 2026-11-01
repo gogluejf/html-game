@@ -65,9 +65,9 @@ ok('origin: explicit {x,y} centers the box on that point', () => {
   const ctx = makeContext(attacker(), { pools });
   const h = new AttackHandle('projectile');
   const ent = spawnProjectile({ speed: 100, direction: 0, ttl: 1, damage: 1, origin: { x: 500, y: 300 } }, ctx, h);
-  // Box is size 12 → top-left = point - 6.
-  assert.ok(Math.abs(ent.x - 494) < 1e-9, `x=${ent.x}`);
-  assert.ok(Math.abs(ent.y - 294) < 1e-9, `y=${ent.y}`);
+  // Box is centered on the origin using its FINAL size (explicit size wins).
+  assert.ok(Math.abs(ent.x - (500 - ent.w / 2)) < 1e-9, `x=${ent.x} w=${ent.w}`);
+  assert.ok(Math.abs(ent.y - (300 - ent.h / 2)) < 1e-9, `y=${ent.y} h=${ent.h}`);
 });
 
 ok('origin: named marker resolves via sprite-crop schema', () => {
@@ -89,8 +89,18 @@ ok('origin: missing marker falls back to attacker center', () => {
   const ctx = makeContext(a, { pools });
   const h = new AttackHandle('projectile');
   const ent = spawnProjectile({ speed: 100, direction: 0, ttl: 1, damage: 1, origin: 'nope' }, ctx, h);
-  assert.ok(Math.abs(ent.x - (116 - 6)) < 1e-9, `x=${ent.x}`);
-  assert.ok(Math.abs(ent.y - (116 - 6)) < 1e-9, `y=${ent.y}`);
+  assert.ok(Math.abs(ent.x - (116 - ent.w / 2)) < 1e-9, `x=${ent.x} w=${ent.w}`);
+  assert.ok(Math.abs(ent.y - (116 - ent.h / 2)) < 1e-9, `y=${ent.y} h=${ent.h}`);
+});
+
+ok('origin: natural box is centered on the point when no size is given', () => {
+  const pools = makePools();
+  const ctx = makeContext(attacker(), { pools });
+  const h = new AttackHandle('projectile');
+  const ent = spawnProjectile({ speed: 100, direction: 0, ttl: 1, damage: 1, origin: { x: 500, y: 300 }, size: null }, ctx, h);
+  // No explicit size → keep the entity's natural sheet box; still centered.
+  assert.ok(Math.abs(ent.x - (500 - ent.w / 2)) < 1e-9, `x=${ent.x} w=${ent.w}`);
+  assert.ok(Math.abs(ent.y - (300 - ent.h / 2)) < 1e-9, `y=${ent.y} h=${ent.h}`);
 });
 
 ok('lifecycle: contact death emits hit then complete', () => {

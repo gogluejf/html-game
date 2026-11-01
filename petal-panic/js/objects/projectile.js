@@ -44,6 +44,86 @@ export function aimRotation(vx, vy) {
 let projectileSpriteData = null;
 let projectileFrames = new Map(); // shared frame cache, filled at boot
 export function getProjectileSpriteData() { return projectileSpriteData; }
+
+// Special-weapon sheets (Step A): per-type shoot anim + bomb's explode anim.
+// Sheets are authored WITHOUT a collision box (unlike thorn), so each type
+// carries its own target height in units; the loader derives the px scale and
+// patches a synthetic collision box from the max frame bbox so the standard
+// uniformScale pipeline works unchanged. The COLLISION BOX stays the authored
+// square (meta.size, baseW-owned) — only the ART is sheet-driven; gameplay
+// boxes never change.
+const SPECIAL_SPRITE_TARGETS = Object.freeze({
+  saw: { anim: 'shoot', targetH: 40 / UNIT_PX_Y },
+  spread: { anim: 'shoot', targetH: 14 / UNIT_PX_Y },
+  bomb: { anim: 'shoot', targetH: 18 / UNIT_PX_Y },
+});
+const specialSpriteData = new Map();   // type → parsed sheet (anims patched)
+const specialSpriteFrames = new Map(); // type → frame image map
+export function getSpecialSpriteData(type) { return specialSpriteData.get(type) ?? null; }
+export function initSpecialSprites() {
+  if (typeof fetch === 'undefined') return Promise.resolve();
+  const jobs = [];
+  for (const [type, cfg] of Object.entries(SPECIAL_SPRITE_TARGETS)) {
+    if (specialSpriteData.has(type)) continue;
+    const base = new URL(`../../assets/projectiles/${type}/`, import.meta.url).href;
+    const load = base.startsWith('file:')
+      ? readFileJson(new URL(`${cfg.anim}_sheet.json`, base))
+      : fetch(base + `${cfg.anim}_sheet.json`).then((r) => r.json());
+    jobs.push(load
+      .then((sheet) => {
+        const data = parseSheet(sheet);
+        patchSpecialAnim(data.anims[cfg.anim], sheet.entities?.[0]?.frames, cfg.targetH * UNIT_PX_Y);
+        data.anims[cfg.anim]._frames = null; // filled by loadFrames below
+        specialSpriteData.set(type, data);
+        return loadFrames(data, base);
+      })
+      .then((imgs) => {
+        if (imgs && imgs.size > 0) {
+          specialSpriteFrames.set(type, imgs);
+          specialSpriteData.get(type).anims[cfg.anim]._frames = imgs;
+        }
+      })
+      .catch((e) => console.warn(`[sprite] ${type} sheet failed to load`, e)));
+  }
+  // Bomb detonation art: plays over the impact point on explosion (visual only).
+  const bbase = new URL('../../assets/projectiles/bomb/', import.meta.url).href;
+  const bload = bbase.startsWith('file:')
+    ? readFileJson(new URL('explode_sheet.json', bbase))
+    : fetch(bbase + 'explode_sheet.json').then((r) => r.json());
+  jobs.push(bload
+    .then((sheet) => {
+      const data = parseSheet(sheet);
+      patchSpecialAnim(data.anims.explode, sheet.entities?.[0]?.frames, 64);
+      data.anims.explode._frames = null;
+      specialSpriteData.set('bomb_explode', data);
+      return loadFrames(data, bbase);
+    })
+    .then((imgs) => {
+      if (imgs && imgs.size > 0) {
+        specialSpriteFrames.set('bomb_explode', imgs);
+        specialSpriteData.get('bomb_explode').anims.explode._frames = imgs;
+      }
+    })
+    .catch((e) => console.warn('[sprite] bomb explode sheet failed to load', e)));
+  return Promise.all(jobs);
+}
+/** Derive a synthetic collision box (max frame bbox) + center pivot + fps/mode
+ *  so an un-authored sheet flows through the standard scale/spriteFrame path.
+ *  `rawFrames` is the raw entity frames array from the sheet JSON (parseSheet
+ *  drops the crop bboxes — they are needed here to size the reference box). */
+function patchSpecialAnim(anim, rawFrames, targetHeightPx) {
+  if (!anim) throw new Error('patchSpecialAnim: missing anim');
+  let w = 0, h = 0;
+  for (const f of rawFrames ?? []) {
+    const bb = f.bbox ?? f.box;
+    if (bb) { w = Math.max(w, bb[2]); h = Math.max(h, bb[3]); }
+  }
+  if (!(w > 0 && h > 0)) throw new Error('patchSpecialAnim: no frame bboxes found');
+  anim.collisionBox = { x: 0, y: 0, w, h };
+  anim.pivot = { x: w / 2, y: h / 2 };
+  if (!anim.fps || anim.fps <= 0) anim.fps = 14;
+  if (!anim.mode) anim.mode = 'loop';
+}
 export function initProjectileSprites() {
   if (projectileSpriteData || typeof fetch === 'undefined') return Promise.resolve();
   const base = new URL('../../assets/projectiles/thorn/', import.meta.url).href;
@@ -280,6 +360,7 @@ export class Special extends Entity {
     super.initialize({
       x, y,
       targetH: (meta?.size ?? 16) / UNIT_PX_Y, // pure size model — square specials
+      baseW: meta?.size ?? 16,                  // box stays the authored square; art scales to fit
       layer: LAYER.PROJ_ALLY,
       debugColor: meta?.color ?? '#888',
       gravity: (meta?.gravity ?? 0) > 0 ? 1 : 0,
@@ -313,6 +394,21 @@ export class Special extends Entity {
     const angle = dirAngle(dir);
     this.vx = Math.cos(angle) * this.speed;
     this.vy = Math.sin(angle) * this.speed;
+    // Orient the art nose along velocity (same contract as Projectile).
+    this.orientSprite(this.vx, this.vy);
+
+    // Sprite (Step A): per-type sheet via the standard pipeline. `frames` is a
+    // LIVE accessor so boot-time image loading is picked up without rebuilds.
+    // Node / pre-boot: sprite data null → procedural fallback in draw().
+    if (type != null) {
+      const data = specialSpriteData.get(type);
+      const cfg = SPECIAL_SPRITE_TARGETS[type];
+      if (data?.anims[cfg.anim]) {
+        this.sprite = { anchor: 'center', anims: data.anims };
+        Object.defineProperty(this.sprite, 'frames', { get: () => specialSpriteFrames.get(type) });
+        try { this.setAnim(cfg.anim); } catch { /* procedural path stays active */ }
+      }
+    }
 
     // Drawer: optional render override. Contract: (ctx, entity) => void.
     // null = use default Special.draw (type-branched). Set per-shot to
@@ -355,6 +451,9 @@ export class Special extends Entity {
       this.drawer(ctx, this);
       return;
     }
+    // Sheet sprite (Step A): real art when frames are loaded; procedural
+    // fallback below keeps node/pre-boot rendering identical to before.
+    if (this.drawSprite(ctx)) return;
     const meta = specialById[this.type];
     const cx = this.x + this.w / 2;
     const cy = this.y + this.h / 2;

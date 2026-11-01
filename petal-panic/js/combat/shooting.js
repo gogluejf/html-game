@@ -4,8 +4,8 @@
 // index holding any id from SPECIAL_TYPES. N never fires — it only rotates the
 // selection (hero.rotateWeapon, called by the update step).
 
-import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS, getProjectileSpriteData, PROJECTILE_TARGET_H } from '../objects/projectile.js';
-import { UNIT_PX_Y } from '../consts.js';
+import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS, getSpecialSpriteData } from '../objects/projectile.js';
+import { fireManual } from '../effects/index.js';
 import { specialById, isSpecialType } from '../objects/specialWeapons.js';
 import { dirAngle } from '../core/vec.js';
 import { damage } from './damage.js';
@@ -50,36 +50,21 @@ function fireThorn(h, input, dt) {
   const angle = dirAngle(dir);
   const { x: cx, y: cy } = h.bodyCenter();
   // Muzzle point: 16px out along the aim from the body center (matches the old
-  // offset). The shot's BOX must be CENTERED on this muzzle point.
-  //
-  // The engine primitive's spawnPoint() treats `origin` as a box top-left and
-  // subtracts half of its default size (12) — so to land the real sheet-derived
-  // box centered on the muzzle we pass (centered muzzle + 6), which cancels that
-  // baked-in −6 exactly. This reproduces the legacy `spawn(...); p.x -= p.w/2;
-  // p.y -= p.h/2` re-centering with the real art box (not a forced square).
+  // offset). The primitive centers the shot's box on this exact point.
   const ox = Math.cos(angle) * 16;
   const oy = Math.sin(angle) * 16;
-  const data = getProjectileSpriteData();
-  const cb = data?.anims?.shoot?.collisionBox;
-  const scale = cb ? (PROJECTILE_TARGET_H * UNIT_PX_Y) / cb.h : 0;
-  const bw = cb ? cb.w * scale : 12;                 // sheet thorn width (≈37.6)
-  const bh = cb ? PROJECTILE_TARGET_H * UNIT_PX_Y : 12; // ≈15.4
-  const SPAWN_HALF = 6; // half of the primitive's default size (12)
 
   const shot = invoke('projectile', {
-    origin: { x: cx + ox - bw / 2 + SPAWN_HALF, y: cy + oy - bh / 2 + SPAWN_HALF },
+    origin: { x: cx + ox, y: cy + oy },
     direction: angle,      // radians (the engine expects radians, NOT an 8-way index)
     speed: 600,            // PROJECTILE_SPEED
     damage: 10,            // PROJECTILE_DAMAGE
     ttl: 2,                // PROJECTILE_LIFETIME
     team: 'ally',
     solidBehavior: 'phase',// thorns fly through terrain (old default)
-    size: null,            // keep the entity's natural sheet box (not a 12×12 square)
+    size: null,            // keep the entity's natural sheet box (not a forced square)
   }, makeHeroContext(h));
   if (!shot?.entity) return; // pool exhausted (soft cap) → skip, like the old `if (!p)`
-  // Restore the 8-way aim index on the entity (the engine spawns with dir=0 and
-  // overwrites velocity from radians; p.dir is read by collision/debug code).
-  shot.entity.dir = dir;
 
   record(h, { kind: 'projectile', subtype: 'thorn' });
 
@@ -169,6 +154,10 @@ export function explodeSpecial(s) {
   const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
 
   if (meta?.explode && s.radius > 0) {
+    // Detonation art (Step A): real explode sheet when loaded. The particle
+    // burst below still runs — it carries the shockwave + shake juice.
+    const ex = getSpecialSpriteData('bomb_explode')?.anims.explode;
+    if (ex?._frames?.size) fireManual({ type: 'sprite-burst', params: { x: cx, y: cy, size: 64, duration: 0.5, anim: ex } });
     for (const t of ctx.realEnemies) {
       if (!t.alive) continue;
       const dx = (t.x + t.w / 2) - cx;

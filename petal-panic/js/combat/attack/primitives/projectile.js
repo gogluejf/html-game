@@ -38,7 +38,8 @@ const DEFAULTS = Object.freeze({
   team: 'ally',          // ally | foe — who this shot hurts (engine-wide side
                          // vocabulary, same as hitbox/explosion). Maps to the
                          // legacy friendly flag / PROJ_ALLY|PROJ_FOE layer.
-  size: 12,              // box size (thorn = 12, specials ~16) — square default
+  size: null,            // box size px — null = keep the entity's natural box
+                         // (sheet-derived collision box set by initialize())
   width: null,           // explicit box width px (overrides size); null = size
   height: null,          // explicit box height px (overrides size); null = size
   drawer: null,          // (ctx, entity) => void — custom render override
@@ -47,19 +48,20 @@ const DEFAULTS = Object.freeze({
 /**
  * Resolve the spawn point for a shot.
  * Order: explicit {x,y} param → named marker on the attacker → attacker center.
- * @returns {{x:number,y:number}} top-left of the projectile box
+ * The resolved point is the CENTER of the projectile box.
+ * @returns {{x:number,y:number}} center of the projectile box
  */
-function spawnPoint(ctx, origin, size) {
+function spawnCenter(ctx, origin) {
   const a = ctx.attacker;
   if (origin && typeof origin === 'object' && 'x' in origin) {
-    return { x: origin.x - size / 2, y: origin.y - size / 2 };
+    return { x: origin.x, y: origin.y };
   }
   if (typeof origin === 'string') {
     const m = resolveMarker(ctx, origin);
-    if (m) return { x: m.x - size / 2, y: m.y - size / 2 };
+    if (m) return { x: m.x, y: m.y };
   }
   // Fallback: attacker center.
-  return { x: (a?.x ?? 0) + (a?.w ?? 0) / 2 - size / 2, y: (a?.y ?? 0) + (a?.h ?? 0) / 2 - size / 2 };
+  return { x: (a?.x ?? 0) + (a?.w ?? 0) / 2, y: (a?.y ?? 0) + (a?.h ?? 0) / 2 };
 }
 
 /**
@@ -72,14 +74,13 @@ function spawnPoint(ctx, origin, size) {
  * @param {import('../engine.js').AttackHandle} h handle to emit on
  */
 export function spawnProjectile(p, ctx, h) {
-  const pt = spawnPoint(ctx, p.origin, p.size ?? 12);
+  const center = spawnCenter(ctx, p.origin);
   const angle = typeof p.direction === 'number' ? p.direction : dirAngle(p.direction);
   const cos = Math.cos(angle), sin = Math.sin(angle);
 
-  // Straight-line path only: plain Projectile. The constructor takes an 8-way
-  // index; we spawn with dir 0 and overwrite velocity for exact angles.
-  // (Arcing bodies are the `ballistic` primitive's job — no gravity here.)
-  const ent = ctx.pools.projectilePool?.spawn(pt.x, pt.y, 0, p.team !== 'foe');
+  // Straight-line path only: plain Projectile. (Arcing bodies are the
+  // `ballistic` primitive's job — no gravity here.)
+  const ent = ctx.pools.projectilePool?.spawn(center.x, center.y, 0, p.team !== 'foe');
   if (ent) {
     ent.vx = cos * p.speed;
     ent.vy = sin * p.speed;
@@ -88,8 +89,10 @@ export function spawnProjectile(p, ctx, h) {
     ent.damage = p.damage;
     ent.life = p.ttl;
   }
+
   if (!ent) return null; // pool exhausted — caller skips this shot (soft cap)
 
+  // --- Box resolution -------------------------------------------------------
   // Explicit box dimensions (non-square shots). Everything downstream — AABB
   // collision, reflectVelocity, drawers reading e.w/e.h — works off these.
   // When NO explicit size is given (size/width/height all null), keep the
@@ -125,6 +128,11 @@ export function spawnProjectile(p, ctx, h) {
   // steps it. For Wave 1 the theater host calls stepProjectile() explicitly.
   ent._attackHit = false;
   ent._attackDone = false;
+  // Center the box on the resolved origin point using the FINAL box size
+  // (natural or explicit) — done after the box is settled so the real
+  // dimensions are what gets centered.
+  ent.x = center.x - ent.w / 2;
+  ent.y = center.y - ent.h / 2;
   return ent;
 }
 
@@ -186,10 +194,10 @@ registerPrimitive('projectile', {
       { key: 'direction', desc: 'radians (0 = right)' },
       { key: 'ttl', desc: 'seconds before auto-cull' },
       { key: 'damage', desc: 'damage on valid contact' },
-      { key: 'origin', desc: "marker label | {x,y} | null → attacker center" },
+      { key: 'origin', desc: "marker label | {x,y} | null → attacker center (box is CENTERED on this point)" },
       { key: 'solidBehavior', desc: 'phase | stop | reflect (existing flag)' },
       { key: 'team', desc: "ally | foe — who this shot hurts (maps to PROJ_ALLY/PROJ_FOE layer)" },
-      { key: 'size', desc: 'square box size px (default 12)' },
+      { key: 'size', desc: 'square box size px; null = keep the entity\'s natural sheet box' },
       { key: 'width', desc: 'explicit box width px (overrides size)' },
       { key: 'height', desc: 'explicit box height px (overrides size)' },
     ],

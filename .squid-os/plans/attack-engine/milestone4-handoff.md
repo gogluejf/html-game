@@ -75,9 +75,18 @@ records the aim index, forcing callers to patch `ent.dir` back.
    No `+6`, no `SPAWN_HALF`, no caller-side re-centering.
 
 ### Then simplify `fireThorn` (`shooting.js`)
-Becomes a clean call: pass muzzle CENTER + aim index + `size:null`. Delete the `SPAWN_HALF`
+Becomes a clean call: pass muzzle CENTER + `size:null`. Delete the `SPAWN_HALF`
 compensation, the manual `shot.entity.dir = dir`, and the `bw/bh` sheet math from the caller
 (it moves into the primitive). Re-run `spritePivot` + `contextualAim` (must stay green).
+
+**RESOLVED (2026-11-01):** executed with one deliberate deviation — NO `aimIndex` param.
+Rationale: every caller already passes radians (gameplay converts via `dirAngle`; all
+macros/theater compute angles), so an index param would be dead weight. The primitive's
+contract is now: **origin = box CENTER, centered using the FINAL box size (natural or
+explicit); direction = radians**. `ent.dir` stays at the pool default (0) for engine
+shots — verified nothing in gameplay reads it (collision uses velocity vectors; debug
+uses theater state, not entity fields). Tests that asserted on `p.dir` of engine shots
+now assert on the velocity vector instead.
 
 ⚠️ This touches shared code (theater + tests use the projectile primitive). Update any caller
 that relied on the old top-left/`dir=0` behavior. Keep behavior pixel-identical.
