@@ -362,6 +362,11 @@ export class Entity {
     const newH = this.h;
     if (newH !== prevH) this.y += prevH - newH;
     if (this._player) this._player.reset();
+    // Clear the stale scale: _spriteAnim is now null so spriteFrame() would
+    // skip it anyway, but a half-live state (anim set, scale from a dead
+    // sheet) must never reach drawSprite() — cb would be null and the frame
+    // math would throw. setAnim() recomputes it on the next attach.
+    this._spriteScale = null;
   }
 
   /**
@@ -431,7 +436,10 @@ export class Entity {
     const w = img.naturalWidth * fsx;
     const h = img.naturalHeight * fsy;
     const s = this._spriteScale;
+    // Defensive: no live scale (resetAnim cleared it, setAnim not yet run) or
+    // a sheet without an authored box → primitive fallback, never throw.
     const cb = data.collisionBox;
+    if (!(s > 0) || !cb) return null;
     // Sheet coordinates are top-left, y-down. Missing pivots default to the
     // collision center; the same transform serves sprites and all effects.
     const pivot = data.pivot ?? { x: cb.x + cb.w / 2, y: cb.y + cb.h / 2 };
