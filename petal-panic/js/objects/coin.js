@@ -19,6 +19,7 @@ import { isHighGraphic } from '../core/renderMode.js';
 import { LAYER, GRAVITY, MAX_FALL_SPEED, COIN_TTL, TTL_SPEED, UNIT_PX_Y } from '../consts.js';
 import { parseSheet } from '../core/spriteData.js';
 import { loadFrames } from '../core/frameLoader.js';
+import { blinkTransition } from '../effects/blinkTransition.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const MAX_COINS = 30;                 // hard cap on live coins (§17 perf param)
@@ -27,6 +28,19 @@ const BOUNCE_FRICTION = 0.8;                 // vx decay per bounce (rolling fri
 const SETTLE_VY_THRESHOLD = 20;              // |vy| below this → stop bouncing
 const ROLL_DECEL = 6;                        // px/s² horizontal decay while rolling on ground
 const SPIN_RATE = 4;                         // radians/sec visual spin
+// Explosion pop: base launch speed (px/s) and per-type variation. The random
+// angle is already wide (±150° from straight up); the per-type multiplier
+// spreads bronze/silver/gold slightly so a burst scatters instead of all
+// coins landing in the same spot. Bronze (lightest) pops farthest — it also
+// falls slowest, so it drifts; gold (heaviest) stays tight near the blast.
+const POP_SPEED_BASE = 230;                  // px/s upward component baseline
+const POP_SPEED_VARIATION = { bronze: 1.15, silver: 1.0, gold: 0.85 };
+// TTL blink-out: in the final fraction of the coin's life, a sprite-flash
+// effect takes over drawing and blinks the coin on/off with an ease-in
+// acceleration (slow → rapid). The acceleration IS the warning: the coin
+// reads as "about to expire" before it vanishes. Fired once per coin by
+// update() when ttlFrac drops below BLINK_WINDOW_FRAC.
+const BLINK_WINDOW_FRAC = 0.19;              // last ~1.5s of an 8s life
 
 /**
  * Coin type definitions (design §14). Values differ by score; weights differ
@@ -168,6 +182,25 @@ export class Coin extends Entity {
     // when no sprite data is loaded (primitive path).
     this.tickAnim(dt);
 
+    // TTL blink-out: fire the real blink-transition effect ONCE when the life
+    // enters the final window — same contract as skyDiveStomp's vanish. The
+    // coin itself alternates visible / nothing (fast→slow) and is gone at
+    // expiry; hold:false so done flips at the end instead of lingering.
+    if (!this._blinkFired && this.maxTtl > 0 && this.ttlFrac < BLINK_WINDOW_FRAC) {
+      this._blinkFired = true;
+      const remaining = this.ttlFrac * this.maxTtl;
+      this._blink = blinkTransition({
+        duration: Math.max(0.1, remaining),
+        speed: 6,                   // initial switches/s (matches stomp vanish)
+        endSpeed: 30,                // final switches/s (ease-in acceleration)
+        frameA: 'coin',              // source half-cycles → draw the normal coin
+        frameB: null,                // destination half-cycles → nothing
+        direction: 'forward',
+        hold: false,
+      }, this);
+    }
+    if (this._blink && !this._blink.done) this._blink.update(dt);
+
     // Rolling friction on the ground: once settled, decay vx toward rest.
     if (this.settled && this.vy === 0) {
       const decel = ROLL_DECEL * dt;
@@ -211,13 +244,28 @@ export class Coin extends Entity {
   }
 
   /**
-   * Draw the coin. High-graphic: sheet frame (per-type spin anim) + white
-   * outline, scaled by the sheet's authored collision box (§4). Primitive /
-   * pre-boot: spinning circle with rim highlight (unchanged fallback).
+   * Draw the coin. High-graphic: sheet frame (per-type spin anim), scaled by
+   * the sheet's authored collision box (§4). Primitive / pre-boot: spinning
+   * circle with rim highlight (unchanged fallback). While the TTL blink-out
+   * effect is active it OWNS the pixels (sprite-aware on/off flash) — the
+   * coin yields drawing to it, same contract as skyDiveStomp's vanish.
+   * 'coin' half-cycles draw the normal sprite; null half-cycles hide it —
+   * a clean blink-out, no tinting.
+   * ON half-cycles draw the normal sprite dimmed (alpha 0.35); OFF half-
+   * cycles hide it — a dark blink-out, no white silhouette.
    * @param {CanvasRenderingContext2D} ctx
    */
   draw(ctx) {
     if (!this.alive || this.collected) return;
+    if (this._blink && !this._blink.done) {
+      // 'coin' → the normal sprite path; null → hidden (blink-out half).
+      const frame = this._blink.frame();
+      if (frame === 'coin') {
+        if (isHighGraphic() && this.drawSprite(ctx)) return;
+        this.drawPrimitive(ctx);
+      }
+      return;
+    }
     if (isHighGraphic() && this.drawSprite(ctx)) return;
     this.drawPrimitive(ctx);
   }
@@ -231,10 +279,7 @@ export class Coin extends Entity {
     const def = COIN_TYPES[this.coinType];
 
     ctx.save();
-    if (this.maxTtl > 0) {
-      const frac = this.ttlFrac;
-      if (frac < 0.25) ctx.globalAlpha = frac / 0.25;
-    }
+    // (TTL fade was replaced by the blink-out effect owned in draw().)
     ctx.translate(cx, cy);
     ctx.scale(squash, 1);
     ctx.fillStyle = def.color;
@@ -300,8 +345,15 @@ export class CoinPool {
     if (!slot) return null;
     // Re-initialize the slot as a fresh Coin of the requested type.
     Object.assign(slot, new Coin(type, cx - half, cy - half));
-    slot.vx = vel.vx ?? (Math.random() - 0.5) * 120;
-    slot.vy = vel.vy ?? (-150 - Math.random() * 100); // pop upward by default
+    slot._blinkFired = false;   // fresh TTL → the blink-out window re-arms
+    slot._blink = null;
+    // Explosion pop: wide random angle (±150° from straight up) with a base
+    // speed scaled per type so bronze/silver/gold scatter slightly. Explicit
+    // vel.vx/vel.vy still win (callers can override for directed drops).
+    const speed = POP_SPEED_BASE * (POP_SPEED_VARIATION[type] ?? 1);
+    const angle = (-Math.PI / 2) + (Math.random() - 0.5) * (Math.PI * 5 / 6);
+    slot.vx = vel.vx ?? Math.cos(angle) * speed;
+    slot.vy = vel.vy ?? Math.sin(angle) * speed;
     slot.alive = true;
     slot.collected = false;
     slot.settled = false;
