@@ -19,7 +19,17 @@
       2,
       239,
       157
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -157
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f2.png",
@@ -30,7 +40,17 @@
       2,
       240,
       158
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -158
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f3.png",
@@ -41,7 +61,17 @@
       0,
       236,
       162
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -162
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f4.png",
@@ -52,10 +82,34 @@
       1,
       227,
       159
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -159
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/projectiles/bomb"
+   "frames_dir": "petal-panic/assets/projectiles/bomb",
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 112,
+    "y": -130,
+    "w": 121,
+    "h": 130
+   },
+   "pivot": {
+    "x": 115.5,
+    "y": -74.5
+   },
+   "markers": []
   }
  ],
  "updated": "2026-10-21"

@@ -84,11 +84,9 @@ function handleDebugToggle(e, source) {
     ctx.hero.dying = false;
     ctx.hero.deathTimer = 0;
     enableDebug(source);
-    // Debug is a tool, not a render mode: the game's default graphic mode
-    // (HIGH — sheet sprites) stays active. The F3 cycle switches it while
-    // debug is open and closing debug restores HIGH. Forcing PRIMITIVE here
-    // made the whole game look primitive until the player cycled F3 back.
-    setGraphicMode(GRAPHIC_MODE.HIGH);
+    // Debug default view = F3 mode 0 (primitive+collision): enter with the
+    // collision overlay visible, as before. Closing debug restores HIGH.
+    setGraphicMode(GRAPHIC_MODE.PRIMITIVE);
     tryTransition(S.PLAY);
     console.log(`[debug] ${source}: ${STATE_NAMES[s]} → PLAY`);
     return;
@@ -96,7 +94,7 @@ function handleDebugToggle(e, source) {
 
   if (!Debug.enabled) {
     enableDebug(source);
-    setGraphicMode(GRAPHIC_MODE.PRIMITIVE); // sync gate to default (primitive+collision)
+    setGraphicMode(GRAPHIC_MODE.PRIMITIVE); // debug default view = mode 0 (primitive+collision)
   } else {
     Debug.toggle();
     Debug.reset();
