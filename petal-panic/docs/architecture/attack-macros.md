@@ -347,7 +347,6 @@ This is a canonical macro: callers configure it but should not rebuild its seque
 - **timeToTarget** — per-missile delay between its marker appearing and impact
   (the player's survival window).
 - **descentSpeed** — per-missile falling speed.
-- **dropHeight** — per-missile spawn height above the impact point (px).
 - **damage** — per-missile contact + blast damage.
 - **team / blastTeam** — who the falling carriers / blasts hurt.
 - **size** — carrier box size (px).
@@ -1007,9 +1006,8 @@ detonate at the marked point.
   surface under `x`).
 - **timeToTarget** — seconds between marker appearance and impact. This is the
   player's survival window; the core game-feel knob.
-- **dropHeight** — how far above the marker the missile becomes visible before
-  falling (visual entry).
-- **fallSpeed** — descent speed (px/s).
+- **fallSpeed** — descent speed (px/s). The missile always enters from the top
+  of the view; fall time derives from impact depth ÷ fallSpeed.
 - **damage** — carrier contact + blast damage (passed to the payload macro).
 - **team / blastTeam** — who the carrier/blast hurts.
 - **markerStyle** — optional Surface Target Marker effect override.

@@ -26,6 +26,7 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { fireDeclared } from '../../../effects/index.js';
+import { VIEW_H } from '../../../core/view.js';
 // Ensure payload macros are registered (otherwise only pulled in by the theater).
 import './shockwaveProjectile.js';
 import './napalm.js';
@@ -45,7 +46,6 @@ const DEFAULTS = Object.freeze({
   x: 0,               // impact x (world) — marker AND drop share it
   groundY: null,      // fallback impact y; null → resolve from ctx (surface column)
   timeToTarget: 1.0,  // s between marker appearance and impact (the survival window)
-  dropHeight: 260,    // px above the impact point where the missile becomes visible
   fallSpeed: 500,     // px/s descent speed
   damage: 30,         // carrier contact + blast damage (one value, like explosiveProjectile)
   team: 'ally',       // who the falling carrier hurts
@@ -108,7 +108,6 @@ defineMacro('skyMissile', {
       { key: 'x', desc: 'impact x (world) — marker and drop share it' },
       { key: 'groundY', desc: 'fallback impact y; null → highest surface in the drop column' },
       { key: 'timeToTarget', desc: 'seconds between marker and impact (survival window)' },
-      { key: 'dropHeight', desc: 'px above the impact where the missile appears' },
       { key: 'fallSpeed', desc: 'descent speed (px/s)' },
       { key: 'damage', desc: 'contact + blast damage' },
       { key: 'team', desc: 'who the falling carrier hurts' },
@@ -126,7 +125,9 @@ defineMacro('skyMissile', {
     const p = { ...DEFAULTS, ...params };
     const h = new AttackHandle('skyMissile', null, declaredEffectsOf('skyMissile'));
     const pt = resolveImpactPoint(p, ctx);
-    const spawnY = pt.y - p.dropHeight;
+    // The missile ALWAYS enters from the top of the view — that is what "sky"
+    // means. Spawn just above the visible area; fallSpeed alone sets fall time.
+    const spawnY = -p.size;
 
     h.state = {
       phase: 'warning',
@@ -139,9 +140,9 @@ defineMacro('skyMissile', {
 
     const launchMissile = () => {
       // Strictly vertical: direction π/2 = straight down (radians, 0 = right).
-      // ttl covers the full fall from spawn to the impact line (+ small margin
-      // so the surface contact resolves first, not the fuse).
-      const fallTtl = (p.dropHeight / Math.max(1, p.fallSpeed)) + 0.25;
+      // ttl covers the full fall from the view top to the impact line (+ small
+      // margin so the surface contact resolves first, not the fuse).
+      const fallTtl = ((pt.y - spawnY) / Math.max(1, p.fallSpeed)) + 0.25;
       // Payload choice: explosion (default) | shockwave | napalm. All three
       // share the same carrier surface (origin/direction/speed/ttl/team), so
       // one call site works. Each payload reads its OWN size key from `blast`.

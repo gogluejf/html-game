@@ -49,7 +49,6 @@ const DEFAULTS = Object.freeze({
   fallDelay: 0.5,          // tension beat: silence between last rocket gone and first marker
   timeToTarget: 0.9,    // per-missile marker → impact window (s)
   descentSpeed: 500,      // per-missile fall speed (px/s)
-  dropHeight: 260,        // per-missile spawn height above the impact (px)
   damage: 30,             // per-missile contact + blast damage
   team: 'foe',            // who the falling carriers hurt
   blastTeam: 'neutral',   // who the blasts hurt
@@ -194,7 +193,6 @@ defineMacro('missileRain', {
       const m = invoke('skyMissile', {
         x: xs[posIdx],
         timeToTarget: p.timeToTarget,
-        dropHeight: p.dropHeight,
         fallSpeed: p.descentSpeed,
         damage: p.damage,
         team: p.team,
