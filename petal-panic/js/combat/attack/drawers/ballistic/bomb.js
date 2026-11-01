@@ -2,14 +2,14 @@
 
 /**
  * Bomb: orange circle + blinking fuse spark.
- * Drawn at ~55% of the box: the sheet-owned bomb box is wider than the old
- * 16px square, so this lands the visual close to the pre-sheet size while
- * the hitbox stays honest.
+ * The body FILLS the collision box (diameter = min(w,h)) and the fuse spark
+ * sits just OUTSIDE the top edge — the primitive reads 1:1 with the debug
+ * box, a touch bigger overall, like the sheet art does in high mode.
  */
 export function bombDrawer(ctx, e) {
   const cx = e.x + e.w / 2;
   const cy = e.y + e.h / 2;
-  const r = Math.min(e.w, e.h) / 2 * 0.55;
+  const r = Math.min(e.w, e.h) / 2;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.fillStyle = '#f39c12';
