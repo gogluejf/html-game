@@ -6,7 +6,6 @@
 import { invoke } from '../engine.js';
 import { defineMacro } from '../defineMacro.js';
 import { createCarrierHandle } from '../carrierMacro.js';
-import { bombDrawer } from '../drawers/index.js';
 
 const DEFAULTS = Object.freeze({
   speed: 500,
@@ -78,8 +77,6 @@ defineMacro('explosiveBomb', {
       ttl: p.ttl,
       damage: p.damage,
       radius: p.radius,
-      origin: p.origin,
-      drawer: bombDrawer,
     }, ctx);
 
     if (!carrier?.entity) {

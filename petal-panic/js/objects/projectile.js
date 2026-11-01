@@ -457,11 +457,12 @@ export class Special extends Entity {
       this.drawer(ctx, this);
       return;
     }
-    // Sheet sprite (Step A): real art when frames are loaded; procedural
-    // fallback below keeps node/pre-boot rendering identical to before.
-    if (this.drawSprite(ctx)) {
+    // Sheet sprite (Step A): real art ONLY in high-graphic mode — primitive
+    // mode must keep the procedural shapes (same contract as thorn's rect
+    // fallback). Pre-boot (frames not loaded) also falls through to procedural.
+    if (isHighGraphic() && this.drawSprite(ctx)) {
       // White outline on top of the sprite (high-graphic only, like thorn).
-      if (isHighGraphic() && this._outline && !this._outline.done) this._outline.render(ctx);
+      if (this._outline && !this._outline.done) this._outline.render(ctx);
       return;
     }
     const meta = specialById[this.type];

@@ -102,8 +102,11 @@ export function spawnBomb(p, ctx, h = null) {
   // the entity so stepBombTerrain() can recompute each rebound from a fixed
   // height instead of decaying impact velocity.
   ent.bounceHeight = p.bounceHeight ?? null;
-  // Drawer: explicit param wins; default to rockDrawer (generic ballistic look).
-  ent.drawer = p.drawer ?? rockDrawer;
+  // Drawer: EXPLICIT param only. No default — when the caller doesn't pass
+  // one, the entity draws itself (Special's dual-mode contract: sheet in high
+  // graphic mode, procedural fallback otherwise). Forcing a drawer here would
+  // hide the entity's own art (e.g. the bomb sheet) in BOTH modes.
+  if (p.drawer) ent.drawer = p.drawer;
   ent._attackId = 'ballistic';
   ent._attackDone = false;
   ent._attackHit = false;

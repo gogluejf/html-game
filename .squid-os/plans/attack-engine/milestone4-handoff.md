@@ -180,7 +180,66 @@ for t in js/test/attack/*.test.js; do node "$t"; done
 - Anti-spin debugging: one debug run per hypothesis, max 3 iterations per bug, state the
   hypothesis first, never repeat a near-identical tool call.
 
+## Session log (2026-11-01) — Steps 0 + A DONE, visual contracts agreed
+
+### Committed
+- `8ad2243c` — **Step 0 + A:** clean projectile spawn contract (origin = box CENTER,
+  centered on final box size; size default null) + special weapon sheets wired
+  (`initSpecialSprites`: saw/spread/bomb shoot + bomb explode; synthetic collisionBox
+  from max frame bbox; baseW keeps authored square boxes) + `sprite-burst` effect.
+- `5ec7becd` — frameLoader URL-keyed cache (mobile black-screen: bare-filename key
+  collided across thorn/saw/spread shoot_fN.png → lost onload → boot hang, zero errors)
+  + Special.draw renders outline + 4px outlines thorn/saw/spread + spread pellet re-aim.
+
+### Uncommitted at context limit (verify + commit as one batch)
+1. `ballistic.js` — no forced `rockDrawer` default; drawer only when explicitly passed
+2. `explosiveBomb.js` — dropped explicit `bombDrawer` (entity draws itself now)
+3. `explosion.js` — `sprite-burst` declared in meta.effects + fired at blast center
+   (THE home of the explode sheet art — engine detonations only)
+4. `projectile.js` — Special sheet drawing gated on `isHighGraphic()` (primitive mode
+   keeps procedural shapes)
+5. `shooting.js` — dead sprite-burst code removed from `explodeSpecial` (unreachable
+   for engine bombs: `_attackId === 'ballistic'` returns early)
+
+### Visual identity contract (AGREED — do not drift)
+- **ONE look-owner per entity type.** `Special('spread')` owns BOTH modes:
+  high = sheet + 4px outline, primitive = procedural disc. Thorn same pattern.
+- **Macros/primitives are look-blind.** Pattern data only (count, fan, speed,
+  `specialType`). No drawers in standard weapons.
+- **`drawer` param = deliberate per-shot override ONLY** (theater experiments,
+  future weird shots). Never a default. `spreadDrawer` in the spreadShot macro is
+  legacy to delete once gameplay uses real Special entities.
+- **Dual-mode interface already exists in `Entity`:** `drawSprite()` (high, sheet
+  data) + `drawPrimitive()` (low, named method). Cleanup TODO: move Special's inline
+  procedural block into `drawPrimitive()` so low-res art has a named, greppable home
+  (protects it from future agents deleting "dead" code). Same for Projectile.
+- **Explode sheet art belongs to the EXPLOSION, not the bomb entity:**
+  `explosion` primitive fires `sprite-burst` (declared effect). `explodeSpecial`
+  (legacy path) no longer carries VFX art.
+
+### Step B design (agreed, NOT yet coded)
+Goal: gameplay saw + spread spawn through the engine, real Special entities, both modes.
+1. `projectile` primitive gains `specialType` param → routes to `specialPool.spawn(x,y,dir,type)`
+   (data routing only; absent = today's Projectile/thorn path)
+2. `fireSpecial`: saw = 1 invoke; spread = N invokes fanned (angles from meta.spread);
+   bomb stays on explosiveBomb macro (already engine)
+3. Delete `spreadDrawer` from spreadShot macro after switch (class draws its own
+   primitive mode)
+4. Theater + gameplay share the same macro/entities → no drift possible
+~40 lines. Exit: all 4 weapons spawn via engine; velocity/damage/ttl/box identical.
+
+### Remaining after B
+- **Step C** — regression gate (full suite green vs baseline list below; theater check)
+- **Step D** — HIGH RISK: damage/hit routing off legacy `collisionHandlers.js`
+  PROJ_ALLY branch + `explodeSpecial` damage loop → engine hit/detonate events;
+  delete legacy paths last. Consider fresh session for this one.
+
+### Test baseline (pre-existing failures — do NOT chase)
+`bombGameplay`, `bossRushScreen`, `menuRunFlow`, `pickerRide`, `takeoffPicker`,
+`bombHost`, `fireArea`, `integration` (+ flaky `lifecycle` — passes on rerun).
+Green-and-relevant: `projectile` (14), `contextualAim` (16), `spritePivot` (3),
+`explosion`, `bomb`, `compositeExplosion`, `homingMissile`, `predictiveShot`,
+`spawnSplit`, `spreadShot`.
+
 ## Suggested next step (new session)
-**Step 0** — fix the projectile primitive spawn contract (direction-as-index + real-box
-centering), simplify `fireThorn`, keep spritePivot + contextualAim green. Then Step A
-(wire saw/spread/bomb sprites).
+Commit the uncommitted batch (user-verified), then **Step B** per the design above.

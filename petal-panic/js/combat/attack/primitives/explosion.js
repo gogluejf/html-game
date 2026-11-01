@@ -17,6 +17,7 @@ import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { resolveExplosion, BARREL_EXPLOSION_KNOCKBACK } from '../../explosion.js';
 import { fireDeclared } from '../../../effects/index.js';
+import { getSpecialSpriteData } from '../../../objects/projectile.js';
 import { VIEW_W, VIEW_H } from '../../../core/view.js';
 
 // Declared effect types for THIS registration (single source of truth:
@@ -80,6 +81,7 @@ registerPrimitive('explosion', {
     name: 'Explosion',
     effects: [
       { type: 'explosion', desc: 'blast particle burst at the center' },
+      { type: 'sprite-burst', desc: 'bomb explode sheet art at the blast center (when loaded)' },
       { type: 'screen-flash', desc: 'white flash on detonation' },
       { type: 'camera-shake', desc: 'shake on detonation' },
     ],
@@ -108,6 +110,10 @@ registerPrimitive('explosion', {
     // parent's juice isn't doubled). All three route through the guarded
     // declared-fire path — each type is declared in meta.effects above.
     if (params.burst !== false) fireDeclared({ type: 'explosion', params: { x: params.x, y: params.y, radius: params.radius } }, h.declaredEffectTypes());
+    // Detonation sheet art (bomb explode anim): plays at the blast center when
+    // the asset is loaded. Declared above so the guard + theater panel see it.
+    const ex = getSpecialSpriteData('bomb_explode')?.anims.explode;
+    if (ex?._frames?.size) fireDeclared({ type: 'sprite-burst', params: { x: params.x, y: params.y, size: 64, duration: 0.5, anim: ex } }, h.declaredEffectTypes());
     if (params.screenFlash !== false) fireDeclared({ type: 'screen-flash', params: { strength: 1, viewW: VIEW_W, viewH: VIEW_H } }, h.declaredEffectTypes());
     if (params.shake !== false) fireDeclared({ type: 'camera-shake', params: { intensity: 4 } }, h.declaredEffectTypes());
 

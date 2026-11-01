@@ -4,8 +4,7 @@
 // index holding any id from SPECIAL_TYPES. N never fires — it only rotates the
 // selection (hero.rotateWeapon, called by the update step).
 
-import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS, getSpecialSpriteData } from '../objects/projectile.js';
-import { fireManual } from '../effects/index.js';
+import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS } from '../objects/projectile.js';
 import { specialById, isSpecialType } from '../objects/specialWeapons.js';
 import { dirAngle } from '../core/vec.js';
 import { damage } from './damage.js';
@@ -156,10 +155,6 @@ export function explodeSpecial(s) {
   const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
 
   if (meta?.explode && s.radius > 0) {
-    // Detonation art (Step A): real explode sheet when loaded. The particle
-    // burst below still runs — it carries the shockwave + shake juice.
-    const ex = getSpecialSpriteData('bomb_explode')?.anims.explode;
-    if (ex?._frames?.size) fireManual({ type: 'sprite-burst', params: { x: cx, y: cy, size: 64, duration: 0.5, anim: ex } });
     for (const t of ctx.realEnemies) {
       if (!t.alive) continue;
       const dx = (t.x + t.w / 2) - cx;
