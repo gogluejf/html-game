@@ -791,3 +791,58 @@ const pulse = spriteColorPulse({
 
 **Checkpoint usage:** entry/exit flags fire a yellow pulse
 (`transparent → #ffe600 → transparent`, 0.5s, easeInOut) on first trigger.
+
+## 30. Sprite Outline (`sprite-outline`)
+
+Solid-color contour around a sprite silhouette — a STATE effect (draws every
+frame while active; call `complete()` to remove). Selection highlights, target
+indicators, "currently actionable" emphasis.
+
+Silhouette mode: when the carrier exposes `spriteFrame()`, the tinted frame is
+drawn 4 times offset by `thickness` px in each cardinal direction, then the
+real frame on top (tintedImage pipeline, same as Sprite Flash). Carriers
+without a sheet frame fall back to a `worldBox()` stroke.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `color` | `#000000` | Outline CSS color |
+| `thickness` | `2` | Contour width (px) |
+| `opacity` | `1.0` | Outline alpha 0..1 |
+
+**Current usage:** thorn/saw/spread projectiles get a white 4px outline in
+high-graphic mode; checkpoint objects get a black 3px outline.
+
+## 31. Sprite Burst (`sprite-burst`)
+
+Plays a sheet anim's PNG frames in sequence at a fixed world point — the bomb
+detonation art. Time-based one-shot: frame advance follows the anim's fps; the
+effect completes exactly at `duration`. Alpha fades linearly to 0 over the
+lifetime. Scale fits the anim's reference box height onto `size` px (the §4
+uniform scaling contract, same as entity sprites).
+
+**Dual-mode (same contract as entity sprites — gated on `isHighGraphic()`,
+NOT on whether the asset happens to be loaded):** in high-graphic mode the
+sheet frames play; in primitive-graphic mode the procedural `fallback` drawer
+draws instead. If the sheet isn't loaded yet in high mode, it falls through to
+the fallback too (pre-boot). The caller owns both looks — it passes the sheet
+AND the fallback; the effect just renders whichever input the mode selects.
+Without frames and without a fallback the factory throws.
+
+The effect is art-only (no damage, no gameplay mutation).
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `x`, `y` | `0` | Burst center (world space) |
+| `size` | `64` | Rendered height (px) |
+| `duration` | `0.5` | Lifetime (s); plays until the anim ends or this elapses |
+| `anim` | none | AnimData from `parseSheet()` (`{ fps, mode, frames, collisionBox, pivot }` + `_frames` image map) |
+| `fallback` | none | Procedural drawer `(ctx, { x, y, size, t, duration, progress }) => void` for primitive mode; called every frame when no sheet frames are loaded |
+
+At least one of `anim` (with frames) or `fallback` is required — the factory
+throws otherwise.
+
+**Current usage:** the `explosion` primitive fires it at the blast center with
+the bomb `explode_sheet.json` anim (high-graphic) plus its own procedural
+flash-core + shock-ring drawer as `fallback` (primitive mode). Declared in the
+primitive's `meta.effects`; suppressed per-call via the declared-fire guard in
+composed set pieces so VFX isn't doubled.
