@@ -1,10 +1,10 @@
 {
  "file": "petal-panic/assets/projectiles/explosive/fly_sheet.png",
- "size": "2576x170",
+ "size": "1853x170",
  "rows": 1,
- "cols": 7,
+ "cols": 6,
  "kind": "animation",
- "description": "explosive fly (7 frames)",
+ "description": "explosive fly (6 frames)",
  "entities": [
   {
    "name": "explosive",
@@ -16,80 +16,143 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      67,
+      0,
       35,
       234,
       100
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -100
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "fly_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
-      428,
+      234,
       29,
       247,
       111
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -96
+     },
+     "scale": {
+      "sx": 0.9352226720647774,
+      "sy": 0.8648648648648649
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "fly_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
-      765,
+      481,
       10,
       309,
       150
-     ]
+     ],
+     "offset": {
+      "x": -25,
+      "y": -110
+     },
+     "scale": {
+      "sx": 0.850659791909241,
+      "sy": 0.7676263626635869
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "fly_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
-      1105,
+      790,
       11,
       366,
       148
-     ]
+     ],
+     "offset": {
+      "x": -55,
+      "y": -112
+     },
+     "scale": {
+      "sx": 0.7772416301472059,
+      "sy": 0.7542408087282072
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "fly_f5.png",
      "row": 0,
      "col": 4,
      "bbox": [
-      1472,
+      1156,
       0,
       368,
       170
-     ]
+     ],
+     "offset": {
+      "x": -68,
+      "y": -119
+     },
+     "scale": {
+      "sx": 0.8122867780052623,
+      "sy": 0.7235737295797007
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "fly_f6.png",
      "row": 0,
      "col": 5,
      "bbox": [
-      1843,
-      6,
-      361,
-      158
-     ]
-    },
-    {
-     "file": "fly_f7.png",
-     "row": 0,
-     "col": 6,
-     "bbox": [
-      2227,
+      1524,
       1,
       329,
       168
-     ]
+     ],
+     "offset": {
+      "x": -75,
+      "y": -119
+     },
+     "scale": {
+      "sx": 0.9450729034294274,
+      "sy": 0.7683991184691271
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-   ]
+   ],
+   "fps": 6,
+   "playback": "loop",
+   "direction": "ping_pong",
+   "collision": {
+    "x": 106,
+    "y": -80,
+    "w": 106,
+    "h": 61
+   },
+   "pivot": {
+    "x": 113,
+    "y": -46
+   },
+   "markers": []
   }
  ],
- "updated": "2026-10-22"
+ "updated": "2026-11-01"
 }
