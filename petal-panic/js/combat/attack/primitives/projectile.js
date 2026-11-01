@@ -84,13 +84,12 @@ export function spawnProjectile(p, ctx, h) {
 
   // Special-weapon routing (Step B): specialType spawns a REAL Special entity
   // from the special pool — the class owns look (sheet/procedural dual-mode)
-  // and its authored square box. Data-only: velocity/damage/ttl below apply
-  // to both paths.
+  // and its sheet-owned box. Data-only: velocity/damage/ttl below apply to
+  // both paths.
   if (p.specialType != null) {
     const meta = specialById[p.specialType];
     if (!meta) throw new Error(`projectile: unknown specialType '${p.specialType}'`);
-    const half = meta.size / 2;
-    const ent = ctx.pools.specialPool?.spawn(center.x - half, center.y - half, 0, p.specialType);
+    const ent = ctx.pools.specialPool?.spawn(center.x, center.y, 0, p.specialType);
     if (!ent) return null; // pool exhausted — caller skips this shot (soft cap)
     ent.vx = cos * p.speed;
     ent.vy = sin * p.speed;
@@ -104,8 +103,8 @@ export function spawnProjectile(p, ctx, h) {
     ent._attackId = 'projectile';
     ent._attackHit = false;
     ent._attackDone = false;
-    // Center the box on the resolved origin point using the entity's authored
-    // square box (Special boxes are baseW-owned — never sheet-driven).
+    // Center the box on the resolved origin point using the FINAL sheet-owned
+    // box (setAnim already ran inside initialize when the sheet is loaded).
     ent.x = center.x - ent.w / 2;
     ent.y = center.y - ent.h / 2;
     ctx.collisionWorld?.add(ent);

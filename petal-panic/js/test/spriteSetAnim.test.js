@@ -52,12 +52,25 @@ test('sheet-owned: w/h derive from sheet box × §4 scale after setAnim()', () =
   assert.ok(Math.abs(e.w - cb.w * s) < 1e-9, `w = ${e.w} (want ${cb.w * s})`);
 });
 
-test('constructor-owned (baseW): w/h fixed regardless of setAnim()', () => {
+test('constructor-owned (baseW): w/h fixed until setAnim() hands over to the sheet', () => {
   const data = parseSheet(sheet('objects/barrel/wooden_sheet.json'));
-  const e = makeFixedEntity(0, 0, 96, 3.0, data.anims);
-  e.setAnim('wooden');
-  assert.equal(e.w, 96, 'width fixed at baseW');
+  const e = makeFixedEntity(0, 0, 96, 3.0, null); // no sprite at construction → baseW legal
+  assert.equal(e.w, 96, 'width fixed at baseW before any anim');
   assert.equal(e.h, 144, 'height = targetH × 48');
+  // Attaching a sprite LATE + setAnim(): the sheet takes over width (§4) —
+  // the constructor square must not survive the handover.
+  e.sprite = { anchor: 'bottom-center', targetH: 3.0, anims: data.anims, frames: new Map() };
+  e.setAnim('wooden');
+  const cb = data.anims.wooden.collisionBox;
+  const s = 144 / cb.h;
+  assert.ok(Math.abs(e.w - cb.w * s) < 1e-9, `w follows the sheet after setAnim (got ${e.w})`);
+});
+
+test('baseW + sprite at CONSTRUCTION throws (size-owner conflict guard)', () => {
+  assert.throws(
+    () => new Entity({ x: 0, y: 0, baseW: 96, targetH: 1, sprite: { anchor: 'center', anims: {}, frames: new Map() } }),
+    /baseW \+ sprite are mutually exclusive/,
+  );
 });
 
 test('setAnim without a collision box throws (§4 requires a box for scale)', () => {

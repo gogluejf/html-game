@@ -215,7 +215,9 @@ export function getFloorEntity(s, level) {
   let e = floorEntities.get(level);
   if (!e || e.w !== s.w || e.x !== s.x || e.y !== s.y) {
     e = new Entity({ x: s.x, y: s.y, targetH: ZONE_FLOOR_UNITS, baseW: s.w, debugColor: '#8f6' });
-    e.sprite = { anchor: 'bottom-center', tile: true, anims: {}, frames: new Map() };
+    // boxFromSheet:false — the macro grid owns this floor's width (tile repeat
+    // must span the full zone); setAnim() keeps baseW for these entities.
+    e.sprite = { anchor: 'bottom-center', tile: true, anims: {}, frames: new Map(), boxFromSheet: false };
     floorEntities.set(level, e);
   }
   // Wire sprite data once the shared fg asset has settled (fire-and-forget;

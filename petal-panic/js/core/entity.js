@@ -76,6 +76,21 @@ export class Entity {
     // setAnim() applies it feet-planted (y adjusts so the bottom stays put).
     this._targetHScale = 1;
 
+    // Size-owner guard (sprites.md contract): a sprite-based entity must be
+    // SHEET-OWNED — its width comes from the active anim's collision box via
+    // targetH. Passing baseW while a sprite is attached at CONSTRUCTION
+    // silently freezes the hitbox at a constructor square while the art
+    // scales to the sheet: the exact "square box under a rectangular rocket"
+    // conflict. Refuse loudly. (Late attachment — e.sprite set after
+    // construction, then setAnim() — is legal: setAnim() hands over ownership
+    // by clearing _baseW.)
+    if (this._baseW != null && opts.sprite) {
+      throw new Error(
+        'Entity: baseW + sprite are mutually exclusive — sprite-based entities ' +
+        'are sheet-owned (width = active anim collisionBox × scale). Drop baseW.'
+      );
+    }
+
     // --- Velocity -----------------------------------------------------------
     this.vx = opts.vx ?? 0;
     this.vy = opts.vy ?? 0;
@@ -266,6 +281,13 @@ export class Entity {
     if (!this.sprite?.anims) return;
     const data = this.sprite.anims[name];
     if (!data) throw new Error(`setAnim: unknown anim "${name}"`);
+    // Size-owner handover (sprites.md contract): the moment a sheet anim is
+    // active, width is SHEET-OWNED — any constructor baseW is stale and must
+    // not keep pinning the hitbox to a square while the art follows the sheet.
+    // EXCEPTION: boxFromSheet === false (tile floors / macro-grid entities)
+    // are constructor-owned BY DESIGN — the macro grid owns their width and
+    // the sheet only provides scale + repeat art.
+    if (this.sprite.boxFromSheet !== false) this._baseW = null;
     this._spriteAnim = name;
     // Per-anim height scale: apply feet-planted so the box bottom (and the
     // hero's feet) stay on the surface when an anim shrinks/grows the body.

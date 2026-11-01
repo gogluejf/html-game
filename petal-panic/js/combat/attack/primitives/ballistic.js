@@ -85,10 +85,10 @@ export function spawnBomb(p, ctx, h = null) {
   // drawer (visual-identity contract: one look-owner per entity type).
   const ent = ctx.pools.specialPool?.spawn(ox - size / 2, oy - size / 2, 0, p.weaponType ?? null);
   if (!ent) return null;
-  // Typeless Special defaults its box to 16 — restore the 18px carrier box so
-  // spawn centering and collision match the bomb-sized physics body. A
-  // weapon-typed carrier keeps its OWN authored square box (meta.size) — the
-  // sheet art scales to fit it via the standard §4 pipeline.
+  // Typeless Special defaults its box to the natural square (targetH × 48) —
+  // restore the 18px carrier box so spawn centering and collision match the
+  // bomb-sized physics body. A weapon-typed carrier is SHEET-OWNED: its box
+  // follows the active anim's collision box via setAnim() (§4 pipeline).
   if (!p.weaponType) {
     ent.w = size;
     ent.h = size;

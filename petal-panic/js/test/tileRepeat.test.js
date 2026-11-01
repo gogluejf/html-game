@@ -40,7 +40,9 @@ test('tile=true: scale comes from the collision box, not the raw image height', 
 
 test('tile=true: a wide floor entity repeats the frame to cover its full width', () => {
   const data = parseSheet(fgSheet());
-  const e = new Entity({ x: 0, y: 432, w: 5000, h: 48 }); // ~65 units wide floor
+  // Floor is CONSTRUCTOR-OWNED width (macro grid) + tile repeat: boxFromSheet
+  // === false marks the legal opt-out — setAnim() keeps baseW for these.
+  const e = new Entity({ x: 0, y: 432, w: 5000, h: 48 });
   e.sprite = { anchor: 'bottom-center', tile: true, anims: data.anims, frames: new Map([['fg_f1.png', FAKE_IMG]]), boxFromSheet: false }; // floor rect is macro-owned
   e.setAnim('fg');
 
