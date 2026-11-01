@@ -17,6 +17,7 @@ import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { resolveExplosion, BARREL_EXPLOSION_KNOCKBACK } from '../../explosion.js';
 import { fireDeclared } from '../../../effects/index.js';
+import { blastFallbackDrawer } from '../../../effects/spriteBurst.js';
 import { getSpecialSpriteData } from '../../../objects/projectile.js';
 import { VIEW_W, VIEW_H } from '../../../core/view.js';
 
@@ -27,36 +28,6 @@ import { VIEW_W, VIEW_H } from '../../../core/view.js';
 function declaredEffectsOf(id) {
   const def = getPrimitive(id) ?? getMacro(id);
   return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
-}
-
-/**
- * Primitive-mode look for the detonation burst (sprite-burst `fallback`).
- * Expanding flash core + shock ring, pure geometry — the "blast" read without
- * any sheet asset. Called by the effect as (ctx, { x, y, size, t, duration,
- * progress }); owns its own save/restore.
- */
-function blastFallbackDrawer(ctx, s) {
-  if (typeof ctx.arc !== 'function') return; // headless ctx stubs
-  const { x, y, size, progress } = s;
-  const ease = 1 - Math.pow(1 - progress, 2); // ease-out: fast start, settle
-  const r = (size / 2) * ease;
-  if (r <= 0) return;
-  const alpha = Math.max(0, 1 - progress);
-  ctx.save();
-  // Flash core: warm white → orange fill, fading out.
-  ctx.globalAlpha = alpha * 0.85;
-  ctx.fillStyle = progress < 0.35 ? '#fff6d8' : '#ffb347';
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
-  // Shock ring just ahead of the fill edge.
-  ctx.globalAlpha = alpha * 0.6;
-  ctx.strokeStyle = '#ffd27a';
-  ctx.lineWidth = Math.max(1.5, size * 0.04);
-  ctx.beginPath();
-  ctx.arc(x, y, r * 1.15, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
 }
 
 const DEFAULTS = Object.freeze({
