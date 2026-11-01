@@ -1,158 +1,158 @@
 {
-  "file": "petal-panic/assets/levels/level1/platform_double_sheet.png",
-  "size": "461x1364",
-  "rows": 6,
-  "cols": 1,
-  "kind": "tile_variant",
-  "description": "level1 platform_double (6 frames)",
-  "entities": [
+ "file": "petal-panic/assets/levels/level1/platform_double_sheet.png",
+ "size": "461x1364",
+ "rows": 6,
+ "cols": 1,
+ "kind": "tile_variant",
+ "description": "level1 platform_double (6 frames)",
+ "entities": [
+  {
+   "name": "level1",
+   "anim": "platform_double",
+   "frames_dir": "petal-panic/assets/levels/level1",
+   "frames": [
     {
-      "name": "level1",
-      "anim": "platform_double",
-      "frames_dir": "petal-panic/assets/levels/level1",
-      "frames": [
-        {
-          "file": "platform_double_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            8,
-            0,
-            444,
-            242
-          ],
-          "offset": {
-            "x": -222,
-            "y": -242
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_double_f2.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            0,
-            242,
-            461,
-            262
-          ],
-          "offset": {
-            "x": -230,
-            "y": -252
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_double_f3.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            1,
-            504,
-            458,
-            267
-          ],
-          "offset": {
-            "x": -229,
-            "y": -267
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_double_f4.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            9,
-            771,
-            443,
-            195
-          ],
-          "offset": {
-            "x": -221.5,
-            "y": -195
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_double_f5.png",
-          "row": 4,
-          "col": 0,
-          "bbox": [
-            1,
-            966,
-            459,
-            202
-          ],
-          "offset": {
-            "x": -229,
-            "y": -192
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_double_f6.png",
-          "row": 5,
-          "col": 0,
-          "bbox": [
-            2,
-            1168,
-            456,
-            196
-          ],
-          "offset": {
-            "x": -228,
-            "y": -196
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "collision": {
-        "x": -187,
-        "y": -171,
-        "w": 377,
-        "h": 23.5
-      },
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "pivot": {
-        "x": 0,
-        "y": -115
-      },
-      "markers": []
+     "file": "platform_double_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      8,
+      0,
+      444,
+      242
+     ],
+     "offset": {
+      "x": -222,
+      "y": -242
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_double_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      242,
+      461,
+      262
+     ],
+     "offset": {
+      "x": -230,
+      "y": -252
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_double_f3.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      1,
+      504,
+      458,
+      267
+     ],
+     "offset": {
+      "x": -229,
+      "y": -267
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_double_f4.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      9,
+      771,
+      443,
+      195
+     ],
+     "offset": {
+      "x": -221.5,
+      "y": -195
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_double_f5.png",
+     "row": 4,
+     "col": 0,
+     "bbox": [
+      1,
+      966,
+      459,
+      202
+     ],
+     "offset": {
+      "x": -229,
+      "y": -192
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_double_f6.png",
+     "row": 5,
+     "col": 0,
+     "bbox": [
+      2,
+      1168,
+      456,
+      196
+     ],
+     "offset": {
+      "x": -228,
+      "y": -196
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-30"
+   ],
+   "collision": {
+    "x": -187,
+    "y": -171,
+    "w": 377,
+    "h": 23.5
+   },
+   "playback": "loop",
+   "direction": "forward",
+   "pivot": {
+    "x": 0,
+    "y": -115
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "updated": "2026-10-30"
 }

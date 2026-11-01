@@ -1,242 +1,242 @@
 {
-  "file": "petal-panic/assets/enemies/jackolantern/explode_sheet.png",
-  "size": "2009x680",
-  "rows": 2,
-  "cols": 5,
-  "kind": "animation",
-  "description": "jackolantern explode (10 frames) \u2014 new sheet from Pumpkin Clown Explodes",
-  "entities": [
+ "file": "petal-panic/assets/enemies/jackolantern/explode_sheet.png",
+ "size": "2009x680",
+ "rows": 2,
+ "cols": 5,
+ "kind": "animation",
+ "description": "jackolantern explode (10 frames) \u2014 new sheet from Pumpkin Clown Explodes",
+ "entities": [
+  {
+   "name": "jackolantern",
+   "anim": "explode",
+   "frames_dir": "petal-panic/assets/enemies/jackolantern",
+   "frames": [
     {
-      "name": "jackolantern",
-      "anim": "explode",
-      "frames_dir": "petal-panic/assets/enemies/jackolantern",
-      "frames": [
-        {
-          "file": "explode_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            7,
-            397,
-            382
-          ],
-          "offset": {
-            "x": 198.5,
-            "y": -191
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "explode_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            397,
-            0,
-            389,
-            397
-          ],
-          "offset": {
-            "x": 194.5,
-            "y": -198.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "explode_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            786,
-            9,
-            410,
-            379
-          ],
-          "offset": {
-            "x": 205,
-            "y": -189.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "explode_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1196,
-            1,
-            412,
-            394
-          ],
-          "offset": {
-            "x": 206,
-            "y": -197
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "explode_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1609,
-            21,
-            398,
-            355
-          ],
-          "offset": {
-            "x": 199,
-            "y": -177.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "explode_f6.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            1,
-            397,
-            394,
-            283
-          ],
-          "offset": {
-            "x": 197,
-            "y": -141.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "explode_f7.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            407,
-            398,
-            368,
-            281
-          ],
-          "offset": {
-            "x": 184,
-            "y": -140.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "explode_f8.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            795,
-            397,
-            391,
-            282
-          ],
-          "offset": {
-            "x": 195.5,
-            "y": -141
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "explode_f9.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            1196,
-            403,
-            411,
-            270
-          ],
-          "offset": {
-            "x": 205.5,
-            "y": -135
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "explode_f10.png",
-          "row": 1,
-          "col": 4,
-          "bbox": [
-            1608,
-            418,
-            401,
-            240
-          ],
-          "offset": {
-            "x": 200.5,
-            "y": -120
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 8,
-      "playback": "once",
-      "direction": "forward",
-      "collision": {
-        "x": 0,
-        "y": -374,
-        "w": 389,
-        "h": 374
-      },
-      "pivot": {
-        "x": 195,
-        "y": -187
-      },
-      "markers": []
+     "file": "explode_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      7,
+      397,
+      382
+     ],
+     "offset": {
+      "x": 198.5,
+      "y": -191
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      397,
+      0,
+      389,
+      397
+     ],
+     "offset": {
+      "x": 194.5,
+      "y": -198.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      786,
+      9,
+      410,
+      379
+     ],
+     "offset": {
+      "x": 205,
+      "y": -189.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1196,
+      1,
+      412,
+      394
+     ],
+     "offset": {
+      "x": 206,
+      "y": -197
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1609,
+      21,
+      398,
+      355
+     ],
+     "offset": {
+      "x": 199,
+      "y": -177.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f6.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      1,
+      397,
+      394,
+      283
+     ],
+     "offset": {
+      "x": 197,
+      "y": -141.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f7.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      407,
+      398,
+      368,
+      281
+     ],
+     "offset": {
+      "x": 184,
+      "y": -140.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f8.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      795,
+      397,
+      391,
+      282
+     ],
+     "offset": {
+      "x": 195.5,
+      "y": -141
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f9.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1196,
+      403,
+      411,
+      270
+     ],
+     "offset": {
+      "x": 205.5,
+      "y": -135
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f10.png",
+     "row": 1,
+     "col": 4,
+     "bbox": [
+      1608,
+      418,
+      401,
+      240
+     ],
+     "offset": {
+      "x": 200.5,
+      "y": -120
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-29"
+   ],
+   "playback": "once",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -374,
+    "w": 389,
+    "h": 374
+   },
+   "pivot": {
+    "x": 195,
+    "y": -187
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "updated": "2026-10-29"
 }

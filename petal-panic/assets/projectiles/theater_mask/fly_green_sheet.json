@@ -1,116 +1,116 @@
 {
-  "file": "petal-panic/assets/projectiles/theater_mask/fly_green_sheet.png",
-  "size": "1551x282",
-  "rows": 1,
-  "cols": 4,
-  "kind": "animation",
-  "description": "theater_mask fly_green (4 frames)",
-  "entities": [
+ "file": "petal-panic/assets/projectiles/theater_mask/fly_green_sheet.png",
+ "size": "1551x282",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "theater_mask fly_green (4 frames)",
+ "entities": [
+  {
+   "name": "theater_mask",
+   "anim": "fly_green",
+   "frames_dir": "petal-panic/assets/projectiles/theater_mask",
+   "frames": [
     {
-      "name": "theater_mask",
-      "anim": "fly_green",
-      "frames_dir": "petal-panic/assets/projectiles/theater_mask",
-      "frames": [
-        {
-          "file": "fly_green_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            376,
-            282
-          ],
-          "offset": {
-            "x": -188,
-            "y": -282
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "fly_green_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            376,
-            1,
-            396,
-            279
-          ],
-          "offset": {
-            "x": -198,
-            "y": -279
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "fly_green_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            772,
-            1,
-            391,
-            279
-          ],
-          "offset": {
-            "x": -195.5,
-            "y": -279
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "fly_green_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1163,
-            2,
-            388,
-            278
-          ],
-          "offset": {
-            "x": -194,
-            "y": -278
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -184,
-        "y": -274,
-        "w": 368,
-        "h": 274
-      },
-      "pivot": {
-        "x": 0,
-        "y": -137
-      },
-      "markers": []
+     "file": "fly_green_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      376,
+      282
+     ],
+     "offset": {
+      "x": -188,
+      "y": -282
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_green_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      376,
+      1,
+      396,
+      279
+     ],
+     "offset": {
+      "x": -198,
+      "y": -279
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_green_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      772,
+      1,
+      391,
+      279
+     ],
+     "offset": {
+      "x": -195.5,
+      "y": -279
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_green_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1163,
+      2,
+      388,
+      278
+     ],
+     "offset": {
+      "x": -194,
+      "y": -278
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-28"
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -184,
+    "y": -274,
+    "w": 368,
+    "h": 274
+   },
+   "pivot": {
+    "x": 0,
+    "y": -137
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "updated": "2026-10-28"
 }

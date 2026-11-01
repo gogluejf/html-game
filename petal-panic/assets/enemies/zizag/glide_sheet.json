@@ -1,137 +1,137 @@
 {
-  "file": "./glide_sheet.png",
-  "size": "1423x250",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "zizag glide (5 frames) \u2014 carved",
-  "entities": [
+ "file": "./glide_sheet.png",
+ "size": "1423x250",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "zizag glide (5 frames) \u2014 carved",
+ "entities": [
+  {
+   "name": "zizag",
+   "anim": "glide",
+   "frames_dir": "petal-panic/assets/enemies/zizag",
+   "frames": [
     {
-      "name": "zizag",
-      "anim": "glide",
-      "frames_dir": "petal-panic/assets/enemies/zizag",
-      "frames": [
-        {
-          "file": "glide_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            26,
-            291,
-            197
-          ],
-          "offset": {
-            "x": 145.5,
-            "y": -98.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "glide_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            291,
-            28,
-            265,
-            193
-          ],
-          "offset": {
-            "x": 132.5,
-            "y": -96.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "glide_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            556,
-            24,
-            296,
-            202
-          ],
-          "offset": {
-            "x": 148,
-            "y": -101
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "glide_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            852,
-            16,
-            309,
-            218
-          ],
-          "offset": {
-            "x": 154.5,
-            "y": -109
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "glide_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1161,
-            0,
-            262,
-            250
-          ],
-          "offset": {
-            "x": 131,
-            "y": -125
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": 0,
-        "y": -189,
-        "w": 283,
-        "h": 189
-      },
-      "pivot": {
-        "x": 142,
-        "y": -94
-      },
-      "markers": []
+     "file": "glide_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      26,
+      291,
+      197
+     ],
+     "offset": {
+      "x": 145.5,
+      "y": -98.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "glide_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      291,
+      28,
+      265,
+      193
+     ],
+     "offset": {
+      "x": 132.5,
+      "y": -96.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "glide_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      556,
+      24,
+      296,
+      202
+     ],
+     "offset": {
+      "x": 148,
+      "y": -101
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "glide_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      852,
+      16,
+      309,
+      218
+     ],
+     "offset": {
+      "x": 154.5,
+      "y": -109
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "glide_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1161,
+      0,
+      262,
+      250
+     ],
+     "offset": {
+      "x": 131,
+      "y": -125
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-27"
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -189,
+    "w": 283,
+    "h": 189
+   },
+   "pivot": {
+    "x": 142,
+    "y": -94
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "updated": "2026-10-27"
 }

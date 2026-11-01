@@ -1,137 +1,137 @@
 {
-  "file": "petal-panic/assets/enemies/drawny/charge_sheet.png",
-  "size": "1524x187",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "drawny charge (5 frames)",
-  "entities": [
+ "file": "petal-panic/assets/enemies/drawny/charge_sheet.png",
+ "size": "1524x187",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "drawny charge (5 frames)",
+ "entities": [
+  {
+   "name": "drawny",
+   "anim": "charge",
+   "frames_dir": "petal-panic/assets/enemies/drawny",
+   "frames": [
     {
-      "name": "drawny",
-      "anim": "charge",
-      "frames_dir": "petal-panic/assets/enemies/drawny",
-      "frames": [
-        {
-          "file": "charge_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            325,
-            187
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "charge_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            325,
-            6,
-            322,
-            175
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "charge_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            647,
-            7,
-            305,
-            173
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "charge_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            952,
-            8,
-            291,
-            170
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "charge_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1243,
-            7,
-            281,
-            173
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -158.5,
-        "y": -89.5,
-        "w": 317,
-        "h": 179
-      },
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "markers": []
+     "file": "charge_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      325,
+      187
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "charge_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      325,
+      6,
+      322,
+      175
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "charge_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      647,
+      7,
+      305,
+      173
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "charge_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      952,
+      8,
+      291,
+      170
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "charge_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1243,
+      7,
+      281,
+      173
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-24"
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -158.5,
+    "y": -89.5,
+    "w": 317,
+    "h": 179
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "updated": "2026-10-24"
 }

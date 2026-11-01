@@ -1,117 +1,117 @@
 {
-  "file": "petal-panic/assets/objects/coin/bronze_sheet.png",
-  "size": "580x219",
-  "rows": 1,
-  "cols": 4,
-  "kind": "entity_variant",
-  "description": "coin bronze (4 frames) \u2014 reassembled from frames",
-  "entities": [
+ "file": "petal-panic/assets/objects/coin/bronze_sheet.png",
+ "size": "580x219",
+ "rows": 1,
+ "cols": 4,
+ "kind": "entity_variant",
+ "description": "coin bronze (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "coin",
+   "anim": "bronze",
+   "frames": [
     {
-      "name": "coin",
-      "anim": "bronze",
-      "frames": [
-        {
-          "file": "bronze_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            13,
-            196,
-            192
-          ],
-          "offset": {
-            "x": -98,
-            "y": -96
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "bronze_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            196,
-            0,
-            84,
-            219
-          ],
-          "offset": {
-            "x": -42,
-            "y": -109.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "bronze_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            280,
-            2,
-            215,
-            215
-          ],
-          "offset": {
-            "x": -107.5,
-            "y": -107.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "bronze_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            495,
-            0,
-            85,
-            219
-          ],
-          "offset": {
-            "x": -42.5,
-            "y": -109.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/objects/coin",
-      "speed": 5,
-      "playback": "loop",
-      "startFrame": "random",
-      "direction": "forward",
-      "collision": {
-        "x": -94,
-        "y": -92,
-        "w": 188,
-        "h": 184
-      },
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "markers": []
+     "file": "bronze_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      13,
+      196,
+      192
+     ],
+     "offset": {
+      "x": -98,
+      "y": -96
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "bronze_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      196,
+      0,
+      84,
+      219
+     ],
+     "offset": {
+      "x": -42,
+      "y": -109.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "bronze_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      280,
+      2,
+      215,
+      215
+     ],
+     "offset": {
+      "x": -107.5,
+      "y": -107.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "bronze_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      495,
+      0,
+      85,
+      219
+     ],
+     "offset": {
+      "x": -42.5,
+      "y": -109.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-21"
+   ],
+   "frames_dir": "petal-panic/assets/objects/coin",
+   "playback": "loop",
+   "startFrame": "random",
+   "direction": "forward",
+   "collision": {
+    "x": -94,
+    "y": -92,
+    "w": 188,
+    "h": 184
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": [],
+   "fps": 5
+  }
+ ],
+ "updated": "2026-10-21"
 }

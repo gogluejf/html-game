@@ -1,56 +1,56 @@
 {
-  "label": "objects",
-  "file": "petal-panic/assets/objects/checkpoint/level_sheet.png",
-  "rows": 1,
-  "cols": 1,
-  "size": "332x525",
-  "description": "Checkpoint flag pole prop (single image)",
-  "entities": [
+ "label": "objects",
+ "file": "petal-panic/assets/objects/checkpoint/level_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "332x525",
+ "description": "Checkpoint flag pole prop (single image)",
+ "entities": [
+  {
+   "name": "checkpoint",
+   "anim": "level",
+   "frames": [
     {
-      "name": "checkpoint",
-      "anim": "level",
-      "frames": [
-        {
-          "file": "level_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            332,
-            525
-          ],
-          "offset": {
-            "x": -166,
-            "y": -525
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/objects/checkpoint",
-      "collision": {
-        "x": -166,
-        "y": -525,
-        "w": 332,
-        "h": 498
-      },
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "pivot": {
-        "x": 0,
-        "y": -262
-      },
-      "markers": []
+     "file": "level_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      332,
+      525
+     ],
+     "offset": {
+      "x": -166,
+      "y": -525
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "crop": {
-    "pass": "/tmp/redo-single"
-  },
-  "kind": "entity_variant"
+   ],
+   "frames_dir": "petal-panic/assets/objects/checkpoint",
+   "collision": {
+    "x": -166,
+    "y": -525,
+    "w": 332,
+    "h": 498
+   },
+   "playback": "loop",
+   "direction": "forward",
+   "pivot": {
+    "x": 0,
+    "y": -262
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/redo-single"
+ },
+ "kind": "entity_variant"
 }

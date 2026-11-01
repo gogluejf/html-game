@@ -1,158 +1,158 @@
 {
-  "file": "petal-panic/assets/levels/level4/platform_single_sheet.png",
-  "size": "289x1230",
-  "rows": 6,
-  "cols": 1,
-  "kind": "tile_variant",
-  "description": "level4 platform_single (6 frames)",
-  "entities": [
+ "file": "petal-panic/assets/levels/level4/platform_single_sheet.png",
+ "size": "289x1230",
+ "rows": 6,
+ "cols": 1,
+ "kind": "tile_variant",
+ "description": "level4 platform_single (6 frames)",
+ "entities": [
+  {
+   "name": "level4",
+   "anim": "platform_single",
+   "frames_dir": "petal-panic/assets/levels/level4",
+   "frames": [
     {
-      "name": "level4",
-      "anim": "platform_single",
-      "frames_dir": "petal-panic/assets/levels/level4",
-      "frames": [
-        {
-          "file": "platform_single_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            2,
-            0,
-            284,
-            222
-          ],
-          "offset": {
-            "x": 0,
-            "y": -57
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_single_f2.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            0,
-            222,
-            289,
-            241
-          ],
-          "offset": {
-            "x": 144.5,
-            "y": -120.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_single_f3.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            0,
-            463,
-            288,
-            262
-          ],
-          "offset": {
-            "x": 144,
-            "y": -131
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_single_f4.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            3,
-            725,
-            283,
-            172
-          ],
-          "offset": {
-            "x": 141.5,
-            "y": -86
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_single_f5.png",
-          "row": 4,
-          "col": 0,
-          "bbox": [
-            0,
-            897,
-            289,
-            172
-          ],
-          "offset": {
-            "x": 144.5,
-            "y": -86
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "platform_single_f6.png",
-          "row": 5,
-          "col": 0,
-          "bbox": [
-            1,
-            1069,
-            287,
-            161
-          ],
-          "offset": {
-            "x": 143.5,
-            "y": -80.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "collision": {
-        "x": -148,
-        "y": -98,
-        "w": 284,
-        "h": 12.0
-      },
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "pivot": {
-        "x": 138,
-        "y": -107
-      },
-      "markers": []
+     "file": "platform_single_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      2,
+      0,
+      284,
+      222
+     ],
+     "offset": {
+      "x": 0,
+      "y": -57
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_single_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      222,
+      289,
+      241
+     ],
+     "offset": {
+      "x": 144.5,
+      "y": -120.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_single_f3.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      463,
+      288,
+      262
+     ],
+     "offset": {
+      "x": 144,
+      "y": -131
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_single_f4.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      3,
+      725,
+      283,
+      172
+     ],
+     "offset": {
+      "x": 141.5,
+      "y": -86
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_single_f5.png",
+     "row": 4,
+     "col": 0,
+     "bbox": [
+      0,
+      897,
+      289,
+      172
+     ],
+     "offset": {
+      "x": 144.5,
+      "y": -86
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_single_f6.png",
+     "row": 5,
+     "col": 0,
+     "bbox": [
+      1,
+      1069,
+      287,
+      161
+     ],
+     "offset": {
+      "x": 143.5,
+      "y": -80.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-30"
+   ],
+   "collision": {
+    "x": -148,
+    "y": -98,
+    "w": 284,
+    "h": 12.0
+   },
+   "playback": "loop",
+   "direction": "forward",
+   "pivot": {
+    "x": 138,
+    "y": -107
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "updated": "2026-10-30"
 }

@@ -1,137 +1,137 @@
 {
-  "file": "petal-panic/assets/enemies/gustav_grapplersnout/death_sheet.png",
-  "size": "1481x233",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "gustav_grapplersnout death (5 frames) \u2014 reassembled from frames",
-  "entities": [
+ "file": "petal-panic/assets/enemies/gustav_grapplersnout/death_sheet.png",
+ "size": "1481x233",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "gustav_grapplersnout death (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "gustav_grapplersnout",
+   "anim": "death",
+   "frames": [
     {
-      "name": "gustav_grapplersnout",
-      "anim": "death",
-      "frames": [
-        {
-          "file": "death_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            271,
-            233
-          ],
-          "offset": {
-            "x": 135.5,
-            "y": -116.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "death_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            271,
-            14,
-            292,
-            204
-          ],
-          "offset": {
-            "x": 146,
-            "y": -102
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "death_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            563,
-            35,
-            301,
-            163
-          ],
-          "offset": {
-            "x": 150.5,
-            "y": -81.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "death_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            864,
-            42,
-            328,
-            148
-          ],
-          "offset": {
-            "x": 164,
-            "y": -74
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "death_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1192,
-            23,
-            289,
-            187
-          ],
-          "offset": {
-            "x": 144.5,
-            "y": -93.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/enemies/gustav_grapplersnout",
-      "speed": 8,
-      "playback": "once",
-      "direction": "forward",
-      "collision": {
-        "x": 0,
-        "y": -225,
-        "w": 263,
-        "h": 225
-      },
-      "pivot": {
-        "x": 132,
-        "y": -112
-      },
-      "markers": []
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      271,
+      233
+     ],
+     "offset": {
+      "x": 135.5,
+      "y": -116.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      271,
+      14,
+      292,
+      204
+     ],
+     "offset": {
+      "x": 146,
+      "y": -102
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      563,
+      35,
+      301,
+      163
+     ],
+     "offset": {
+      "x": 150.5,
+      "y": -81.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      864,
+      42,
+      328,
+      148
+     ],
+     "offset": {
+      "x": 164,
+      "y": -74
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1192,
+      23,
+      289,
+      187
+     ],
+     "offset": {
+      "x": 144.5,
+      "y": -93.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-21"
+   ],
+   "frames_dir": "petal-panic/assets/enemies/gustav_grapplersnout",
+   "playback": "once",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -225,
+    "w": 263,
+    "h": 225
+   },
+   "pivot": {
+    "x": 132,
+    "y": -112
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "updated": "2026-10-21"
 }

@@ -23,7 +23,7 @@
 
 /** Playback defaults (sprites.md §6: forward when omitted; loop for idle art). */
 export const SPRITE_DEFAULTS = Object.freeze({
-  fps: 12,
+  fps: 8,
   mode: 'loop',          // 'loop' | 'once'
   direction: 'forward',  // 'forward' | 'reverse' | 'ping_pong' | 'ping_pong_reverse'
   timing: 'fps',         // 'fps' | 'relative'
@@ -60,7 +60,7 @@ export function parseSheet(sheetJson) {
         // fps: the sheet-schema field is `speed` (editor writes it, "frames per
         // second"); `fps` is accepted as an alias for hand-authored sheets.
         // speed wins when both are present (it's the editor's source of truth).
-        fps: numIn(ent.speed, 1, 1000, 'speed') ?? numIn(ent.fps, 1, 1000, 'fps') ?? SPRITE_DEFAULTS.fps,
+        fps: numIn(ent.fps, 1, 1000, 'fps') ?? numIn(ent.speed, 1, 1000, 'speed') ?? SPRITE_DEFAULTS.fps,
         // mode: the sheet-schema field is `playback` (editor writes it);
         // `mode` is accepted as an alias for hand-authored sheets. Both
         // absent → default 'loop' (enumIn returns the default on null).

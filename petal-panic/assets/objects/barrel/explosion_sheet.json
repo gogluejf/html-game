@@ -1,56 +1,56 @@
 {
-  "label": "objects",
-  "file": "petal-panic/assets/objects/barrel/explosion_sheet.png",
-  "rows": 1,
-  "cols": 1,
-  "size": "322x495",
-  "description": "Bomb barrel prop with lit fuse (single image)",
-  "entities": [
+ "label": "objects",
+ "file": "petal-panic/assets/objects/barrel/explosion_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "322x495",
+ "description": "Bomb barrel prop with lit fuse (single image)",
+ "entities": [
+  {
+   "name": "barrel",
+   "anim": "explosion",
+   "frames": [
     {
-      "name": "barrel",
-      "anim": "explosion",
-      "frames": [
-        {
-          "file": "explosion_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            322,
-            495
-          ],
-          "offset": {
-            "x": -161,
-            "y": -247.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/objects/barrel",
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -166,
-        "y": -151,
-        "w": 322,
-        "h": 374
-      },
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "markers": []
+     "file": "explosion_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      322,
+      495
+     ],
+     "offset": {
+      "x": -161,
+      "y": -247.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "crop": {
-    "pass": "/tmp/redo-single"
-  },
-  "kind": "entity_variant"
+   ],
+   "frames_dir": "petal-panic/assets/objects/barrel",
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -166,
+    "y": -151,
+    "w": 322,
+    "h": 374
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/redo-single"
+ },
+ "kind": "entity_variant"
 }

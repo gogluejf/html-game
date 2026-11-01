@@ -1,116 +1,116 @@
 {
-  "file": "petal-panic/assets/boss/great_maraboo/beak_stab_sheet.png",
-  "size": "3460x436",
-  "rows": 1,
-  "cols": 4,
-  "kind": "animation",
-  "description": "great_maraboo beak_stab",
-  "entities": [
+ "file": "petal-panic/assets/boss/great_maraboo/beak_stab_sheet.png",
+ "size": "3460x436",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "great_maraboo beak_stab",
+ "entities": [
+  {
+   "name": "great_maraboo",
+   "anim": "beak_stab",
+   "frames_dir": "petal-panic/assets/boss/great_maraboo",
+   "frames": [
     {
-      "name": "great_maraboo",
-      "anim": "beak_stab",
-      "frames_dir": "petal-panic/assets/boss/great_maraboo",
-      "frames": [
-        {
-          "file": "beak_stab_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            157,
-            16,
-            551,
-            403
-          ],
-          "offset": {
-            "x": 275.5,
-            "y": -201.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "beak_stab_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            895,
-            33,
-            805,
-            369
-          ],
-          "offset": {
-            "x": 402.5,
-            "y": -184.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "beak_stab_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            1773,
-            7,
-            778,
-            422
-          ],
-          "offset": {
-            "x": 389,
-            "y": -211
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "beak_stab_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            2595,
-            0,
-            865,
-            436
-          ],
-          "offset": {
-            "x": 432.5,
-            "y": -218
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 5,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": 0,
-        "y": -395,
-        "w": 543,
-        "h": 395
-      },
-      "pivot": {
-        "x": 272,
-        "y": -197
-      },
-      "markers": []
+     "file": "beak_stab_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      157,
+      16,
+      551,
+      403
+     ],
+     "offset": {
+      "x": 275.5,
+      "y": -201.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "beak_stab_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      895,
+      33,
+      805,
+      369
+     ],
+     "offset": {
+      "x": 402.5,
+      "y": -184.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "beak_stab_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1773,
+      7,
+      778,
+      422
+     ],
+     "offset": {
+      "x": 389,
+      "y": -211
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "beak_stab_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      2595,
+      0,
+      865,
+      436
+     ],
+     "offset": {
+      "x": 432.5,
+      "y": -218
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-23"
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -395,
+    "w": 543,
+    "h": 395
+   },
+   "pivot": {
+    "x": 272,
+    "y": -197
+   },
+   "markers": [],
+   "fps": 5
+  }
+ ],
+ "updated": "2026-10-23"
 }

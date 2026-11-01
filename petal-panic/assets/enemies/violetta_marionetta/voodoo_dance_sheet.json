@@ -1,137 +1,137 @@
 {
-  "file": "petal-panic/assets/enemies/violetta_marionetta/voodoo_dance_sheet.png",
-  "size": "2307x769",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "violetta_marionetta voodoo_dance (5 frames)",
-  "entities": [
+ "file": "petal-panic/assets/enemies/violetta_marionetta/voodoo_dance_sheet.png",
+ "size": "2307x769",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "violetta_marionetta voodoo_dance (5 frames)",
+ "entities": [
+  {
+   "name": "violetta_marionetta",
+   "anim": "voodoo_dance",
+   "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
+   "frames": [
     {
-      "name": "violetta_marionetta",
-      "anim": "voodoo_dance",
-      "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
-      "frames": [
-        {
-          "file": "voodoo_dance_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            3,
-            469,
-            762
-          ],
-          "offset": {
-            "x": 234.5,
-            "y": -381
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "voodoo_dance_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            469,
-            0,
-            555,
-            769
-          ],
-          "offset": {
-            "x": 277.5,
-            "y": -384.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "voodoo_dance_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            1024,
-            28,
-            454,
-            713
-          ],
-          "offset": {
-            "x": 227,
-            "y": -356.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "voodoo_dance_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1478,
-            13,
-            470,
-            742
-          ],
-          "offset": {
-            "x": 235,
-            "y": -371
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "voodoo_dance_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1948,
-            47,
-            359,
-            675
-          ],
-          "offset": {
-            "x": 179.5,
-            "y": -337.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 4,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": 0,
-        "y": -754,
-        "w": 461,
-        "h": 754
-      },
-      "pivot": {
-        "x": 231,
-        "y": -377
-      },
-      "markers": []
+     "file": "voodoo_dance_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      3,
+      469,
+      762
+     ],
+     "offset": {
+      "x": 234.5,
+      "y": -381
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "voodoo_dance_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      469,
+      0,
+      555,
+      769
+     ],
+     "offset": {
+      "x": 277.5,
+      "y": -384.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "voodoo_dance_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1024,
+      28,
+      454,
+      713
+     ],
+     "offset": {
+      "x": 227,
+      "y": -356.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "voodoo_dance_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1478,
+      13,
+      470,
+      742
+     ],
+     "offset": {
+      "x": 235,
+      "y": -371
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "voodoo_dance_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1948,
+      47,
+      359,
+      675
+     ],
+     "offset": {
+      "x": 179.5,
+      "y": -337.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-23"
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -754,
+    "w": 461,
+    "h": 754
+   },
+   "pivot": {
+    "x": 231,
+    "y": -377
+   },
+   "markers": [],
+   "fps": 4
+  }
+ ],
+ "updated": "2026-10-23"
 }

@@ -1,137 +1,137 @@
 {
-  "file": "petal-panic/assets/enemies/violetta_marionetta/idle_sheet.png",
-  "size": "1924x756",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "violetta_marionetta idle (5 frames)",
-  "entities": [
+ "file": "petal-panic/assets/enemies/violetta_marionetta/idle_sheet.png",
+ "size": "1924x756",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "violetta_marionetta idle (5 frames)",
+ "entities": [
+  {
+   "name": "violetta_marionetta",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
+   "frames": [
     {
-      "name": "violetta_marionetta",
-      "anim": "idle",
-      "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
-      "frames": [
-        {
-          "file": "idle_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            1,
-            378,
-            753
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "idle_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            378,
-            5,
-            352,
-            745
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "idle_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            730,
-            3,
-            456,
-            749
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "idle_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1186,
-            5,
-            379,
-            746
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "idle_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1565,
-            0,
-            359,
-            756
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 5,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -185,
-        "y": -372.5,
-        "w": 370,
-        "h": 745
-      },
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "markers": []
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      378,
+      753
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      378,
+      5,
+      352,
+      745
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      730,
+      3,
+      456,
+      749
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1186,
+      5,
+      379,
+      746
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1565,
+      0,
+      359,
+      756
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-23"
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -185,
+    "y": -372.5,
+    "w": 370,
+    "h": 745
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": [],
+   "fps": 5
+  }
+ ],
+ "updated": "2026-10-23"
 }

@@ -1,116 +1,116 @@
 {
-  "file": "petal-panic/assets/powerups/scarlet_1up/idle_sheet.png",
-  "size": "1239x166",
-  "rows": 1,
-  "cols": 4,
-  "kind": "animation",
-  "description": "scarlet_1up idle (4 frames) \u2014 reassembled from frames",
-  "entities": [
+ "file": "petal-panic/assets/powerups/scarlet_1up/idle_sheet.png",
+ "size": "1239x166",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "scarlet_1up idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "scarlet_1up",
+   "anim": "idle",
+   "frames": [
     {
-      "name": "scarlet_1up",
-      "anim": "idle",
-      "frames": [
-        {
-          "file": "idle_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            311,
-            165
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "idle_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            311,
-            2,
-            312,
-            161
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "idle_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            623,
-            10,
-            304,
-            146
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "idle_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            927,
-            0,
-            312,
-            166
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/powerups/scarlet_1up",
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": 4,
-        "y": -165,
-        "w": 307,
-        "h": 161
-      },
-      "pivot": {
-        "x": 158,
-        "y": -84
-      },
-      "markers": []
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      311,
+      165
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      311,
+      2,
+      312,
+      161
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      623,
+      10,
+      304,
+      146
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      927,
+      0,
+      312,
+      166
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-21"
+   ],
+   "frames_dir": "petal-panic/assets/powerups/scarlet_1up",
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 4,
+    "y": -165,
+    "w": 307,
+    "h": 161
+   },
+   "pivot": {
+    "x": 158,
+    "y": -84
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "updated": "2026-10-21"
 }

@@ -1,200 +1,200 @@
 {
-  "file": "petal-panic/assets/boss/pizza_cat/punch_sheet.png",
-  "size": "3296x455",
-  "rows": 1,
-  "cols": 8,
-  "kind": "animation",
-  "description": "pizza_cat punch",
-  "entities": [
+ "file": "petal-panic/assets/boss/pizza_cat/punch_sheet.png",
+ "size": "3296x455",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "pizza_cat punch",
+ "entities": [
+  {
+   "name": "pizza_cat",
+   "anim": "punch",
+   "frames_dir": "petal-panic/assets/boss/pizza_cat",
+   "frames": [
     {
-      "name": "pizza_cat",
-      "anim": "punch",
-      "frames_dir": "petal-panic/assets/boss/pizza_cat",
-      "frames": [
-        {
-          "file": "punch_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            43,
-            0,
-            325,
-            455
-          ],
-          "offset": {
-            "x": 162.5,
-            "y": -227.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "punch_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            412,
-            17,
-            412,
-            420
-          ],
-          "offset": {
-            "x": 206,
-            "y": -210
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "punch_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            874,
-            30,
-            312,
-            395
-          ],
-          "offset": {
-            "x": 156,
-            "y": -197.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "punch_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1253,
-            8,
-            377,
-            438
-          ],
-          "offset": {
-            "x": 188.5,
-            "y": -219
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "punch_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1680,
-            20,
-            348,
-            414
-          ],
-          "offset": {
-            "x": 174,
-            "y": -207
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "punch_f6.png",
-          "row": 0,
-          "col": 5,
-          "bbox": [
-            2072,
-            14,
-            387,
-            426
-          ],
-          "offset": {
-            "x": 193.5,
-            "y": -213
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "punch_f7.png",
-          "row": 0,
-          "col": 6,
-          "bbox": [
-            2499,
-            8,
-            357,
-            438
-          ],
-          "offset": {
-            "x": 178.5,
-            "y": -219
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "punch_f8.png",
-          "row": 0,
-          "col": 7,
-          "bbox": [
-            2919,
-            18,
-            342,
-            419
-          ],
-          "offset": {
-            "x": 171,
-            "y": -209.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 6,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": 0,
-        "y": -447,
-        "w": 317,
-        "h": 447
-      },
-      "pivot": {
-        "x": 159,
-        "y": -223
-      },
-      "markers": []
+     "file": "punch_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      43,
+      0,
+      325,
+      455
+     ],
+     "offset": {
+      "x": 162.5,
+      "y": -227.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "punch_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      412,
+      17,
+      412,
+      420
+     ],
+     "offset": {
+      "x": 206,
+      "y": -210
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "punch_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      874,
+      30,
+      312,
+      395
+     ],
+     "offset": {
+      "x": 156,
+      "y": -197.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "punch_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1253,
+      8,
+      377,
+      438
+     ],
+     "offset": {
+      "x": 188.5,
+      "y": -219
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "punch_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1680,
+      20,
+      348,
+      414
+     ],
+     "offset": {
+      "x": 174,
+      "y": -207
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "punch_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      2072,
+      14,
+      387,
+      426
+     ],
+     "offset": {
+      "x": 193.5,
+      "y": -213
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "punch_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      2499,
+      8,
+      357,
+      438
+     ],
+     "offset": {
+      "x": 178.5,
+      "y": -219
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "punch_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      2919,
+      18,
+      342,
+      419
+     ],
+     "offset": {
+      "x": 171,
+      "y": -209.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-23"
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -447,
+    "w": 317,
+    "h": 447
+   },
+   "pivot": {
+    "x": 159,
+    "y": -223
+   },
+   "markers": [],
+   "fps": 6
+  }
+ ],
+ "updated": "2026-10-23"
 }

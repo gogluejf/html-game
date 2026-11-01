@@ -1,192 +1,192 @@
 {
-  "file": "petal-panic/assets/enemies/furnace/death_sheet.png",
-  "size": "1764x864",
-  "rows": 2,
-  "cols": 5,
-  "kind": "animation",
-  "description": "furnace death (10 frames)",
-  "entities": [
+ "file": "petal-panic/assets/enemies/furnace/death_sheet.png",
+ "size": "1764x864",
+ "rows": 2,
+ "cols": 5,
+ "kind": "animation",
+ "description": "furnace death (10 frames)",
+ "entities": [
+  {
+   "name": "furnace",
+   "anim": "death",
+   "frames_dir": "petal-panic/assets/enemies/furnace",
+   "frames": [
     {
-      "name": "furnace",
-      "anim": "death",
-      "frames_dir": "petal-panic/assets/enemies/furnace",
-      "frames": [
-        {
-          "file": "death_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            11,
-            11,
-            343,
-            424
-          ],
-          "offset": {
-            "x": 0,
-            "y": -314
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "death_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            372,
-            6,
-            351,
-            434
-          ],
-          "offset": {
-            "x": 0,
-            "y": -323.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "death_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            730,
-            0,
-            345,
-            446
-          ],
-          "offset": {
-            "x": 0,
-            "y": -318
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "death_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1075,
-            5,
-            329,
-            435
-          ],
-          "offset": {
-            "x": 0,
-            "y": -317.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "death_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1405,
-            21,
-            358,
-            404
-          ],
-          "offset": {
-            "x": 0,
-            "y": -317
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "death_f6.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            0,
-            485,
-            365,
-            340
-          ]
-        },
-        {
-          "file": "death_f7.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            365,
-            487,
-            365,
-            336
-          ]
-        },
-        {
-          "file": "death_f8.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            738,
-            489,
-            328,
-            331
-          ]
-        },
-        {
-          "file": "death_f9.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            1079,
-            446,
-            321,
-            418
-          ]
-        },
-        {
-          "file": "death_f10.png",
-          "row": 1,
-          "col": 4,
-          "bbox": [
-            1404,
-            502,
-            360,
-            305
-          ]
-        }
-      ],
-      "speed": 5,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -219,
-        "y": -620,
-        "w": 438,
-        "h": 620
-      },
-      "pivot": {
-        "x": 0,
-        "y": -310
-      },
-      "markers": []
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      11,
+      11,
+      343,
+      424
+     ],
+     "offset": {
+      "x": 0,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      372,
+      6,
+      351,
+      434
+     ],
+     "offset": {
+      "x": 0,
+      "y": -323.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      730,
+      0,
+      345,
+      446
+     ],
+     "offset": {
+      "x": 0,
+      "y": -318
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1075,
+      5,
+      329,
+      435
+     ],
+     "offset": {
+      "x": 0,
+      "y": -317.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1405,
+      21,
+      358,
+      404
+     ],
+     "offset": {
+      "x": 0,
+      "y": -317
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f6.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      485,
+      365,
+      340
+     ]
+    },
+    {
+     "file": "death_f7.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      365,
+      487,
+      365,
+      336
+     ]
+    },
+    {
+     "file": "death_f8.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      738,
+      489,
+      328,
+      331
+     ]
+    },
+    {
+     "file": "death_f9.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1079,
+      446,
+      321,
+      418
+     ]
+    },
+    {
+     "file": "death_f10.png",
+     "row": 1,
+     "col": 4,
+     "bbox": [
+      1404,
+      502,
+      360,
+      305
+     ]
     }
-  ],
-  "updated": "2026-10-28"
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -219,
+    "y": -620,
+    "w": 438,
+    "h": 620
+   },
+   "pivot": {
+    "x": 0,
+    "y": -310
+   },
+   "markers": [],
+   "fps": 5
+  }
+ ],
+ "updated": "2026-10-28"
 }

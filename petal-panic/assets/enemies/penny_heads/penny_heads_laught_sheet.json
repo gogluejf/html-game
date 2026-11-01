@@ -1,141 +1,141 @@
 {
-  "file": "petal-panic/assets/enemies/penny_heads/penny_heads_laught_sheet.png",
-  "size": "2324x646",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "penny_heads laught (5f) \u2014 laughing cycle",
-  "entities": [
+ "file": "petal-panic/assets/enemies/penny_heads/penny_heads_laught_sheet.png",
+ "size": "2324x646",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "penny_heads laught (5f) \u2014 laughing cycle",
+ "entities": [
+  {
+   "name": "penny_heads",
+   "anim": "laught",
+   "frames_dir": "petal-panic/assets/enemies/penny_heads",
+   "frames": [
     {
-      "name": "penny_heads",
-      "anim": "laught",
-      "frames_dir": "petal-panic/assets/enemies/penny_heads",
-      "frames": [
-        {
-          "file": "penny_heads_laught_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            7,
-            449,
-            631
-          ],
-          "offset": {
-            "x": 224.5,
-            "y": -315.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "penny_heads_laught_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            449,
-            9,
-            456,
-            627
-          ],
-          "offset": {
-            "x": 228,
-            "y": -313.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "penny_heads_laught_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            905,
-            0,
-            497,
-            646
-          ],
-          "offset": {
-            "x": 248.5,
-            "y": -323
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "penny_heads_laught_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1402,
-            3,
-            484,
-            640
-          ],
-          "offset": {
-            "x": 242,
-            "y": -320
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "penny_heads_laught_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1886,
-            5,
-            438,
-            635
-          ],
-          "offset": {
-            "x": 219,
-            "y": -317.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 8,
-      "playback": "loop",
-      "direction": "ping_pong",
-      "collision": {
-        "x": 0,
-        "y": -623,
-        "w": 441,
-        "h": 623
-      },
-      "pivot": {
-        "x": 221,
-        "y": -311
-      },
-      "markers": []
+     "file": "penny_heads_laught_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      7,
+      449,
+      631
+     ],
+     "offset": {
+      "x": 224.5,
+      "y": -315.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "penny_heads_laught_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      449,
+      9,
+      456,
+      627
+     ],
+     "offset": {
+      "x": 228,
+      "y": -313.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "penny_heads_laught_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      905,
+      0,
+      497,
+      646
+     ],
+     "offset": {
+      "x": 248.5,
+      "y": -323
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "penny_heads_laught_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1402,
+      3,
+      484,
+      640
+     ],
+     "offset": {
+      "x": 242,
+      "y": -320
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "penny_heads_laught_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1886,
+      5,
+      438,
+      635
+     ],
+     "offset": {
+      "x": 219,
+      "y": -317.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-27",
-  "crop": {
-    "frames_dir": "petal-panic/assets/enemies/penny_heads",
-    "pass": "/tmp/ph_laught"
+   ],
+   "playback": "loop",
+   "direction": "ping_pong",
+   "collision": {
+    "x": 0,
+    "y": -623,
+    "w": 441,
+    "h": 623
+   },
+   "pivot": {
+    "x": 221,
+    "y": -311
+   },
+   "markers": [],
+   "fps": 8
   }
+ ],
+ "updated": "2026-10-27",
+ "crop": {
+  "frames_dir": "petal-panic/assets/enemies/penny_heads",
+  "pass": "/tmp/ph_laught"
+ }
 }

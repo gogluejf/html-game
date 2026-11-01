@@ -1,116 +1,116 @@
 {
-  "file": "petal-panic/assets/enemies/iron_maiden/glide_sheet.png",
-  "size": "1777x498",
-  "rows": 1,
-  "cols": 4,
-  "kind": "animation",
-  "description": "iron maiden glide (4 frames) \u2014 forward dash lunge",
-  "entities": [
+ "file": "petal-panic/assets/enemies/iron_maiden/glide_sheet.png",
+ "size": "1777x498",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "iron maiden glide (4 frames) \u2014 forward dash lunge",
+ "entities": [
+  {
+   "name": "iron_maiden",
+   "anim": "glide",
+   "frames_dir": "petal-panic/assets/enemies/iron_maiden",
+   "frames": [
     {
-      "name": "iron_maiden",
-      "anim": "glide",
-      "frames_dir": "petal-panic/assets/enemies/iron_maiden",
-      "frames": [
-        {
-          "file": "glide_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            433,
-            497
-          ],
-          "offset": {
-            "x": 0,
-            "y": -345.10916630368087
-          },
-          "scale": {
-            "sx": 1.3887692809001242,
-            "sy": 1.3887692809001242
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "glide_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            433,
-            0,
-            424,
-            498
-          ],
-          "offset": {
-            "x": 0,
-            "y": -345.8035509441309
-          },
-          "scale": {
-            "sx": 1.3887692809001242,
-            "sy": 1.3887692809001242
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "glide_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            857,
-            5,
-            444,
-            487
-          ],
-          "offset": {
-            "x": 0,
-            "y": -338.16531989918025
-          },
-          "scale": {
-            "sx": 1.3887692809001242,
-            "sy": 1.3887692809001242
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "glide_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1301,
-            10,
-            476,
-            477
-          ],
-          "offset": {
-            "x": 0,
-            "y": -331.2214734946796
-          },
-          "scale": {
-            "sx": 1.3887692809001242,
-            "sy": 1.3887692809001242
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 5,
-      "playback": "loop",
-      "direction": "ping_pong_reverse",
-      "collision": {
-        "x": -295,
-        "y": -679,
-        "w": 590,
-        "h": 679
-      },
-      "pivot": {
-        "x": 0,
-        "y": -339
-      },
-      "markers": []
+     "file": "glide_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      433,
+      497
+     ],
+     "offset": {
+      "x": 0,
+      "y": -345.10916630368087
+     },
+     "scale": {
+      "sx": 1.3887692809001242,
+      "sy": 1.3887692809001242
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "glide_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      433,
+      0,
+      424,
+      498
+     ],
+     "offset": {
+      "x": 0,
+      "y": -345.8035509441309
+     },
+     "scale": {
+      "sx": 1.3887692809001242,
+      "sy": 1.3887692809001242
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "glide_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      857,
+      5,
+      444,
+      487
+     ],
+     "offset": {
+      "x": 0,
+      "y": -338.16531989918025
+     },
+     "scale": {
+      "sx": 1.3887692809001242,
+      "sy": 1.3887692809001242
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "glide_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1301,
+      10,
+      476,
+      477
+     ],
+     "offset": {
+      "x": 0,
+      "y": -331.2214734946796
+     },
+     "scale": {
+      "sx": 1.3887692809001242,
+      "sy": 1.3887692809001242
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-28"
+   ],
+   "playback": "loop",
+   "direction": "ping_pong_reverse",
+   "collision": {
+    "x": -295,
+    "y": -679,
+    "w": 590,
+    "h": 679
+   },
+   "pivot": {
+    "x": 0,
+    "y": -339
+   },
+   "markers": [],
+   "fps": 5
+  }
+ ],
+ "updated": "2026-10-28"
 }

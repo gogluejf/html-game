@@ -1,117 +1,117 @@
 {
-  "file": "petal-panic/assets/objects/coin/gold_sheet.png",
-  "size": "909x339",
-  "rows": 1,
-  "cols": 4,
-  "kind": "entity_variant",
-  "description": "coin gold (4 frames) \u2014 reassembled from frames",
-  "entities": [
+ "file": "petal-panic/assets/objects/coin/gold_sheet.png",
+ "size": "909x339",
+ "rows": 1,
+ "cols": 4,
+ "kind": "entity_variant",
+ "description": "coin gold (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "coin",
+   "anim": "gold",
+   "frames": [
     {
-      "name": "coin",
-      "anim": "gold",
-      "frames": [
-        {
-          "file": "gold_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            8,
-            322,
-            322
-          ],
-          "offset": {
-            "x": -161,
-            "y": -161
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "gold_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            322,
-            0,
-            126,
-            339
-          ],
-          "offset": {
-            "x": -63,
-            "y": -169.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "gold_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            448,
-            3,
-            332,
-            333
-          ],
-          "offset": {
-            "x": -166,
-            "y": -166.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "gold_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            780,
-            0,
-            129,
-            338
-          ],
-          "offset": {
-            "x": -64.5,
-            "y": -169
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/objects/coin",
-      "speed": 5,
-      "playback": "loop",
-      "startFrame": "random",
-      "direction": "forward",
-      "collision": {
-        "x": -157,
-        "y": -157,
-        "w": 314,
-        "h": 314
-      },
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "markers": []
+     "file": "gold_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      8,
+      322,
+      322
+     ],
+     "offset": {
+      "x": -161,
+      "y": -161
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      322,
+      0,
+      126,
+      339
+     ],
+     "offset": {
+      "x": -63,
+      "y": -169.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      448,
+      3,
+      332,
+      333
+     ],
+     "offset": {
+      "x": -166,
+      "y": -166.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      780,
+      0,
+      129,
+      338
+     ],
+     "offset": {
+      "x": -64.5,
+      "y": -169
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-21"
+   ],
+   "frames_dir": "petal-panic/assets/objects/coin",
+   "playback": "loop",
+   "startFrame": "random",
+   "direction": "forward",
+   "collision": {
+    "x": -157,
+    "y": -157,
+    "w": 314,
+    "h": 314
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": [],
+   "fps": 5
+  }
+ ],
+ "updated": "2026-10-21"
 }

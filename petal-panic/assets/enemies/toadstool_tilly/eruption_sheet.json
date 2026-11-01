@@ -1,137 +1,137 @@
 {
-  "file": "petal-panic/assets/enemies/toadstool_tilly/eruption_sheet.png",
-  "size": "1345x241",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "toadstool_tilly eruption (5 frames) \u2014 reassembled from frames",
-  "entities": [
+ "file": "petal-panic/assets/enemies/toadstool_tilly/eruption_sheet.png",
+ "size": "1345x241",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "toadstool_tilly eruption (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "toadstool_tilly",
+   "anim": "eruption",
+   "frames": [
     {
-      "name": "toadstool_tilly",
-      "anim": "eruption",
-      "frames": [
-        {
-          "file": "eruption_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            1,
-            238,
-            238
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "eruption_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            238,
-            1,
-            255,
-            238
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "eruption_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            493,
-            1,
-            272,
-            238
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "eruption_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            765,
-            0,
-            290,
-            241
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "eruption_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1055,
-            1,
-            290,
-            238
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/enemies/toadstool_tilly",
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -115,
-        "y": -115,
-        "w": 230,
-        "h": 230
-      },
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "markers": []
+     "file": "eruption_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      238,
+      238
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "eruption_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      238,
+      1,
+      255,
+      238
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "eruption_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      493,
+      1,
+      272,
+      238
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "eruption_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      765,
+      0,
+      290,
+      241
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "eruption_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1055,
+      1,
+      290,
+      238
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-21"
+   ],
+   "frames_dir": "petal-panic/assets/enemies/toadstool_tilly",
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -115,
+    "y": -115,
+    "w": 230,
+    "h": 230
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "updated": "2026-10-21"
 }

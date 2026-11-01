@@ -1,161 +1,161 @@
 {
-  "label": "boss",
-  "file": "petal-panic/assets/boss/ratchet_rumbelow/stomp_sheet.png",
-  "rows": 2,
-  "cols": 3,
-  "size": "1531x954",
-  "description": "Ratchet Rumbelow boss, sheet 3/5 \u2014 6 frames (stomp)",
-  "entities": [
+ "label": "boss",
+ "file": "petal-panic/assets/boss/ratchet_rumbelow/stomp_sheet.png",
+ "rows": 2,
+ "cols": 3,
+ "size": "1531x954",
+ "description": "Ratchet Rumbelow boss, sheet 3/5 \u2014 6 frames (stomp)",
+ "entities": [
+  {
+   "name": "ratchet_rumbelow",
+   "anim": "stomp",
+   "frames": [
     {
-      "name": "ratchet_rumbelow",
-      "anim": "stomp",
-      "frames": [
-        {
-          "file": "stomp_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            51,
-            499,
-            390
-          ],
-          "offset": {
-            "x": 249.5,
-            "y": -195
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "stomp_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            500,
-            52,
-            522,
-            387
-          ],
-          "offset": {
-            "x": 261,
-            "y": -193.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "stomp_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            1044,
-            0,
-            465,
-            492
-          ],
-          "offset": {
-            "x": 232.5,
-            "y": -246
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "stomp_f4.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            16,
-            492,
-            467,
-            462
-          ],
-          "offset": {
-            "x": 233.5,
-            "y": -231
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "stomp_f5.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            499,
-            518,
-            524,
-            410
-          ],
-          "offset": {
-            "x": 262,
-            "y": -205
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "stomp_f6.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            1023,
-            518,
-            508,
-            410
-          ],
-          "offset": {
-            "x": 254,
-            "y": -205
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/boss/ratchet_rumbelow",
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": 4,
-        "y": -386,
-        "w": 491,
-        "h": 382
-      },
-      "pivot": {
-        "x": 250,
-        "y": -195
-      },
-      "markers": []
+     "file": "stomp_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      51,
+      499,
+      390
+     ],
+     "offset": {
+      "x": 249.5,
+      "y": -195
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "stomp_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      500,
+      52,
+      522,
+      387
+     ],
+     "offset": {
+      "x": 261,
+      "y": -193.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "stomp_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1044,
+      0,
+      465,
+      492
+     ],
+     "offset": {
+      "x": 232.5,
+      "y": -246
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "stomp_f4.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      16,
+      492,
+      467,
+      462
+     ],
+     "offset": {
+      "x": 233.5,
+      "y": -231
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "stomp_f5.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      499,
+      518,
+      524,
+      410
+     ],
+     "offset": {
+      "x": 262,
+      "y": -205
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "stomp_f6.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      1023,
+      518,
+      508,
+      410
+     ],
+     "offset": {
+      "x": 254,
+      "y": -205
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "crop": {
-    "pass": "/tmp/redo-ratchet_rumbelow-stomp-v1"
-  },
-  "kind": "animation"
+   ],
+   "frames_dir": "petal-panic/assets/boss/ratchet_rumbelow",
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 4,
+    "y": -386,
+    "w": 491,
+    "h": 382
+   },
+   "pivot": {
+    "x": 250,
+    "y": -195
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/redo-ratchet_rumbelow-stomp-v1"
+ },
+ "kind": "animation"
 }

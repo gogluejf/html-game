@@ -1,199 +1,199 @@
 {
-  "file": "petal-panic/assets/heroes/scarlet_vale/ribbon_storm_sheet.png",
-  "size": "4160x552",
-  "rows": 1,
-  "cols": 8,
-  "kind": "animation",
-  "description": "scarlet vale ribbon storm attack (8 frames)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/scarlet_vale/ribbon_storm_sheet.png",
+ "size": "4160x552",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "scarlet vale ribbon storm attack (8 frames)",
+ "entities": [
+  {
+   "name": "scarlet_vale",
+   "anim": "ribbon_storm",
+   "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+   "frames": [
     {
-      "name": "scarlet_vale",
-      "anim": "ribbon_storm",
-      "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
-      "frames": [
-        {
-          "file": "ribbon_storm_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            146,
-            46,
-            260,
-            459
-          ],
-          "offset": {
-            "x": 0,
-            "y": -229.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "ribbon_storm_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            668,
-            67,
-            255,
-            417
-          ],
-          "offset": {
-            "x": 0,
-            "y": -208.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "ribbon_storm_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            1186,
-            67,
-            259,
-            417
-          ],
-          "offset": {
-            "x": 0,
-            "y": -208.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "ribbon_storm_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1673,
-            23,
-            325,
-            506
-          ],
-          "offset": {
-            "x": 0,
-            "y": -253
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "ribbon_storm_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            2165,
-            56,
-            382,
-            440
-          ],
-          "offset": {
-            "x": 0,
-            "y": -220
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 6
-        },
-        {
-          "file": "ribbon_storm_f6.png",
-          "row": 0,
-          "col": 5,
-          "bbox": [
-            2694,
-            63,
-            364,
-            426
-          ],
-          "offset": {
-            "x": 0,
-            "y": -213
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "ribbon_storm_f7.png",
-          "row": 0,
-          "col": 6,
-          "bbox": [
-            3267,
-            57,
-            258,
-            438
-          ],
-          "offset": {
-            "x": 0,
-            "y": -219
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "ribbon_storm_f8.png",
-          "row": 0,
-          "col": 7,
-          "bbox": [
-            3810,
-            53,
-            212,
-            446
-          ],
-          "offset": {
-            "x": 0,
-            "y": -223
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -126,
-        "y": -451,
-        "w": 252,
-        "h": 451
-      },
-      "pivot": {
-        "x": 0,
-        "y": -225
-      },
-      "markers": []
+     "file": "ribbon_storm_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      146,
+      46,
+      260,
+      459
+     ],
+     "offset": {
+      "x": 0,
+      "y": -229.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_storm_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      668,
+      67,
+      255,
+      417
+     ],
+     "offset": {
+      "x": 0,
+      "y": -208.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_storm_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1186,
+      67,
+      259,
+      417
+     ],
+     "offset": {
+      "x": 0,
+      "y": -208.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_storm_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1673,
+      23,
+      325,
+      506
+     ],
+     "offset": {
+      "x": 0,
+      "y": -253
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_storm_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      2165,
+      56,
+      382,
+      440
+     ],
+     "offset": {
+      "x": 0,
+      "y": -220
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 6
+    },
+    {
+     "file": "ribbon_storm_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      2694,
+      63,
+      364,
+      426
+     ],
+     "offset": {
+      "x": 0,
+      "y": -213
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_storm_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      3267,
+      57,
+      258,
+      438
+     ],
+     "offset": {
+      "x": 0,
+      "y": -219
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_storm_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      3810,
+      53,
+      212,
+      446
+     ],
+     "offset": {
+      "x": 0,
+      "y": -223
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ]
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -126,
+    "y": -451,
+    "w": 252,
+    "h": 451
+   },
+   "pivot": {
+    "x": 0,
+    "y": -225
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ]
 }

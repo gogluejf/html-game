@@ -1,157 +1,157 @@
 {
-  "file": "petal-panic/assets/heroes/balthazar/cane_attack_sheet.png",
-  "size": "3120x552",
-  "rows": 1,
-  "cols": 6,
-  "kind": "animation",
-  "description": "balthazar cane attack strike (f1-f6)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/balthazar/cane_attack_sheet.png",
+ "size": "3120x552",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "balthazar cane attack strike (f1-f6)",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "cane_attack",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "frames": [
     {
-      "name": "balthazar",
-      "anim": "cane_attack",
-      "frames_dir": "petal-panic/assets/heroes/balthazar",
-      "frames": [
-        {
-          "file": "cane_attack_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            106,
-            125,
-            339,
-            301
-          ],
-          "offset": {
-            "x": 169.5,
-            "y": -150.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "cane_attack_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            637,
-            89,
-            317,
-            373
-          ],
-          "offset": {
-            "x": 158.5,
-            "y": -186.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "cane_attack_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            1119,
-            105,
-            393,
-            341
-          ],
-          "offset": {
-            "x": 196.5,
-            "y": -170.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "cane_attack_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1615,
-            119,
-            441,
-            314
-          ],
-          "offset": {
-            "x": 220.5,
-            "y": -157
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "cane_attack_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            2127,
-            105,
-            458,
-            342
-          ],
-          "offset": {
-            "x": 229,
-            "y": -171
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "cane_attack_f6.png",
-          "row": 0,
-          "col": 5,
-          "bbox": [
-            2671,
-            124,
-            410,
-            304
-          ],
-          "offset": {
-            "x": 205,
-            "y": -152
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": 0,
-        "y": -293,
-        "w": 331,
-        "h": 293
-      },
-      "pivot": {
-        "x": 166,
-        "y": -146
-      },
-      "markers": []
+     "file": "cane_attack_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      106,
+      125,
+      339,
+      301
+     ],
+     "offset": {
+      "x": 169.5,
+      "y": -150.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "cane_attack_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      637,
+      89,
+      317,
+      373
+     ],
+     "offset": {
+      "x": 158.5,
+      "y": -186.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "cane_attack_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1119,
+      105,
+      393,
+      341
+     ],
+     "offset": {
+      "x": 196.5,
+      "y": -170.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "cane_attack_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1615,
+      119,
+      441,
+      314
+     ],
+     "offset": {
+      "x": 220.5,
+      "y": -157
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "cane_attack_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      2127,
+      105,
+      458,
+      342
+     ],
+     "offset": {
+      "x": 229,
+      "y": -171
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "cane_attack_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      2671,
+      124,
+      410,
+      304
+     ],
+     "offset": {
+      "x": 205,
+      "y": -152
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ]
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -293,
+    "w": 331,
+    "h": 293
+   },
+   "pivot": {
+    "x": 166,
+    "y": -146
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ]
 }

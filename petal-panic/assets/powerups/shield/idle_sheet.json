@@ -1,116 +1,116 @@
 {
-  "file": "petal-panic/assets/powerups/shield/idle_sheet.png",
-  "size": "1161x170",
-  "rows": 1,
-  "cols": 4,
-  "kind": "animation",
-  "description": "shield idle (4 frames) \u2014 reassembled from frames",
-  "entities": [
+ "file": "petal-panic/assets/powerups/shield/idle_sheet.png",
+ "size": "1161x170",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "shield idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "shield",
+   "anim": "idle",
+   "frames": [
     {
-      "name": "shield",
-      "anim": "idle",
-      "frames": [
-        {
-          "file": "idle_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            1,
-            268,
-            168
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "idle_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            268,
-            1,
-            282,
-            168
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "idle_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            550,
-            0,
-            344,
-            170
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "idle_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            894,
-            1,
-            267,
-            168
-          ],
-          "offset": {
-            "x": 0,
-            "y": 0
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/powerups/shield",
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -132,
-        "y": -82,
-        "w": 264,
-        "h": 164
-      },
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "markers": []
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      268,
+      168
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      268,
+      1,
+      282,
+      168
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      550,
+      0,
+      344,
+      170
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      894,
+      1,
+      267,
+      168
+     ],
+     "offset": {
+      "x": 0,
+      "y": 0
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-21"
+   ],
+   "frames_dir": "petal-panic/assets/powerups/shield",
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -132,
+    "y": -82,
+    "w": 264,
+    "h": 164
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "updated": "2026-10-21"
 }

@@ -1,78 +1,78 @@
 {
-  "file": "petal-panic/assets/levels/level2/block_single_sheet.png",
-  "size": "439x558",
-  "rows": 2,
-  "cols": 1,
-  "kind": "tile_variant",
-  "description": "level2 block_single (2 frames)",
-  "entities": [
+ "file": "petal-panic/assets/levels/level2/block_single_sheet.png",
+ "size": "439x558",
+ "rows": 2,
+ "cols": 1,
+ "kind": "tile_variant",
+ "description": "level2 block_single (2 frames)",
+ "entities": [
+  {
+   "name": "level2",
+   "anim": "block_single",
+   "frames_dir": "petal-panic/assets/levels/level2",
+   "frames": [
     {
-      "name": "level2",
-      "anim": "block_single",
-      "frames_dir": "petal-panic/assets/levels/level2",
-      "frames": [
-        {
-          "file": "block_single_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            1,
-            0,
-            437,
-            311
-          ],
-          "offset": {
-            "x": 0,
-            "y": -155.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "block_single_f2.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            0,
-            311,
-            439,
-            247
-          ],
-          "offset": {
-            "x": 0,
-            "y": -123.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "collision": {
-        "x": -191,
-        "y": -215,
-        "w": 390,
-        "h": 196
-      },
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "pivot": {
-        "x": 0,
-        "y": -110
-      },
-      "markers": []
+     "file": "block_single_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      1,
+      0,
+      437,
+      311
+     ],
+     "offset": {
+      "x": 0,
+      "y": -155.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "block_single_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      311,
+      439,
+      247
+     ],
+     "offset": {
+      "x": 0,
+      "y": -123.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-30T03:18:56",
-  "crop": {
-    "frames_dir": "petal-panic/assets/levels/level2",
-    "pass": "/home/goglue/tmp/blockcrop/lv2_single"
+   ],
+   "collision": {
+    "x": -191,
+    "y": -215,
+    "w": 390,
+    "h": 196
+   },
+   "playback": "loop",
+   "direction": "forward",
+   "pivot": {
+    "x": 0,
+    "y": -110
+   },
+   "markers": [],
+   "fps": 8
   }
+ ],
+ "updated": "2026-10-30T03:18:56",
+ "crop": {
+  "frames_dir": "petal-panic/assets/levels/level2",
+  "pass": "/home/goglue/tmp/blockcrop/lv2_single"
+ }
 }

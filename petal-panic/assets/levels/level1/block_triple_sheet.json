@@ -1,78 +1,78 @@
 {
-  "file": "petal-panic/assets/levels/level1/block_triple_sheet.png",
-  "size": "464x1683",
-  "rows": 2,
-  "cols": 1,
-  "kind": "tile_variant",
-  "description": "level1 block_triple (2 frames)",
-  "entities": [
+ "file": "petal-panic/assets/levels/level1/block_triple_sheet.png",
+ "size": "464x1683",
+ "rows": 2,
+ "cols": 1,
+ "kind": "tile_variant",
+ "description": "level1 block_triple (2 frames)",
+ "entities": [
+  {
+   "name": "level1",
+   "anim": "block_triple",
+   "frames_dir": "petal-panic/assets/levels/level1",
+   "frames": [
     {
-      "name": "level1",
-      "anim": "block_triple",
-      "frames_dir": "petal-panic/assets/levels/level1",
-      "frames": [
-        {
-          "file": "block_triple_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            464,
-            912
-          ],
-          "offset": {
-            "x": -236,
-            "y": -854
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 0.9353782894736843
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "block_triple_f2.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            0,
-            912,
-            463,
-            771
-          ],
-          "offset": {
-            "x": -235,
-            "y": -702
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 0.9121465629053179
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "collision": {
-        "x": -211,
-        "y": -672,
-        "w": 418,
-        "h": 627
-      },
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "pivot": {
-        "x": -4,
-        "y": -290
-      },
-      "markers": []
+     "file": "block_triple_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      464,
+      912
+     ],
+     "offset": {
+      "x": -236,
+      "y": -854
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 0.9353782894736843
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "block_triple_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      912,
+      463,
+      771
+     ],
+     "offset": {
+      "x": -235,
+      "y": -702
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 0.9121465629053179
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-30T03:18:56",
-  "crop": {
-    "frames_dir": "petal-panic/assets/levels/level1",
-    "pass": "/home/goglue/tmp/blockcrop/lv1_triple"
+   ],
+   "collision": {
+    "x": -211,
+    "y": -672,
+    "w": 418,
+    "h": 627
+   },
+   "playback": "loop",
+   "direction": "forward",
+   "pivot": {
+    "x": -4,
+    "y": -290
+   },
+   "markers": [],
+   "fps": 8
   }
+ ],
+ "updated": "2026-10-30T03:18:56",
+ "crop": {
+  "frames_dir": "petal-panic/assets/levels/level1",
+  "pass": "/home/goglue/tmp/blockcrop/lv1_triple"
+ }
 }

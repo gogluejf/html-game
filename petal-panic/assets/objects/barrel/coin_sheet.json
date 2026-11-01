@@ -1,56 +1,56 @@
 {
-  "label": "objects",
-  "file": "petal-panic/assets/objects/barrel/coin_sheet.png",
-  "rows": 1,
-  "cols": 1,
-  "size": "356x385",
-  "description": "Flower barrel / coin barrel prop (single image)",
-  "entities": [
+ "label": "objects",
+ "file": "petal-panic/assets/objects/barrel/coin_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "356x385",
+ "description": "Flower barrel / coin barrel prop (single image)",
+ "entities": [
+  {
+   "name": "barrel",
+   "anim": "coin",
+   "frames": [
     {
-      "name": "barrel",
-      "anim": "coin",
-      "frames": [
-        {
-          "file": "coin_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            356,
-            385
-          ],
-          "offset": {
-            "x": -177.1,
-            "y": -192.5
-          },
-          "scale": {
-            "sx": 0.9948286660035108,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "frames_dir": "petal-panic/assets/objects/barrel",
-      "speed": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -181,
-        "y": -194,
-        "w": 358,
-        "h": 372
-      },
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "markers": []
+     "file": "coin_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      356,
+      385
+     ],
+     "offset": {
+      "x": -177.1,
+      "y": -192.5
+     },
+     "scale": {
+      "sx": 0.9948286660035108,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "crop": {
-    "pass": "/tmp/redo-single"
-  },
-  "kind": "entity_variant"
+   ],
+   "frames_dir": "petal-panic/assets/objects/barrel",
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -181,
+    "y": -194,
+    "w": 358,
+    "h": 372
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/redo-single"
+ },
+ "kind": "entity_variant"
 }

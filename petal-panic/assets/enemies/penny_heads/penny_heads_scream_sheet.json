@@ -1,141 +1,141 @@
 {
-  "file": "petal-panic/assets/enemies/penny_heads/penny_heads_scream_sheet.png",
-  "size": "2091x593",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "penny_heads scream (5f) \u2014 open-mouth scream cycle",
-  "entities": [
+ "file": "petal-panic/assets/enemies/penny_heads/penny_heads_scream_sheet.png",
+ "size": "2091x593",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "penny_heads scream (5f) \u2014 open-mouth scream cycle",
+ "entities": [
+  {
+   "name": "penny_heads",
+   "anim": "scream",
+   "frames_dir": "petal-panic/assets/enemies/penny_heads",
+   "frames": [
     {
-      "name": "penny_heads",
-      "anim": "scream",
-      "frames_dir": "petal-panic/assets/enemies/penny_heads",
-      "frames": [
-        {
-          "file": "penny_heads_scream_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            8,
-            434,
-            577
-          ],
-          "offset": {
-            "x": 217,
-            "y": -288.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "penny_heads_scream_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            434,
-            13,
-            421,
-            567
-          ],
-          "offset": {
-            "x": 210.5,
-            "y": -283.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "penny_heads_scream_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            855,
-            0,
-            398,
-            593
-          ],
-          "offset": {
-            "x": 199,
-            "y": -296.5
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "penny_heads_scream_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1253,
-            6,
-            411,
-            580
-          ],
-          "offset": {
-            "x": 205.5,
-            "y": -290
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "penny_heads_scream_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1664,
-            9,
-            427,
-            574
-          ],
-          "offset": {
-            "x": 213.5,
-            "y": -287
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "speed": 8,
-      "playback": "loop",
-      "direction": "ping_pong",
-      "collision": {
-        "x": 0,
-        "y": -569,
-        "w": 426,
-        "h": 569
-      },
-      "pivot": {
-        "x": 213,
-        "y": -284
-      },
-      "markers": []
+     "file": "penny_heads_scream_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      8,
+      434,
+      577
+     ],
+     "offset": {
+      "x": 217,
+      "y": -288.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "penny_heads_scream_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      434,
+      13,
+      421,
+      567
+     ],
+     "offset": {
+      "x": 210.5,
+      "y": -283.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "penny_heads_scream_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      855,
+      0,
+      398,
+      593
+     ],
+     "offset": {
+      "x": 199,
+      "y": -296.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "penny_heads_scream_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1253,
+      6,
+      411,
+      580
+     ],
+     "offset": {
+      "x": 205.5,
+      "y": -290
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "penny_heads_scream_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1664,
+      9,
+      427,
+      574
+     ],
+     "offset": {
+      "x": 213.5,
+      "y": -287
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-27",
-  "crop": {
-    "frames_dir": "petal-panic/assets/enemies/penny_heads",
-    "pass": "/tmp/ph_scream"
+   ],
+   "playback": "loop",
+   "direction": "ping_pong",
+   "collision": {
+    "x": 0,
+    "y": -569,
+    "w": 426,
+    "h": 569
+   },
+   "pivot": {
+    "x": 213,
+    "y": -284
+   },
+   "markers": [],
+   "fps": 8
   }
+ ],
+ "updated": "2026-10-27",
+ "crop": {
+  "frames_dir": "petal-panic/assets/enemies/penny_heads",
+  "pass": "/tmp/ph_scream"
+ }
 }
