@@ -422,9 +422,7 @@ export class Special extends Entity {
           // nose points along travel regardless of spawn path.
           this.orientSprite(this.vx, this.vy);
           // White outline like the thorn — keeps fast small shots readable.
-          // Saw + spread get the heavier 6px (small, fast, busy backgrounds);
-          // other specials stay at 4.
-          this._outline = spriteOutline({ color: '#ffffff', thickness: 4, opacity: 1.0 }, this);
+          this._outline = spriteOutline({ color: '#ffffff', thickness: 2, opacity: 1.0 }, this);
         } catch { /* procedural path stays active */ }
       }
     }
