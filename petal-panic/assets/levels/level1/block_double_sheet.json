@@ -63,8 +63,8 @@
    "playback": "loop",
    "direction": "forward",
    "pivot": {
-    "x": 0,
-    "y": -233
+    "x": 2,
+    "y": -252
    },
    "markers": [],
    "fps": 8

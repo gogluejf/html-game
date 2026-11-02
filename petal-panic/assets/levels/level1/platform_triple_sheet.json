@@ -147,8 +147,8 @@
    "playback": "loop",
    "direction": "forward",
    "pivot": {
-    "x": 0,
-    "y": -115
+    "x": 1,
+    "y": -154
    },
    "markers": [],
    "fps": 8
