@@ -662,8 +662,15 @@ export class Hero extends Entity {
         this.specialSlots[i] = null;
       }
     }
-    // Last special gone → back to the default weapon (no empty-slot trap).
-    if (this.specialSlots.every((t) => t == null)) this.selectedWeapon = WEAPON_THORN;
+    // Selection fallback: clamp to the LAST FILLED slot after compaction —
+    // the lost slot's index may now be empty (or past the end), which would
+    // trap the player on an empty slot with thorn unreachable. No specials
+    // left at all → back to the default weapon.
+    let lastFilled = -1;
+    for (let i = 0; i < this.specialSlots.length; i++) {
+      if (this.specialSlots[i] != null) lastFilled = i;
+    }
+    this.selectedWeapon = lastFilled >= 0 ? lastFilled : WEAPON_THORN;
   }
 
   /**
