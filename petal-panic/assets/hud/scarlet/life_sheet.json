@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/hud/scarlet/life_sheet.png",
+ "size": "1526x319",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "scarlet life avatar (4 frames) \u2014 expression cycle for HUD lives",
+ "entities": [
+  {
+   "name": "scarlet",
+   "anim": "life",
+   "frames_dir": "petal-panic/assets/hud/scarlet",
+   "frames": [
+    {
+     "file": "life_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      382,
+      319
+     ]
+    },
+    {
+     "file": "life_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      382,
+      0,
+      381,
+      319
+     ]
+    },
+    {
+     "file": "life_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      763,
+      0,
+      381,
+      318
+     ]
+    },
+    {
+     "file": "life_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1144,
+      0,
+      382,
+      319
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-02"
+}
