@@ -55,6 +55,7 @@ export function aimRotation(vx, vy) {
 let projectileSpriteData = null;
 let projectileFrames = new Map(); // shared frame cache, filled at boot
 export function getProjectileSpriteData() { return projectileSpriteData; }
+export function getProjectileFrames() { return projectileFrames; }
 
 // Special-weapon sheets (Step A): per-type shoot/fly anim + bomb's explode
 // anim. The SHEET IS THE SOURCE OF TRUTH: the editor-authored collision box
