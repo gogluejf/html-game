@@ -1,14 +1,15 @@
 {
  "file": "petal-panic/assets/projectiles/bomb/shoot_sheet.png",
- "size": "942x162",
+ "size": "2004x246",
  "rows": 1,
- "cols": 4,
+ "cols": 6,
  "kind": "animation",
- "description": "bomb special (4 frames) \u2014 reassembled from frames",
+ "description": "bomb special (6 frames) \u2014 striped star bomb with burning fuse",
  "entities": [
   {
    "name": "bomb",
    "anim": "shoot",
+   "frames_dir": "petal-panic/assets/projectiles/bomb",
    "frames": [
     {
      "file": "shoot_f1.png",
@@ -16,13 +17,13 @@
      "col": 0,
      "bbox": [
       0,
-      2,
-      239,
-      157
+      3,
+      333,
+      239
      ],
      "offset": {
       "x": 0,
-      "y": -157
+      "y": -239
      },
      "scale": {
       "sx": 1,
@@ -36,14 +37,14 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      239,
-      2,
-      240,
-      158
+      333,
+      3,
+      329,
+      240
      ],
      "offset": {
       "x": 0,
-      "y": -158
+      "y": -240
      },
      "scale": {
       "sx": 1,
@@ -57,14 +58,14 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      479,
+      662,
       0,
-      236,
-      162
+      336,
+      246
      ],
      "offset": {
       "x": 0,
-      "y": -162
+      "y": -246
      },
      "scale": {
       "sx": 1,
@@ -78,14 +79,56 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      715,
+      998,
       1,
-      227,
-      159
+      327,
+      244
      ],
      "offset": {
       "x": 0,
-      "y": -159
+      "y": -244
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1325,
+      6,
+      337,
+      233
+     ],
+     "offset": {
+      "x": 0,
+      "y": -233
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "shoot_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1662,
+      6,
+      342,
+      233
+     ],
+     "offset": {
+      "x": 0,
+      "y": -233
      },
      "scale": {
       "sx": 1,
@@ -95,22 +138,21 @@
      "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/projectiles/bomb",
    "fps": 8,
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": 96,
-    "y": -133,
-    "w": 121,
-    "h": 130
+    "x": 99,
+    "y": -225,
+    "w": 213,
+    "h": 213
    },
    "pivot": {
-    "x": 157,
-    "y": -68
+    "x": 206,
+    "y": -118
    },
    "markers": []
   }
  ],
- "updated": "2026-10-21"
+ "updated": "2026-11-02"
 }
