@@ -96,18 +96,18 @@
      "durUnits": 1
     }
    ],
-   "fps": 8,
+   "fps": 4,
    "playback": "loop",
    "direction": "forward",
    "collision": {
     "x": -233,
-    "y": -569,
+    "y": -538,
     "w": 466,
-    "h": 541
+    "h": 510
    },
    "pivot": {
     "x": 0,
-    "y": -284
+    "y": -283
    },
    "markers": []
   }

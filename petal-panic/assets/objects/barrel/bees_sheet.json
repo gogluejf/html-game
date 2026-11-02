@@ -96,18 +96,18 @@
      "durUnits": 1
     }
    ],
-   "fps": 8,
+   "fps": 4,
    "playback": "loop",
-   "direction": "forward",
+   "direction": "ping_pong",
    "collision": {
     "x": -232,
-    "y": -557,
+    "y": -519,
     "w": 464,
-    "h": 522
+    "h": 484
    },
    "pivot": {
     "x": 0,
-    "y": -296
+    "y": -277
    },
    "markers": []
   }
