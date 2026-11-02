@@ -467,20 +467,23 @@ export class Special extends Entity {
     // direction. Once settled (resting on a surface), ease back to upright so
     // the fuse sits on top instead of frozen at the landing angle.
     if (this.type === 'bomb' && this.sprite) {
-      const speed = Math.hypot(this.vx, this.vy);
-      if (speed > 1 || !this._bombSettled) {
-        if (speed > 1) {
-          this.mirrorX = this.vx < -1e-9;
-          this.rotation = Math.atan2(this.vy, this.mirrorX ? -this.vx : this.vx);
+      // TEMP: settle ease-back disabled — bomb stays frozen at landing angle.
+      // Orientation freezes at immobilization (see stepBombTerrain,
+      // _bombOrientFrozen): no more re-aim snaps on the settle frame.
+      if (!this._bombOrientFrozen) {
+        const speed = Math.hypot(this.vx, this.vy);
+        // Tiny vertical hop exception: near-vertical + slow velocity (micro
+        // bounces over platforms / apex of an over-head throw) would make the
+        // tangent angle flip ~180° every frame → visual flicker. Hold the last
+        // good angle there; all real motion (falls, throws, horizontal hops)
+        // re-aims normally.
+        const tinyVerticalHop = Math.abs(this.vx) < 0.5 * UNIT_PX_Y && speed < 0.5 * UNIT_PX_Y;
+        if ((speed > 1 || !this._bombSettled) && !tinyVerticalHop) {
+          if (speed > 1) {
+            this.mirrorX = this.vx < -1e-9;
+            this.rotation = Math.atan2(this.vy, this.mirrorX ? -this.vx : this.vx);
+          }
         }
-      }
-      if (this._bombSettled && speed <= 1) {
-        const target = 0; // upright: fuse up
-        const diff = target - this.rotation;
-        // Shortest-arc ease (~120ms at 60fps).
-        const step = Math.sign(diff) * Math.min(Math.abs(diff), 12 * dt);
-        this.rotation += step;
-        if (Math.abs(this.rotation) < 0.01) this.rotation = 0;
       }
     }
 

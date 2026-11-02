@@ -193,11 +193,14 @@ export function stepBombTerrain(ent, dt, groundY, platforms = []) {
       ent.vy = -Math.abs(ent.vy) * 0.5; // legacy restitution (bombs decay)
       ent.vx *= 0.7;                    // friction
     }
-    if (Math.abs(ent.vy) < BOMB_SETTLE_VY) {
+    if (Math.abs(ent.vy) < Math.sqrt(2 * ent.gravityValue * 3)) {
       // Rest on the surface — do NOT kill. The fuse keeps running;
       // stepBomb() fires when TTL expires or contact occurs.
       ent.vy = 0;
       ent.vx = 0;
+      // Freeze orientation at immobilization: rotation + mirrorX are locked
+      // at their last in-flight values and never updated again while settled.
+      ent._bombOrientFrozen = true;
       if (ent._bombRetainOnSettle) ent._bombSettled = true;
       return false;
     }
