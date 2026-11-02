@@ -94,6 +94,12 @@ export function spawnProjectile(p, ctx, h) {
     ent.vx = cos * p.speed;
     ent.vy = sin * p.speed;
     ent.orientSprite(ent.vx, ent.vy);
+    // VERTICAL-FLIGHT POSE: for exactly-vertical aims the sheet box's long
+    // axis must point along flight — transpose the AABB dims so the box and
+    // the rotated art describe the same oriented object (no more "sprite 90°,
+    // box still horizontal"). Diagonals keep the horizontal pose.
+    const verticalPose = Math.abs(sin) > 0.99 && Math.abs(cos) < 0.01;
+    ent._poseTransposed = verticalPose;
     ent.damage = p.damage;
     ent.setLife(p.ttl);
     ent.friendly = p.team !== 'foe';

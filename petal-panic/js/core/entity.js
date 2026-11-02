@@ -144,9 +144,17 @@ export class Entity {
 
   // --- Size getters (single derivation, no stored duplication) ---------------
 
-  /** Height in world px. targetH × 48, multiplied by the ACTIVE anim's
-   *  hScale (per-anim box height — crouch sheets shrink it). */
-  get h() { return this._targetH * UNIT_PX * this._targetHScale; }
+  /** Height in world px for the ACTIVE pose. Non-transposed: targetH × 48 ×
+   *  hScale (per-anim box height — crouch sheets shrink it). Transposed
+   *  (vertical-flight pose): the sheet box's width dim becomes the vertical
+   *  extent so the AABB matches the rotated art. */
+  get h() {
+    const cb = this.spriteAnimData?.collisionBox;
+    if (this._baseW == null && cb && this._spriteScale && this._poseTransposed) {
+      return cb.w * this._spriteScale;
+    }
+    return this._targetH * UNIT_PX * this._targetHScale;
+  }
   set h(px) { this._targetH = px / UNIT_PX; }
 
   /**
@@ -154,12 +162,17 @@ export class Entity {
    * - Constructor-owned (baseW set): returns baseW.
    * - Sheet-owned (no baseW): if a sprite anim with collisionBox is active,
    *   width = collisionBox.w × scale (aspect ratio from the sheet).
+   *   _poseTransposed (vertical-flight pose): the sheet box's LONG axis points
+   *   along the flight direction — w/h swap so the AABB matches the rotated
+   *   art (sprite and box describe the same oriented object).
    *   Otherwise falls back to targetH × 48 (square).
    */
   get w() {
     if (this._baseW != null) return this._baseW;
     const cb = this.spriteAnimData?.collisionBox;
-    if (cb && this._spriteScale) return cb.w * this._spriteScale;
+    if (cb && this._spriteScale) {
+      return (this._poseTransposed ? cb.h : cb.w) * this._spriteScale;
+    }
     return this._targetH * UNIT_PX;
   }
   set w(px) { this._baseW = px; }
@@ -265,6 +278,18 @@ export class Entity {
     this.rotation = Math.atan2(vy, this.mirrorX ? -vx : vx);
   }
 
+  /**
+   * Set the active sprite animation (sprites.md runtime wiring, v1).
+   *
+   * Looks up this.sprite.anims[name], computes the UNIFORM scale that fits the
+   * anim's collision box height (§4) onto
+   * this entity's collision-box height, and stores it. The entity's world
+   * position (physical anchor, default bottom-center) is NOT touched — only
+   * the rendered art size changes, so switching anims never teleports the
+   * entity (§3).
+   *
+   * @param {string} name key into this.sprite.anims
+   */
   /**
    * Set the active sprite animation (sprites.md runtime wiring, v1).
    *

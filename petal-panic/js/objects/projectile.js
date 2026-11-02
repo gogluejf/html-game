@@ -367,6 +367,9 @@ export class Special extends Entity {
     });
 
     this.type = type;
+    // Pose state resets per life (pooled slots keep fields across reuse):
+    // default to the horizontal-flight pose.
+    this._poseTransposed = false;
     invalidateImpactMotion(this);
     this.friendly = true;
     // Solid-collision behavior per WEAPON (special-weapons.md): bombs BOUNCE
