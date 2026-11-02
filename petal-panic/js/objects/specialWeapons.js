@@ -104,7 +104,7 @@ export const SPECIAL_WEAPONS = [
     icon: '💥',
     color: '#e74c3c',
     speed: 400,
-    damage: 20,
+    damage: 30,
     lifetime: 2,
     size: 0.4,
     spriteAnim: 'fly',
