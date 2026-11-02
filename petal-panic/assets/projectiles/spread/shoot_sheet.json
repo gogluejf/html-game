@@ -19,7 +19,17 @@
       8,
       291,
       215
-     ]
+     ],
+     "offset": {
+      "x": -145.5,
+      "y": -107.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f2.png",
@@ -30,7 +40,17 @@
       6,
       266,
       218
-     ]
+     ],
+     "offset": {
+      "x": -133,
+      "y": -109
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f3.png",
@@ -41,7 +61,17 @@
       6,
       259,
       218
-     ]
+     ],
+     "offset": {
+      "x": -129.5,
+      "y": -109
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f4.png",
@@ -52,7 +82,17 @@
       5,
       262,
       221
-     ]
+     ],
+     "offset": {
+      "x": -131,
+      "y": -110.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f5.png",
@@ -63,7 +103,17 @@
       4,
       272,
       223
-     ]
+     ],
+     "offset": {
+      "x": -136,
+      "y": -111.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f6.png",
@@ -74,7 +124,17 @@
       2,
       266,
       227
-     ]
+     ],
+     "offset": {
+      "x": -133,
+      "y": -113.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f7.png",
@@ -85,7 +145,17 @@
       0,
       271,
       231
-     ]
+     ],
+     "offset": {
+      "x": -135.5,
+      "y": -115.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f8.png",
@@ -96,20 +166,34 @@
       0,
       265,
       230
-     ]
+     ],
+     "offset": {
+      "x": -132.5,
+      "y": -115
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
    ],
    "frames_dir": "petal-panic/assets/projectiles/spread",
    "collision": {
-    "x": 4,
-    "y": 5,
-    "w": 281,
-    "h": 221
+    "x": -73,
+    "y": -110,
+    "w": 202,
+    "h": 213
    },
    "pivot": {
-    "x": 144.5,
-    "y": 115.5
-   }
+    "x": 0,
+    "y": 0
+   },
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "markers": []
   }
  ],
  "updated": "2026-10-21"

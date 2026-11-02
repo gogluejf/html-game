@@ -19,7 +19,17 @@
       3,
       233,
       193
-     ]
+     ],
+     "offset": {
+      "x": -116.5,
+      "y": -96.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f2.png",
@@ -30,7 +40,17 @@
       0,
       236,
       199
-     ]
+     ],
+     "offset": {
+      "x": -118,
+      "y": -99.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f3.png",
@@ -41,7 +61,17 @@
       3,
       232,
       194
-     ]
+     ],
+     "offset": {
+      "x": -116,
+      "y": -97
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f4.png",
@@ -52,7 +82,17 @@
       0,
       236,
       199
-     ]
+     ],
+     "offset": {
+      "x": -118,
+      "y": -99.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f5.png",
@@ -63,7 +103,17 @@
       0,
       237,
       199
-     ]
+     ],
+     "offset": {
+      "x": -118.5,
+      "y": -99.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f6.png",
@@ -74,7 +124,17 @@
       1,
       237,
       197
-     ]
+     ],
+     "offset": {
+      "x": -118.5,
+      "y": -98.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f7.png",
@@ -85,7 +145,17 @@
       0,
       239,
       199
-     ]
+     ],
+     "offset": {
+      "x": -119.5,
+      "y": -99.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f8.png",
@@ -96,20 +166,34 @@
       0,
       241,
       200
-     ]
+     ],
+     "offset": {
+      "x": -120.5,
+      "y": -100
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
    ],
    "frames_dir": "petal-panic/assets/projectiles/saw",
    "collision": {
-    "x": 0,
-    "y": 0,
-    "w": 238,
+    "x": -80,
+    "y": -99,
+    "w": 199,
     "h": 199
    },
    "pivot": {
-    "x": 119.0,
-    "y": 99.5
-   }
+    "x": 0,
+    "y": 0
+   },
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "markers": []
   }
  ],
  "updated": "2026-10-21"
