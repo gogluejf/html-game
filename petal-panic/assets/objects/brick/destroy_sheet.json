@@ -1,0 +1,288 @@
+{
+ "file": "petal-panic/assets/objects/brick/destroy_sheet.png",
+ "size": "1536x2048",
+ "rows": 4,
+ "cols": 3,
+ "kind": "animation",
+ "description": "brick object destroy sequence (9 frames): progressive wall damage icons then crumbling platform collapse",
+ "entities": [
+  {
+   "name": "brick",
+   "anim": "destroy",
+   "frames_dir": "petal-panic/assets/objects/brick",
+   "frames": [
+    {
+     "file": "destroy_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      27,
+      17,
+      450,
+      465
+     ],
+     "offset": {
+      "x": -225,
+      "y": -465
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      544,
+      17,
+      451,
+      465
+     ],
+     "offset": {
+      "x": -225.5,
+      "y": -465
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1062,
+      18,
+      454,
+      464
+     ],
+     "offset": {
+      "x": -227,
+      "y": -464
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f4.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      28,
+      527,
+      450,
+      467
+     ],
+     "offset": {
+      "x": -225,
+      "y": -467
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f5.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      544,
+      527,
+      451,
+      467
+     ],
+     "offset": {
+      "x": -225.5,
+      "y": -467
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f6.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      1056,
+      527,
+      459,
+      467
+     ],
+     "offset": {
+      "x": -229.5,
+      "y": -467
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f7.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      37,
+      1048,
+      451,
+      451
+     ],
+     "offset": {
+      "x": -228.75,
+      "y": -463
+     },
+     "scale": {
+      "sx": 1.0144124168514412,
+      "sy": 1.0266075388026608
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f8.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      544,
+      1049,
+      455,
+      450
+     ],
+     "offset": {
+      "x": -229.25,
+      "y": -459.99999999999994
+     },
+     "scale": {
+      "sx": 1.0076923076923077,
+      "sy": 1.0222222222222221
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f9.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      1048,
+      1050,
+      454,
+      449
+     ],
+     "offset": {
+      "x": -227,
+      "y": -459
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1.022271714922049
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f10.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      37,
+      1566,
+      451,
+      450
+     ],
+     "offset": {
+      "x": -225.5,
+      "y": -446.99999999999994
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 0.9933333333333332
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f11.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      545,
+      1566,
+      450,
+      450
+     ],
+     "offset": {
+      "x": -225,
+      "y": -450
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "destroy_f12.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      1049,
+      1855,
+      454,
+      161
+     ],
+     "offset": {
+      "x": -227,
+      "y": -161
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -189.5,
+    "y": -393,
+    "w": 379,
+    "h": 393
+   },
+   "pivot": {
+    "x": 0,
+    "y": -196
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-02T16:09:51",
+ "crop": {
+  "frames_dir": "petal-panic/assets/objects/brick",
+  "pass": "/home/goglue/tmp/brick-destroy-v9"
+ }
+}
