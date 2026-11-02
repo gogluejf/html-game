@@ -39,8 +39,7 @@ export function drawHUD(ctx, hero, _camera, levelDef) {
   const superH = drawSuperMeter(ctx, hero, bounds, y); // row 2: purple, under red
   y += superH + ROW_GAP;
   drawAmmo(ctx, hero, bounds, y);                 // row 3: weapons, below both bars
-  drawCoinsAndLives(ctx, hero, bounds);
-  drawPortrait(ctx, hero, bounds);
+  drawCoinsAndLives(ctx, hero, bounds);           // top-right: coin + lives badges
 
   ctx.restore();
 }
@@ -247,61 +246,160 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// --- Coins + lives (top-right) -----------------------------------------------
+// --- Coins + lives (top-right): glass badge tiles with real art --------------
+// Notification style: each counter is a glass square (like the weapon tiles)
+// holding REAL art — coin = gold sheet f7, lives = the hero's life avatar f1
+// (assets/hud/<hero>/life_f1.png). A small circle badge at the bottom-left
+// corner holds the count ("×N" style number). Living effect: every 10–20s a
+// random badge does its motion once — coin plays f8→f7, hero shows one
+// expression frame from its life sheet — then settles back.
+
+const BADGE = 44;        // badge tile size (px)
+const BADGE_GAP = 10;    // gap between the two badges
+const BADGE_ICON_FRAC = 0.78;
+const BADGE_COUNT_R = 11; // count circle radius
+
+// Lazily-loaded HUD images (coin f7/f8 + per-hero life frames). Keyed by path.
+const hudImgs = new Map();
+function loadHudImg(key, relPath) {
+  let entry = hudImgs.get(key);
+  if (!entry) {
+    entry = { img: null };
+    if (typeof Image !== 'undefined') {
+      const img = new Image();
+      img.src = new URL(relPath, import.meta.url).href;
+      entry.img = img;
+    }
+    hudImgs.set(key, entry);
+  }
+  return entry.img;
+}
+
+// Per-badge living-effect state: { start, dur, kind }
+const _badgeFx = new Map(); // 'coin' | 'lives' → fx
+
+/** One-shot playback scheduler: ~once per 15s average (10–20s window). */
+function maybeStartFx(map, key, now, durMs) {
+  let fx = map.get(key);
+  if (fx) return fx;
+  if (Math.random() < (0.016 / 15)) {
+    fx = { start: now, dur: durMs };
+    map.set(key, fx);
+    return fx;
+  }
+  return null;
+}
 
 function drawCoinsAndLives(ctx, hero, bounds) {
-  ctx.textAlign = 'right';
-  ctx.font = `17px ${FONT_UI}`;
-  ctx.fillStyle = GOLD;
-  ctx.fillText(`💰 ${hero.coins ?? 0}`, bounds.x + bounds.w - PAD, bounds.y + PAD + 16);
-  ctx.fillStyle = '#e74c3c';
-  ctx.fillText(`❤️ × ${hero.lives ?? 0}`, bounds.x + bounds.w - PAD, bounds.y + PAD + 36);
+  const now = performance.now();
+  const rightX = bounds.x + bounds.w - PAD;
+  const y = bounds.y + PAD;
+  // Lives badge left of coins badge (coins hugs the right edge).
+  const coinX = rightX - BADGE;
+  const livesX = coinX - BADGE - BADGE_GAP;
+
+  drawCoinBadge(ctx, hero, coinX, y, now);
+  drawLivesBadge(ctx, hero, livesX, y, now);
 }
 
-// --- Selected-hero portrait (32×32, top-right corner, above coins) -----------
+/** Coin badge: gold coin in a glass tile; fx plays the FULL spin sequence
+ *  (f1→f8) once at the sheet's real fps, then settles back on f7. */
+function drawCoinBadge(ctx, hero, x, y, now) {
+  ctx.save();
+  drawGlassTile(ctx, x, y, BADGE, false);
 
-const PORTRAIT_PATHS = {
-  scarlet: '../../assets/heroes/scarlet_vale/idle_f1.png',
-  balthazar: '../../assets/heroes/balthazar/idle_f1.png',
-};
-
-// Lazily-created Image cache (one per hero id). Missing images fall back to a
-// colored box + initial so the HUD still works before assets load or in node.
-const portraits = new Map();
-
-function getPortraitImage(heroId) {
-  let img = portraits.get(heroId);
-  if (img) return img;
-  const path = PORTRAIT_PATHS[heroId];
-  if (!path || typeof Image === 'undefined') return null;
-  img = new Image();
-  img.src = new URL(path, import.meta.url).href;
-  portraits.set(heroId, img);
-  return img;
-}
-
-function drawPortrait(ctx, hero, bounds) {
-  const size = 32;
-  const x = bounds.x + bounds.w - PAD - size;
-  const y = bounds.y + PAD + 44; // below the lives line
-
-  const img = getPortraitImage(hero.heroDef?.id);
-  if (img && img.complete && img.naturalWidth > 0) {
-    ctx.drawImage(img, x, y, size, size);
-  } else {
-    // Placeholder: hero-colored box + name initial.
-    ctx.fillStyle = hero.heroDef?.id === 'balthazar' ? '#5a3d8a' : '#8a2d3b';
-    ctx.fillRect(x, y, size, size);
-    ctx.fillStyle = '#fff';
-    ctx.font = `bold 15px ${FONT_UI}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText((hero.heroDef?.name ?? '?').charAt(0), x + size / 2, y + size / 2);
-    ctx.textBaseline = 'alphabetic';
+  // Full spin sequence from the real gold sheet (same source as the drops).
+  const seq = [];
+  for (let i = 1; i <= 8; i++) {
+    const img = loadHudImg(`coin_f${i}`, `../../assets/objects/coin/gold_f${i}.png`);
+    if (img && img.complete && img.naturalWidth > 0) seq.push(img);
   }
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x + 0.5, y + 0.5, size, size);
+  const rest = seq[6] || null; // f7 = resting frame
+  const fx = maybeStartFx(_badgeFx, 'coin', now, (seq.length / 5) * 1000 || 900);
+  let img = rest, pulse = 1;
+  if (fx && seq.length > 0) {
+    const t = (now - fx.start) / fx.dur;
+    if (t >= 1) { _badgeFx.delete('coin'); }
+    else {
+      img = seq[Math.min(seq.length - 1, Math.floor(t * seq.length))];
+      pulse = 1 + 0.08 * Math.sin(Math.PI * t);
+    }
+  }
+  if (img) drawIconCentered(ctx, img, x, y, BADGE, BADGE_ICON_FRAC, pulse);
+  drawCountBadge(ctx, x, y, hero.coins ?? 0, '#ffd700');
+  ctx.restore();
 }
+
+/** Lives badge: hero life avatar in a glass tile; fx plays the FULL
+ *  expression sequence (f1→f4) once at 8fps, then settles back on f1. */
+function drawLivesBadge(ctx, hero, x, y, now) {
+  ctx.save();
+  drawGlassTile(ctx, x, y, BADGE, false);
+
+  const heroId = hero.heroDef?.id === 'balthazar' ? 'balthazar' : 'scarlet';
+  const base = `../../assets/hud/${heroId}/life_f`;
+  // Full expression sequence from the real life sheet.
+  const seq = [];
+  for (let i = 1; i <= 4; i++) {
+    const img = loadHudImg(`life_${heroId}_${i}`, `${base}${i}.png`);
+    if (img && img.complete && img.naturalWidth > 0) seq.push(img);
+  }
+  const rest = seq[0] || null; // f1 = resting frame
+  const fps = 8;
+  const fx = maybeStartFx(_badgeFx, 'lives', now, (seq.length / fps) * 1000 || 1200);
+  let img = rest, pulse = 1;
+  if (fx && seq.length > 0) {
+    const t = (now - fx.start) / fx.dur;
+    if (t >= 1) { _badgeFx.delete('lives'); }
+    else {
+      img = seq[Math.min(seq.length - 1, Math.floor(t * seq.length))];
+      pulse = 1 + 0.06 * Math.sin(Math.PI * t);
+    }
+  }
+  if (img) drawIconCentered(ctx, img, x, y, BADGE, BADGE_ICON_FRAC, pulse);
+  drawCountBadge(ctx, x, y, hero.lives ?? 0, '#ff5b5b');
+  ctx.restore();
+}
+
+/** Shared glass-tile background (matches the weapon tiles). */
+function drawGlassTile(ctx, x, y, size, selected) {
+  ctx.fillStyle = selected ? 'rgba(20, 24, 34, 0.85)' : 'rgba(16, 18, 26, 0.72)';
+  roundRect(ctx, x, y, size, size, 6);
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  roundRect(ctx, x + 0.5, y + 0.5, size - 1, size - 1, 6);
+  ctx.stroke();
+}
+
+/** Draw an image centered in a tile at the given fraction, with optional pulse.
+ *  offX/offY nudge the icon (used to keep the bottom-left clear for the count badge). */
+function drawIconCentered(ctx, img, x, y, size, frac, pulse = 1, offX = 0, offY = 0) {
+  const s = (size * frac) / Math.max(img.naturalWidth, img.naturalHeight);
+  const dw = img.naturalWidth * s * pulse, dh = img.naturalHeight * s * pulse;
+  ctx.drawImage(img, x + (size - dw) / 2 + offX, y + (size - dh) / 2 + offY, dw, dh);
+}
+
+/** Small circle badge at the tile's bottom-left corner with the count inside. */
+function drawCountBadge(ctx, x, y, value, color) {
+  const cx = x + 2, cy = y + BADGE - 2; // bottom-left corner of the tile
+  ctx.beginPath();
+  ctx.arc(cx, cy, BADGE_COUNT_R, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(10, 12, 18, 0.92)';
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.font = `bold 11px ${FONT_UI}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(value), cx, cy + 0.5);
+  ctx.textBaseline = 'alphabetic';
+}
+
+// --- Selected-hero life avatar: now rendered inside drawLivesBadge() ---------
+// (assets/hud/<hero>/life_f1.png + expression fx). The old 32×32 idle portrait
+// is retired — the life badge IS the hero representation.
 
 

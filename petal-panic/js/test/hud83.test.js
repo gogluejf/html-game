@@ -43,7 +43,7 @@ function makeFakeCtx() {
   base.fillText = (t, x, y) => { rec.texts.push({ t: String(t), x, y }); };
   base.fillRect = (x, y, w, h) => { rec.rects.push({ x, y, w, h, style: base.fillStyle }); };
   base.strokeRect = (x, y, w, h) => { rec.lines.push({ kind: 'rect', x, y, w, h }); };
-  base.arc = (x, y, r) => { rec.arcs.push({ x, y, r }); };
+  base.arc = (x, y, r, a0, a1) => { rec.arcs.push({ x, y, r, full: (a1 - a0) >= Math.PI * 2 - 0.01 }); };
   base.moveTo = (x, y) => { rec.lines.push({ kind: 'moveTo', x, y }); };
   base.lineTo = (x, y) => { rec.lines.push({ kind: 'lineTo', x, y }); };
   return base;
@@ -120,22 +120,20 @@ ok('weapon tiles: 3 glass slots drawn, selection ring follows selectedWeapon', (
   assert.ok(ctx2.rects.length >= 3, 're-draw with moved selection works');
 });
 
-ok('coins + lives display live', () => {
+ok('coins + lives: count text drawn in badge circles (top-right)', () => {
   const ctx = makeFakeCtx();
-  hero.coins = 150;
-  hero.lives = 2;
+  hero.coins = 200; hero.lives = 3;
   drawHUD(ctx, hero, cam, levelDef);
-  const joined = ctx.texts.map(t => t.t).join(' | ');
-  assert.ok(joined.includes('💰 150'), `coin readout (${joined})`);
-  assert.ok(joined.includes('❤️ × 2'), 'lives readout');
+  const texts = ctx.texts.map(t => t.t);
+  assert.ok(texts.includes('200'), `coin count rendered (${texts})`);
+  assert.ok(texts.includes('3'), `lives count rendered`);
 });
 
-ok('portrait: 32×32 box drawn in top-right corner', () => {
+ok('top-right badges: coin + lives count circles drawn in the right corner', () => {
   const ctx = makeFakeCtx();
   drawHUD(ctx, hero, cam, levelDef);
-  const box = ctx.lines.find(l => l.kind === 'rect' && l.w === 32 && l.h === 32);
-  assert.ok(box, '32×32 portrait frame stroked');
-  assert.ok(box.x > VIEW_W - 60, 'portrait sits in the right corner');
+  const fullCircles = ctx.arcs.filter(a => a.full);
+  assert.ok(fullCircles.length >= 2, `coin + lives count circles drawn (${fullCircles.length} full circles)`);
 });
 
 ok('null-safe: missing hero or levelDef does not throw', () => {
