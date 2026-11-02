@@ -1,0 +1,116 @@
+{
+ "file": "petal-panic/assets/objects/barrel/supercoin_sheet.png",
+ "size": "2018x592",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "super coin barrel idle (4 frames) \u2014 golden barrel sparkle sweep",
+ "entities": [
+  {
+   "name": "barrel",
+   "anim": "supercoin",
+   "frames_dir": "petal-panic/assets/objects/barrel",
+   "frames": [
+    {
+     "file": "supercoin_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      7,
+      480,
+      578
+     ],
+     "offset": {
+      "x": -240,
+      "y": -578
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "supercoin_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      480,
+      0,
+      514,
+      592
+     ],
+     "offset": {
+      "x": -280.83670752499984,
+      "y": -592
+     },
+     "scale": {
+      "sx": 1.0236451692606998,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "supercoin_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      994,
+      6,
+      519,
+      580
+     ],
+     "offset": {
+      "x": -245.4054875249998,
+      "y": -580
+     },
+     "scale": {
+      "sx": 1.0206102870905582,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "supercoin_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1513,
+      6,
+      505,
+      579
+     ],
+     "offset": {
+      "x": -252.5,
+      "y": -579
+     },
+     "scale": {
+      "sx": 1.0383966821287127,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 3,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -236,
+    "y": -570,
+    "w": 472,
+    "h": 541
+   },
+   "pivot": {
+    "x": 0,
+    "y": -299
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-02"
+}

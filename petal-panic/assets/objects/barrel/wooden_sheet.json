@@ -1,14 +1,15 @@
 {
- "label": "objects",
  "file": "petal-panic/assets/objects/barrel/wooden_sheet.png",
+ "size": "2057x584",
  "rows": 1,
- "cols": 1,
- "size": "305x386",
- "description": "Circus barrel prop (single image)",
+ "cols": 4,
+ "kind": "animation",
+ "description": "wooden barrel idle (4 frames) \u2014 breathing circus barrel",
  "entities": [
   {
    "name": "barrel",
    "anim": "wooden",
+   "frames_dir": "petal-panic/assets/objects/barrel",
    "frames": [
     {
      "file": "wooden_f1.png",
@@ -16,13 +17,76 @@
      "col": 0,
      "bbox": [
       0,
-      0,
-      305,
-      386
+      3,
+      474,
+      577
      ],
      "offset": {
-      "x": -152.5,
-      "y": -386
+      "x": -237,
+      "y": -577
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "wooden_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      474,
+      0,
+      600,
+      584
+     ],
+     "offset": {
+      "x": -262.10244994999994,
+      "y": -584
+     },
+     "scale": {
+      "sx": 0.9158970369999997,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "wooden_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1074,
+      2,
+      499,
+      579
+     ],
+     "offset": {
+      "x": -238.2247150000001,
+      "y": -579
+     },
+     "scale": {
+      "sx": 1.0544160661322646,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "wooden_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1573,
+      3,
+      484,
+      578
+     ],
+     "offset": {
+      "x": -242,
+      "y": -578
      },
      "scale": {
       "sx": 1,
@@ -32,25 +96,21 @@
      "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/objects/barrel",
+   "fps": 4,
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": -152,
-    "y": -386,
-    "w": 305,
-    "h": 365
+    "x": -233,
+    "y": -569,
+    "w": 466,
+    "h": 541
    },
    "pivot": {
     "x": 0,
-    "y": -193
+    "y": -284
    },
-   "markers": [],
-   "fps": 8
+   "markers": []
   }
  ],
- "crop": {
-  "pass": "/tmp/redo-single"
- },
- "kind": "entity_variant"
+ "updated": "2026-11-02"
 }
