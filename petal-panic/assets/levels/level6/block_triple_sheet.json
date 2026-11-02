@@ -1,50 +1,70 @@
 {
-  "file": "petal-panic/assets/levels/level6/block_triple_sheet.png",
-  "size": "456x1574",
-  "rows": 2,
-  "cols": 1,
-  "kind": "tile_variant",
-  "description": "level6 block_triple (2 frames)",
-  "entities": [
+ "file": "petal-panic/assets/levels/level6/block_triple_sheet.png",
+ "size": "456x1574",
+ "rows": 2,
+ "cols": 1,
+ "kind": "tile_variant",
+ "description": "level6 block_triple (2 frames)",
+ "entities": [
+  {
+   "name": "level6",
+   "anim": "block_triple",
+   "frames_dir": "petal-panic/assets/levels/level6",
+   "frames": [
     {
-      "name": "level6",
-      "anim": "block_triple",
-      "frames_dir": "petal-panic/assets/levels/level6",
-      "frames": [
-        {
-          "file": "block_triple_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            0,
-            456,
-            898
-          ]
-        },
-        {
-          "file": "block_triple_f2.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            15,
-            898,
-            426,
-            676
-          ]
-        }
-      ],
-      "collision": {
-        "x": -228,
-        "y": -684,
-        "w": 456,
-        "h": 684
-      }
+     "file": "block_triple_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      456,
+      898
+     ],
+     "offset": {
+      "x": -228.0,
+      "y": -898
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "block_triple_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      15,
+      898,
+      426,
+      676
+     ],
+     "offset": {
+      "x": -213.0,
+      "y": -676
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-30T03:19:03",
-  "crop": {
-    "frames_dir": "petal-panic/assets/levels/level6",
-    "pass": "/home/goglue/tmp/blockcrop/lv6_triple"
+   ],
+   "collision": {
+    "x": -211,
+    "y": -672,
+    "w": 418,
+    "h": 627
+   }
   }
+ ],
+ "updated": "2026-10-30T03:19:03",
+ "crop": {
+  "frames_dir": "petal-panic/assets/levels/level6",
+  "pass": "/home/goglue/tmp/blockcrop/lv6_triple"
+ }
 }

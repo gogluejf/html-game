@@ -19,10 +19,26 @@
       0,
       2172,
       563
-     ]
+     ],
+     "offset": {
+      "x": -1086.0,
+      "y": -563
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/levels/level5"
+   "frames_dir": "petal-panic/assets/levels/level5",
+   "collision": {
+    "x": 0,
+    "y": -181,
+    "w": 2163,
+    "h": 175
+   }
   }
  ],
  "crop": {

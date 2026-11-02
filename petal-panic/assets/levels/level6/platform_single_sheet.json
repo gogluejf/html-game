@@ -1,90 +1,150 @@
 {
-  "file": "petal-panic/assets/levels/level6/platform_single_sheet.png",
-  "size": "264x1276",
-  "rows": 6,
-  "cols": 1,
-  "kind": "tile_variant",
-  "description": "level6 platform_single (6 frames)",
-  "entities": [
+ "file": "petal-panic/assets/levels/level6/platform_single_sheet.png",
+ "size": "264x1276",
+ "rows": 6,
+ "cols": 1,
+ "kind": "tile_variant",
+ "description": "level6 platform_single (6 frames)",
+ "entities": [
+  {
+   "name": "level6",
+   "anim": "platform_single",
+   "frames_dir": "petal-panic/assets/levels/level6",
+   "frames": [
     {
-      "name": "level6",
-      "anim": "platform_single",
-      "frames_dir": "petal-panic/assets/levels/level6",
-      "frames": [
-        {
-          "file": "platform_single_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            7,
-            0,
-            250,
-            254
-          ]
-        },
-        {
-          "file": "platform_single_f2.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            0,
-            254,
-            263,
-            265
-          ]
-        },
-        {
-          "file": "platform_single_f3.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            0,
-            519,
-            263,
-            274
-          ]
-        },
-        {
-          "file": "platform_single_f4.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            6,
-            793,
-            252,
-            175
-          ]
-        },
-        {
-          "file": "platform_single_f5.png",
-          "row": 4,
-          "col": 0,
-          "bbox": [
-            0,
-            968,
-            264,
-            144
-          ]
-        },
-        {
-          "file": "platform_single_f6.png",
-          "row": 5,
-          "col": 0,
-          "bbox": [
-            0,
-            1112,
-            264,
-            164
-          ]
-        }
-      ],
-      "collision": {
-        "x": -132,
-        "y": -264,
-        "w": 264,
-        "h": 33.0
-      }
+     "file": "platform_single_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      7,
+      0,
+      250,
+      254
+     ],
+     "offset": {
+      "x": -125.0,
+      "y": -254
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_single_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      254,
+      263,
+      265
+     ],
+     "offset": {
+      "x": -131.5,
+      "y": -265
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_single_f3.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      519,
+      263,
+      274
+     ],
+     "offset": {
+      "x": -131.5,
+      "y": -274
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_single_f4.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      6,
+      793,
+      252,
+      175
+     ],
+     "offset": {
+      "x": -126.0,
+      "y": -175
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_single_f5.png",
+     "row": 4,
+     "col": 0,
+     "bbox": [
+      0,
+      968,
+      264,
+      144
+     ],
+     "offset": {
+      "x": -132.0,
+      "y": -144
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "platform_single_f6.png",
+     "row": 5,
+     "col": 0,
+     "bbox": [
+      0,
+      1112,
+      264,
+      164
+     ],
+     "offset": {
+      "x": -132.0,
+      "y": -164
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-30"
+   ],
+   "collision": {
+    "x": -102,
+    "y": -161,
+    "w": 196,
+    "h": 24.5
+   }
+  }
+ ],
+ "updated": "2026-10-30"
 }
