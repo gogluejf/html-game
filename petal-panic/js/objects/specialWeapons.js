@@ -13,7 +13,9 @@
 //   speed         – launch speed px/s
 //   damage        – raw damage per hit (before target defense)
 //   lifetime      – seconds before auto-cull (saw) or fuse (bomb)
-//   size          – collision box w/h (square)
+//   size          – collision box height in Y-UNITS (1 = 48px). Declared at
+//                   the source in units; the engine converts once (h = size×48).
+//   spriteAnim    – sheet anim name for this weapon's Special art
 //   fireCooldown  – seconds between shots of THIS weapon (hero-side gate)
 //   gravity       – 0 = straight line, >0 = ballistic arc
 //   solidBehavior – 'phase' | 'stop' | 'reflect' (terrain interaction policy)
@@ -21,6 +23,8 @@
 //   radius        – AoE blast radius (only meaningful when explode=true)
 //   spread        – null | { count, angle } for multi-shot fan (spread weapon)
 //                   count = number of projectiles, angle = total fan width (rad)
+
+import { UNIT_PX_Y } from '../consts.js';
 
 export const SPECIAL_WEAPONS = [
   {
@@ -31,7 +35,8 @@ export const SPECIAL_WEAPONS = [
     speed: 800,
     damage: 25,
     lifetime: 0.6,
-    size: 40,
+    size: 40 / UNIT_PX_Y,
+    spriteAnim: 'shoot',
     fireCooldown: 1 / 3,
     gravity: 0,
     solidBehavior: 'stop',
@@ -47,7 +52,8 @@ export const SPECIAL_WEAPONS = [
     speed: 550,
     damage: 40,
     lifetime: 1.5,
-    size: 18,
+    size: 18 / UNIT_PX_Y,
+    spriteAnim: 'shoot',
     fireCooldown: 1,
     gravity: 800,
     solidBehavior: 'reflect',
@@ -63,7 +69,8 @@ export const SPECIAL_WEAPONS = [
     speed: 800,
     damage: 10,
     lifetime: 0.4,
-    size: 14,
+    size: 14 / UNIT_PX_Y,
+    spriteAnim: 'shoot',
     fireCooldown: 1 / 4,
     gravity: 0,
     solidBehavior: 'phase',
@@ -79,7 +86,8 @@ export const SPECIAL_WEAPONS = [
     speed: 400,
     damage: 15,
     lifetime: 2,
-    size: 24,
+    size: 26 / UNIT_PX_Y,
+    spriteAnim: 'fly',
     fireCooldown: 0.8,
     gravity: 0,
     solidBehavior: 'phase',
@@ -95,10 +103,11 @@ export const SPECIAL_WEAPONS = [
     name: 'Explosive Shot',
     icon: '💥',
     color: '#e74c3c',
-    speed: 250,
+    speed: 100,
     damage: 20,
-    lifetime: 1.5,
-    size: 16,
+    lifetime: 2,
+    size: 2,
+    spriteAnim: 'fly',
     fireCooldown: 0.9,
     gravity: 0,
     solidBehavior: 'stop',   // detonates on first impact (terrain or enemy)

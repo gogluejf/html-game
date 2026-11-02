@@ -160,7 +160,7 @@ function fireSpecial(h, input) {
       origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
       speed: meta.speed, ttl: meta.lifetime, damage: meta.damage,
       radius: meta.radius, solidBehavior: 'stop',
-      team: 'ally', size: meta.size, blastTeam: 'neutral',
+      team: 'ally', blastTeam: 'neutral',
     }, h);
     if (!attack.entity) return;
   } else if (meta.spread) {

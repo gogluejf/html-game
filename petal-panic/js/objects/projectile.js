@@ -61,13 +61,15 @@ export function getProjectileSpriteData() { return projectileSpriteData; }
 // is the scaling reference (§4) and the entity box derives from it — width =
 // collisionBox.w × scale, no baseW, no synthetic fallback. A sheet without an
 // authored box is an asset bug: setAnim() → uniformScale() throws loudly.
-// Each type carries its target height in units (the box height in world px).
+// Per-weapon size + anim live in the REGISTRY (specialWeapons.js): size is
+// declared there in Y-units (single source of truth); this table only maps
+// type → sheet dir/anim for the loader.
 const SPECIAL_SPRITE_TARGETS = Object.freeze({
-  saw: { anim: 'shoot', targetH: 40 / UNIT_PX_Y },
-  spread: { anim: 'shoot', targetH: 14 / UNIT_PX_Y },
-  bomb: { anim: 'shoot', targetH: 18 / UNIT_PX_Y },
-  homing: { anim: 'fly', targetH: 26 / UNIT_PX_Y },
-  explosive: { anim: 'fly', targetH: 20 / UNIT_PX_Y },
+  saw: { anim: 'shoot' },
+  spread: { anim: 'shoot' },
+  bomb: { anim: 'shoot' },
+  homing: { anim: 'fly' },
+  explosive: { anim: 'fly' },
 });
 const specialSpriteData = new Map();   // type → parsed sheet (anims patched)
 const specialSpriteFrames = new Map(); // type → frame image map
@@ -357,10 +359,10 @@ export class Special extends Entity {
     super.initialize({
       x, y,
       // SHEET-OWNED size (sprites.md contract): no baseW. Height = targetH × 48
-      // from the type's authored unit height; width follows the active anim's
-      // collision box via setAnim(). Pre-boot fallback is the natural square
-      // (targetH × 48) until the sheet loads — never a meta.size square.
-      targetH: SPECIAL_SPRITE_TARGETS[type]?.targetH ?? (meta?.size ?? 16) / UNIT_PX_Y,
+      // from the REGISTRY's unit size (single source of truth — specialWeapons.js);
+      // width follows the active anim's collision box via setAnim(). Pre-boot
+      // fallback is the natural square (targetH × 48) until the sheet loads.
+      targetH: meta?.size ?? 1 / 3,
       layer: LAYER.PROJ_ALLY,
       debugColor: meta?.color ?? '#888',
       gravity: (meta?.gravity ?? 0) > 0 ? 1 : 0,
