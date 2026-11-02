@@ -1,14 +1,15 @@
 {
  "file": "petal-panic/assets/objects/coin/gold_sheet.png",
- "size": "909x339",
+ "size": "2745x360",
  "rows": 1,
- "cols": 4,
- "kind": "entity_variant",
- "description": "coin gold (4 frames) \u2014 reassembled from frames",
+ "cols": 12,
+ "kind": "animation",
+ "description": "gold coin spin (12 frames) \u2014 flower to circus tent + mirrored return",
  "entities": [
   {
    "name": "coin",
    "anim": "gold",
+   "frames_dir": "petal-panic/assets/objects/coin",
    "frames": [
     {
      "file": "gold_f1.png",
@@ -16,13 +17,13 @@
      "col": 0,
      "bbox": [
       0,
-      8,
-      322,
-      322
+      0,
+      341,
+      360
      ],
      "offset": {
-      "x": -161,
-      "y": -161
+      "x": -170.5,
+      "y": -180
      },
      "scale": {
       "sx": 1,
@@ -36,14 +37,14 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      322,
-      0,
-      126,
-      339
+      341,
+      6,
+      287,
+      347
      ],
      "offset": {
-      "x": -63,
-      "y": -169.5
+      "x": -143.5,
+      "y": -173.5
      },
      "scale": {
       "sx": 1,
@@ -57,14 +58,14 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      448,
-      3,
-      332,
-      333
+      628,
+      5,
+      186,
+      349
      ],
      "offset": {
-      "x": -166,
-      "y": -166.5
+      "x": -93,
+      "y": -174.5
      },
      "scale": {
       "sx": 1,
@@ -78,14 +79,182 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      780,
-      0,
+      814,
+      4,
       129,
-      338
+      352
      ],
      "offset": {
       "x": -64.5,
-      "y": -169
+      "y": -176
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      943,
+      5,
+      178,
+      349
+     ],
+     "offset": {
+      "x": -89,
+      "y": -174.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1121,
+      5,
+      257,
+      350
+     ],
+     "offset": {
+      "x": -128.5,
+      "y": -175
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1378,
+      7,
+      330,
+      345
+     ],
+     "offset": {
+      "x": -165,
+      "y": -172.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1708,
+      5,
+      257,
+      350
+     ],
+     "offset": {
+      "x": -128.5,
+      "y": -175
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f9.png",
+     "row": 0,
+     "col": 8,
+     "bbox": [
+      1965,
+      5,
+      178,
+      349
+     ],
+     "offset": {
+      "x": -89,
+      "y": -174.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f10.png",
+     "row": 0,
+     "col": 9,
+     "bbox": [
+      2143,
+      4,
+      129,
+      352
+     ],
+     "offset": {
+      "x": -64.5,
+      "y": -176
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f11.png",
+     "row": 0,
+     "col": 10,
+     "bbox": [
+      2272,
+      5,
+      186,
+      349
+     ],
+     "offset": {
+      "x": -93,
+      "y": -174.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "gold_f12.png",
+     "row": 0,
+     "col": 11,
+     "bbox": [
+      2458,
+      6,
+      287,
+      347
+     ],
+     "offset": {
+      "x": -143.5,
+      "y": -173.5
      },
      "scale": {
       "sx": 1,
@@ -95,7 +264,6 @@
      "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/objects/coin",
    "playback": "loop",
    "startFrame": "random",
    "direction": "forward",
@@ -110,8 +278,8 @@
     "y": 0
    },
    "markers": [],
-   "fps": 5
+   "fps": 10
   }
  ],
- "updated": "2026-10-21"
+ "updated": "2026-11-02"
 }
