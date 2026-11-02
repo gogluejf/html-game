@@ -5,7 +5,7 @@ import { initProjectileSprites, projectilePool } from '../objects/projectile.js'
 import { tryFire } from '../combat/shooting.js';
 
 const near = (a,b) => assert.ok(Math.abs(a-b)<1e-8, `${a} != ${b}`);
-test('authored pivot is fixed under both mirror axes and rotation; missing pivot centers collision', () => {
+test('box center is the transform origin under mirror/rotation; missing pivot centers art', () => {
   const e = new Entity({x:100,y:200,targetH:1});
   const data = { frames:[{file:'a',offset:{x:10,y:20}}], collisionBox:{x:10,y:20,w:80,h:40}, pivot:{x:30,y:35} };
   e.sprite={anims:{a:data},frames:new Map([['a',{complete:true,naturalWidth:80,naturalHeight:40}]])};
@@ -13,7 +13,12 @@ test('authored pivot is fixed under both mirror axes and rotation; missing pivot
   for (const mx of [false,true]) for(const my of [false,true]) {
     e.mirrorX=mx;e.mirrorY=my;e.rotation=0.7;
     const f=e.spriteFrame();
-    near(f.anchorX,124);near(f.anchorY,218);
+    // BOX-CENTER ANCHOR CONTRACT: the anchor is always the box center,
+    // regardless of mirror/rotation — the AABB is the physics truth and the
+    // transform origin, so the box↔art relationship never changes shape per
+    // aim direction. (Old contract anchored on the raw sheet pivot.)
+    near(f.anchorX,e.x+e.w/2);near(f.anchorY,e.y+e.h/2);
+    // The PIVOT still positions the ART within that frame: dx/dy = offset−pivot.
     near(f.dx,-20);near(f.dy,-15);
     assert.equal(f.mirrorX,mx);assert.equal(f.mirrorY,my);
     const calls=[];const ctx={save(){},restore(){},translate(...v){calls.push(v)},scale(){},rotate(){},drawImage(){}};

@@ -440,11 +440,16 @@ export class Entity {
     // a sheet without an authored box → primitive fallback, never throw.
     const cb = data.collisionBox;
     if (!(s > 0) || !cb) return null;
-    // Sheet coordinates are top-left, y-down. Missing pivots default to the
-    // collision center; the same transform serves sprites and all effects.
+    // BOX-CENTER ANCHOR CONTRACT: the collision box is the physics truth and
+    // the transform origin. The world anchor is the box center; mirror/rotate
+    // happen around it, so the box↔art relationship is identical in every aim
+    // direction (a raw-pivot anchor would rotate its own offset into a
+    // different shape per direction — art drifting left/right of the box on
+    // vertical shots). The sheet PIVOT only positions the ART within that
+    // frame: dx/dy = (frameOffset − pivot), exactly as authored in the editor.
     const pivot = data.pivot ?? { x: cb.x + cb.w / 2, y: cb.y + cb.h / 2 };
-    const anchorX = this.x + (pivot.x - cb.x) * s;
-    const anchorY = this.y + (pivot.y - cb.y) * s;
+    const anchorX = this.x + this.w / 2;
+    const anchorY = this.y + this.h / 2;
     const dx = frame.offset ? frame.offset.x - pivot.x
       : (this.x + this.w / 2 - anchorX) / s - w / 2;
     const dy = frame.offset ? frame.offset.y - pivot.y

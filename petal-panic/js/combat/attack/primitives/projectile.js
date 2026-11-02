@@ -103,8 +103,11 @@ export function spawnProjectile(p, ctx, h) {
     ent._attackId = 'projectile';
     ent._attackHit = false;
     ent._attackDone = false;
-    // Center the box on the resolved origin point using the FINAL sheet-owned
-    // box (setAnim already ran inside initialize when the sheet is loaded).
+    // Center the BOX on the resolved origin point (setAnim already ran inside
+    // initialize when the sheet is loaded). The collision box is the physics
+    // truth — it is what must sit on the aim point. The ART adapts to the box:
+    // drawSprite() mirrors/rotates around the box center (see spriteFrame()),
+    // so the box↔art relationship is identical in all 8 aim directions.
     ent.x = center.x - ent.w / 2;
     ent.y = center.y - ent.h / 2;
     ctx.collisionWorld?.add(ent);

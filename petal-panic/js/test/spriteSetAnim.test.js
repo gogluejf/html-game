@@ -140,15 +140,18 @@ test('drawSprite renders the frame via per-frame tuning (offset/scale) when pres
   assert.equal(drawn.img, fakeImg);
   // Full image drawn (no sheet crop at runtime)...
   assert.deepEqual([drawn.sx, drawn.sy, drawn.sw, drawn.sh], [0, 0, 305, 386]);
-  // Check world coordinates against the authored top-left delta.
+  // Check world coordinates against the BOX-CENTER ANCHOR contract: the frame
+  // is placed by (offset − pivot) around the box center (the transform origin).
   const f = data.anims.wooden.frames[0];
   const cb = data.anims.wooden.collisionBox;
+  const pv = data.anims.wooden.pivot ?? { x: cb.x + cb.w / 2, y: cb.y + cb.h / 2 };
   const s = e._spriteScale;
   const w = 305 * f.scale.sx, h = 386 * f.scale.sy;
-  const worldX = e.spriteFrame().anchorX + drawn.dx * s;
-  const worldY = e.spriteFrame().anchorY + drawn.dy * s;
-  assert.ok(Math.abs(worldX - (e.x + (f.offset.x - cb.x) * s)) < 1e-9);
-  assert.ok(Math.abs(worldY - (e.y + (f.offset.y - cb.y) * s)) < 1e-9);
+  const fr = e.spriteFrame();
+  const worldX = fr.anchorX + drawn.dx * s;
+  const worldY = fr.anchorY + drawn.dy * s;
+  assert.ok(Math.abs(worldX - (e.x + e.w / 2 + (f.offset.x - pv.x) * s)) < 1e-9);
+  assert.ok(Math.abs(worldY - (e.y + e.h / 2 + (f.offset.y - pv.y) * s)) < 1e-9);
   assert.deepEqual([drawn.dw, drawn.dh], [w, h]);
 });
 
