@@ -96,9 +96,9 @@
      "durUnits": 1
     }
    ],
-   "fps": 4,
+   "fps": 8,
    "playback": "loop",
-   "direction": "ping_pong",
+   "direction": "forward",
    "collision": {
     "x": -232,
     "y": -557,

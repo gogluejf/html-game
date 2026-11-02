@@ -96,7 +96,7 @@
      "durUnits": 1
     }
    ],
-   "fps": 4,
+   "fps": 8,
    "playback": "loop",
    "direction": "forward",
    "collision": {

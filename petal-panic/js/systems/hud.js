@@ -163,15 +163,16 @@ function tileIcon(slotIdx, type) {
 
 function drawAmmo(ctx, hero, bounds, y) {
   const now = performance.now();
-  const baseX = bounds.x + PAD;
   const n = 1 + (hero.specialSlots?.length ?? 0); // thorn + special slots
+  const totalW = n * TILE + (n - 1) * TILE_GAP;
+  const baseX = bounds.x + (bounds.w - totalW) / 2; // centered horizontally
 
   for (let i = 0; i < n; i++) {
     const isThorn = i === 0;
     const type = isThorn ? 'thorn' : hero.specialSlots[i - 1];
     const sel = isThorn ? !Number.isInteger(hero.selectedWeapon) : hero.selectedWeapon === i - 1;
     const tx = baseX + i * (TILE + TILE_GAP);
-    const ty = y + 2; // small extra breathing room below the super meter
+    const ty = bounds.y + PAD; // same height as coin/lives badges (top-right)
 
     // --- Glass tile ----------------------------------------------------------
     ctx.save();
@@ -302,30 +303,61 @@ function drawCoinsAndLives(ctx, hero, bounds) {
   drawLivesBadge(ctx, hero, livesX, y, now);
 }
 
-/** Coin badge: gold coin in a glass tile; fx plays the FULL spin sequence
- *  (f1→f8) once at the sheet's real fps, then settles back on f7. */
+/** Coin badge: gold coin in a glass tile. All timing comes from the sheet
+ *  JSON (fps, frame count). Resting state plays a cull cycle f8↔f7 at the
+ *  sheet's real fps. Living effect: full f1→f12 spin once, then back to cull. */
+let _coinSheet = null; // cached parsed sheet data { fps, frames: [file,...] }
+async function loadCoinSheet() {
+  if (_coinSheet) return _coinSheet;
+  try {
+    const res = await fetch(new URL('../../assets/objects/coin/gold_sheet.json', import.meta.url));
+    const json = await res.json();
+    const ent = json.entities[0];
+    _coinSheet = { fps: ent.fps ?? 10, frames: ent.frames.map(f => f.file) };
+  } catch { _coinSheet = { fps: 10, frames: [] }; }
+  return _coinSheet;
+}
+// Kick off the fetch on first draw call (fire-and-forget).
+loadCoinSheet();
+
 function drawCoinBadge(ctx, hero, x, y, now) {
   ctx.save();
   drawGlassTile(ctx, x, y, BADGE, false);
 
-  // Full spin sequence from the real gold sheet (same source as the drops).
+  const sheet = _coinSheet;
+  if (!sheet || sheet.frames.length === 0) { ctx.restore(); return; }
+
+  const n = sheet.frames.length;
+  const fps = sheet.fps;
+  // Load all frames from the sheet.
   const seq = [];
-  for (let i = 1; i <= 8; i++) {
-    const img = loadHudImg(`coin_f${i}`, `../../assets/objects/coin/gold_f${i}.png`);
+  for (const file of sheet.frames) {
+    const img = loadHudImg(`coin_${file}`, `../../assets/objects/coin/${file}`);
     if (img && img.complete && img.naturalWidth > 0) seq.push(img);
   }
-  const rest = seq[6] || null; // f7 = resting frame
-  const fx = maybeStartFx(_badgeFx, 'coin', now, (seq.length / 5) * 1000 || 900);
+  if (seq.length === 0) { ctx.restore(); return; }
+
+  // Resting: static f7 (index 6).
+  const rest = seq[6] || seq[0];
+
+  // Living effect: wrap-around spin starting at f8, ending at f7.
+  // Order: f8,f9,...,f12,f1,...,f7 → indices [6,7,...,n-1,0,1,...,5]
+  const spinOrder = [];
+  for (let i = 6; i < n; i++) spinOrder.push(i);   // f8..f12
+  for (let i = 0; i < 6; i++) spinOrder.push(i);   // f1..f7
+
+  const fx = maybeStartFx(_badgeFx, 'coin', now, (spinOrder.length / fps) * 1000);
   let img = rest, pulse = 1;
-  if (fx && seq.length > 0) {
+  if (fx) {
     const t = (now - fx.start) / fx.dur;
     if (t >= 1) { _badgeFx.delete('coin'); }
     else {
-      img = seq[Math.min(seq.length - 1, Math.floor(t * seq.length))];
+      const idx = Math.min(spinOrder.length - 1, Math.floor(t * spinOrder.length));
+      img = seq[spinOrder[idx]];
       pulse = 1 + 0.08 * Math.sin(Math.PI * t);
     }
   }
-  if (img) drawIconCentered(ctx, img, x, y, BADGE, BADGE_ICON_FRAC, pulse);
+  drawIconCentered(ctx, img, x, y, BADGE, BADGE_ICON_FRAC, pulse);
   drawCountBadge(ctx, x, y, hero.coins ?? 0, '#ffd700');
   ctx.restore();
 }
