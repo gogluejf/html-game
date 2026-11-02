@@ -106,7 +106,7 @@ export const SPECIAL_WEAPONS = [
     speed: 100,
     damage: 20,
     lifetime: 2,
-    size: 2,
+    size: 0.4,
     spriteAnim: 'fly',
     fireCooldown: 0.9,
     gravity: 0,
