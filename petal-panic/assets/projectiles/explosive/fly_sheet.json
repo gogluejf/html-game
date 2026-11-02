@@ -143,13 +143,13 @@
    "direction": "ping_pong",
    "collision": {
     "x": 123,
-    "y": -98,
+    "y": -96,
     "w": 91,
     "h": 87
    },
    "pivot": {
-    "x": 113,
-    "y": -46
+    "x": 169,
+    "y": -52
    },
    "markers": []
   }

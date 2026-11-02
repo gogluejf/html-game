@@ -100,14 +100,14 @@
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": 112,
-    "y": -130,
+    "x": 96,
+    "y": -133,
     "w": 121,
     "h": 130
    },
    "pivot": {
-    "x": 115.5,
-    "y": -74.5
+    "x": 157,
+    "y": -68
    },
    "markers": []
   }
