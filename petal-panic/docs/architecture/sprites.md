@@ -69,9 +69,8 @@ Designers or AI select entity sizes **at character/enemy design time**; there ar
 
 Each entity has **one consistent physical anchor**, shared across all its animations.
 
-- The physical anchor **is** the entity's world position. It is the stable reference everything else hangs off of: collision boxes, sprite artwork, and marker offsets are all resolved relative to it.
-- Anchor choices include bottom-center (grounded), top-center (ceiling-attached), or center (flying), plus extensible alternatives.
-- **Default: bottom-center.** Most entities are grounded and the engine already places them on floor surfaces by their bottom edge. Ceiling-attached or flying entities opt out explicitly.
+- The physical anchor **is** the entity's world position: the top-left corner of its collision box. It is the stable reference everything else hangs off of — the box, the artwork, and marker offsets are all resolved relative to it.
+- The transform origin (the point mirror/rotate swing around) is the **center of the collision box**. Deriving it from the box means it needs no authored data and can never drift out of sync with the physics body.
 - Every animation's collision box is positioned relative to the entity's physical anchor, not independently snapped to the editor's visual origin.
 - On animation changes, keep the entity's physical anchor fixed and update the collision geometry around it. See §19 (Transition Safety) for overlap resolution.
 
@@ -80,9 +79,9 @@ Each entity has **one consistent physical anchor**, shared across all its animat
 The pivot (§11) and the physical anchor do different jobs:
 
 - **Physical anchor**: one per *entity*, fixed in world space. It is what physics and collision integrate. It never moves on animation switch.
-- **Pivot**: one per *animation*, a local transform origin used for rotation, mirroring, and marker transforms within that animation.
+- **Pivot**: one per *animation*, the rotation origin only. It decides how the local picture turns — never where it sits.
 
-The chain is: editor geometry → uniform scale (§5) → translate into anchor space → anchor fixed in world → boxes/sprite/marker offsets resolved around it. The editor's visual origin (center, bottom-left, etc.) is an authoring convenience and is **not** automatically either the pivot or the physical anchor.
+The chain is: editor geometry → uniform scale (§5) → the collision box lands on the entity's anchor → the artwork is placed by its raw sheet-space relationship to that box → mirror/rotate swing the whole local picture around the box center. The editor's visual origin (center, bottom-left, etc.) is an authoring convenience and is **not** automatically either the pivot or the physical anchor.
 
 ---
 
@@ -273,17 +272,21 @@ Each animation has a Pivot Point.
 
 Pivot is PER ANIMATION.
 
-It defines the stable local origin used for:
+The pivot has exactly ONE job: it is the **rotation origin** — the point the artwork swings around when the entity rotates or mirrors. Think of it as the nail you pin the picture to before turning it.
 
-- positioning
-- rotation
-- mirroring
-- sprite alignment
-- spatial marker transforms
+It does NOT participate in placement. Where the artwork sits relative to the collision box is decided entirely by the frame offset and the collision box position (§22) — two raw points in the same sheet space. The pivot may sit anywhere (box center, the nose, the hand of a whip) without moving the sprite one pixel.
+
+Why this separation exists: when the pivot also drove placement, every sheet whose pivot sat off the box corner rendered its art shifted by that distance — and the shift changed shape with every rotation direction. One point cannot honestly be both "where I draw from" and "where I turn around"; splitting the jobs makes both stable.
+
+Consequences:
+
+- Pivot at box center → rotation reads as "in place" (most weapons).
+- Pivot deliberately off-center → the art orbits that point while rotating (a whip swinging from the hand SHOULD do this — the orbit is the feature).
+- If the pivot marker looks off-center in the editor, expect an orbiting look when that entity rotates. That is data, not a bug.
 
 The pivot remains consistent across every frame of the animation.
 
-Frame cropping or Sprite Box differences must not cause the character's world position to jump. World position is owned by the entity's physical anchor (§3); the pivot operates in the local space the anchor establishes.
+Frame cropping or Sprite Box differences must not cause the character's world position to jump. World position is owned by the entity's physical anchor (§3); the pivot only decides how the local space turns.
 
 ### Repositioning (editor CENTER / LEFT-BOTTOM)
 
@@ -292,22 +295,19 @@ Repositioning moves the whole per-animation geometry set coherently:
 - frame offsets + per-frame hit boxes → shifted per frame (each frame anchors to the chosen point)
 - markers, collision box, pivot → shifted by the current frame's anchor delta
 
-Collision and pivot are PER ANIMATION (single objects), so they reposition as one unit — there is no per-frame divergence, hence no jump. The "no jump" rule forbids *per-frame* drift of gameplay geometry; a deliberate, user-triggered reposition of the whole anim is expected behavior. The engine integrates the entity in world space from its collision box and draws the sprite relative to it, so after any reposition the sprite/collision/pivot relationship is exactly what was authored in the editor.
+Collision and pivot are PER ANIMATION (single objects), so they reposition as one unit — there is no per-frame divergence, hence no jump. The "no jump" rule forbids *per-frame* drift of gameplay geometry; a deliberate, user-triggered reposition of the whole anim is expected behavior. Because placement never reads the pivot, moving it during a reposition can never disturb where the sprite renders.
 
 ---
 
 ## 12. Rotation
 
-Sprites may be rotated around their animation Pivot Point.
+Sprites rotate around their animation Pivot Point (§11).
 
-All animation spatial geometry must follow the same transformation.
+The collision box NEVER rotates. It is an axis-aligned rectangle for its entire life: placed, moved, tested — never turned. Physics only understands rectangles that sit flat on the grid, and keeping every interaction a rect-vs-rect test is what keeps the whole collision system cheap and predictable.
 
-This includes:
+So rotation is a VISUAL operation: the artwork turns to show which way the object faces, while the box underneath stays the honest physics answer. Contact happens when the box overlaps something — not when the painted nose touches.
 
-- collision boxes
-- hit/damage boxes
-- point markers
-- radius markers
+For entities whose box is clearly longer than it is tall (missiles, rockets), flying exactly vertical uses a transposed pose: the box's long side points along the flight direction, matching the rotated artwork. Both layers then describe the same oriented object — no more sprite pointing up while its box lies flat.
 
 Rotation must never visually separate gameplay geometry from the sprite.
 
@@ -319,7 +319,7 @@ Animations support horizontal and vertical mirroring.
 
 Horizontal mirroring is used primarily for left/right facing.
 
-Mirroring occurs around the Pivot Point.
+Mirroring flips the whole local picture around the box center: the artwork, its placement, and any asymmetric features (flame tail, muzzle, an off-center collision box) all swap sides together. If a sheet says "the box hugs the right side of the art" for a right-facing rocket, then mirrored it hugs the left — because the object itself was flipped. The magnitude of every relationship is preserved; only its side changes.
 
 All spatial geometry must mirror with the sprite.
 
@@ -552,19 +552,22 @@ Do not assume labels are unique unless explicitly required by the caller.
 
 ## 22. Coordinate Transformation
 
-All Animation Studio geometry is stored in sprite-local coordinates.
+All Animation Studio geometry is stored in sprite-local coordinates — one shared sheet space where the frame offset, the collision box, and the pivot are all plain positions you can see next to each other in the editor.
 
 At runtime the Sprite Engine transforms it into world coordinates using:
 
 1. uniform scale (§4)
-2. sprite position (physical anchor, §3)
-3. pivot
-4. mirroring
-5. rotation
+2. the collision box landing on the entity's anchor (§3)
+3. the artwork placed by its raw sheet-space relationship to that box — the same delta the editor shows
+4. mirroring and rotation swinging the whole local picture around the box center (§12, §13)
 
-Every geometry primitive must use the SAME transformation pipeline.
+The pivot is NOT a placement step. It only decides where the picture turns around (§11).
 
 This is critical.
+
+**The editor invariant:** what you see in the editor is what renders. The distance and direction between the artwork and the collision box — authored as two raw points in one sheet space — survives the trip to the game pixel-for-pixel, in every aim direction. If the box sits right of the art in the editor, it sits right of the art in the game; mirrored, it sits left, because the object was flipped, not because the math re-based anything.
+
+Every geometry primitive (sprite, boxes, markers, effects that trace the sprite) must use the SAME transformation pipeline.
 
 The rendered sprite and its spatial metadata must never drift apart.
 
