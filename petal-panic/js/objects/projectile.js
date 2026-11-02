@@ -472,13 +472,14 @@ export class Special extends Entity {
       // _bombOrientFrozen): no more re-aim snaps on the settle frame.
       if (!this._bombOrientFrozen) {
         const speed = Math.hypot(this.vx, this.vy);
-        // Tiny vertical hop exception: near-vertical + slow velocity (micro
-        // bounces over platforms / apex of an over-head throw) would make the
-        // tangent angle flip ~180° every frame → visual flicker. Hold the last
-        // good angle there; all real motion (falls, throws, horizontal hops)
-        // re-aims normally.
-        const tinyVerticalHop = Math.abs(this.vx) < 0.5 * UNIT_PX_Y && speed < 0.5 * UNIT_PX_Y;
-        if ((speed > 1 || !this._bombSettled) && !tinyVerticalHop) {
+        // Hop-apex gate (mirrors the physics settle threshold): while the
+        // current hop would rise >= 3px, re-aim along the velocity tangent.
+        // Below that (micro-bounces / over-head apex), holding the last angle
+        // kills the tail-up/tail-down flicker; immobilization then locks it.
+        const reaim = this.gravityValue > 0
+          ? (speed * speed) / (2 * this.gravityValue) >= 3
+          : speed > 1;
+        if ((speed > 1 || !this._bombSettled) && reaim) {
           if (speed > 1) {
             this.mirrorX = this.vx < -1e-9;
             this.rotation = Math.atan2(this.vy, this.mirrorX ? -this.vx : this.vx);
