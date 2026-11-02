@@ -258,18 +258,24 @@ export async function saveToDisk(){
     return;
   }
 
-  // 5. Recompute checksum post-save, clear local game data, persist config.
-  app.checksums[entityKey] = await computeEntityChecksum(freshEntity);
-  // Refresh the in-memory manifest from the FRESH on-disk entity so in-app
-  // navigation merges against the committed state—not the stale boot-time copy.
+  // 5. Re-read the SAVED entity from disk (freshEntity is the pre-save copy —
+  //    reusing it would restore stale tuning into the in-app state and make
+  //    values "revert" when navigating away and back).
+  let savedEntity;
+  try{
+    const res2 = await fetch('/' + en.sheetPath);
+    savedEntity = (await res2.json()).entities.find(e => e.name === en.char && e.anim === en.anim);
+  }catch(e){ savedEntity = null; }
+  if (!savedEntity) savedEntity = freshEntity; // fallback: no worse than before
+  app.checksums[entityKey] = await computeEntityChecksum(savedEntity);
   en.tuning = {
-    fps: freshEntity.fps ?? null,
-    playback: freshEntity.playback ?? null,
-    direction: freshEntity.direction || 'forward',
-    collision: freshEntity.collision ?? null,
-    pivot: freshEntity.pivot ?? null,
-    markers: freshEntity.markers ?? null,
-    frames: (freshEntity.frames || []).map(f => ({
+    fps: savedEntity.fps ?? null,
+    playback: savedEntity.playback ?? null,
+    direction: savedEntity.direction || 'forward',
+    collision: savedEntity.collision ?? null,
+    pivot: savedEntity.pivot ?? null,
+    markers: savedEntity.markers ?? null,
+    frames: (savedEntity.frames || []).map(f => ({
       offset: f.offset ?? null, scale: f.scale ?? null, boxes: f.boxes ?? null, durUnits: f.durUnits ?? null
     }))
   };
