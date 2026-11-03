@@ -1,6 +1,6 @@
 {
  "file": "petal-panic/assets/projectiles/bomb_classic/shoot_sheet.png",
- "size": "1729x662",
+ "size": "2067x584",
  "rows": 1,
  "cols": 4,
  "kind": "animation",
@@ -17,45 +17,99 @@
      "col": 0,
      "bbox": [
       0,
-      152,
-      277,
-      358
-     ]
+      153,
+      358,
+      277
+     ],
+     "offset": {
+      "x": -380,
+      "y": -105
+     },
+     "scale": {
+      "sx": 1.0429329608938547,
+      "sy": 1.06014440433213
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
-      277,
-      91,
-      388,
-      479
-     ]
+      358,
+      98,
+      479,
+      388
+     ],
+     "offset": {
+      "x": -413,
+      "y": -110
+     },
+     "scale": {
+      "sx": 0.8478454706889351,
+      "sy": 0.8478454706889351
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
-      665,
-      47,
-      480,
-      568
-     ]
+      837,
+      52,
+      568,
+      480
+     ],
+     "offset": {
+      "x": -422,
+      "y": -113
+     },
+     "scale": {
+      "sx": 0.7372535211267606,
+      "sy": 0.7344583333333333
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "shoot_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
-      1145,
+      1405,
       0,
-      584,
-      662
-     ]
+      662,
+      584
+     ],
+     "offset": {
+      "x": -408,
+      "y": -121
+     },
+     "scale": {
+      "sx": 0.6099848942598187,
+      "sy": 0.6146575342465754
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-   ]
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "ping_pong",
+   "collision": {
+    "x": -225,
+    "y": -69,
+    "w": 201,
+    "h": 227
+   },
+   "pivot": {
+    "x": 0,
+    "y": -175
+   },
+   "markers": []
   }
  ],
  "updated": "2026-11-03"
