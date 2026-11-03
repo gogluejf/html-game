@@ -9,6 +9,7 @@
 // ES module, no frameworks. No DOM access beyond the passed ctx.
 
 import { surfaceBounds } from '../core/layout.js';
+import { VIEW_W, VIEW_H } from '../core/view.js';
 import { FONT_UI, GOLD } from '../ui/fonts.js';
 import { specialById } from '../objects/specialWeapons.js';
 import { getProjectileSpriteData, getProjectileFrames, getSpecialSpriteData } from '../objects/projectile.js';
@@ -30,16 +31,23 @@ export function drawHUD(ctx, hero, _camera, levelDef) {
   ctx.save();
   ctx.textBaseline = 'alphabetic';
   const bounds = surfaceBounds();
+  // HUD anchors to the GAMEPLAY zone top (y=0), not the physical screen top
+  // (bounds.y). In portrait fullscreen the game view is vertically centered,
+  // so bounds.y is far above the play area — the HUD would float in the
+  // black strip. X still uses surfaceBounds so it reaches left/right edges
+  // in wide landscape.
+  const hudY = 0;
+  const hudBounds = { ...bounds, y: hudY };
 
   // Cursor stack: one Y cursor, each row draws at the cursor and reports its
   // height — nobody hardcodes their own Y, so rows can never overlap.
-  let y = bounds.y + PAD;
-  const energyH = drawEnergyBar(ctx, hero, bounds);  // row 1: red energy bar
+  let y = hudY + PAD;
+  const energyH = drawEnergyBar(ctx, hero, hudBounds);  // row 1: red energy bar
   y += energyH + ROW_GAP;
-  const superH = drawSuperMeter(ctx, hero, bounds, y); // row 2: purple, under red
+  const superH = drawSuperMeter(ctx, hero, hudBounds, y); // row 2: purple, under red
   y += superH + ROW_GAP;
-  drawAmmo(ctx, hero, bounds, y);                 // row 3: weapons, below both bars
-  drawCoinsAndLives(ctx, hero, bounds);           // top-right: coin + lives badges
+  drawAmmo(ctx, hero, hudBounds, y);                 // row 3: weapons, below both bars
+  drawCoinsAndLives(ctx, hero, hudBounds);           // top-right: coin + lives badges
 
   ctx.restore();
 }
