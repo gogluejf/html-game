@@ -1,0 +1,46 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "done",
+      "name": "Zone snapshot chain on the hero wallet",
+      "milestone": "Zone Snapshot Chain",
+      "milestone_number": "1"
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "done",
+      "name": "Die and manual retry per the persistence doc",
+      "milestone": "Failure Transitions",
+      "milestone_number": "2"
+    },
+    "2.2": {
+      "number": "2.2",
+      "status": "done",
+      "name": "Continue rolls back to the 1-1 zone snapshot",
+      "milestone": "Failure Transitions",
+      "milestone_number": "2"
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "done",
+      "name": "Level clear refills energy, keeps everything else",
+      "milestone": "Progress Transitions and Save State",
+      "milestone_number": "3"
+    },
+    "3.2": {
+      "number": "3.2",
+      "status": "done",
+      "name": "Save&Quit persists full state, reload-Continue restores it",
+      "milestone": "Progress Transitions and Save State",
+      "milestone_number": "3"
+    },
+    "4.1": {
+      "number": "4.1",
+      "status": "in_progress",
+      "name": "Per-transition persistence tests",
+      "milestone": "Regression Gate",
+      "milestone_number": "4"
+    }
+  }
+}
