@@ -29,7 +29,9 @@
 import {createRng, makeBlock} from './terrain.js';
 import { GRAVITY, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
 import { HEROES } from '../hero/heroDefs.js';
-import { BARREL_DEF } from '../objects/object.js';
+import { BARREL_DEF, BARREL_TYPES } from '../objects/object.js';
+import { ENEMY_TYPE_IDS } from './enemyTypes.js';
+import { POWERUP_ROLL_TYPES } from '../objects/powerup.js';
 import { TUNING_BARREL, TUNING_MACRO } from '../tuning.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 
@@ -760,23 +762,15 @@ export function layoutDensity(layout) {
 // Terrain macros provide MEANINGFUL PLACEMENT SLOTS (populate.md §1):
 // positions where enemies, barrels, and powerups can go. A slot is not an
 // arbitrary coordinate — it is a meaningful place ("on top of this platform",
-// "in this open pocket", "at this elevated perch"). The population RESOLVER
-// (populateArea) fills those slots to meet the level's QUANTITY BUDGETS using
-// the per-game seeded RNG.
+// "in this open pocket", "at this elevated perch").
 //
-// Two ideas are kept strictly distinct (populate.md §1):
-//   - QUANTITY BUDGET: how many items/enemies belong in the area.
-//   - PLACEMENT / TYPE CHANCE: which valid slots and which types are chosen
-//     to satisfy that budget.
-//
-// For a fixed budget, independent coin flips must NOT accidentally produce an
-// empty or overcrowded area (populate.md §1). The resolver therefore fills
-// slots deterministically from the budget: it never under-fills below the
-// budget when slots are available, and it never over-fills (each slot holds
-// at most one item). If the chosen terrain cannot support the budget, the
-// resolver fills every valid slot rather than piling items into invalid
-// positions — the composition (composer) is the thing to revise, not the
-// placement.
+// TYPED SPAWN CONTRACT (placeholder-typed-spawn plan, task 2.1): the authored
+// placeholder on each slot is the SINGLE SOURCE OF TRUTH for what spawns there.
+// The population RESOLVER (populateArea) walks the layout's slots and spawns
+// EXACTLY ONE entity per slot: value 'random' rolls the family registry with
+// the per-game seeded RNG; a specific type id passes through unchanged. There
+// are NO quantity budgets anymore — the authored macro data IS the population
+// spec, so there is nothing to under-fill or over-fill.
 //
 // The resolver is a PURE function: (rng, layout, config) → population. It
 // never re-rolls the terrain; it only decides WHICH slots and WHICH types
@@ -908,47 +902,6 @@ export function barrelStructures(barrelPlacements) {
 }
 
 /**
- * Weighted pick from a map of {key: weight} using the given RNG.
- *
- * @param {Object<string, number>} weights key → weight
- * @param {ReturnType<typeof createRng>} rng
- * @returns {string} the chosen key
- */
-function pickWeightedKey(weights, rng) {
-  const entries = Object.entries(weights);
-  const total = entries.reduce((s, [, w]) => s + w, 0);
-  if (total <= 0) return entries[0][0];
-  let roll = rng.next() * total;
-  for (const [key, w] of entries) {
-    roll -= w;
-    if (roll <= 0) return key;
-  }
-  return entries[entries.length - 1][0]; // floating-point edge case
-}
-
-/**
- * Build the per-slot population opportunity lists from a composed layout.
- *
- * Each slot in layout.placements carries a `type` ('enemy' | 'barrel' |
- * 'powerup'). We group them into the three opportunity pools the resolver
- * fills. Slots are the ONLY valid positions — the resolver never invents a
- * coordinate (populate.md §1: "use valid opportunities to satisfy the
- * intended quantity").
- *
- * @param {object} layout the layout from composeArea (its `placements`)
- * @returns {{enemies:object[], barrels:object[], powerups:object[]}} the pools
- */
-function buildSlotPools(layout) {
-  const pools = { enemies: [], barrels: [], powerups: [] };
-  for (const slot of layout.placements ?? []) {
-    if (slot.type === 'enemy') pools.enemies.push(slot);
-    else if (slot.type === 'barrel') pools.barrels.push(slot);
-    else if (slot.type === 'powerup') pools.powerups.push(slot);
-  }
-  return pools;
-}
-
-/**
  * Whether a slot sits at a VALID standing position — i.e. NOT inside a solid
  * block (populate.md §1 + task 4.1 BLOCKER: items must never spawn in solids).
  *
@@ -984,120 +937,60 @@ export function slotIsOnValidSurface(slot, units) {
 }
 
 /**
- * Choose up to `count` slots from a pool using the seeded RNG.
- *
- * This is the "placement chance" (populate.md §1): WHICH valid slots are
- * selected to satisfy the budget. It draws a shuffled prefix of the pool
- * (Fisher–Yates with the provided RNG), so the selection is deterministic for
- * a given rng stream AND respects the budget (never more than `count`, never
- * more than the pool size). No independent coin flips — a fixed budget always
- * fills as many valid slots as the budget asks for, up to the pool's capacity.
- *
- * @param {object[]} pool the candidate slots
- * @param {number} count the quantity budget
- * @param {ReturnType<typeof createRng>} rng
- * @returns {object[]} the chosen slots (≤ count, ≤ pool.length)
+ * The family type registries as flat id lists, keyed by placement type — the
+ * single source of truth for what each placeholder family can roll (typed
+ * spawn, plan task 2.1). Ids come from the object registries (object.js /
+ * build.js / powerup.js), never hardcoded here, so new types appear
+ * automatically.
  */
-function chooseSlots(pool, count, rng) {
-  const n = pool.length;
-  const target = Math.max(0, Math.min(count, n));
-  // Work on a copy so the caller's pool is not mutated.
-  const shuffled = pool.slice();
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(rng.next() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+const FAMILY_IDS = Object.freeze({
+  barrel: BARREL_TYPES.map((t) => t.id),
+  enemy: ENEMY_TYPE_IDS,
+  powerup: POWERUP_ROLL_TYPES,
+});
+
+/**
+ * Resolve the concrete spawn type for one placement slot from its declared
+ * placeholder `value` (placeholder-typed-spawn plan, task 2.1).
+ *
+ * The placeholder is the SINGLE SOURCE OF TRUTH for what spawns:
+ *   - value 'random' (or absent on legacy data) → roll rng.pick over the
+ *     family registry's id list — every outcome is a legal family member.
+ *   - any other value → passed through as-is (the schema already validated it
+ *     against the family registry at load time; no silent fallback here).
+ *
+ * @param {object} slot the layout placement ({type, value?, ...})
+ * @param {ReturnType<typeof createRng>} rng the per-game RNG (stateful)
+ * @returns {string} the resolved type id
+ */
+function resolveSlotType(slot, rng) {
+  const ids = FAMILY_IDS[slot.type];
+  if (!ids) {
+    throw new Error(`populateArea: unknown placement type "${slot.type}"`);
   }
-  return shuffled.slice(0, target);
+  return slot.value === 'random' || slot.value == null ? rng.pick(ids) : slot.value;
 }
 
 /**
- * Assign enemy types to chosen enemy slots from the level's enemy roster
- * (populate.md §4).
+ * Populate a composed area's macro slots from the placements' declared values
+ * (placeholder-typed-spawn plan, task 2.1).
  *
- * The roster is a map of {type: count}. The resolver picks a type per slot
- * from the roster's available counts (weighted by remaining count) so the
- * area's enemy MIX matches the roster without forcing the same mix into every
- * macro (populate.md §4: "Do not force the same enemy mix into every macro
- * simply to reach a total"). Each type is capped at its roster count; if the
- * total roster count is below the number of slots, the extra slots are left
- * empty (a smaller mix than the roster, never a type beyond its budget).
+ * Every layout placement spawns EXACTLY ONE entity of the type its placeholder
+ * declares: value 'random' rolls the family registry (rng.pick over the id
+ * list), a specific value passes through unchanged. There are no quantity
+ * budgets anymore — the authored macro data IS the population spec.
  *
- * @param {object[]} enemySlots the chosen enemy slots
- * @param {Object<string, number>} roster {type: count}
- * @param {ReturnType<typeof createRng>} rng
- * @returns {object[]} the enemy placements ({slot, type})
- */
-function assignEnemyTypes(enemySlots, roster, rng) {
-  const remaining = { ...roster };
-  const placements = [];
-  for (const slot of enemySlots) {
-    const total = Object.values(remaining).reduce((a, b) => a + b, 0);
-    if (total <= 0) break; // roster exhausted — leave remaining slots empty
-    const type = pickWeightedKey(remaining, rng);
-    remaining[type] -= 1;
-    placements.push({ ...slot, type });
-  }
-  return placements;
-}
-
-/**
- * Assign powerup types to chosen powerup slots from the level's powerup mix
- * (populate.md §2).
- *
- * The mix is a map of {type: count} (a QUANTITY budget per type) plus optional
- * selection weights. When weights are supplied, a slot's type is picked
- * weighted by the remaining count × weight; otherwise it is picked uniformly
- * among types that still have budget left. Each type is capped at its count
- * (the "guaranteed quantities and limits by type", populate.md §2). If the
- * total mix is below the number of slots, extra slots are left empty.
- *
- * @param {object[]} powerupSlots the chosen powerup slots
- * @param {Object<string, number>} mix {type: count}
- * @param {Object<string, number>|undefined} weights {type: weight} (optional)
- * @param {ReturnType<typeof createRng>} rng
- * @returns {object[]} the powerup placements ({slot, type})
- */
-function assignPowerupTypes(powerupSlots, mix, weights, rng) {
-  const remaining = { ...mix };
-  const placements = [];
-  for (const slot of powerupSlots) {
-    const typesWithBudget = Object.entries(remaining).filter(([, c]) => c > 0);
-    if (typesWithBudget.length === 0) break; // mix exhausted
-    let type;
-    if (weights) {
-      const w = {};
-      for (const [t, c] of typesWithBudget) w[t] = c * (weights[t] ?? 1);
-      type = pickWeightedKey(w, rng);
-    } else {
-      type = rng.pick(typesWithBudget.map(([t]) => t));
-    }
-    remaining[type] -= 1;
-    placements.push({ ...slot, type });
-  }
-  return placements;
-}
-
-/**
- * Populate a composed area's macro slots from the level's budgets (populate.md
- * §1–§5, generation.md §4 step 4).
- *
- * PURE: (rng, layout, config) → population. The same rng stream + layout +
- * config always produces the same population — the "fixed for the game"
- * contract (lifecycle.md §6). The resolver never invents coordinates: every
- * returned item sits on a slot from layout.placements, so it is never in a
- * solid (the composer already validated the terrain) and never buries/blocks
- * a landing (a slot is a designated, terrain-meaningful position).
+ * PURE: (rng, layout) → population. The same rng stream + layout always
+ * produces the same population — the "fixed for the game" contract
+ * (lifecycle.md §6). The resolver never invents coordinates: every returned
+ * item sits on a slot from layout.placements, so it is never in a solid (the
+ * composer already validated the terrain) and never buries/blocks a landing
+ * (a slot is a designated, terrain-meaningful position).
  *
  * @param {ReturnType<typeof createRng>} rng the per-game RNG (stateful)
  * @param {object} layout the composed area layout (from composeArea)
- * @param {object} config the level/area population config:
- *   {
- *     enemies:  Object<string, number>,   // roster {type: count}
- *     powerups: Object<string, number>,   // mix {type: count}
- *     powerupWeights?: Object<string, number>, // optional selection weights
- *     barrels:  Object<string, number>,   // {explosive, wood, coin} counts
- *     hero?: 'scarlet'|'balthazar',        // for future reach/eligibility
- *   }
+ * @param {object} [config] retained for call-site compatibility; unused —
+ *   population is fully determined by the layout's placements
  * @returns {{enemies:object[], barrels:object[], powerups:object[],
  *            structures:object[],
  *            budgets:{enemies:{requested:number,placed:number,slots:number},
@@ -1105,9 +998,8 @@ function assignPowerupTypes(powerupSlots, mix, weights, rng) {
  *                     powerups:{requested:number,placed:number,slots:number}}}}
  *   the population. Each item is the slot (x, y, slot, placementId) plus a
  *   `type`. `structures` groups the barrels by scale (populate.md §3).
- *   `budgets` records, per category, the requested quantity, how many were
- *   placed, and how many valid slots were available — so a budget that the
- *   terrain could not fully support is visible (under-placement), never hidden.
+ *   `budgets` retains the report shape per category: requested == placed ==
+ *   the number of that family's slots (every slot spawns exactly one item).
  *
  * STABLE SNAPSHOT (task 4.1 / acceptance #5, lifecycle.md §6): the returned
  * population is a pure, value-only snapshot — every item is a plain object
@@ -1120,8 +1012,6 @@ function assignPowerupTypes(powerupSlots, mix, weights, rng) {
  * that can be stored and restored byte-for-byte.
  */
 export function populateArea(rng, layout, config = {}) {
-  const pools = buildSlotPools(layout);
-
   // BLOCKER guard (task 4.1): items must never spawn INSIDE a solid block.
   // Powerups are exempt (they float by design). Barrels/enemies at y < block
   // height in the same column = inside rock → throw.
@@ -1136,29 +1026,17 @@ export function populateArea(rng, layout, config = {}) {
     }
   }
 
-  const enemyRoster = config.enemies ?? {};
-  const powerupMix = config.powerups ?? {};
-  const powerupWeights = config.powerupWeights;
-  const barrelCounts = config.barrels ?? {};
-
-  // --- Enemies (populate.md §4) ---------------------------------------------
-  const enemyBudget = Object.values(enemyRoster).reduce((a, b) => a + b, 0);
-  const enemySlots = chooseSlots(pools.enemies, enemyBudget, rng);
-  const enemies = assignEnemyTypes(enemySlots, enemyRoster, rng);
-
-  // --- Barrels (populate.md §3) ---------------------------------------------
-  // The barrel budget is the total of all barrel types. Slots are filled first
-  // (placement chance), then each chosen slot is assigned a barrel type from
-  // the per-type counts (type chance). Explosive barrels are assigned a
-  // deterministic share so they can form chain positions (see below).
-  const barrelBudget = Object.values(barrelCounts).reduce((a, b) => a + b, 0);
-  const barrelSlots = chooseSlots(pools.barrels, barrelBudget, rng);
-  const barrels = assignBarrelTypes(barrelSlots, barrelCounts, rng);
-
-  // --- Powerups (populate.md §2) --------------------------------------------
-  const powerupBudget = Object.values(powerupMix).reduce((a, b) => a + b, 0);
-  const powerupSlots = chooseSlots(pools.powerups, powerupBudget, rng);
-  const powerups = assignPowerupTypes(powerupSlots, powerupMix, powerupWeights, rng);
+  // Typed spawn: one entity per placement, of the declared/rolled type.
+  const enemies = [];
+  const barrels = [];
+  const powerups = [];
+  for (const slot of layout.placements ?? []) {
+    const type = resolveSlotType(slot, rng);
+    const item = { ...slot, type };
+    if (slot.type === 'enemy') enemies.push(item);
+    else if (slot.type === 'barrel') barrels.push(item);
+    else if (slot.type === 'powerup') powerups.push(item);
+  }
 
   const structures = barrelStructures(barrels).map((s) => ({
     tier: s.tier,
@@ -1173,9 +1051,9 @@ export function populateArea(rng, layout, config = {}) {
     powerups,
     structures,
     budgets: {
-      enemies: { requested: enemyBudget, placed: enemies.length, slots: pools.enemies.length },
-      barrels: { requested: barrelBudget, placed: barrels.length, slots: pools.barrels.length },
-      powerups: { requested: powerupBudget, placed: powerups.length, slots: pools.powerups.length },
+      enemies: { requested: enemies.length, placed: enemies.length, slots: enemies.length },
+      barrels: { requested: barrels.length, placed: barrels.length, slots: barrels.length },
+      powerups: { requested: powerups.length, placed: powerups.length, slots: powerups.length },
     },
   };
 }
@@ -1214,65 +1092,6 @@ export function populationSnapshot(population) {
       powerups: { ...(population.budgets?.powerups ?? {}) },
     },
   };
-}
-
-/**
- * Assign barrel types to chosen barrel slots from the per-type counts
- * (populate.md §3).
- *
- * Each type is capped at its count. To let explosive barrels FORM CHAIN
- * POSITIONS (populate.md §3: "a well-placed attack causes a satisfying chain
- * reaction"), the explosive count is placed on slots that are adjacent to
- * another chosen barrel slot (same tier, within BARREL_CHAIN_MAX_UNITS)
- * whenever possible — so the explosive barrels land in the middle of a
- * structure, not isolated at its edges. The remaining barrel types (wood,
- * coin) fill the rest.
- *
- * @param {object[]} barrelSlots the chosen barrel slots
- * @param {Object<string, number>} counts {explosive, wood, coin}
- * @param {ReturnType<typeof createRng>} rng
- * @returns {object[]} the barrel placements ({slot, type})
- */
-function assignBarrelTypes(barrelSlots, counts, rng) {
-  const remaining = { ...counts };
-  const placements = [];
-
-  // Order slots so "chainable" slots (adjacent to another chosen slot on the
-  // same tier) come first. A slot is chainable when another chosen barrel slot
-  // sits within BARREL_CHAIN_MAX_UNITS on the same tier.
-  const isChainable = (slot) =>
-    barrelSlots.some(
-      (o) =>
-        o !== slot &&
-        (o.y ?? 0) === (slot.y ?? 0) &&
-        Math.abs(o.x - slot.x) <= BARREL_CHAIN_MAX_UNITS,
-    );
-  const chainable = barrelSlots.filter(isChainable);
-  const isolated = barrelSlots.filter((s) => !isChainable(s));
-  // Deterministic order: chainable first (stable by x), then isolated.
-  const ordered = [
-    ...chainable.sort((a, b) => a.x - b.x),
-    ...isolated.sort((a, b) => a.x - b.x),
-  ];
-
-  for (const slot of ordered) {
-    // Prefer an explosive barrel while the explosive budget remains AND this
-    // slot is chainable (so explosive barrels form the chain). On a non-
-    // chainable slot an explosive barrel would sit isolated, so we let the
-    // remaining types (wood/coin, plus any leftover explosive) fill it.
-    if (remaining.explosive > 0 && isChainable(slot)) {
-      placements.push({ ...slot, type: 'explosive' });
-      remaining.explosive -= 1;
-    } else if (Object.values(remaining).some((c) => c > 0)) {
-      const type = pickWeightedKey(remaining, rng);
-      placements.push({ ...slot, type });
-      remaining[type] -= 1;
-    } else {
-      break; // all budgets exhausted
-    }
-  }
-
-  return placements;
 }
 
 // ---------------------------------------------------------------------------

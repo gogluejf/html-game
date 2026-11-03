@@ -191,25 +191,13 @@ test('REACH_MARGIN is a concrete, doc-grounded margin (structure.md §5)', () =>
 // generation.md §5/§7 — population budgets + breathing room
 // ===========================================================================
 
-test('per-stage population budgets are concrete (populate.md §1, generation.md §5)', () => {
+test('population is typed-spawn driven (no per-stage quantity budgets)', () => {
+  // placeholder-typed-spawn task 2.2: the authored macro placements ARE the
+  // population spec — each placeholder declares 'random' or a specific type id
+  // from its family registry, and populateArea spawns exactly that. The old
+  // per-stage QUANTITY budgets are gone; the level config no longer carries them.
   const l1 = getLevelConfig(1);
-  const stages = ['1', '2', '3', '4'];
-  for (const s of stages) {
-    const b = l1.stageBudgets[s];
-    assert.ok(b, `stage ${s} has a budget`);
-    // Each stage has concrete non-negative integer quantities for enemies,
-    // barrels, and powerups (the per-stage QUANTITY budget).
-    for (const section of ['enemies', 'barrels', 'powerups']) {
-      assert.ok(b[section] && typeof b[section] === 'object', `stage ${s}: ${section} budget present`);
-      for (const v of Object.values(b[section])) {
-        assert.ok(Number.isInteger(v) && v >= 0, `stage ${s}/${section}: concrete non-negative integer`);
-      }
-    }
-  }
-  // The progression is visible: 1 (sparse) has fewer enemies than 4 (dense).
-  const total = (b) => Object.values(b.enemies).reduce((a, c) => a + c, 0);
-  assert.ok(total(l1.stageBudgets['4']) > total(l1.stageBudgets['1']),
-    'stage 4 is denser than stage 1 (deliberate progression)');
+  assert.ok(!('stageBudgets' in l1), 'level config has no per-stage quantity budgets (typed spawn)');
 });
 
 test('breathing room is retained in 2/3 (generation.md §5)', () => {

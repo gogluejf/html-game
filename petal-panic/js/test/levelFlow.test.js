@@ -38,7 +38,7 @@ const { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_
 const { VIEW_H } = await import('../core/view.js');
 const { createRng } = await import('../world/terrain.js');
 const { populateArea, populationSnapshot, composeArea } = await import('../world/macros.js');
-const { getLevelConfig, getStageBudget } = await import('../world/levelConfigs.js');
+const { getLevelConfig } = await import('../world/levelConfigs.js');
 const { Hero } = await import('../hero/hero.js');
 const { HEROES } = await import('../hero/heroDefs.js');
 const { createTrace } = await import('../stats.js');
@@ -182,13 +182,8 @@ test('determinism: same seed produces identical population', () => {
     const pops = new Map();
     for (const zone of zones) {
       if (zone.kind !== 'area') continue;
-      const stageBudget = getStageBudget(config, zone.areaIdx);
-      const pop = populateArea(rng, terrain.get(zone.areaIdx), {
-        enemies: stageBudget.enemies ?? {},
-        powerups: stageBudget.powerups ?? {},
-        powerupWeights: config.powerupWeights,
-        barrels: stageBudget.barrels ?? {},
-      });
+      // Typed spawn: the macro placements ARE the population spec — no budgets.
+      const pop = populateArea(rng, terrain.get(zone.areaIdx));
       pops.set(zone.areaIdx, populationSnapshot(pop));
     }
     return pops;
@@ -224,13 +219,8 @@ test('determinism: different seeds produce different worlds', () => {
     const pops = new Map();
     for (const zone of zones) {
       if (zone.kind !== 'area') continue;
-      const stageBudget = getStageBudget(config, zone.areaIdx);
-      const pop = populateArea(rng, terrain.get(zone.areaIdx), {
-        enemies: stageBudget.enemies ?? {},
-        powerups: stageBudget.powerups ?? {},
-        powerupWeights: config.powerupWeights,
-        barrels: stageBudget.barrels ?? {},
-      });
+      // Typed spawn: the macro placements ARE the population spec — no budgets.
+      const pop = populateArea(rng, terrain.get(zone.areaIdx));
       pops.set(zone.areaIdx, populationSnapshot(pop));
     }
     return pops;

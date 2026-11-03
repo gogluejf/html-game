@@ -27,12 +27,13 @@ import { particles, coins } from '../effects/particles.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
 import { applyGodMode, setHeroRefSetter } from '../debug/debugHarness.js';
-import { buildWorld, captureAreaMap, newGameSeed } from '../world/build.js';
+import { buildWorld, captureAreaMap, newGameSeed, getLastWorldSeed } from '../world/build.js';
 import { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver };
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, roomFloorTop, BOSS_TRIGGER_X } from '../world/level.js';
 import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry } from '../systems/lifecycle.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
+import { loadStore } from '../systems/progressStore.js';
 import { Theater } from '../debug/effect-theater.js';
 import { AttackTheater } from '../debug/attack-theater.js';
 import { record } from '../stats.js';
@@ -50,12 +51,13 @@ import { TUNING } from '../tuning.js';
 // the sealed zone model (buildLevelZones): a level is five independent zones
 // (areas 1..4 + boss). Each zone's terrain is composed by the macro composer
 // (buildAllZoneTerrain) and its enemies/barrels/powerups are resolved by the
-// population resolver (populateArea) from the level's per-stage budgets
-// (levelConfigs.js). The ACTIVE zone's composed content is installed into the
-// collision world; switching zones swaps ALL world contents (structure.md §2).
+// population resolver (populateArea) from the macro placements' declared types
+// (typed spawn — each placeholder declares 'random' or a specific type id).
+// The ACTIVE zone's composed content is installed into the collision world;
+// switching zones swaps ALL world contents (structure.md §2).
 const LEVEL_DEF = LEVELS[0];
-// The level config (per-stage budgets, boss, vertical slot) the generator
-// consumes (levelConfigs.js — the authoritative Level 1 config).
+// The level config (boss, vertical slot, macro weights, length budgets) the
+// generator consumes (levelConfigs.js — the authoritative Level 1 config).
 const LEVEL_CONFIG = getLevelConfig(LEVEL_DEF.index) ?? {};
 
 // A genuinely new game (lifecycle.md §1/§6) establishes fresh random generation
@@ -577,6 +579,16 @@ onTransition((from, to) => {
 onTransition((from, to) => {
   if (to === S.AREA_ENTRY && (from === S.MENU || from === S.LEVEL_SELECT || from === S.BOSS_RUSH)) {
     const h = hero;
+    // A Continue after a page reload must rebuild the world with the SAVED
+    // generation seed (saveMeta.seed) so the run resumes on the exact terrain
+    // + spawns it was played on. In-session continues skip this: the live
+    // world already matches. Legacy saves without a seed keep today's behavior
+    // (the module-load world).
+    const sm = loadStore().saveMeta;
+    if (sm && Number.isInteger(sm.seed) && sm.seed !== getLastWorldSeed()) {
+      world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, sm.seed);
+      console.log(`[lifecycle] continue: rebuilt world from saved seed ${sm.seed}`);
+    }
     // Tear down any lingering boss battle room before swapping zones (a fresh
     // resume must not inherit COMBAT state from a finished run).
     if (bossZone.active) { bossZone.reset(); camera.unlock(); restoreBossRunFloor(); }

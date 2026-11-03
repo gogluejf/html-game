@@ -22,7 +22,7 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
-import { LEVEL_CONFIGS, getLevelConfig, getStageBudget } from '../world/levelConfigs.js';
+import { LEVEL_CONFIGS, getLevelConfig } from '../world/levelConfigs.js';
 // Length budgets are sourced from level.js (single source of truth) — import
 // the same constants so the assertions check identity/equality against the
 // real values rather than hard-coded literals.
@@ -56,18 +56,21 @@ test('each level config has the required top-level fields', () => {
     assert.equal(typeof cfg.boss, 'string', `${cfg.index}: boss is a string`);
     assert.ok(cfg.boss.length > 0, `${cfg.index}: boss is non-empty`);
     assert.ok(typeof cfg.verticalArea === 'number', `${cfg.index}: verticalArea is a number`);
-    // There is NO top-level `enemies`/`powerups` weight block — the per-stage
-    // counts in stageBudgets are the quantity budgets (populate.md §1). Type
-    // selection weights, when present, live in the flat *_weights fields.
+    // There is NO top-level `enemies`/`powerups` weight block, and no
+    // per-stage quantity budgets — typed spawn makes the macro placements the
+    // population spec. Type selection weights, when present, live in the flat
+    // *_weights fields.
     assert.ok(!('enemies' in cfg), `${cfg.index}: no top-level enemies weight block`);
     assert.ok(!('powerups' in cfg), `${cfg.index}: no top-level powerups weight block`);
+    // No per-stage quantity budgets anymore (placeholder-typed-spawn task 2.2):
+    // the macro placements ARE the population spec.
+    assert.ok(!('stageBudgets' in cfg), `${cfg.index}: no per-stage quantity budgets (typed spawn)`);
     if (cfg.enemyWeights) {
       assert.ok(typeof cfg.enemyWeights === 'object', `${cfg.index}: enemyWeights is an object`);
     }
     if (cfg.powerupWeights) {
       assert.ok(typeof cfg.powerupWeights === 'object', `${cfg.index}: powerupWeights is an object`);
     }
-    assert.ok(cfg.stageBudgets && typeof cfg.stageBudgets === 'object', `${cfg.index}: stageBudgets is an object`);
     assert.ok(cfg.lengths && typeof cfg.lengths === 'object', `${cfg.index}: lengths is an object`);
     // macroWeights is present on every level (generation.md §5b: macro intensity).
     assert.ok(cfg.macroWeights && typeof cfg.macroWeights === 'object', `${cfg.index}: macroWeights is an object`);
@@ -120,16 +123,12 @@ test('Level 1: boss is "tusko_wobble" (Tusko Wobble)', () => {
 
 test('Level 1: enemy roster matches the story doc (Jester, Jack-O-Lantern, Vine Hound, Boris Loon babies)', () => {
   const l1 = getLevelConfig(1);
-  // The roster is the union of enemy type keys across all per-stage budgets
-  // (the per-stage counts ARE the enemy selection — there is no separate
-  // top-level roster block).
-  const roster = new Set();
-  for (const budget of Object.values(l1.stageBudgets)) {
-    for (const type of Object.keys(budget.enemies)) roster.add(type);
-  }
+  // The roster is the union of enemy types in the level's type-selection
+  // weights (the per-level roster declaration).
+  const roster = new Set(Object.keys(l1.enemyWeights));
   // The story doc lists: Jester, Jack-O-Lantern, Vine Hound, Boris Loon (babies)
   assert.deepEqual([...roster].sort(), ['boris_loon_baby', 'jackolantern', 'jester', 'vine_hound'].sort(),
-    'roster (derived from stage budgets) matches the story doc exactly');
+    'roster (derived from enemyWeights) matches the story doc exactly');
 });
 
 test('Level 1: enemyWeights are a flat { type: number } map with positive weights', () => {
@@ -141,10 +140,7 @@ test('Level 1: enemyWeights are a flat { type: number } map with positive weight
     assert.ok(weight > 0, `enemyWeights.${type}: weight is positive`);
   }
   // Every weighted type is part of the roster (no orphan weight keys).
-  const roster = new Set();
-  for (const budget of Object.values(l1.stageBudgets)) {
-    for (const type of Object.keys(budget.enemies)) roster.add(type);
-  }
+  const roster = new Set(Object.keys(l1.enemyWeights));
   for (const type of Object.keys(l1.enemyWeights)) {
     assert.ok(roster.has(type), `enemyWeights.${type} is a known roster type`);
   }
@@ -160,13 +156,9 @@ test('Level 1: powerupWeights are a flat { type: number } map with positive weig
     assert.ok(VALID_POWERUPS.has(type), `powerupWeights "${type}" is a known type`);
     assert.ok(weight > 0, `powerupWeights.${type}: weight is positive`);
   }
-  // Every weighted type appears in at least one stage's powerup budget.
-  const budgeted = new Set();
-  for (const budget of Object.values(l1.stageBudgets)) {
-    for (const type of Object.keys(budget.powerups)) budgeted.add(type);
-  }
+  // Every weighted type is a known powerup type (no orphan weight keys).
   for (const type of Object.keys(l1.powerupWeights)) {
-    assert.ok(budgeted.has(type), `powerupWeights.${type} appears in a stage budget`);
+    assert.ok(VALID_POWERUPS.has(type), `powerupWeights.${type} is a known type`);
   }
 });
 
@@ -183,81 +175,6 @@ test('each level: verticalArea is exactly one of 2, 3, 4', () => {
   for (const cfg of LEVEL_CONFIGS) {
     assert.ok(valid.has(cfg.verticalArea),
       `level ${cfg.index}: verticalArea ${cfg.verticalArea} is valid`);
-  }
-});
-
-// ---------------------------------------------------------------------------
-// Budgets make scope explicit (per-stage, not per-level)
-// ---------------------------------------------------------------------------
-
-test('each level: stageBudgets covers all four stages (1 through 4)', () => {
-  const stages = ['1', '2', '3', '4'];
-  for (const cfg of LEVEL_CONFIGS) {
-    for (const s of stages) {
-      assert.ok(cfg.stageBudgets[s], `level ${cfg.index} stage ${s} has a budget`);
-    }
-  }
-});
-
-test('each level: each stage budget has enemy, barrel, and powerup sections', () => {
-  for (const cfg of LEVEL_CONFIGS) {
-    for (const [stage, budget] of Object.entries(cfg.stageBudgets)) {
-      assert.ok(budget.enemies && typeof budget.enemies === 'object', `level ${cfg.index} ${stage}: has enemies`);
-      assert.ok(budget.barrels && typeof budget.barrels === 'object', `level ${cfg.index} ${stage}: has barrels`);
-      assert.ok(budget.powerups && typeof budget.powerups === 'object', `level ${cfg.index} ${stage}: has powerups`);
-    }
-  }
-});
-
-test('each level: per-stage enemy counts are non-negative integers', () => {
-  for (const cfg of LEVEL_CONFIGS) {
-    for (const [stage, budget] of Object.entries(cfg.stageBudgets)) {
-      for (const [type, count] of Object.entries(budget.enemies)) {
-        assert.ok(Number.isInteger(count) && count >= 0,
-          `level ${cfg.index} ${stage}/${type}: count ${count} is a non-negative integer`);
-      }
-    }
-  }
-});
-
-test('each level: per-stage barrel counts are non-negative integers', () => {
-  const VALID_BARRELS = new Set(['explosive', 'wood', 'coin']);
-  for (const cfg of LEVEL_CONFIGS) {
-    for (const [stage, budget] of Object.entries(cfg.stageBudgets)) {
-      for (const [type, count] of Object.entries(budget.barrels)) {
-        assert.ok(VALID_BARRELS.has(type), `level ${cfg.index} ${stage}: barrel type "${type}" is valid`);
-        assert.ok(Number.isInteger(count) && count >= 0,
-          `level ${cfg.index} ${stage}/${type}: count ${count} is a non-negative integer`);
-      }
-    }
-  }
-});
-
-test('each level: per-stage powerup counts are non-negative integers', () => {
-  for (const cfg of LEVEL_CONFIGS) {
-    for (const [stage, budget] of Object.entries(cfg.stageBudgets)) {
-      for (const [type, count] of Object.entries(budget.powerups)) {
-        assert.ok(Number.isInteger(count) && count >= 0,
-          `level ${cfg.index} ${stage}/${type}: count ${count} is a non-negative integer`);
-      }
-    }
-  }
-});
-
-test('each level: budgets are per-stage (not a single level-wide budget)', () => {
-  // The scope is explicit: each stage has its own budget object, and the
-  // budgets DIFFER across stages (they are not just a copy of one level-wide
-  // total repeated four times). This satisfies populate.md §1: "the matrix
-  // must make that scope explicit so a level-wide quantity is not mistakenly
-  // repeated in every area."
-  for (const cfg of LEVEL_CONFIGS) {
-    const budgets = Object.values(cfg.stageBudgets);
-    assert.equal(budgets.length, 4, `level ${cfg.index}: four stage budgets`);
-    // At least the enemy counts differ between stages (intro is sparser than pre-boss).
-    const e1 = Object.values(budgets[0].enemies).reduce((a, b) => a + b, 0);
-    const e4 = Object.values(budgets[3].enemies).reduce((a, b) => a + b, 0);
-    assert.ok(e4 > e1,
-      `level ${cfg.index}: stage -4 total enemies (${e4}) > stage -1 total enemies (${e1})`);
   }
 });
 
@@ -291,52 +208,6 @@ test('each level: horizontal length is the canonical 56-column budget', () => {
 // ---------------------------------------------------------------------------
 // Tension curve across levels (generation.md §5b)
 // ---------------------------------------------------------------------------
-
-/**
- * Compute the total enemy count for a level (summed across all stages).
- * @param {object} cfg a level config
- * @returns {number} the total enemy count
- */
-function totalEnemies(cfg) {
-  let total = 0;
-  for (const budget of Object.values(cfg.stageBudgets)) {
-    for (const count of Object.values(budget.enemies)) total += count;
-  }
-  return total;
-}
-
-/**
- * Compute the total powerup count for a level (summed across all stages).
- * @param {object} cfg a level config
- * @returns {number} the total powerup count
- */
-function totalPowerups(cfg) {
-  let total = 0;
-  for (const budget of Object.values(cfg.stageBudgets)) {
-    for (const count of Object.values(budget.powerups)) total += count;
-  }
-  return total;
-}
-
-test('tension curve: total enemies strictly increases across level indices', () => {
-  const sorted = [...LEVEL_CONFIGS].sort((a, b) => a.index - b.index);
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = totalEnemies(sorted[i - 1]);
-    const curr = totalEnemies(sorted[i]);
-    assert.ok(curr > prev,
-      `level ${sorted[i].index}: total enemies (${curr}) > level ${sorted[i - 1].index} total enemies (${prev})`);
-  }
-});
-
-test('tension curve: total powerups strictly decreases across level indices', () => {
-  const sorted = [...LEVEL_CONFIGS].sort((a, b) => a.index - b.index);
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = totalPowerups(sorted[i - 1]);
-    const curr = totalPowerups(sorted[i]);
-    assert.ok(curr < prev,
-      `level ${sorted[i].index}: total powerups (${curr}) < level ${sorted[i - 1].index} total powerups (${prev})`);
-  }
-});
 
 test('tension curve: macro brutal-tier weight strictly increases across level indices', () => {
   const sorted = [...LEVEL_CONFIGS].sort((a, b) => a.index - b.index);
@@ -383,24 +254,6 @@ test('getLevelConfig: returns the config for each level index 1..8', () => {
 test('getLevelConfig: returns undefined for an undefined level', () => {
   assert.equal(getLevelConfig(99), undefined, 'unknown level returns undefined');
   assert.equal(getLevelConfig(0), undefined, 'level 0 returns undefined');
-});
-
-test('getStageBudget: returns the correct stage budget for each level', () => {
-  for (const cfg of LEVEL_CONFIGS) {
-    for (const stage of [1, 2, 3, 4]) {
-      const budget = getStageBudget(cfg, stage);
-      assert.ok(budget, `level ${cfg.index} stage ${stage} budget exists`);
-      assert.ok(budget.enemies, `level ${cfg.index} stage ${stage} has enemies`);
-      assert.ok(budget.barrels, `level ${cfg.index} stage ${stage} has barrels`);
-      assert.ok(budget.powerups, `level ${cfg.index} stage ${stage} has powerups`);
-    }
-  }
-});
-
-test('getStageBudget: returns null for a stage with no budget', () => {
-  for (const cfg of LEVEL_CONFIGS) {
-    assert.equal(getStageBudget(cfg, 0), null, `level ${cfg.index}: stage 0 has no budget`);
-  }
 });
 
 // ---------------------------------------------------------------------------

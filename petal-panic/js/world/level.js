@@ -49,8 +49,9 @@ import { VIEW_W, VIEW_H } from '../core/view.js';
 //     vertical climb (structure.md §1). Exactly one of the four ordinary
 //     areas is vertical; it is fixed for the whole game.
 //   - spawn: counts of every spawnable item (enemies, barrels, powerups).
-//     (Population per area is driven by levelConfigs.js stageBudgets at
-//     runtime; `spawn` is the level-level roster reference.)
+//     (Population per area is driven by typed macro placements at runtime —
+//     each placeholder declares 'random' or a specific type id; `spawn` is the
+//     level-level roster reference.)
 
 export const LEVELS = [
   {

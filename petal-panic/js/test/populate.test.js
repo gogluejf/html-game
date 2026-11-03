@@ -1,17 +1,15 @@
-// Petal Panic — population resolver tests (populate.md §1–§5, generation.md §4 step 4).
+// Petal Panic — population resolver tests (typed spawn, placeholder-typed-spawn plan).
 // Run: node --test petal-panic/js/test/populate.test.js
 //
-// Source of truth:
-//   docs/levels/populate.md     §1 (Budgets vs placement chance), §2 (Powerups),
-//                               §3 (Barrels), §4 (Enemies), §5 (Combined population)
-//   docs/levels/generation.md   §4 step 4 ("Populate their designated positions
-//                               using the level's budgets and chances")
+// Typed spawn contract (task 2.1): the authored placeholder on each slot is
+// the source of truth — every placement spawns exactly one entity; value
+// 'random' rolls within the family registry list; specific values pass
+// through unchanged; same seed → identical population. No quantity budgets.
 //
 // Acceptance criteria covered:
 //   1. All spawn items sit on valid macro slots (never invented coordinates).
-//   2. Fixed budgets are met without overcrowding (placed ≤ budget, ≤ slots;
-//      no independent-coin-flip empty areas when slots exist).
-//   3. Explosive barrels can form chain positions.
+//   2. Every slot spawns exactly one entity of its declared/rolled type.
+//   3. Barrel structures report chain positions from the authored geometry.
 //   4. Result deterministic per game seed.
 //   5. After life loss the same population is restored (same seed → same world).
 
@@ -34,6 +32,9 @@ import {
   populationSnapshot,
 } from '../world/macros.js';
 import { createRng } from '../world/terrain.js';
+import { ENEMY_TYPE_IDS } from '../world/enemyTypes.js';
+import { BARREL_TYPES } from '../objects/object.js';
+import { POWERUP_ROLL_TYPES } from '../objects/powerup.js';
 
 // ---------------------------------------------------------------------------
 // Macro placement opportunities (the slots the resolver fills)
@@ -67,12 +68,7 @@ test('composed layouts expose placement slots from their macros', () => {
 
 test('populateArea: every item sits on a valid macro slot (no invented coordinates)', () => {
   const layout = composeAreaSeeded(7, 'horizontal', 3, 60);
-  const config = {
-    enemies: { jester: 3, vine_hound: 2 },
-    powerups: { ammo: 2, shield: 1 },
-    barrels: { explosive: 2, wood: 1, coin: 1 },
-  };
-  const pop = populateArea(createRng(99), layout, config);
+  const pop = populateArea(createRng(99), layout);
 
   const slotSet = new Set(layout.placements.map((p) => `${p.x}|${p.y ?? 0}|${p.type}`));
   for (const it of pop.enemies) {
@@ -87,83 +83,100 @@ test('populateArea: every item sits on a valid macro slot (no invented coordinat
 });
 
 // ---------------------------------------------------------------------------
-// populateArea: budgets are met without overcrowding (acceptance #2)
+// populateArea: one entity per slot (typed spawn)
 // ---------------------------------------------------------------------------
 
-test('populateArea: fixed budgets are met without overcrowding (placed ≤ budget, ≤ slots)', () => {
+test('populateArea: every slot spawns exactly one item, never more (no over-fill)', () => {
   for (const seed of [1, 2, 3, 4, 5]) {
     const layout = composeAreaSeeded(seed, 'horizontal', 3, 60);
-    const config = {
-      enemies: { jester: 3, vine_hound: 2, boris_loon: 1 },
-      powerups: { ammo: 2, shield: 1, rapid: 1 },
-      barrels: { explosive: 3, wood: 2, coin: 2 },
-    };
-    const pop = populateArea(createRng(seed * 1000), layout, config);
+    const pop = populateArea(createRng(seed * 1000), layout);
+    const byType = { enemy: 0, barrel: 0, powerup: 0 };
+    for (const p of layout.placements) byType[p.type]++;
+    assert.equal(pop.enemies.length, byType.enemy, `seed ${seed}: one enemy per enemy slot`);
+    assert.equal(pop.barrels.length, byType.barrel, `seed ${seed}: one barrel per barrel slot`);
+    assert.equal(pop.powerups.length, byType.powerup, `seed ${seed}: one powerup per powerup slot`);
     for (const k of ['enemies', 'barrels', 'powerups']) {
       const b = pop.budgets[k];
-      assert.ok(b.placed <= b.requested, `${k}: placed ${b.placed} does not exceed budget ${b.requested}`);
+      assert.ok(b.placed <= b.requested, `${k}: placed ${b.placed} does not exceed requested ${b.requested}`);
       assert.ok(b.placed <= b.slots, `${k}: placed ${b.placed} does not exceed available slots ${b.slots}`);
       assert.ok(b.placed >= 0, `${k}: placed is non-negative`);
     }
   }
 });
 
-test('populateArea: when slots ≥ budget, the full budget is placed (no accidental empty area)', () => {
-  // A synthetic layout with enough slots in every category. With a budget below
-  // the slot count, the resolver must place exactly the budget (a fixed budget
-  // must not produce an empty or overcrowded area — populate.md §1).
+// ---------------------------------------------------------------------------
+// Typed spawn contract (placeholder-typed-spawn plan, task 2.1)
+// ---------------------------------------------------------------------------
+// The authored placeholder is the source of truth: every placement spawns
+// EXACTLY ONE entity; value 'random' rolls within the family registry list;
+// a specific value passes through unchanged; no quantity budgets exist.
+
+test('populateArea: every placement spawns exactly one entity (no budgets, no under/over-fill)', () => {
   const layout = {
     placements: [
       { type: 'enemy', x: 1, y: 0, slot: 'e0' },
       { type: 'enemy', x: 2, y: 0, slot: 'e1' },
-      { type: 'enemy', x: 3, y: 0, slot: 'e2' },
       { type: 'barrel', x: 4, y: 0, slot: 'b0' },
-      { type: 'barrel', x: 5, y: 0, slot: 'b1' },
       { type: 'powerup', x: 6, y: 0, slot: 'p0' },
-      { type: 'powerup', x: 7, y: 0, slot: 'p1' },
     ],
   };
-  const config = {
-    enemies: { jester: 2 },
-    powerups: { ammo: 1 },
-    barrels: { explosive: 1, wood: 1 },
-  };
-  const pop = populateArea(createRng(5), layout, config);
-  assert.equal(pop.budgets.enemies.placed, 2, 'enemy budget (2) fully met');
-  assert.equal(pop.budgets.barrels.placed, 2, 'barrel budget (2) fully met');
-  assert.equal(pop.budgets.powerups.placed, 1, 'powerup budget (1) fully met');
+  const pop = populateArea(createRng(5), layout);
+  assert.equal(pop.enemies.length, 2, 'one enemy per enemy slot');
+  assert.equal(pop.barrels.length, 1, 'one barrel per barrel slot');
+  assert.equal(pop.powerups.length, 1, 'one powerup per powerup slot');
+  // Budget accounting mirrors the slots 1:1 (requested == placed == slots).
+  for (const k of ['enemies', 'barrels', 'powerups']) {
+    const b = pop.budgets[k];
+    assert.equal(b.requested, b.placed, `${k}: requested equals placed`);
+    assert.equal(b.placed, b.slots, `${k}: placed equals slot count`);
+  }
 });
 
-test('populateArea: when slots < budget, it fills every slot (visible under-placement, no over-fill)', () => {
-  // A budget the terrain cannot support: the resolver fills every valid slot
-  // and reports the shortfall in `budgets` — it never piles items into invalid
-  // positions (populate.md §1: "revise the composition rather than pile items
-  // into invalid positions").
+test('populateArea: value "random" rolls within the family registry list', () => {
+  const enemyIds = new Set(ENEMY_TYPE_IDS);
+  const barrelIds = new Set(BARREL_TYPES.map((t) => t.id));
+  const powerupIds = new Set(POWERUP_ROLL_TYPES);
+
+  const layout = {
+    placements: Array.from({ length: 40 }, (_, i) => ({
+      type: i % 3 === 0 ? 'enemy' : i % 3 === 1 ? 'barrel' : 'powerup',
+      x: i, y: 0, slot: `s${i}`, value: 'random',
+    })),
+  };
+  const pop = populateArea(createRng(7), layout);
+  for (const e of pop.enemies) assert.ok(enemyIds.has(e.type), `enemy roll "${e.type}" is a legal enemy id`);
+  for (const b of pop.barrels) assert.ok(barrelIds.has(b.type), `barrel roll "${b.type}" is a legal barrel id`);
+  for (const p of pop.powerups) assert.ok(powerupIds.has(p.type), `powerup roll "${p.type}" is a legal powerup id`);
+});
+
+test('populateArea: specific values pass through unchanged (no re-roll)', () => {
   const layout = {
     placements: [
-      { type: 'enemy', x: 1, y: 0, slot: 'e0' },
-      { type: 'enemy', x: 2, y: 0, slot: 'e1' },
+      { type: 'enemy', x: 1, y: 0, slot: 'e0', value: 'jester' },
+      { type: 'enemy', x: 2, y: 0, slot: 'e1', value: 'vine_hound' },
+      { type: 'barrel', x: 4, y: 0, slot: 'b0', value: 'explosive' },
+      { type: 'powerup', x: 6, y: 0, slot: 'p0', value: 'ammo' },
     ],
   };
-  const config = { enemies: { jester: 10 } };
-  const pop = populateArea(createRng(5), layout, config);
-  assert.equal(pop.budgets.enemies.placed, 2, 'only 2 enemy slots exist, so 2 placed');
-  assert.equal(pop.budgets.enemies.requested, 10, 'the requested budget is recorded');
-  assert.equal(pop.budgets.enemies.slots, 2, 'the slot count is recorded');
-  assert.equal(pop.enemies.length, 2, 'no over-fill beyond the slots');
+  const pop = populateArea(createRng(5), layout);
+  assert.deepEqual(pop.enemies.map((e) => e.type), ['jester', 'vine_hound'], 'enemy ids pass through');
+  assert.deepEqual(pop.barrels.map((b) => b.type), ['explosive'], 'barrel id passes through');
+  assert.deepEqual(pop.powerups.map((p) => p.type), ['ammo'], 'powerup id passes through');
 });
 
-test('populateArea: per-type counts are never exceeded (roster/mix caps)', () => {
+test('populateArea: same seed + same layout produces an identical typed population', () => {
   const layout = {
-    placements: Array.from({ length: 20 }, (_, i) => ({ type: 'enemy', x: i, y: 0, slot: `e${i}` })),
+    placements: Array.from({ length: 12 }, (_, i) => ({
+      type: i % 3 === 0 ? 'enemy' : i % 3 === 1 ? 'barrel' : 'powerup',
+      x: i, y: 0, slot: `s${i}`, value: 'random',
+    })),
   };
-  const config = { enemies: { jester: 3, vine_hound: 2 } };
-  const pop = populateArea(createRng(5), layout, config);
-  const counts = {};
-  for (const e of pop.enemies) counts[e.type] = (counts[e.type] ?? 0) + 1;
-  assert.equal(counts.jester ?? 0, 3, 'jester capped at its roster count');
-  assert.equal(counts.vine_hound ?? 0, 2, 'vine_hound capped at its roster count');
-  assert.equal(pop.enemies.length, 5, 'no enemy beyond the total roster');
+  const build = () => populateArea(createRng(4242), layout);
+  const a = build();
+  const b = build();
+  assert.deepEqual(a.enemies, b.enemies, 'same seed: same enemy types');
+  assert.deepEqual(a.barrels, b.barrels, 'same seed: same barrel types');
+  assert.deepEqual(a.powerups, b.powerups, 'same seed: same powerup types');
 });
 
 // ---------------------------------------------------------------------------
@@ -202,10 +215,11 @@ test('barrelStructures: groups same-tier contiguous barrels into structures', ()
   assert.equal(run.tier, 0, 'the run is on tier 0');
 });
 
-test('populateArea: explosive barrels are placed in chain positions when possible', () => {
-  // A synthetic layout with a cluster of adjacent barrel slots. The resolver
-  // should place the explosive barrels on chainable slots so a well-placed
-  // attack causes a chain reaction (populate.md §3).
+test('populateArea: barrel slots form chain structures when adjacent (structures report, not placement)', () => {
+  // A synthetic layout with a cluster of adjacent barrel slots. Typed spawn
+  // places one barrel per slot; the structure grouping then flags the run as
+  // a chain (populate.md §3) — chaining is a property of the authored slot
+  // geometry, not of resolver placement decisions.
   const layout = {
     placements: [
       { type: 'barrel', x: 10, y: 0, slot: 'b0' },
@@ -214,22 +228,11 @@ test('populateArea: explosive barrels are placed in chain positions when possibl
       { type: 'barrel', x: 13, y: 0, slot: 'b3' },
     ],
   };
-  const config = { barrels: { explosive: 2, wood: 2 } };
-  const pop = populateArea(createRng(3), layout, config);
-  assert.equal(pop.barrels.length, 4, 'all 4 barrel slots filled');
-  const explosive = pop.barrels.filter((b) => b.type === 'explosive');
-  assert.equal(explosive.length, 2, '2 explosive barrels placed');
-  // At least one explosive barrel must sit on a slot adjacent to another barrel
-  // (a chain position) — the explosive barrels form the chain, not the edges.
-  const explosivePositions = explosive.map((b) => b.x);
-  const allXs = pop.barrels.map((b) => b.x);
-  const anyExplosiveChains = explosivePositions.some((ex) =>
-    allXs.some((ox) => ox !== ex && Math.abs(ox - ex) <= BARREL_CHAIN_MAX_UNITS),
-  );
-  assert.ok(anyExplosiveChains, 'an explosive barrel occupies a chain position');
-  // The structure containing the explosive barrels is flagged as a chain.
+  const pop = populateArea(createRng(3), layout);
+  assert.equal(pop.barrels.length, 4, 'one barrel per slot');
   const chainedStructure = pop.structures.find((s) => s.chain);
-  assert.ok(chainedStructure, 'a structure is flagged as a chain');
+  assert.ok(chainedStructure, 'the adjacent run is flagged as a chain');
+  assert.equal(chainedStructure.xs.length, 4, 'the chain spans all 4 adjacent slots');
 });
 
 // ---------------------------------------------------------------------------
@@ -237,17 +240,11 @@ test('populateArea: explosive barrels are placed in chain positions when possibl
 // ---------------------------------------------------------------------------
 
 test('populateArea: same seed produces an identical population (determinism)', () => {
-  const config = {
-    enemies: { jester: 4, vine_hound: 2, boris_loon: 1 },
-    powerups: { ammo: 3, shield: 1, rapid: 1 },
-    barrels: { explosive: 4, wood: 2, coin: 2 },
-  };
   // The whole world (terrain + population) is rolled once per game from the seed.
   const build = (seed) => {
-    const rng = createRng(seed);
     const layout = composeAreaSeeded(seed, 'horizontal', 3, 60);
     // Re-derive the population from the SAME seed stream the game uses.
-    return populateArea(createRng(seed), layout, config);
+    return populateArea(createRng(seed), layout);
   };
   const a = build(20240517);
   const b = build(20240517);
@@ -259,16 +256,11 @@ test('populateArea: same seed produces an identical population (determinism)', (
 });
 
 test('populateArea: determinism holds across many seeds and stages', () => {
-  const config = {
-    enemies: { jester: 3, vine_hound: 2 },
-    powerups: { ammo: 2, shield: 1 },
-    barrels: { explosive: 3, wood: 1, coin: 1 },
-  };
   for (const seed of [100, 200, 300]) {
     for (const stage of [1, 2, 3, 4]) {
       const mk = () => {
         const layout = composeAreaSeeded(seed, 'horizontal', stage, 60);
-        return populateArea(createRng(seed * 100 + stage), layout, config);
+        return populateArea(createRng(seed * 100 + stage), layout);
       };
       assert.deepEqual(mk().enemies, mk().enemies, `seed ${seed} stage ${stage}: enemies`);
       assert.deepEqual(mk().barrels, mk().barrels, `seed ${seed} stage ${stage}: barrels`);
@@ -287,14 +279,9 @@ test('after life loss the same population is restored (same seed → same world,
   // simulate two "attempts" of the same game (same seed) and assert the
   // population is byte-for-byte identical — this is what restoreArea replays.
   const seed = 987654;
-  const config = {
-    enemies: { jester: 5, vine_hound: 3, boris_loon: 2 },
-    powerups: { ammo: 4, shield: 2, rapid: 2, special: 1 },
-    barrels: { explosive: 6, wood: 3, coin: 3 },
-  };
   const worldFromSeed = () => {
     const layout = composeAreaSeeded(seed, 'horizontal', 3, 60);
-    return populateArea(createRng(seed), layout, config);
+    return populateArea(createRng(seed), layout);
   };
   const firstAttempt = worldFromSeed();
   const afterLifeLoss = worldFromSeed();
@@ -307,26 +294,23 @@ test('after life loss the same population is restored (same seed → same world,
 // Combined population sanity (acceptance — nothing invalidates another layer)
 // ---------------------------------------------------------------------------
 
-test('populateArea: empty config produces an empty population (no crash, no items)', () => {
+test('populateArea: a layout with no placements produces an empty population (no crash, no items)', () => {
+  // With typed spawn there are no budgets to satisfy — the population is
+  // exactly the set of authored slots. A slot-less layout yields nothing.
   const layout = composeAreaSeeded(42, 'horizontal', 3, 60);
-  const pop = populateArea(createRng(1), layout, {});
-  assert.equal(pop.enemies.length, 0, 'no enemies with an empty roster');
-  assert.equal(pop.barrels.length, 0, 'no barrels with an empty barrel budget');
-  assert.equal(pop.powerups.length, 0, 'no powerups with an empty mix');
+  const empty = { ...layout, placements: [] };
+  const pop = populateArea(createRng(1), empty);
+  assert.equal(pop.enemies.length, 0, 'no enemies without enemy slots');
+  assert.equal(pop.barrels.length, 0, 'no barrels without barrel slots');
+  assert.equal(pop.powerups.length, 0, 'no powerups without powerup slots');
   assert.equal(pop.structures.length, 0, 'no structures with no barrels');
 });
 
-test('populateArea: a real level-1 area populates with the level spawn budgets', () => {
-  // Uses the actual Level 1 (Big Top) spawn counts as the area budget. A real
-  // composed area should populate deterministically and place every item on a
-  // valid slot (acceptance #1 + #4 together on real data).
+test('populateArea: a real level-1 area populates from its authored slots', () => {
+  // A real composed area should populate deterministically and place every
+  // item on a valid slot (acceptance #1 + #4 together on real data).
   const layout = composeAreaSeeded(12345, 'horizontal', 2, 60);
-  const config = {
-    enemies: { jester: 6, vine_hound: 4, boris_loon: 3, boris_loon_baby: 6 },
-    powerups: { ammo: 3, invincibility: 1, shield: 1, rapid: 2 },
-    barrels: { explosive: 8, wood: 4, coin: 4 },
-  };
-  const pop = populateArea(createRng(12345), layout, config);
+  const pop = populateArea(createRng(12345), layout);
   const slotSet = new Set(layout.placements.map((p) => `${p.x}|${p.y ?? 0}|${p.type}`));
   for (const it of pop.enemies) {
     assert.ok(slotSet.has(`${it.x}|${it.y ?? 0}|enemy`), `enemy ${it.type}@${it.x} on a valid slot`);
@@ -407,12 +391,7 @@ test('populateArea: throws if a slot is inside a solid block (defense-in-depth)'
 
 test('populationSnapshot: produces a stable, value-only snapshot of the population', () => {
   const layout = composeAreaSeeded(42, 'horizontal', 3, 60);
-  const config = {
-    enemies: { jester: 3, vine_hound: 2 },
-    powerups: { ammo: 2, shield: 1 },
-    barrels: { explosive: 2, wood: 1, coin: 1 },
-  };
-  const pop = populateArea(createRng(99), layout, config);
+  const pop = populateArea(createRng(99), layout);
   const snap = populationSnapshot(pop);
 
   // The snapshot is a deep copy: mutating the original does not affect it.
@@ -430,12 +409,7 @@ test('populationSnapshot: produces a stable, value-only snapshot of the populati
 
 test('populationSnapshot: the same population always produces an identical snapshot (stability)', () => {
   const layout = composeAreaSeeded(42, 'horizontal', 3, 60);
-  const config = {
-    enemies: { jester: 3, vine_hound: 2 },
-    powerups: { ammo: 2, shield: 1 },
-    barrels: { explosive: 2, wood: 1, coin: 1 },
-  };
-  const build = () => populationSnapshot(populateArea(createRng(99), layout, config));
+  const build = () => populationSnapshot(populateArea(createRng(99), layout));
   const a = build();
   const b = build();
   assert.deepEqual(a, b, 'same population → identical snapshot (stable for restoreArea)');
