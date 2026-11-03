@@ -127,8 +127,8 @@ export function registerCollisionHandlers(collisionWorld) {
         const dealt = target.hit(allyProj.damage, hero, 'projectile');
         if (dealt > 0) {
           allyProj.alive = false;
-          // Super-coin barrel: pop a few coins out on every landed hit.
-          ctx.popSuperCoinHit?.(target);
+          // Super-coin barrel: pop coins proportional to the damage dealt.
+          ctx.popSuperCoinHit?.(target, dealt);
           if (target.destroyed) ctx.handleBarrelDestroyed(target);
         } else {
           allyProj.alive = false; // hit an already-destroyed solid — still consumed

@@ -422,18 +422,22 @@ export class CoinPool {
   }
 
   /**
-   * Per-hit popcorn: a small number of coins pop out of a super-coin barrel on
-   * every landed hit (not just on destruction). Lighter than the final burst —
-   * a satisfying "tick" of coins each shot.
+   * Per-hit popcorn: a number of coins pop out of a super-coin barrel on every
+   * landed hit (not just on destruction). Count scales with damage dealt via
+   * cfg.mult (base min-max per `perDamage` points) — a bomb pops ~4x a thorn.
+   * Lighter than the final burst: a satisfying "tick" of coins each shot.
    *
-   * @param {{min:number,max:number,intense?:number}} cfg
+   * @param {{min:number,max:number,intense?:number,mult?:number}} cfg
    * @param {number} cx center x
    * @param {number} cy center y
    * @returns {number} number spawned
    */
   popHitCoins(cfg, cx, cy) {
     if (!cfg) return 0;
-    const n = cfg.min + Math.floor(Math.random() * (cfg.max - cfg.min + 1));
+    const mult = cfg.mult ?? 1;
+    const min = Math.max(1, Math.round(cfg.min * mult));
+    const max = Math.max(min, Math.round(cfg.max * mult));
+    const n = min + Math.floor(Math.random() * (max - min + 1));
     const intense = cfg.intense ?? 1;
     let spawned = 0;
     for (let i = 0; i < n; i++) {

@@ -83,15 +83,19 @@ export function handleBarrelDestroyed(barrel) {
 
 /**
  * Per-hit popcorn for the super-coin barrel: on every landed hit (not just
- * destruction) a few coins pop out with intense velocity. Called by the
- * projectile-hit path right after target.hit() when the target is a supercoin.
+ * destruction) coins pop out, scaled by the damage dealt (base min-max per
+ * `perDamage` points — a bomb pops ~4x a thorn). The killing blow scales by
+ * its FULL damage (overkill included), then the fixed final burst fires on top.
  * @param {GameObj} barrel the struck super-coin barrel
+ * @param {number} dmg damage actually applied by this hit
  */
-export function popSuperCoinHit(barrel) {
+export function popSuperCoinHit(barrel, dmg = 0) {
   if (!barrel || barrel.type !== SUPERCOIN_BARREL_DEF.id || !barrel.def?.hitCoins) return;
   const cx = barrel.x + barrel.w / 2;
   const cy = barrel.y + barrel.h / 2;
-  coins.popHitCoins(barrel.def.hitCoins, cx, cy);
+  const per = barrel.def.hitCoins.perDamage ?? 10;
+  const mult = Math.max(1, dmg / per); // never less than one base pop
+  coins.popHitCoins({ ...barrel.def.hitCoins, mult }, cx, cy);
 }
 
 /** Keep the collision world's coin set in sync with the pool. */

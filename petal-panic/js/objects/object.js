@@ -80,8 +80,9 @@ export const SUPERCOIN_BARREL_DEF = {
     intense: 1.9,     // velocity multiplier vs. normal coin pop
     upBias: 1.5,      // extra upward component (launches into the sky)
   },
-  // Per-hit popcorn: a few coins pop out on every landed hit.
-  hitCoins: { min: 2, max: 4, intense: 1.7 },
+  // Per-hit popcorn: coins scale with damage dealt (2-4 per 10 dmg). A bomb
+  // (40) pops ~4x a thorn (10); the killing blow pops for its full damage too.
+  hitCoins: { min: 2, max: 4, perDamage: 10, intense: 1.7 },
   spriteAnim: 'supercoin',
 };
 
