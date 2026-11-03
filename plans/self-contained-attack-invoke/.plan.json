@@ -1,0 +1,287 @@
+{
+  "plan_name": "self-contained-attack-invoke",
+  "title": "Self-Contained Attack Invoke \u2014 Plug & Play Attack Lifecycle",
+  "why": "Firing an attack macro today requires the CALLER to know which host owns its lifecycle and to pass a fully-wired ctx. Barrel payloads, enemies, and bosses each hand-roll step/draw wiring (or silently skip it), so every new object/enemy/boss that fires a macro needs bespoke glue and can silently fail to render or tick. This is not extensible.",
+  "outcomes": "invoke() + trigger become self-contained: any caller fires any macro in one line and the engine guarantees it is stepped, drawn, and pruned automatically. No per-caller host wiring. New attacks plug in with zero lifecycle code. Latent unstepped-payload bugs (e.g. enemy explosion/shockwave) are fixed for free.",
+  "milestones": [
+    {
+      "number": "1",
+      "name": "Attack Lifecycle Registry",
+      "pattern": [
+        "Registry + Self-Registering Handle"
+      ],
+      "objective": "A single engine-owned registry that auto-tracks every live attack handle and drives its step/draw/prune in one place, so invoke() never abandons a handle.",
+      "success": "Any handle returned by invoke() is stepped, drawn, and pruned by the game loop with zero caller code. No double-stepping of host-owned roots.",
+      "diagram": "graph TD\n  A[caller invokes macro] --> B[invoke returns handle]\n  B --> C{handle has step or zone}\n  C|yes| D[auto-register into AttackLifecycle]\n  C|no instant| E[skip - completes synchronously]\n  D --> F[game loop steps all live handles]\n  F --> G{handle done}\n  G|no| H[draw zones each frame]\n  G|yes| I[self-prune from registry]",
+      "tasks": [
+        {
+          "number": "1.1",
+          "name": "AttackLifecycle registry module",
+          "type": "feature",
+          "what": "Add js/combat/attack/lifecycle.js: a Set of live handles with register(h), stepAll(dt, targets), drawAll(ctx), and clear(). A handle is 'live' when it has a .step fn or a .zone; it self-prunes once _completed/_cancelled.",
+          "why": "This is the single engine-owned lifecycle owner that replaces every per-caller host/ad-hoc step-draw path.",
+          "files": [
+            "+ petal-panic/js/combat/attack/lifecycle.js"
+          ],
+          "snippet": [
+            "// Self-contained attack lifecycle. invoke() registers; the game loop drives.\nexport const AttackLifecycle = {\n  _live: new Set(),\n  // Register a handle if it needs per-frame driving (has .step or a .zone).\n  register(h) { /* skip if h._completed || !needsDriving(h) */ },\n  // Step every live handle once; prune completed/cancelled.\n  stepAll(dt, targets) { /* for h of _live: h.step?.(dt, targets); prune */ },\n  // Draw every live handle's zones (recursive over h.handles + h.zone).\n  drawAll(ctx) { /* visit(h): h.zone?.draw(ctx); recurse h.handles */ },\n  // Tear down all (level transition / teardown).\n  clear() { /* cancel each; _live.clear() */ },\n};\nfunction needsDriving(h) { return typeof h?.step === 'function' || !!h?.zone; }"
+          ],
+          "acceptance": [
+            "register() ignores already-completed handles and handles with no step/zone",
+            "stepAll() calls h.step(dt, targets) on each live handle exactly once and prunes completed ones",
+            "drawAll() recursively draws h.zone for the handle and every nested h.handles entry",
+            "clear() cancels all live handles and empties the set"
+          ],
+          "verify": [
+            "node --check petal-panic/js/combat/attack/lifecycle.js"
+          ]
+        },
+        {
+          "number": "1.2",
+          "name": "Ownership tag to prevent double-stepping",
+          "type": "feature",
+          "what": "Add an opt-out so a handle already owned by a host (bombAttacks) is not double-stepped by the registry. Registering marks h._lifecycleOwned; host-owned roots either skip registration or set the flag so stepAll() skips them.",
+          "why": "bombAttacks.step() already drives hero-shot roots; if the registry also steps them, carriers get double physics and payloads fire twice. Ownership must be explicit and unambiguous.",
+          "files": [
+            "~ petal-panic/js/combat/attack/lifecycle.js"
+          ],
+          "snippet": [
+            "// A handle is driven by EXACTLY ONE owner: the registry OR a host.\n// register(h, { owned }) - owned=true means a host already steps it;\n//   the registry still DRAWS its zones but never calls h.step().\nregister(h, opts = {}) {\n  if (!needsDriving(h)) return;\n  this._live.add(h);\n  h._registryStepped = !opts.owned; // false => host owns stepping\n}\nstepAll(dt, targets) {\n  for (const h of [...this._live]) {\n    if (h._completed || h._cancelled) { this._live.delete(h); continue; }\n    if (h._registryStepped) h.step?.(dt, targets); // hosts step their own\n  }\n}"
+          ],
+          "acceptance": [
+            "a host-owned root registered with owned=true is drawn but NOT stepped by stepAll",
+            "a registry-owned handle is both stepped and drawn",
+            "no handle is ever stepped twice in one frame (assert via a counting stub)"
+          ],
+          "verify": [
+            "node --check petal-panic/js/combat/attack/lifecycle.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "2",
+      "name": "Self-Registering Invoke",
+      "pattern": [
+        "Side-Effect-Free Registration Hook"
+      ],
+      "objective": "Wire invoke() to auto-register live handles into the registry, and make the game loop drive the registry instead of the ad-hoc per-caller paths.",
+      "success": "barrelSync propane fan, toxic zones, and enemy payloads all flow through the registry. The hand-rolled setBombHostGetter / barrelAttackRoots / stepToxicZones wiring is removed.",
+      "diagram": "sequenceDiagram\n  participant Caller\n  participant Invoke\n  participant Registry\n  participant Loop\n  Caller->>Invoke: invoke(id, params, ctx)\n  Invoke->>Invoke: build handle\n  Invoke->>Registry: register(handle) if live\n  Invoke-->>Caller: handle\n  Loop->>Registry: stepAll(dt)\n  Registry->>Registry: h.step for each live\n  Loop->>Registry: drawAll(ctx)\n  Registry->>Registry: h.zone.draw for each live\n  Registry->>Registry: prune completed",
+      "tasks": [
+        {
+          "number": "2.1",
+          "name": "invoke() auto-registers live handles",
+          "type": "feature",
+          "what": "In engine.js invoke(), after the handle is built, call AttackLifecycle.register(handle) for any non-completed handle that needs driving. Host-spawned roots (bombAttacks.spawn) register with owned=true so they are drawn but not double-stepped.",
+          "why": "This is the plug-and-play core: from now on a bare invoke() can never silently drop a handle's lifecycle.",
+          "files": [
+            "~ petal-panic/js/combat/attack/engine.js",
+            "~ petal-panic/js/combat/attack/bombAttackHost.js"
+          ],
+          "snippet": [
+            "// engine.js invoke(): single registration point.\nconst inner = def.impl(merged, ctx);\n// ... existing adoption logic yields result handle ...\nif (!result._completed) AttackLifecycle.register(result, { owned: false });\nreturn result;\n\n// bombAttackHost.js spawn(): host owns stepping, registry only draws.\nspawn(id, params, attacker) {\n  const h = invoke(id, params, this.makeCtx(attacker));\n  if (h and not completed) h._registryStepped = false; // host steps it\n  return h;\n}"
+          ],
+          "acceptance": [
+            "a bare invoke() of a duration macro (e.g. fireArea) appears in AttackLifecycle._live without caller code",
+            "an instant macro that completes synchronously is NOT left in the registry",
+            "bombAttacks.spawn roots are present for drawing but carry _registryStepped=false"
+          ],
+          "verify": [
+            "node --check petal-panic/js/combat/attack/engine.js"
+          ]
+        },
+        {
+          "number": "2.2",
+          "name": "Game loop drives the registry",
+          "type": "refactor",
+          "what": "In systems/update.js call AttackLifecycle.stepAll(dt, getDamageables()) once per frame (after the pool-resident stepBomb pass and bombAttacks.step). In systems/render.js call AttackLifecycle.drawAll(ctx) in world space. Remove stepToxicZones/drawToxicZones and setBombHostGetter from the loop.",
+          "why": "One step + one draw call replaces every bespoke per-caller lifecycle path, which is the whole point of self-containment.",
+          "files": [
+            "~ petal-panic/js/systems/update.js",
+            "~ petal-panic/js/systems/render.js"
+          ],
+          "snippet": [
+            "// update.js - single lifecycle drive (replaces stepToxicZones + barrel roots):\nbombAttacks.step(dt);          // host-owned hero shots (unchanged)\nAttackLifecycle.stepAll(dt, getDamageables());  // everything else\n\n// render.js - single zone draw (replaces drawToxicZones + barrel root draw):\nbombAttacks.draw(ctx);\nAttackLifecycle.drawAll(ctx);"
+          ],
+          "acceptance": [
+            "toxic dust zones still tick damage and expire via the registry (no stepToxicZones call remains)",
+            "propane molotov fire zones render with no barrelSync-specific draw code",
+            "setBombHostGetter is no longer referenced by the game loop"
+          ],
+          "verify": [
+            "node --check petal-panic/js/systems/update.js",
+            "node --check petal-panic/js/systems/render.js"
+          ]
+        },
+        {
+          "number": "2.3",
+          "name": "barrelSync fires macros with zero lifecycle wiring",
+          "type": "refactor",
+          "what": "Rewrite the propane and toxic branches in barrelSync to a bare invoke() (or ctx.bombAttacks.spawn for hero-aligned) and drop the _getBombHost/setBombHostGetter, spawnToxicDustZone, stepToxicZones, drawToxicZones helpers. The registry now owns their step/draw.",
+          "why": "This is the concrete proof of the goal: the caller that previously needed host + getter + 3 helper functions now needs one line.",
+          "files": [
+            "~ petal-panic/js/objects/barrelSync.js"
+          ],
+          "snippet": [
+            "// Propane branch - ONE line, no host/getter/helpers:\ninvoke('spawnSplit', {\n  x: cx, y: cy, count: 5, centerDirection: -Math.PI / 2, angle: Math.PI * 0.7,\n  force: 520, spawnType: 'molotov',\n  molotov: { arc: 800, bounce: false, ttl: 1.2, fireWidth: 96, team: 'neutral' },\n  groundY: getActiveFloorY(),\n}, makeBarrelContext(barrel));   // pools + collisionWorld + targets\n\n// Toxic branch - same pattern:\ninvoke('dustZone', { x: cx, y: cy, width: W, height: H, duration: 3, tickRate: 5, damage: 6, team: 'neutral' }, makeBarrelContext(barrel));\n// No register, no step, no draw - the registry handles all three."
+          ],
+          "acceptance": [
+            "propane fan spawns 5 molotov lobes that render fire on the floor with only an invoke() call",
+            "toxic cloud ticks damage and expires with only an invoke() call",
+            "no reference to setBombHostGetter, _getBombHost, spawnToxicDustZone, stepToxicZones, or drawToxicZones remains in barrelSync"
+          ],
+          "verify": [
+            "node --check petal-panic/js/objects/barrelSync.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "3",
+      "name": "Host Unification & Migration",
+      "pattern": [
+        "Strangler Fig"
+      ],
+      "objective": "Collapse the parallel host/registry paths so there is ONE lifecycle owner. Migrate hero shots, barrel payloads, and enemy/boss payloads onto it, then delete the bespoke wiring.",
+      "success": "bombAttacks either becomes a thin adapter over the registry or is removed. No caller references setBombHostGetter, barrelAttackRoots, or stepToxicZones. Full test suite green at baseline.",
+      "diagram": "flowchart LR\n  A[hero shots] --> R[registry]\n  B[barrel payloads] --> R\n  C[enemy payloads] --> R\n  D[boss payloads] --> R\n  R --> S[stepAll]\n  R --> D2[drawAll]\n  E[old bombAttacks host] -.replaced.- R\n  F[old ad-hoc step/draw] -.deleted.- R",
+      "tasks": [
+        {
+          "number": "3.1",
+          "name": "Migrate enemy + boss payloads to bare invoke",
+          "type": "refactor",
+          "what": "Change explosiveMonkey.detonate (and any boss payload that stores a _payloadHandle) to a plain invoke() with no stored handle and no manual step. The registry steps/draws the explosion/shockwave automatically.",
+          "why": "These are the latent unstepped-payload bugs: today _payloadHandle is stored but never stepped, so enemy blasts rely on side effects. The registry fixes them for free.",
+          "files": [
+            "~ petal-panic/js/enemies/explosiveMonkey.js"
+          ],
+          "snippet": [
+            "// Before: this._payloadHandle = invoke('explosion', {...}, ctx);  // never stepped\n// After:  fire-and-forget - the registry owns it.\ninvoke(this.cfg.mineType === 'shockwave' ? 'shockwave' : 'explosion', {\n  x: cx, y: cy, radius: this.cfg.radius, damage: this.cfg.damage, team: this.cfg.team, self: this, targets: cands,\n}, makeDetonateContext());\n// drop this._payloadHandle entirely"
+          ],
+          "acceptance": [
+            "an exploding monkey's blast ticks damage over its duration (was previously unstepped)",
+            "no enemy/boss stores an attack handle solely to step it by hand"
+          ],
+          "verify": [
+            "node --check petal-panic/js/enemies/explosiveMonkey.js"
+          ]
+        },
+        {
+          "number": "3.2",
+          "name": "Decide bombAttacks fate: adapter or removal",
+          "type": "refactor",
+          "what": "Either reduce bombAttackHost to a thin ctx-factory + owned-root marker (registry does step/draw) OR fold its groundY/platforms/camera ctx into the shared context and delete the host. Keep hero-shot behavior identical.",
+          "why": "Two lifecycle owners is the exact smell we are removing; this task forces a single owner while preserving hero-shot correctness.",
+          "files": [
+            "~ petal-panic/js/combat/attack/bombAttackHost.js",
+            "~ petal-panic/js/combat/shooting.js"
+          ],
+          "snippet": [
+            "// Option A preferred: host becomes a ctx factory only.\n// shooting.js keeps calling spawn(), but spawn() now just builds the rich\n// ctx (groundY, platforms, camera, targets) and delegates to invoke();\n// the registry steps + draws. No roots Set, no manual step/draw in host.\nspawn(id, params, attacker) {\n  return invoke(id, params, this.makeCtx(attacker)); // registry owns lifecycle\n}"
+          ],
+          "acceptance": [
+            "hero bombs/homing/explosive shots behave identically to before (existing shooting tests pass)",
+            "exactly one component calls h.step for any given handle per frame"
+          ],
+          "verify": [
+            "node --test 'petal-panic/js/test/*.test.js' 2>&1 | grep -E '# (pass|fail)'"
+          ]
+        },
+        {
+          "number": "3.3",
+          "name": "Delete dead wiring + verify baseline",
+          "type": "chore",
+          "what": "Remove now-dead exports (setBombHostGetter, spawnToxicDustZone, stepToxicZones, drawToxicZones, barrelAttackRoots if any remain) and their imports. Run the full suite and confirm the pre-existing failure count is unchanged (no new failures).",
+          "why": "Leaving dead lifecycle paths behind recreates the confusion; a clean grep proves there is one owner.",
+          "files": [
+            "~ petal-panic/js/objects/barrelSync.js",
+            "~ petal-panic/js/systems/update.js"
+          ],
+          "snippet": [
+            "// Grep gate - all of these must return ZERO hits after migration:\n#   setBombHostGetter | _getBombHost | barrelAttackRoots | stepToxicZones | drawToxicZones | spawnToxicDustZone\ngrep -rn 'setBombHostGetter\\|barrelAttackRoots\\|stepToxicZones' petal-panic/js --include='*.js'"
+          ],
+          "acceptance": [
+            "grep for the removed symbols returns zero non-test hits",
+            "full test suite shows the same pass/fail counts as the pre-change baseline (6 pre-existing failures, nothing new)"
+          ],
+          "verify": [
+            "grep -rn 'setBombHostGetter\\|barrelAttackRoots\\|stepToxicZones' petal-panic/js --include='*.js'"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "4",
+      "name": "Guards & Regression Net",
+      "pattern": [
+        "Characterization Test + Contract Test"
+      ],
+      "objective": "Make the self-contained guarantee provable: a test that any macro fired from a bare ctx renders and ticks, plus a lint-style guard against discarded live handles.",
+      "success": "A new attack added to the registry passes the plug-and-play test with no caller wiring. The suite catches any future handle that is invoked but never stepped/drawn.",
+      "diagram": "graph TD\n  A[new macro fires from bare ctx] --> B[plug-and-play contract test]\n  B --> C{stepped at least once}\n  B --> D{zone drawn at least once}\n  B --> E{pruned after completion}\n  C --> F[pass]\n  D --> F\n  E --> F",
+      "tasks": [
+        {
+          "number": "4.1",
+          "name": "Plug-and-play contract test",
+          "type": "test",
+          "what": "Add js/test/attackLifecycle.test.js: for a set of representative macros (fireArea, molotov via spawnSplit, dustZone, shockwave), fire each from a minimal bare ctx and assert the registry stepped it >=1x, drew its zone >=1x, and pruned it after completion - with NO caller wiring.",
+          "why": "This is the executable definition of 'self-contained'. Any future macro that breaks the guarantee fails here immediately instead of in gameplay.",
+          "files": [
+            "+ petal-panic/js/test/attackLifecycle.test.js"
+          ],
+          "snippet": [
+            "// For each { id, params } in SAMPLES:\n//   const h = invoke(id, params, bareCtx());\n//   step the world N frames (AttackLifecycle.stepAll + pool update)\n//   assert(h was stepped at least once)      // counting stub or _state\n//   assert(some zone was drawn at least once) // spy on drawAll\n//   assert(!AttackLifecycle._live.has(h))     // pruned after done\nSAMPLES = [\n  ['fireArea', { x: 0, y: 480, width: 96, duration: 0.2, tickRate: 5, damage: 2 }],\n  ['dustZone', { x: 0, y: 480, width: 120, height: 60, duration: 0.2, tickRate: 5, damage: 2 }],\n  ['shockwave',{ x: 0, y: 480, radius: 200, duration: 0.2, damage: 5 }],\n];"
+          ],
+          "acceptance": [
+            "each sample macro is stepped, drawn, and pruned with zero caller lifecycle code",
+            "a deliberately non-driving handle (no step/zone) is not registered"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/attackLifecycle.test.js"
+          ]
+        },
+        {
+          "number": "4.2",
+          "name": "Discarded-handle guard test",
+          "type": "test",
+          "what": "Add a test that scans for the anti-pattern: an invoke() of a duration macro whose handle is neither registered, host-owned, nor explicitly completed. Fail with the file:line if a live handle is dropped.",
+          "why": "This catches the exact bug class that cost this session - a macro fired and abandoned - before it reaches gameplay.",
+          "files": [
+            "+ petal-panic/js/test/attackLifecycleGuard.test.js"
+          ],
+          "snippet": [
+            "// Instrument AttackLifecycle.register to record every registered id.\n// Fire each hero/barrel/enemy attack entry point once in a harness ctx.\n// Assert every duration-macro invocation was either:\n//   (a) present in AttackLifecycle._live, OR\n//   (b) marked host-owned (_registryStepped === false), OR\n//   (c) completed synchronously.\n// Any other case => a discarded live handle => throw with source location."
+          ],
+          "acceptance": [
+            "firing the propane fan registers its molotov children (not discarded)",
+            "firing an enemy explosion registers or completes the payload (not silently dropped)"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/attackLifecycleGuard.test.js"
+          ]
+        },
+        {
+          "number": "4.3",
+          "name": "Document the self-contained invoke contract",
+          "type": "doc",
+          "what": "Add a short section to docs/architecture (attack engine) stating the one rule: callers fire via invoke() and never wire step/draw; the registry owns lifecycle. Note the single exception (host-owned roots) and how to add a new macro.",
+          "why": "The convention only sticks if it is written down where the next person looks.",
+          "files": [
+            "+ petal-panic/docs/architecture/attack-lifecycle.md"
+          ],
+          "snippet": [
+            "# Attack Lifecycle - Self-Contained Invoke\n## The one rule\nCallers fire attacks with invoke(id, params, ctx). They NEVER step or draw\nthe handle. AttackLifecycle (engine-owned) steps, draws, and prunes every\nlive handle automatically.\n## Adding a new macro\n1. Register it (primitive or macro) with meta.effects.\n2. If it needs per-frame driving, give its handle a .step fn or a .zone.\n3. Done. No host, no getter, no game-loop edit.\n## Single exception\nHost-owned roots (hero shots via bombAttacks) set _registryStepped=false so\nthe registry draws them but the host steps them. One owner, always."
+          ],
+          "acceptance": [
+            "the doc states the one-rule contract and the single host-owned exception",
+            "a 'how to add a new macro' section exists with 3 steps and no lifecycle wiring"
+          ],
+          "verify": [
+            "test -f petal-panic/docs/architecture/attack-lifecycle.md"
+          ]
+        }
+      ]
+    }
+  ]
+}
