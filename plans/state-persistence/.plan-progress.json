@@ -37,7 +37,7 @@
     },
     "4.1": {
       "number": "4.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Per-transition persistence tests",
       "milestone": "Regression Gate",
       "milestone_number": "4"

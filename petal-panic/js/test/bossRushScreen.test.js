@@ -323,7 +323,7 @@ test('victory records the defeated boss via the normal victory path (showLevelRe
 // F1 regression: a real boss fight started via startArea never has
 // h.levelConfig assigned (that field is only set on the REWARD→next-level
 // path), so showLevelReward must resolve the config from currentLevel itself.
-// This hero carries ONLY what startArea/startLife leave behind — no levelConfig.
+// This hero carries ONLY what startArea/restartAttempt leave behind — no levelConfig.
 test('defeat recording works without h.levelConfig (startArea-style hero)', () => {
   PS.resetStore();
   const h = { currentLevel: 2, currentArea: 5, wallet: { current: { kills: 3, coins: 0 } }, _levelStartWallet: { kills: 0, coins: 0 }, traceStats: { total: {} } };

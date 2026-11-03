@@ -333,7 +333,7 @@ test('checkpoint is set to the next zone entry flag (BLOCKER 3)', () => {
   );
 });
 
-test('entry flag does not immediately re-trigger a clear (latched by startLife)', () => {
+test('entry flag does not immediately re-trigger a clear (latched by the attempt start)', () => {
   resetSeq();
   const hero = U.getHero();
   setState(S.PLAY);
@@ -345,7 +345,7 @@ test('entry flag does not immediately re-trigger a clear (latched by startLife)'
 
   // The hero is at the zone entry. The entry flag is also at ZONE_ENTRY_X.
   // The hero's checkpoint should match the entry flag position so that
-  // startLife can latch the entry flag.
+  // the attempt start can latch the entry flag.
   assert.equal(hero.x, ZONE_ENTRY_X, 'hero at zone entry');
   assert.equal(hero.checkpoint.x, ZONE_ENTRY_X, 'checkpoint at zone entry (matches entry flag)');
 });

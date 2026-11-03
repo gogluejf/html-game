@@ -52,6 +52,9 @@ const { Hero } = await import('../hero/hero.js');
 const { HEROES } = await import('../hero/heroDefs.js');
 const { createTrace } = await import('../stats.js');
 
+/** Minimal empty area context (restartAttemptState restores it; nothing to restore). */
+const emptyCtx = () => ({ enemies: [], boss: null, barrels: [], powerups: [], checkpoints: [], projectiles: { activeItems: [], active: [] }, coins: { activeItems: [], active: [] }, particles: { reset: () => {} }, effects: { reset: () => {} } });
+
 /** Write a resumable save directly at the top level of the store document. */
 function writeSave(meta) {
   PS.loadStore().saveMeta = meta;
@@ -173,7 +176,7 @@ test('Continue installs the saved zone + spawn checkpoint through AREA_ENTRY (H2
   assert.equal(hero.checkpoint.y, zone.spawn.y - hero.h, 'checkpoint y matches the saved zone spawn');
 
   // Confirming the entry screen starts the attempt and places the hero at the
-  // saved zone's entry (startLife reads the checkpoint we just installed).
+  // saved zone's entry (placeHeroAtEntry reads the checkpoint we just installed).
   assert.equal(L.areaEntryOnAction('confirm', hero), true, 'confirm starts the attempt');
   assert.equal(getState(), S.PLAY, 'back in PLAY after confirming the entry screen');
   assert.equal(hero.x, zone.spawn.x, 'hero placed at the saved zone entry x');
@@ -289,10 +292,10 @@ test('saveCurrentRun() then Continue resumes exactly where the run was saved', (
 
 // --- Task 3.2 — full-state Save & Quit round-trip (state-persistence.md §2.5–2.6) ---
 
-test('saveCurrentRun persists the full player state + snapshot chain', () => {
+test('saveCurrentRun persists the persistent columns + snapshot chain (state-persistence.md §2.5)', () => {
   PS.resetStore();
   const hero = makeTestHero(2, 3);
-  // Distinct mid-run values so a restore that silently no-ops would be caught.
+  // Distinct mid-run values: the attempt-state ones must NOT end up in the save.
   hero.wallet.current.coins = 77;
   hero.wallet.current.energy = 11;
   hero.selectedWeapon = 1;
@@ -304,13 +307,13 @@ test('saveCurrentRun persists the full player state + snapshot chain', () => {
 
   const meta = L.saveCurrentRun(hero);
   assert.ok(meta.state, 'saveMeta carries a state block');
-  assert.equal(meta.state.coins, 77, 'saved coins');
-  assert.equal(meta.state.score, 700, 'saved score from the trace');
-  assert.equal(meta.state.energy, 11, 'saved energy');
-  assert.equal(meta.state.weapon, 1, 'saved weapon selection');
-  assert.deepEqual(meta.state.specialSlots, ['bomb', null], 'saved special slots');
+  // §2.5: only lives/continues/score persist — "what was on screen" does not.
   assert.equal(meta.state.lives, 1, 'saved lives');
   assert.equal(meta.state.continues, 2, 'saved continue pool');
+  assert.ok(Number.isFinite(meta.state.score), 'saved score from the trace');
+  assert.equal(meta.state.energy, undefined, 'energy NOT saved (attempt state)');
+  assert.equal(meta.state.weapon, undefined, 'weapon NOT saved (attempt state)');
+  assert.equal(meta.state.coins, undefined, 'coins NOT saved (zone-snapshot rollback decides)');
   assert.deepEqual(meta.state.snapshots, hero.wallet.snapshots, 'snapshot chain persisted');
 
   // Round-trips through storage (what a page reload would parse).
@@ -319,7 +322,7 @@ test('saveCurrentRun persists the full player state + snapshot chain', () => {
   assert.deepEqual(reloaded.state, meta.state, 'state block survives serialization');
 });
 
-test('reload-Continue restores the exact saved player state onto the hero', () => {
+test('reload-Continue restores the persistent columns; the failure-style restart does the §2.6 reset', () => {
   PS.resetStore();
   const saver = makeTestHero(1, 3);
   saver.wallet.current.coins = 55;
@@ -333,7 +336,7 @@ test('reload-Continue restores the exact saved player state onto the hero', () =
   L.saveCurrentRun(saver);
 
   // Simulate the reload: forget the cache and resume on a FRESH hero with
-  // default (mid-boot) values that must all be overwritten by the save.
+  // default (mid-boot) values.
   PS._resetCache();
   const resumed = new Hero(HEROES.scarlet, 100, 400);
   resumed.lives = GAME_RULES.startingLives;
@@ -351,14 +354,24 @@ test('reload-Continue restores the exact saved player state onto the hero', () =
   assert.equal(L.continueFromMenu(resumed), true, 'resume transition made');
   assert.equal(resumed.currentLevel, 1, 'saved level');
   assert.equal(resumed.currentArea, 3, 'saved area');
-  assert.equal(resumed.wallet.current.coins, 55, 'saved coins restored');
-  assert.equal(resumed.wallet.current.energy, 7, 'saved energy restored');
-  assert.equal(resumed.selectedWeapon, 1, 'saved weapon restored');
-  assert.deepEqual(resumed.specialSlots, [null, 'spread'], 'saved specials restored');
+  // §2.6: the persistent columns come from the save...
   assert.equal(resumed.lives, 2, 'saved lives restored');
   assert.equal(resumed.continues.remaining, 1, 'saved continues restored');
   assert.deepEqual(resumed.wallet.snapshots, saver.wallet.snapshots, 'snapshot chain restored');
+  // ...the on-screen attempt state deliberately does NOT ("what is on screen"
+  // at quit time does not matter — the transition rule decides).
+  assert.notEqual(resumed.wallet.current.coins, 55, 'coins NOT restored yet (restart rolls them back)');
   assert.equal(L.getAreaEntryData().lives, 2, 'entry screen shows the SAVED life count');
+
+  // The entry sequence's failure-style restart completes the transition:
+  // coins → saved zone-entry snapshot, energy full, weapon cleared, NO cost.
+  L.restartAttempt(resumed, emptyCtx());
+  assert.equal(resumed.wallet.current.coins, 55, 'coins rolled back to the 1-3 entry snapshot from the save');
+  assert.equal(resumed.wallet.current.kills, 4, 'kills rolled back too');
+  assert.equal(resumed.energy, resumed.maxEnergy, 'energy full after the restart');
+  assert.equal(resumed.selectedWeapon, 'thorn', 'weapon cleared to hero default');
+  assert.deepEqual([...resumed.specialSlots].filter(Boolean), [], 'specials cleared');
+  assert.equal(resumed.lives, 2, 'lives UNTOUCHED by the restart (free — §2.6)');
 });
 
 test('dying after a reload-continue rolls back to the pre-quit zone entry values', () => {
@@ -378,13 +391,23 @@ test('dying after a reload-continue rolls back to the pre-quit zone entry values
   resumed.traceStats = createTrace();
   setState(S.MENU);
   assert.equal(L.continueFromMenu(resumed), true, 'resume transition made');
-  assert.equal(resumed.wallet.current.coins, 99, 'saved coins before the death');
-
-  // A death restart of the saved zone must roll back to the PRE-QUIT entry
-  // snapshot (the chain round-tripped through the save), not to a fresh zero.
-  L.restoreAreaEntryStats(resumed);
+  // The persistent columns are restored by continueFromMenu...
+  assert.equal(resumed.currentLevel, 1, 'saved level');
+  assert.equal(resumed.currentArea, 2, 'saved area');
+  // ...and the entry sequence's failure-style restart does the §2.6 reset:
+  // coins → saved zone-entry snapshot (the farmed 99 is gone), full energy,
+  // weapon cleared, NO life cost.
+  L.restartAttempt(resumed, emptyCtx());
   assert.equal(resumed.wallet.current.coins, 40, 'rolled back to the 1-2 entry snapshot from the save');
   assert.equal(resumed.wallet.current.kills, 3, 'kills rolled back too');
+  assert.equal(resumed.energy, resumed.maxEnergy, 'energy full after the restart');
+  assert.equal(resumed.lives, GAME_RULES.startingLives, 'lives UNTOUCHED (free — §2.6)');
+
+  // A death AFTER the reload-continue rolls back to the SAME pre-quit entry
+  // snapshot (the chain round-tripped through the save), not to a fresh zero.
+  resumed.wallet.current.coins += 20; // farm again in the resumed zone
+  L.restoreAreaEntryStats(resumed);
+  assert.equal(resumed.wallet.current.coins, 40, 'post-reload death rolls to the same pre-quit entry value');
 });
 
 test('legacy saves without a state block keep today\'s behavior (no crash)', () => {

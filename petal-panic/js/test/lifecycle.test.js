@@ -3,7 +3,7 @@
 //
 // Acceptance criteria covered:
 //   1. startGame establishes lives=3, continues pool=3, currentArea=1
-//   2. startLife restores the area arrangement and places the hero at entry
+//   2. restartAttempt restores the area arrangement and places the hero at entry
 //   3. continueRun spends exactly one continue, restores starting lives,
 //      goes to area 1 of the CURRENT level, and never rerolls generation
 //   4. Death in an area restarts that same area (same arrangement)
@@ -29,7 +29,7 @@ globalThis.document = {
 globalThis.window = { addEventListener: noop };
 
 // In-memory localStorage so progressStore (completedAreas writes from
-// startLife, mediaUnlocked writes from startGame) works headlessly.
+// restartAttempt, mediaUnlocked writes from startGame) works headlessly.
 const memStorage = (() => {
   let map = new Map();
   return {
@@ -131,7 +131,7 @@ test('startGame: values come from GAME_RULES, not literals', () => {
   assert.equal(h.continues.remaining, GAME_RULES.startingContinues);
 });
 
-test('startLife: restores area arrangement and places hero at entry', () => {
+test('restartAttempt: restores area arrangement and places hero at entry', () => {
   const h = makeTestHero();
   const ctx = makeAreaContext(h);
 
@@ -151,7 +151,7 @@ test('startLife: restores area arrangement and places hero at entry', () => {
   h.checkpoint = { x: 100, y: 400 }; // entry position
 
   setState(S.PLAY);
-  L.startLife(h, ctx);
+  L.restartAttempt(h, ctx);
 
   // Area restored to original arrangement.
   assert.equal(ctx._enemy.x, 2000, 'enemy back at original x');
@@ -173,13 +173,13 @@ test('startLife: restores area arrangement and places hero at entry', () => {
   assert.ok(h.intangible, 'i-frames active (intangible)');
 });
 
-test('startLife: does NOT touch lives (caller already consumed one)', () => {
+test('restartAttempt: does NOT touch lives (caller already consumed one)', () => {
   const h = makeTestHero();
   h.lives = 2; // one life already consumed
   const ctx = makeAreaContext(h);
   setState(S.PLAY);
-  L.startLife(h, ctx);
-  assert.equal(h.lives, 2, 'lives unchanged by startLife');
+  L.restartAttempt(h, ctx);
+  assert.equal(h.lives, 2, 'lives unchanged by restartAttempt');
 });
 
 test('continueRun: spends exactly one continue, restores starting lives', () => {
@@ -273,13 +273,13 @@ test('death in an area restarts that same area (same arrangement)', () => {
   ctx._enemy.hp = 20;
 
   setState(S.PLAY);
-  L.startLife(h, ctx);
+  L.restartAttempt(h, ctx);
 
   // Same area, same arrangement restored.
   assert.equal(ctx._enemy.x, 2000, 'enemy back at original position');
   assert.equal(ctx._enemy.hp, 40, 'enemy HP restored');
   assert.equal(h.x, 100, 'hero at area entry');
-  assert.equal(h.lives, 2, 'lives decremented by caller, not by startLife');
+  assert.equal(h.lives, 2, 'lives decremented by caller, not by restartAttempt');
 });
 
 test('restoreArea: clears transient projectiles and coins', () => {
@@ -453,7 +453,7 @@ test('resetHeroTransient: clears death flags and stale i-frames without touching
   assert.equal(h.lives, 1, 'lives untouched');
 });
 
-test('startLife: clears a leaked death flag / drained energy from a failed attempt', () => {
+test('restartAttempt: clears a leaked death flag / drained energy from a failed attempt', () => {
   const h = makeTestHero();
   h.lives = 2;
   const ctx = makeAreaContext(h);
@@ -464,13 +464,13 @@ test('startLife: clears a leaked death flag / drained energy from a failed attem
   h.x = 3500;
   h.checkpoint = { x: 100, y: 400 };
   setState(S.PLAY);
-  L.startLife(h, ctx);
-  assert.equal(h.dying, false, 'death flag cleared by startLife');
-  assert.equal(h.energy, h.maxEnergy, 'energy restored by startLife');
+  L.restartAttempt(h, ctx);
+  assert.equal(h.dying, false, 'death flag cleared by restartAttempt');
+  assert.equal(h.energy, h.maxEnergy, 'energy restored by restartAttempt');
   assert.equal(h.lives, 2, 'lives untouched');
 });
 
-test('startLife: accounting rollback — a failed attempt\'s kills/coins/score do NOT accumulate (game-rules.md §4)', () => {
+test('restartAttempt: accounting rollback — a failed attempt\'s kills/coins/score do NOT accumulate (game-rules.md §4)', () => {
   const h = makeTestHero();
   h.lives = 2;
   // The wallet is created by the Hero constructor. Record the entry snapshot
@@ -483,14 +483,14 @@ test('startLife: accounting rollback — a failed attempt\'s kills/coins/score d
   h.wallet.current.kills += 2;
   h.wallet.current.coins += 3;
 
-  // A death restart of the SAME area: startLife must roll the wallet back to
+  // A death restart of the SAME area: restartAttempt must roll the wallet back to
   // the area's entry snapshot so the failed attempt's rewards do NOT
   // accumulate into the fresh attempt (the anti-farming reset, game-rules.md
   // §4). Without this, repeatable pickups could be farmed across attempts.
   h.x = 3500;
   h.checkpoint = { x: 100, y: 400 };
   setState(S.PLAY);
-  L.startLife(h, ctx);
+  L.restartAttempt(h, ctx);
 
   // The wallet is restored to the entry snapshot (zero totals), NOT the
   // accumulated failed-attempt values.
@@ -498,7 +498,7 @@ test('startLife: accounting rollback — a failed attempt\'s kills/coins/score d
   assert.equal(h.wallet.current.coins, 0, 'coins rolled back to entry totals');
 });
 
-test('startLife: accounting rollback — a genuine area advance records a fresh snapshot (game-rules.md §4)', () => {
+test('restartAttempt: accounting rollback — a genuine area advance records a fresh snapshot (game-rules.md §4)', () => {
   const h = makeTestHero();
   h.lives = 3;
   const ctx = makeAreaContext(h);
@@ -516,13 +516,13 @@ test('startLife: accounting rollback — a genuine area advance records a fresh 
   h.wallet.current.kills += 1;
   h.wallet.current.coins += 1;
 
-  // A death restart of the NEW area: startLife rolls back to the NEW entry
+  // A death restart of the NEW area: restartAttempt rolls back to the NEW entry
   // snapshot (the accumulated stats from the previous area), NOT the original
   // zero totals.
   h.x = 3500;
   h.checkpoint = { x: 100, y: 400 };
   setState(S.PLAY);
-  L.startLife(h, ctx);
+  L.restartAttempt(h, ctx);
 
   // The wallet is restored to the NEW entry snapshot (the previous
   // area's accumulated stats), NOT the original zero totals or the failed
@@ -610,7 +610,7 @@ test('retryFromGameOver: with lives>0 decrements exactly 1 life and starts the e
   assert.equal(applied, true, 'retry applies when lives remain');
   assert.equal(hero.lives, 2, 'exactly one life consumed (3→2)');
   assert.equal(getState(), S.AREA_ENTRY, 'entry sequence started (shared area-entry screen)');
-  // Energy/weapon/inventory resets are applied by startLife when the entry
+  // Energy/weapon/inventory resets are applied by restartAttempt when the entry
   // screen is confirmed (the attempt begins then — identical to the death path).
   assert.equal(L.areaEntryOnAction('confirm', hero), true, 'confirm starts the attempt');
   assert.equal(getState(), S.PLAY);
@@ -661,13 +661,13 @@ test('retryFromGameOver: reset sequence matches death (coins rolled back, energy
   assert.equal(getState(), S.AREA_ENTRY, 'entry sequence started');
 
   // Confirming the entry screen starts the attempt (identical to the death
-  // path): startLife rolls the wallet back to the zone's entry snapshot and
+  // path): restartAttempt rolls the wallet back to the zone's entry snapshot and
   // applies the inventory resets (energy full, weapon default,
   // specials/shield/super cleared), then places the hero at the checkpoint
   // with i-frames — lives untouched (the retry already consumed one).
   assert.equal(L.areaEntryOnAction('confirm', hero), true, 'confirm starts the attempt');
   assert.equal(getState(), S.PLAY, 'back in PLAY after confirming');
-  assert.equal(hero.lives, 2, 'startLife does not touch lives');
+  assert.equal(hero.lives, 2, 'restartAttempt does not touch lives');
   assert.equal(hero.wallet.current.coins, 0, 'coins rolled back to zone snapshot');
   assert.equal(hero.wallet.current.kills, 0, 'kills rolled back to zone snapshot');
   assert.equal(hero.energy, hero.maxEnergy, 'energy full');
@@ -694,12 +694,12 @@ test('recordZoneSnapshot: appends one entry per genuine zone entry; death-restar
   // A failed attempt in 1-1 accumulates rewards — but a death restart of the
   // SAME zone must NOT call recordZoneSnapshot (re-recording would launder the
   // failed attempt's totals into the "entry" state). Simulate the restart via
-  // startLife and prove the 1-1 entry value is untouched.
+  // restartAttempt and prove the 1-1 entry value is untouched.
   h.wallet.current.kills += 2;
   h.wallet.current.coins += 3;
   const ctx = makeAreaContext(h);
   setState(S.PLAY);
-  L.startLife(h, ctx); // same-zone death retry
+  L.restartAttempt(h, ctx); // same-zone death retry
   assert.equal(Object.keys(h.wallet.snapshots).length, 1, 'still exactly one snapshot after a death-restart');
   assert.deepEqual(h.wallet.snapshots['1:1'], { coins: 0, energy: h.maxEnergy, kills: 0 }, '1-1 entry unchanged by the retry');
 
@@ -750,10 +750,10 @@ test('same-zone death-retry rollback is identical to the legacy single-slot rest
   h.x = 3500;
   h.checkpoint = { x: 100, y: 400 };
   setState(S.PLAY);
-  L.startLife(h, ctx);
+  L.restartAttempt(h, ctx);
   assert.equal(h.wallet.current.kills, 0, 'kills restored to the 1-1 entry value');
   assert.equal(h.wallet.current.coins, 0, 'coins restored to the 1-1 entry value');
-  // Direct helper agrees with the startLife path.
+  // Direct helper agrees with the restartAttempt path.
   h.wallet.current.coins = 8;
   L.restoreAreaEntryStats(h);
   assert.equal(h.wallet.current.coins, 0, 'restoreAreaEntryStats == restoreZoneState(current zone)');
@@ -770,7 +770,7 @@ test('startGame: seeds the snapshot chain with the 1-1 entry', () => {
 //
 // Milestone → progressStore wiring:
 //   startGame            → mediaUnlocked += 'intro' (New Game start)
-//   startLife (area 1..4) → completedAreas[`${level}-${area}`] = true
+//   restartAttempt (area 1..4) → completedAreas[`${level}-${area}`] = true
 //   showLevelReward      → defeatedBosses += bossId; mediaUnlocked += 'level-N';
 //                          final boss also unlocks 'ending'
 // These tests pin the store contents after each milestone with fixed inputs.
@@ -787,43 +787,43 @@ test('startGame unlocks the intro media card exactly once (dedupe on repeat star
   assert.deepEqual(PS.loadStore().progress.mediaUnlocked, ['intro'], 'repeat start does not duplicate intro');
 });
 
-test('startLife does not complete an ordinary area', () => {
+test('restartAttempt does not complete an ordinary area', () => {
   PS.resetStore();
   const h = makeTestHero();
   h.currentLevel = 2;
   h.currentArea = 3;
   const ctx = makeAreaContext(h);
   setState(S.PLAY);
-  L.startLife(h, ctx);
+  L.restartAttempt(h, ctx);
 
   const p = PS.loadStore().progress;
   assert.equal(p.completedAreas['2-3'], undefined, 'starting is not completion');
   assert.deepEqual(p.completedAreas, {}, 'entry unlocks nothing');
 });
 
-test('startLife re-entry of the same area does not double-write completedAreas', () => {
+test('restartAttempt re-entry of the same area does not double-write completedAreas', () => {
   PS.resetStore();
   const h = makeTestHero();
   h.currentLevel = 1;
   h.currentArea = 1;
   const ctx = makeAreaContext(h);
   setState(S.PLAY);
-  L.startLife(h, ctx);
-  L.startLife(h, ctx); // death-restart of the same area
+  L.restartAttempt(h, ctx);
+  L.restartAttempt(h, ctx); // death-restart of the same area
 
   const p = PS.loadStore().progress;
   assert.equal(p.completedAreas['1-1'], undefined, 'retry is not completion');
   assert.deepEqual(p.completedAreas, {}, 'retry unlocks nothing');
 });
 
-test('startLife does NOT record the boss zone (AREA_BOSS = 5) as a completed area', () => {
+test('restartAttempt does NOT record the boss zone (AREA_BOSS = 5) as a completed area', () => {
   PS.resetStore();
   const h = makeTestHero();
   h.currentLevel = 1;
   h.currentArea = 5; // boss zone
   const ctx = makeAreaContext(h);
   setState(S.PLAY);
-  L.startLife(h, ctx);
+  L.restartAttempt(h, ctx);
 
   const p = PS.loadStore().progress;
   assert.equal(p.completedAreas['1-B'], undefined, 'boss zone completion belongs to the boss defeat, not area entry');

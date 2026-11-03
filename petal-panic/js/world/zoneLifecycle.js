@@ -12,7 +12,7 @@ import { S, getState, setState, tryTransition } from '../core/state.js';
 import { fireManual } from '../effects/index.js';
 import { Debug } from '../debug/debug.js';
 import { makeCheckpoint } from '../objects/object.js';
-import { showAreaEntry, formatAreaId, recordZoneSnapshot, setAreaEntryFadeOutCallback, startLife, continueRun, saveCurrentRun } from '../systems/lifecycle.js';
+import { showAreaEntry, formatAreaId, recordZoneSnapshot, setAreaEntryFadeOutCallback, setAreaEntryAdvanceFlag, setMenuEntryFlag, restartAttempt, arriveAtZone, continueRun, saveCurrentRun } from '../systems/lifecycle.js';
 import { instantiateZone } from './build.js';
 import { restoreBossRunFloor } from '../boss/bossFlow.js';
 // --- Area-clear sequence (checkpoints.md §2) -----------------------------------
@@ -254,7 +254,7 @@ export function stepClearSequence(dt) {
         console.log(`[zone] WARNING: no content for zone ${nextZone.areaIdx} (kind=${nextZone.kind}, has=${ctx.world.world.has(nextZone.areaIdx)})`);
       }
       // Set the checkpoint to the next zone's entry flag position so
-      // startLife can latch the matching flag. For area 1 (no entry
+      // the attempt start can latch the matching flag. For area 1 (no entry
       // flag), use the zone's start position. For the BOSS zone, the hero
       // starts at the LEFT and walks right across the whole zone to the
       // boss checkpoint at the far right (run phase) — same as any area.
@@ -313,16 +313,33 @@ export function beginClearFadeIn() {
 // that timing; render.js reads getAreaEntryFadeAlpha() to draw the black overlay
 // (the same mechanism as the clear/death fades).
 const AREA_ENTRY_FADE = 0.4; // seconds for the fast fade-in AND fade-out
-let areaEntrySeq = { state: 'idle', timer: 0, startedAttempt: false };
+export let areaEntrySeq = { state: 'idle', timer: 0, startedAttempt: false, advance: false };
 
-/** Begin the area-entry presentation (fast fade-in → hold → fast fade-out). */
-export function beginAreaEntryPresentation() {
-  areaEntrySeq = { state: 'fadeIn', timer: 0, startedAttempt: false };
+/** Set by update.js's MENU→AREA_ENTRY hook when it installs a zone from the
+ *  menu (reload-Continue / level select / boss rush). The entry sequence reads
+ *  it to pick the attempt flavor: a menu-installed zone is a FAILURE-style
+ *  restart (state-persistence.md §2.6 — snapshot rollback, full energy, weapon
+ *  cleared), never an advance. Cleared after use so a later genuine advance in
+ *  the same session can't be misread. */
+let _menuEntryPending = false;
+export function setMenuEntryPending(v) { _menuEntryPending = !!v; }
+
+/** Begin the area-entry presentation (fast fade-in → hold → fast fade-out).
+ * @param {boolean} [advance] genuine zone arrival (keep everything, §2.3);
+ *   default/undefined → failure-restart flavor. update.js re-arms the
+ *   presentation on every AREA_ENTRY transition, so the flag must survive
+ *   that rebuild or the advance gets silently downgraded to a failure reset.
+ */
+export function beginAreaEntryPresentation(advance = false) {
+  areaEntrySeq = { state: 'fadeIn', timer: 0, startedAttempt: false, advance: !!advance };
 }
 
 // Wire lifecycle.js's manual confirm/escape path to begin the fade-out overlay
 // after it has already started the attempt + transitioned to PLAY. This ramps
 // the black overlay down over the live world instead of leaving it pinned.
+setAreaEntryAdvanceFlag(() => areaEntrySeq.advance);
+setMenuEntryFlag(() => _menuEntryPending);
+
 setAreaEntryFadeOutCallback(() => {
   // The attempt is already started by areaEntryOnAction; just arm the fade-out
   // so stepAreaEntrySequence ramps the overlay to 0 over the next frames.
@@ -354,7 +371,7 @@ export function getAreaEntryFadeAlpha() {
 
 /**
  * Step the area-entry presentation. Called from update() while the state is
- * S.AREA_ENTRY. On completion it starts the attempt (startLife) and transitions
+ * S.AREA_ENTRY. On completion it starts the attempt (restartAttempt / arriveAtZone) and transitions
  * to PLAY — the same path the old confirm flow used, now driven by time.
  */
 export function stepAreaEntrySequence(dt) {
@@ -378,7 +395,16 @@ export function stepAreaEntrySequence(dt) {
     // gets revealed as the overlay ramps down over it.
     if (!areaEntrySeq.startedAttempt) {
       areaEntrySeq.startedAttempt = true;
-      startLife(hero, ctx.areaContext, { advance: areaEntrySeq.advance });
+      // Separation of concerns (state-persistence.md §4b): the entry sequence
+      // picks the attempt flavor explicitly — a genuine zone arrival keeps
+      // everything; a failure restart rolls wallet/inventory back. A zone
+      // installed from the menu (reload-Continue / select screens) is ALWAYS
+      // the failure flavor (§2.6: free failure-style reset at the saved zone),
+      // regardless of any stale advance flag.
+      const advance = areaEntrySeq.advance && !_menuEntryPending;
+      _menuEntryPending = false;
+      if (advance) arriveAtZone(hero);
+      else restartAttempt(hero, ctx.areaContext);
       if (getState() !== S.PLAY) {
         if (!tryTransition(S.PLAY)) setState(S.PLAY);
       }
@@ -395,7 +421,7 @@ export function stepAreaEntrySequence(dt) {
 // The hero's physical entry position for the active zone. REVISION-zones-as-data
 // §4: reads zone data, no orientation branches. Area 1 has no entry flag (it
 // starts at the zone's start); later areas start beside their entry flag
-// (checkpoints.md §1). startLife() owns placing the hero (lifecycle.md §3);
+// (checkpoints.md §1). placeHeroAtEntry() owns placing the hero (lifecycle.md §3);
 // these helpers give the lifecycle ops + boot the correct entry position.
 function entryPosition(zone) {
   // zone.spawn is the feet position on the floor of the first room
@@ -482,7 +508,7 @@ export function retryFromGameOver() {
   hero.lives -= 1;
   // Reset the active zone to a fresh arrangement (enemies, barrels, powerups,
   // coins all restored exactly like a death-restart). The timed entry sequence
-  // then fades in, holds, and auto-starts play via startLife (which also
+  // then fades in, holds, and auto-starts play via restartAttempt (which also
   // restores the preserved arrangement + hero placement + wallet rollback +
   // inventory reset — identical to the death path).
   resetActiveZoneContent();
@@ -505,7 +531,7 @@ export function continueFromGameOver() {
   // §4 / state-persistence.md §2.2). The respawned zone must therefore be
   // area 1 of the CURRENT level — install it BEFORE continueRun so the
   // restored arrangement matches the zone the hero lands in (and so a later
-  // startLife restores that same preserved arrangement, never rerolling).
+  // restartAttempt restores that same preserved arrangement, never rerolling).
   if (hero.currentArea !== 1) resetActiveZoneContent();
   const applied = continueRun(hero, ctx.areaContext);
   if (applied) console.log('[lifecycle] continue applied');

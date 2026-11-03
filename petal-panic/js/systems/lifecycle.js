@@ -459,25 +459,63 @@ export function startArea(h, level, areaIdx) {
  * @param {object} [ctx]
  * @param {{advance?: boolean}} [opts] advance=true → genuine zone arrival
  */
-export function startLife(h, ctx, opts = {}) {
+/**
+ * PLACE THE HERO AT THE ZONE ENTRY — position + i-frames ONLY.
+ *
+ * Separation of concerns (state-persistence.md §4b): this owns WHERE the hero
+ * is, never WHAT the hero owns (wallet/inventory) and never the world
+ * arrangement. Both enter-zone flavors call it; nothing else should move the
+ * hero on a zone transition. Reads h.checkpoint (set by the caller from zone
+ * data) as the feet/entry position.
+ * @param {Hero} h
+ */
+export function placeHeroAtEntry(h) {
+  const cp = h.checkpoint ?? { x: h.x, y: h.y };
+  h.x = cp.x;
+  h.y = cp.y;
+  h.vx = 0;
+  h.vy = 0;
+  h.dying = false;
+  h.deathTimer = 0;
+  h.alive = true;
+  // Brief entry i-frames so the fade-in reveal isn't instantly lethal.
+  h.intangible = true;
+  h.timers.set('intangible', h.RESPAWN_IFRAMES ?? 2);
+}
+
+/**
+ * RESET THE ATTEMPT STATE — the wallet/inventory concern ONLY.
+ *
+ * Rolls the wallet back to the zone-entry snapshot (anti-farming), restores
+ * the zone arrangement, refills energy, and clears weapon/specials/shield/
+ * super (state-persistence.md §2.1/§2.2). Does NOT move the hero and does NOT
+ * touch lives (the caller owns the life count). Called by restartAttempt only.
+ * @param {Hero} h
+ * @param {object} c the area context (entity lists to restore)
+ */
+export function resetAttemptState(h, c) {
+  // Accounting rollback: restore the wallet to the zone's entry snapshot so a
+  // failed attempt's kills/coins do NOT accumulate into the fresh attempt.
+  restoreAreaEntryStats(h);
+  restoreArea(c);
+  // Full energy + clean transient flags (death flags, velocity).
+  resetHeroTransient(h);
+  // Weapon gone, specials/shield/super cleared (the doc's "weapon" column).
+  resetHeroInventory(h);
+}
+
+/**
+ * FAILURE RESTART (die / manual retry / continue) — state-persistence.md §2.1–2.2.
+ *
+ * The full failure sequence: open/consume the life bucket, roll the wallet +
+ * inventory back (resetAttemptState), then place the hero at the entry
+ * (placeHeroAtEntry). Lives are UNTOUCHED — the caller already consumed one
+ * (ordinary death) or a continue restored them. Does not reroll generation.
+ * @param {Hero} h
+ * @param {object} [ctx]
+ */
+export function restartAttempt(h, ctx) {
   const c = ctx ?? ctxOf(h);
-  if (opts.advance) {
-    // Genuine zone arrival (doc §2.3): keep every column — no snapshot
-    // rollback, no inventory reset, no energy refill, no life-bucket push.
-    // Place the hero at the new zone's entry (checkpoint was set by the
-    // advance path) with brief entry i-frames so the fade-in isn't lethal.
-    h.x = h.checkpoint?.x ?? h.x;
-    h.y = h.checkpoint?.y ?? h.y;
-    h.vx = 0; h.vy = 0;
-    h.dying = false;
-    h.deathTimer = 0;
-    h.alive = true;
-    h.intangible = true;
-    h.timers.set('intangible', h.RESPAWN_IFRAMES ?? 2);
-    return;
-  }
-  // --- Failure restart (die / manual retry / continue) ---------------------
-  // Entry/retry is not completion. Only exit flags and boss defeat unlock progress.
   // Trace: open a fresh life bucket for each NEW attempt. The very first
   // attempt after startGame/continueRun reuses the already-present bucket
   // (index 0 / activeContinue's scope); only subsequent death-restarts push.
@@ -486,27 +524,29 @@ export function startLife(h, ctx, opts = {}) {
   } else {
     beginLife(h);
   }
-  // Accounting rollback (state-persistence.md §2.1/§2.2): restore the wallet
-  // to the zone's entry snapshot so a failed attempt's kills/coins do NOT
-  // accumulate into the fresh attempt (anti-farming).
-  restoreAreaEntryStats(h);
-  restoreArea(c);
-  // Reset transient attempt state (death flags, energy, i-frames) so the new
-  // attempt is clean, then place the hero at the area's entry (hero.checkpoint
-  // is the entry position for the current area) with full energy and respawn
-  // i-frames. Lives are untouched — the caller already consumed one (death)
-  // or a continue restored them.
-  resetHeroTransient(h);
-  // Inventory persistence (state-persistence.md §2.1): temporary powerups and
-  // a charged super meter do NOT persist into the fresh attempt — full energy,
-  // weapon gone, specials/shield/super cleared.
-  resetHeroInventory(h);
-  h.respawn();
-  // Entry flags are PURE VISUAL (checkpoints.md §1): no trigger, no latch, no
-  // state. The hero spawns beside one; nothing about it changes gameplay.
-  // (The old code latched the entry flag here by position-matching so a
-  // respawn couldn't "re-trigger" it — but entry flags have no trigger to
-  // re-fire, so the latch only ever created stale-state bugs across zones.)
+  resetAttemptState(h, c);
+  placeHeroAtEntry(h);
+}
+
+/**
+ * GENUINE ZONE ARRIVAL (passing into a new zone) — state-persistence.md §2.3.
+ *
+ * Keeps EVERYTHING (coins, score, energy, weapon, specials, lives, continues);
+ * it only places the hero at the new zone's entry with brief i-frames. No
+ * rollback, no refill, no inventory reset, no life-bucket push.
+ * @param {Hero} h
+ */
+export function arriveAtZone(h) {
+  placeHeroAtEntry(h);
+}
+
+/**
+ * @deprecated Kept as a thin alias so existing call sites/tests keep working
+ * during the rename. Prefer restartAttempt (failure) or arriveAtZone (advance).
+ */
+export function startLife(h, ctx, opts = {}) {
+  if (opts?.advance) arriveAtZone(h);
+  else restartAttempt(h, ctx);
 }
 
 /**
@@ -641,12 +681,13 @@ export function continueFromMenu(h) {
   if (h) {
     h.currentLevel = level;
     h.currentArea = area;
-    // Full-state resume (state-persistence.md §2.6): a save carrying a `state`
-    // block restores the exact on-screen player state at quit time (wallet,
-    // weapon/specials, lives, continues, snapshot chain) BEFORE the zone
-    // installs, so the entry screen shows the saved life count and startLife
-    // keeps it. Legacy saves without `state` keep today's behavior — the hero
-    // is untouched beyond its run identity (no crash).
+    // Persistent-column resume (state-persistence.md §2.6): a save carrying a
+    // `state` block restores lives + continues + the zone-snapshot chain
+    // BEFORE the zone installs, so the entry screen shows the saved life count
+    // and the resume's failure-style restart (restartAttempt) rolls coins/score
+    // back to the SAVED ZONE's entry snapshot with full energy + cleared
+    // weapon. Identical in-session and after a page reload. Legacy saves
+    // without `state` keep today's behavior (no crash).
     if (sm.state && typeof sm.state === 'object') applySavedState(h, sm.state);
   }
   showAreaEntry(h ?? { currentLevel: level, currentArea: area, lives: GAME_RULES.startingLives });
@@ -666,53 +707,50 @@ export function continueFromMenu(h) {
  */
 export function capturePlayerState(h) {
   const tTotal = h?.traceStats?.total ?? {};
+  // state-persistence.md §2.5: the save carries ONLY what no transition rule
+  // recomputes — lives, continues, and the zone-snapshot chain. Coins/score are
+  // rolled back to the saved zone's snapshot on resume (§2.6); energy/weapon/
+  // specials are attempt state, always reset by the failure-style restart.
+  // "What was on screen at quit time" deliberately does NOT persist.
   return {
-    coins: h?.wallet?.current?.coins ?? 0,
     score: calculateScore(tTotal, h),
-    energy: h?.wallet?.current?.energy ?? h?.maxEnergy ?? 0,
-    weapon: h?.selectedWeapon,
-    specialSlots: Array.isArray(h?.specialSlots) ? [...h.specialSlots] : [],
     lives: h?.lives ?? GAME_RULES.startingLives,
     continues: h?.continues?.remaining ?? 0,
   };
 }
 
 /**
- * Restore a saved player state onto a live hero (state-persistence.md §2.6):
- * exactly what was on screen at quit time wins over any reset. Applied on a
- * reload-Continue BEFORE the zone installs, so the entry screen shows the
- * saved life count and startLife keeps the saved wallet/inventory (it only
- * touches them on the failure transitions, which restore from snapshots).
- *
- * Called from BOTH continueFromMenu (menu path) and update.js's MENU→AREA_ENTRY
- * hook (transition path); every field is a plain guarded assignment, so the
- * function is idempotent — both firing on one resume is harmless. Keep new
- * fields assignment-only (no accumulation) to preserve that property.
+ * Restore a saved run's persistent columns onto a live hero
+ * (state-persistence.md §2.5–2.6): lives, continues, and the zone-snapshot
+ * chain — the ONLY things no transition rule recomputes. Coins/score are NOT
+ * restored here: the resume's failure-style restart rolls them back to the
+ * saved zone's entry snapshot (§2.6). Energy/weapon/specials are attempt
+ * state, reset by that same restart. "What was on screen at quit time"
+ * deliberately does NOT persist — in-session and post-reload resumes behave
+ * identically because the transition rule, not the save, decides.
  *
  * Tolerates missing/legacy fields: each field falls back to the hero's current
- * value, so a partial or mistyped block can never crash the resume.
+ * value, so a partial or mistyped block can never crash the resume; legacy
+ * coins/energy/weapon/specialSlots fields are ignored.
  * @param {object} h the live hero to restore onto
  * @param {object} st the saved state block (saveMeta.state)
  */
 export function applySavedState(h, st) {
   if (!h || !st || typeof st !== 'object') return;
-  // Wallet: coins + energy are the live wallet fields (hero.js exposes them as
-  // getters/setters over wallet.current). Only touch present, sane values.
-  if (Number.isFinite(st.coins)) h.wallet.current.coins = st.coins;
-  if (Number.isFinite(st.energy)) h.wallet.current.energy = st.energy;
-  // Inventory: weapon selection + held specials (the doc's "weapon" column).
-  if (st.weapon !== undefined) h.selectedWeapon = st.weapon;
-  if (Array.isArray(st.specialSlots) && Array.isArray(h.specialSlots)) {
-    h.specialSlots.fill(null);
-    st.specialSlots.forEach((v, i) => { if (i < h.specialSlots.length) h.specialSlots[i] = v; });
-  }
-  // Money: lives + continue pool.
+  // state-persistence.md §2.5–2.6: ONLY the persistent columns are restored —
+  // lives, continues, and the zone-snapshot chain. Coins/score are NOT set
+  // here: the resume's failure-style restart rolls them back to the saved
+  // zone's entry snapshot. Energy/weapon/specials are attempt state, reset by
+  // that same restart. Legacy saves may still carry coins/energy/weapon/
+  // specialSlots; those fields are deliberately ignored.
+  // Money: lives + continue pool (the only wallet-adjacent columns that persist).
   if (Number.isInteger(st.lives) && st.lives >= 0) h.lives = st.lives;
   if (Number.isInteger(st.continues) && st.continues >= 0 && h.continues) {
     h.continues.remaining = st.continues;
   }
-  // Zone-snapshot chain (state-persistence.md §1): persisting it means a death
-  // AFTER a reload-continue rolls back to the pre-quit zone-entry values.
+  // Zone-snapshot chain (state-persistence.md §1): restoring it means the
+  // resume's rollback targets the pre-quit zone-entry values, and a death
+  // AFTER the resume rolls back to the same values.
   if (st.snapshots && typeof st.snapshots === 'object' && !Array.isArray(st.snapshots)) {
     h.wallet.snapshots = { ...st.snapshots };
   }
@@ -752,8 +790,10 @@ export function saveCurrentRun(h, overrides = {}) {
     // a Continue after reload rebuild the EXACT world the run was played on.
     // Death/continue never reroll, so this is stable for the whole run.
     seed: getLastWorldSeed(),
-    // Full player state at quit time (state-persistence.md §2.5) — restored
-    // onto the hero by applySavedState on a reload-Continue (§2.6).
+    // Persistent columns at quit time (state-persistence.md §2.5): lives,
+    // continues, score — restored by applySavedState on a reload-Continue
+    // (§2.6). Energy/weapon/coins deliberately NOT saved: the resume's
+    // failure-style restart recomputes them from the zone snapshot.
     state: capturePlayerState(h),
     // The whole zone-snapshot chain (state-persistence.md §1/§2.5): carried
     // inside `state` so applySavedState restores it in one place.
@@ -796,12 +836,39 @@ let _onAreaEntryData = null;
  *  overlay ramps down over the world instead of cutting). */
 let _onAreaEntryFadeOut = null;
 
+/** Callback registered by zoneLifecycle.js returning whether the CURRENT
+ *  area-entry presentation is a genuine zone arrival (advance flavor,
+ *  state-persistence.md §2.3). The manual-confirm path in areaEntryOnAction
+ *  must pick the same attempt flavor as the timed path; this indirection
+ *  avoids a circular import (zoneLifecycle already imports lifecycle.js). */
+let _advanceFlag = () => false;
+
+/** Same indirection for the menu-entry flag (zoneLifecycle.js owns it): true
+ *  while the CURRENT entry screen was opened by a menu-installed zone
+ *  (reload-Continue / select screens) → the attempt MUST be the failure
+ *  flavor (state-persistence.md §2.6), never an advance. */
+let _menuEntryFlag = () => false;
+
 /**
  * Register the callback that begins the area-entry fade-out on manual confirm.
  * Called by update.js at module evaluation time (avoids a circular import).
  * @param {() => void} fn
  */
 export function setAreaEntryFadeOutCallback(fn) { _onAreaEntryFadeOut = fn; }
+
+/**
+ * Register the advance-flag reader used by the manual-confirm path.
+ * Called by zoneLifecycle.js at module evaluation time.
+ * @param {() => boolean} fn
+ */
+export function setAreaEntryAdvanceFlag(fn) { _advanceFlag = fn ?? (() => false); }
+
+/**
+ * Register the menu-entry flag reader used by the manual-confirm path.
+ * Called by zoneLifecycle.js at module evaluation time.
+ * @param {() => boolean} fn
+ */
+export function setMenuEntryFlag(fn) { _menuEntryFlag = fn ?? (() => false); }
 
 /** The last area-entry screen data presented (for tests / render). */
 let _areaEntryData = null;
@@ -875,7 +942,12 @@ export function areaEntryOnAction(action, h, ctx) {
     // unit tests (which pass their own hero/ctx) work without update.js.
     // Back (○/Escape) behaves the same as confirm on this view — it is a
     // non-interactive presentation, so any input just skips ahead to play.
-    startLife(h, ctx);
+    // The flavor must match the timed path (state-persistence.md §2.3/§2.6):
+    // a genuine zone arrival keeps everything; anything else — including a
+    // zone installed from the menu (reload-Continue) — is a failure-style
+    // reset (snapshot rollback, full energy, weapon cleared).
+    if (_advanceFlag() && !_menuEntryFlag()) arriveAtZone(h);
+    else restartAttempt(h, ctx);
     if (getState() !== S.PLAY) {
       tryTransition(S.PLAY);
       if (getState() !== S.PLAY) setState(S.PLAY);

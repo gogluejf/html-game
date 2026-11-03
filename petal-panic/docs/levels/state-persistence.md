@@ -7,8 +7,10 @@
 
 ## 0. The one-line model
 
-**Failure always costs you (a life or a continue) and resets you to the
-zone-entry state with full energy and no weapon. Progress never resets anything.**
+**Failure always resets you to the zone-entry state with full energy and no
+weapon (dying costs a life, continuing costs a continue). Progress never
+resets anything. A reload-Continue is a FREE failure-style reset at the saved
+zone — it costs nothing but applies the same reset.**
 
 ## 1. The zone snapshot
 
@@ -62,15 +64,29 @@ Saving costs nothing and changes nothing. The save stores:
 
 - Current zone (level + area).
 - The full zone-snapshot chain up to that point.
-- Player state: coins, score, energy, weapon, specials, lives, continues.
+- Lives + continues (the money columns — not recomputed by any transition).
 - The generation seed (exact world on reload).
+
+Energy, weapon, specials are NOT part of the save: they are attempt state,
+always recomputed by the transition rules (§2.6). This keeps Save&Quit →
+Continue identical whether it happens in-session or after a page reload —
+"what was on screen at quit time" deliberately does NOT matter.
 
 ### 2.6 Continue after reload (Save&Quit → Continue)
 
-- Restores the saved zone with the saved player state (wallet, weapon, energy,
-  lives, continues, score) — i.e. exactly what was on screen at quit time.
-- Same semantics as §2.2 for anything the save does not carry; the saved state
-  wins over any reset.
+A **free failure-style reset aimed at the saved zone** — same semantics as
+§2.1 (die/retry), except it costs no life and respawns at the SAVED zone
+instead of the current one:
+
+- Respawn: **the saved zone**.
+- Coins + score: rolled back to that zone's entry snapshot (from the chain).
+- Energy: **full**.
+- Weapon: **gone** (default). Specials/shield/super: cleared.
+- Lives: restored from the save (no cost). Continues: restored from the save.
+- World: unchanged (same seed — exact terrain/spawns).
+
+Identical behavior in-session and after a page reload: the transition rule,
+not the saved screen state, decides what you get.
 
 ### 2.7 New game
 
@@ -84,8 +100,8 @@ Saving costs nothing and changes nothing. The save stores:
 | Continue | 1 continue | zone 1-1 | ↩ 1-1 snapshot | full | gone | refill | −1 |
 | Next zone | — | next zone | keep | keep | keep | keep | keep |
 | Next level | — | next level 1-1 | keep | full | keep | keep | keep |
-| Save & Quit | — | (no respawn) | saved | saved | saved | saved | saved |
-| Reload → Continue | — | saved zone | saved | saved | saved | saved | saved |
+| Save & Quit | — | (no respawn) | saved chain | — | — | saved | saved |
+| Reload → Continue | — | saved zone | ↩ saved-zone snapshot | full | gone | restored | restored |
 | New game | — | level 1-1 | zero | full | default | start | start |
 
 ## 4. What this changes vs current code

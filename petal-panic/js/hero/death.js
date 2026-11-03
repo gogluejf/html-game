@@ -79,7 +79,7 @@ export function finishHeroDeath() {
     }
     // Ensure the active zone's content is installed in the collision world
     // before showing the entry screen. This updates the checkpoints array
-    // to the active zone's flags so startLife can latch the entry flag.
+    // to the active zone's flags so the attempt start can latch the entry flag.
     // BLOCKER 6: re-instantiate the zone's FRESH content from the stored
     // population snapshot (buildWorld) rather than reusing the mutated
     // entities — restoreArea() cannot re-add defeated enemies, destroyed

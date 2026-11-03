@@ -390,7 +390,7 @@ test('boss-zone entry shows the boss area id (1-B), not the last ordinary area',
   assert.ok(data.areaId !== '1-4', 'the boss zone is NOT the last ordinary area (1-4)');
 
   // BLOCKER 2: the respawn point is the boss checkpoint, so confirming the
-  // screen (startLife → hero.respawn()) lands the hero beside the boss flag.
+  // screen (restartAttempt → placeHeroAtEntry) lands the hero beside the boss flag.
   L.areaEntryOnAction('confirm', hero);
   assert.equal(getState(), S.PLAY, 'confirm starts the boss encounter');
   assert.ok(Math.abs(hero.x - bossCp.x) < 1, `hero placed beside the boss checkpoint (x=${hero.x})`);

@@ -28,7 +28,7 @@ import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
 import { applyGodMode, setHeroRefSetter } from '../debug/debugHarness.js';
 import { buildWorld, captureAreaMap, newGameSeed, getLastWorldSeed } from '../world/build.js';
-import { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
+import { CLEAR_SEQ, clearSeq, areaEntrySeq, setMenuEntryPending, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver };
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, roomFloorTop, BOSS_TRIGGER_X } from '../world/level.js';
 import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, applySavedState } from '../systems/lifecycle.js';
@@ -147,7 +147,7 @@ export function stepDynamicSolid(e, dt, statics, peers) {
 
 // The hero's physical entry position for the active zone. Area -1 has no entry
 // flag (it starts at the zone's start); later areas start beside their entry
-// flag (checkpoints.md §1). startLife() owns placing the hero (lifecycle.md §3);
+// flag (checkpoints.md §1). placeHeroAtEntry() owns placing the hero (lifecycle.md §3);
 // these helpers give the lifecycle ops + boot the correct entry position.
 
 // --- Hero ---------------------------------------------------------
@@ -505,7 +505,7 @@ onTransition((from, to) => {
     // PAUSE→PLAY is a resume — hero state is already correct.
     // AREA_ENTRY→PLAY is the player confirming the shared area-entry screen to
     // begin the attempt (lifecycle.md §2/§3) — the hero was already rebuilt by
-    // startGame/continueRun and placed by startLife, so this must NOT trigger
+    // startGame/continueRun and placed by placeHeroAtEntry, so this must NOT trigger
     // startGame (which would rebuild the hero and reroll generation).
     // lifecycle.md §1: a genuinely new game rebuilds the hero with the chosen
     // definition and establishes lives, the continue pool, fresh run stats,
@@ -550,7 +550,7 @@ onTransition((from, to) => {
       ['#555555', '#888888', '#aaaaaa', '#ffffff', '#666666'].map(c => makeTestFrame(nh.w, nh.h, c)),
       { speed: 80, loop: false },
     );
-    // Rebind the reference + bind the area context so startLife/continueRun
+    // Rebind the reference + bind the area context so restartAttempt/continueRun
     // can restore the preserved arrangement.
     setHeroRef(nh);
     bindAreaContext(nh, areaContext);
@@ -572,7 +572,7 @@ onTransition((from, to) => {
 // SAME path a normal mid-run area entry uses (stepClearSequence's fadeOut /
 // debugWrapToNextArea): loadActiveZone swaps ALL world contents
 // (structure.md §2) and the hero's checkpoint is set to the zone's spawn so
-// startLife places them at the chosen zone's entry — not wherever the previous
+// placeHeroAtEntry places them at the chosen zone's entry — not wherever the previous
 // run left them.
 // This runs on EVERY MENU→AREA_ENTRY, LEVEL_SELECT→AREA_ENTRY and
 // BOSS_RUSH→AREA_ENTRY transition; the only such sources are the Continue flow
@@ -581,6 +581,20 @@ onTransition((from, to) => {
 onTransition((from, to) => {
   if (to === S.AREA_ENTRY && (from === S.MENU || from === S.LEVEL_SELECT || from === S.BOSS_RUSH)) {
     const h = hero;
+    // This zone was installed FROM THE MENU (reload-Continue / level select /
+    // boss rush): the entry sequence MUST start the attempt in FAILURE flavor
+    // (state-persistence.md §2.6 — snapshot rollback, full energy, weapon
+    // cleared), never as an advance. The flag is consumed by the entry
+    // sequence when the attempt starts.
+    //
+    // CRITICAL ORDERING: arm this AFTER the transition has fired, not inside
+    // the hook. showAreaEntry() calls tryTransition() and fires ALL listeners
+    // synchronously before returning — a mid-run death or clear-sequence
+    // advance reaches AREA_ENTRY via PLAY→AREA_ENTRY while THIS listener is
+    // still executing for an earlier menu entry, and would see `from` as the
+    // menu state and wrongly force the failure flavor on a genuine zone pass
+    // (§2.3 keep-everything broken: energy/weapon reset on next-area).
+    queueMicrotask(() => setMenuEntryPending(true));
     // A Continue after a page reload must rebuild the world with the SAVED
     // generation seed (saveMeta.seed) so the run resumes on the exact terrain
     // + spawns it was played on. In-session continues skip this: the live
@@ -591,12 +605,13 @@ onTransition((from, to) => {
       world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, sm.seed);
       console.log(`[lifecycle] continue: rebuilt world from saved seed ${sm.seed}`);
     }
-    // Full-state resume (state-persistence.md §2.6): AFTER the seed rebuild and
-    // BEFORE the zone installs, restore the saved player state onto the hero —
-    // exactly what was on screen at quit time wins over any reset. The entry
-    // screen then shows the saved life count, and startLife keeps the saved
-    // wallet/inventory (failure transitions restore from the restored snapshot
-    // chain). Legacy saves without a `state` block keep today's behavior.
+    // Persistent-column resume (state-persistence.md §2.6): AFTER the seed
+    // rebuild and BEFORE the zone installs, restore lives + continues + the
+    // zone-snapshot chain onto the hero. The entry screen then shows the saved
+    // life count, and the entry sequence's failure-style restart rolls
+    // coins/score back to the SAVED ZONE's entry snapshot with full energy and
+    // cleared weapon — identical in-session and after a page reload. Legacy
+    // saves without a `state` block keep today's behavior.
     if (sm?.state && typeof sm.state === 'object') applySavedState(h, sm.state);
     // Tear down any lingering boss battle room before swapping zones (a fresh
     // resume must not inherit COMBAT state from a finished run).
@@ -611,7 +626,7 @@ onTransition((from, to) => {
       loadActiveZone(zone, { solids: zone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
     }
     // Spawn checkpoint is zone data (REVISION-zones-as-data §4): feet on the
-    // floor of the active room. startLife() reads this to place the hero.
+    // floor of the active room. placeHeroAtEntry() reads this to place the hero.
     const sp = zone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
     h.checkpoint = { x: sp.x, y: sp.y - h.h };
     camera.setZoneBounds(zone);
@@ -626,7 +641,11 @@ onTransition((from, to) => {
 // auto-start play. This fires on ALL paths that open the entry screen (new
 // game, clear-sequence advance, death restart, continue, and pause retry).
 onTransition((from, to) => {
-  if (to === S.AREA_ENTRY) beginAreaEntryPresentation();
+  // Carry the advance flag through the rebuild: the clear sequence sets it on
+  // areaEntrySeq before showAreaEntry triggers this transition; without it the
+  // presentation reset would downgrade a genuine zone arrival to a failure
+  // restart (state-persistence.md §2.3).
+  if (to === S.AREA_ENTRY) beginAreaEntryPresentation(areaEntrySeq.advance);
 });
 
 // AREA_ENTRY → PLAY: when the player confirms the area-entry screen, begin the
@@ -634,13 +653,13 @@ onTransition((from, to) => {
 // the area was reached via the clear sequence (exit flag → banner → fade-out →
 // entry screen). For other entry-screen paths (new game, death restart,
 // continue) the fade-in is not needed because the hero is already positioned
-// by startLife and the screen was opaque (no visible world to fade from).
+// by placeHeroAtEntry and the screen was opaque (no visible world to fade from).
 onTransition((from, to) => {
   if (to === S.PLAY && from === S.AREA_ENTRY) {
     // Only start the fade-in when the entry screen was reached via the clear
     // sequence (exit flag → banner → fade-out → entry screen). For other
     // entry-screen paths (new game, death restart, continue) there is no
-    // fade-in because the hero was already positioned by startLife and the
+    // fade-in because the hero was already positioned by placeHeroAtEntry and the
     // screen was opaque (no visible world to fade from).
     beginClearFadeIn();
     // Re-clamp the camera to the zone the hero is now in (task 2.3). This runs
@@ -671,7 +690,7 @@ onTransition((from, to) => {
       camera.minYReached = camera.y;
     }
     // Boss zone (boss-arena.md §1): entering 1-B behaves like any other area —
-    // RUN phase. The hero is placed at the left entry by startLife; the battle
+    // RUN phase. The hero is placed at the left entry by placeHeroAtEntry; the battle
     // room begins only when the hero crosses the boss checkpoint at the far
     // right (trigger line → enterBossRoom). No flow starts here.
   }

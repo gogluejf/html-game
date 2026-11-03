@@ -123,7 +123,7 @@ function advanceToNextArea(nextArea) {
   for (let i = 0; i < BANNER_STEPS + FADE_OUT_STEPS; i++) U.stepClearSequence(DT);
   assert.equal(getState(), S.AREA_ENTRY, 'entry screen is shown after the fade-out');
   assert.equal(U.getHero().currentArea, nextArea, `hero advanced to area ${nextArea}`);
-  // Confirm the entry screen: startLife + AREA_ENTRY→PLAY (+ fade-in hook).
+  // Confirm the entry screen: attempt start + AREA_ENTRY→PLAY (+ fade-in hook).
   L.areaEntryOnAction('confirm', U.getHero());
   assert.equal(getState(), S.PLAY, 'confirm starts the attempt (PLAY)');
   if (U.getClearSequence().state === 'fadeIn') {
@@ -374,10 +374,10 @@ test('death in area 3: the same area restarts with the SAME arrangement', () => 
   ctx._barrel.alive = false;
   ctx._barrel.destroyed = true;
 
-  // A death restart of the SAME area: startLife restores the arrangement and
+  // A death restart of the SAME area: restartAttempt restores the arrangement and
   // places the hero at the area's entry.
   setState(S.PLAY);
-  L.startLife(h, ctx);
+  L.restartAttempt(h, ctx);
 
   assert.equal(h.currentArea, 3, 'the hero is still in area 3 (same area)');
   assert.equal(h.x, entryX, 'the hero is at the area 3 entry flag');
@@ -387,7 +387,7 @@ test('death in area 3: the same area restarts with the SAME arrangement', () => 
   assert.equal(ctx._enemy.aiState, 'idle', 'the enemy\'s AI is reset');
   assert.equal(ctx._barrel.hp, 60, 'the destroyed barrel is restored');
   assert.equal(ctx._barrel.alive, true, 'the destroyed barrel is alive again');
-  assert.equal(h.lives, 2, 'lives are decremented by the death, not by startLife');
+  assert.equal(h.lives, 2, 'lives are decremented by the death, not by restartAttempt');
   assert.ok(h.intangible, 'respawn i-frames are active at the entry');
 });
 
@@ -466,9 +466,9 @@ test('vertical fall: a restart places the hero back on the bottom platform', () 
   h.y = bottom + 40; // fell into the emptiness
 
   setState(S.PLAY);
-  L.startLife(h, ctx);
+  L.restartAttempt(h, ctx);
 
-  // startLife respawns the hero at its checkpoint (the entry flag on the
+  // restartAttempt respawns the hero at its checkpoint (the entry flag on the
   // bottom platform), so the hero is back ON the platform — not in the
   // lethal emptiness.
   const feet = h.y + h.h;

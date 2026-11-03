@@ -54,7 +54,7 @@ function makeHero(coins = 0, kills = 0) {
   return h;
 }
 
-/** Minimal empty area context (startLife restores it; nothing to restore). */
+/** Minimal empty area context (resetAttemptState restores it; nothing to restore). */
 const emptyCtx = () => ({ enemies: [], boss: null, barrels: [], powerups: [], checkpoints: [], projectiles: { activeItems: [], active: [] }, coins: { activeItems: [], active: [] }, particles: { reset: () => {} }, effects: { reset: () => {} } });
 
 /** Give the hero a mid-run inventory: non-default weapon + held special. */
@@ -98,7 +98,7 @@ test('row [Die/Retry]: death restart rolls to zone snapshot, full energy, weapon
   h.wallet.current.kills += 2;
   h.lives = 2;
 
-  L.startLife(h, emptyCtx()); // the death-restart path
+  L.restartAttempt(h, emptyCtx()); // the death-restart path
 
   assert.equal(h.wallet.current.coins, 50, 'coins rolled back to zone entry');
   assert.equal(h.wallet.current.kills, 5, 'kills rolled back to zone entry');
@@ -106,7 +106,7 @@ test('row [Die/Retry]: death restart rolls to zone snapshot, full energy, weapon
   assert.equal(h.energy, h.maxEnergy, 'energy full');
   assert.equal(h.selectedWeapon, WEAPON_THORN, 'weapon gone (default)');
   assert.ok(h.specialSlots.every((s) => s === null), 'specials cleared');
-  assert.equal(h.lives, 2, 'lives untouched by startLife (caller consumed the life)');
+  assert.equal(h.lives, 2, 'lives untouched by restartAttempt (caller consumed the life)');
   assert.equal(h.continues.remaining, GAME_RULES.startingContinues, 'continues kept');
 });
 
@@ -179,7 +179,7 @@ test('row [Next zone]: zone arrival keeps EVERY column (doc §2.3)', () => {
 
 test('row [Next zone]: ADVANCE attempt-start keeps energy/weapon (no failure reset)', () => {
   // Flow-level guard for the regression that refilled energy on zone pass:
-  // startLife({advance:true}) must NOT roll back, refill energy, or clear the
+  // arriveAtZone must NOT roll back, refill energy, or clear the
   // weapon — it only places the hero at the new zone's entry.
   const h = makeHero(70, 7);
   armHero(h);
@@ -187,13 +187,13 @@ test('row [Next zone]: ADVANCE attempt-start keeps energy/weapon (no failure res
   h.wallet.current.coins += 25; // earnings inside the zone so far
   h.checkpoint = { x: 500, y: 300 };
   const before = capture(h);
-  L.startLife(h, emptyCtx(), { advance: true });
+  L.arriveAtZone(h);
   assertKept(h, before, 'advance arrival');
   assert.equal(h.x, 500, 'hero placed at the new zone entry');
   assert.equal(h.y, 300, 'hero placed at the new zone entry');
   // And the FAILURE flavor still does the full reset (regression both ways).
   h.wallet.current.coins += 40;
-  L.startLife(h, emptyCtx());
+  L.restartAttempt(h, emptyCtx());
   assert.equal(h.wallet.current.coins, 70, 'failure restart rolls to the zone snapshot (entry value)');
   assert.equal(h.energy, h.maxEnergy, 'failure restart refills energy');
   assert.equal(h.selectedWeapon, WEAPON_THORN, 'failure restart clears the weapon');
@@ -245,7 +245,7 @@ test('row [Next level]: boss reward confirm refills energy only, keeps all other
 // Row: Save & Quit — free; stores zone + chain + full player state + seed
 // ===========================================================================
 
-test('row [Save&Quit]: saveCurrentRun persists the full state block + snapshot chain, changes nothing', () => {
+test('row [Save&Quit]: saveCurrentRun persists the persistent columns + snapshot chain, changes nothing', () => {
   const h = makeHero(80, 8);
   armHero(h);
   h.lives = 2;
@@ -259,12 +259,14 @@ test('row [Save&Quit]: saveCurrentRun persists the full state block + snapshot c
   assert.equal(meta.level, 1);
   assert.equal(meta.area, 1);
   assert.ok(Number.isInteger(meta.seed), 'seed persisted');
-  assert.equal(meta.state.coins, 80, 'state.coins captured');
-  assert.equal(meta.state.energy, before.energy, 'state.energy captured');
-  assert.equal(meta.state.weapon, before.weapon, 'state.weapon captured');
-  assert.deepEqual(meta.state.specialSlots, before.specials, 'state.specials captured');
+  // §2.5: ONLY lives/continues/score persist — energy/weapon/coins are attempt
+  // state, recomputed by the resume's failure-style restart (§2.6).
   assert.equal(meta.state.lives, 2, 'state.lives captured');
   assert.equal(meta.state.continues, 1, 'state.continues captured');
+  assert.ok(Number.isFinite(meta.state.score), 'state.score captured');
+  assert.equal(meta.state.energy, undefined, 'energy NOT saved (attempt state)');
+  assert.equal(meta.state.weapon, undefined, 'weapon NOT saved (attempt state)');
+  assert.equal(meta.state.coins, undefined, 'coins NOT saved (zone-snapshot rollback decides)');
   assert.ok(meta.state.snapshots['1:1'], 'snapshot chain persisted inside state');
   // Saving is free: the run itself is untouched.
   assertKept(h, before, 'after save');
@@ -274,7 +276,7 @@ test('row [Save&Quit]: saveCurrentRun persists the full state block + snapshot c
 // Row: Reload → Continue — restore exactly the saved on-screen state
 // ===========================================================================
 
-test('row [Reload→Continue]: applySavedState restores the exact saved state incl. the chain', () => {
+test('row [Reload→Continue]: applySavedState restores the persistent columns + chain; restart does the §2.6 reset', () => {
   const saved = makeHero(80, 8);
   armHero(saved);
   saved.lives = 2;
@@ -288,13 +290,23 @@ test('row [Reload→Continue]: applySavedState restores the exact saved state in
   fresh.continues.remaining = GAME_RULES.startingContinues;
   L.applySavedState(fresh, meta.state);
 
-  assert.equal(fresh.wallet.current.coins, 80, 'coins restored');
-  assert.equal(fresh.energy, saved.energy, 'energy restored');
-  assert.equal(fresh.selectedWeapon, saved.selectedWeapon, 'weapon restored');
-  assert.deepEqual([...fresh.specialSlots], [...saved.specialSlots], 'specials restored');
+  // §2.6: only the persistent columns come from the save...
   assert.equal(fresh.lives, 2, 'lives restored');
   assert.equal(fresh.continues.remaining, 1, 'continues restored');
   assert.deepEqual(fresh.wallet.snapshots, saved.wallet.snapshots, 'snapshot chain restored');
+  // ...the on-screen attempt state deliberately does NOT:
+  assert.notEqual(fresh.wallet.current.coins, 80, 'coins NOT restored (restart rolls them back)');
+  assert.notEqual(fresh.energy, saved.energy, 'energy NOT restored (restart refills it)');
+
+  // The resume's failure-style restart completes the transition: coins roll
+  // back to the SAVED ZONE's entry snapshot, energy full, weapon cleared.
+  L.restartAttempt(fresh, emptyCtx());
+  assert.equal(fresh.wallet.current.coins, 80, 'coins rolled back to the saved zone-entry snapshot');
+  assert.equal(fresh.wallet.current.kills, 8, 'kills rolled back too');
+  assert.equal(fresh.energy, fresh.maxEnergy, 'energy full after the restart');
+  assert.equal(fresh.selectedWeapon, 'thorn', 'weapon cleared to hero default (WEAPON_THORN)');
+  assert.deepEqual([...fresh.specialSlots].filter(Boolean), [], 'specials cleared');
+  assert.equal(fresh.lives, 2, 'lives UNTOUCHED by the restart (no cost — §2.6)');
 
   // A death AFTER the reload-continue rolls back to the PRE-QUIT zone entry.
   fresh.wallet.current.coins += 40; // earn in the resumed zone

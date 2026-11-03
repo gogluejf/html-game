@@ -102,7 +102,7 @@ function tally(h, { kills = {}, coins = 0 } = {}) {
 
 // Reset the global state machine to a clean baseline so each test starts
 // from a known state regardless of what the previous test left behind.
-// The previous test's rewardOnAction confirm runs startLife, which consumes
+// The previous test's rewardOnAction confirm runs the attempt start, which consumes
 // the AREA_ENTRY→PLAY transition — so by the time the next test's
 // showLevelReward tries PLAY→REWARD, the state is already PLAY and the
 // transition is invalid. Resetting to PLAY before each test avoids this.
