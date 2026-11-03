@@ -174,9 +174,12 @@ function debugDropBarrels() {
   // barrel's velocity so the staggered spawns all LAND together — otherwise the
   // later (younger) barrels catch up mid-fall and stack on the earlier ones.
   const fallDist = Math.max(0, floorTop - spawnY);
-  // Horizontal gap between barrels: their real collision width (~44px, sheet-
-  // owned) + one half-unit of empty space, so the art never overlaps.
-  const gap = 44 + UNIT_PX_X * 0.5;
+
+  // DYNAMIC spacing: measure the first barrel's live collision width (sheet-
+  // owned, ~44px at 48px height) from a throwaway instance, then place each
+  // next one [width + 0.5 unit] further along. No hardcoded pixels.
+  const probe = BARREL_DROP_FACTORIES[BARREL_DROP_ORDER[0]](0, 0);
+  const gap = probe.w + UNIT_PX_X * 0.5;
 
   // Cancel any previous unfinished drop sequence (re-press restarts clean).
   for (const d of _debugBarrelDrops) d.cancelled = true;
@@ -184,7 +187,7 @@ function debugDropBarrels() {
 
   for (let i = 0; i < count; i++) {
     const type = BARREL_DROP_ORDER[i];
-    const x = startX + dir * i * gap; // barrel-width + 0.5 unit apart along facing
+    const x = startX + dir * i * gap; // (measured width + 0.5 unit) apart
     const delay = i * 0.25;
     // Velocity that makes a barrel spawned `delay` seconds late arrive at the
     // floor at the same instant as the first: v = sqrt(v0² + 2·g·d − g²·t²),
