@@ -1,29 +1,31 @@
 {
- "file": "petal-panic/assets/hud/balthazar/life_sheet.png",
- "size": "2104x626",
+ "file": "petal-panic/assets/hud/scarlet/idle_sheet.png",
+ "size": "2183x528",
  "rows": 1,
  "cols": 4,
  "kind": "animation",
- "description": "Balthazar life expression (4 frames)",
+ "description": "Scarlet idle expression (4 frames)",
  "entities": [
   {
-   "name": "balthazar",
-   "anim": "life",
-   "frames_dir": "petal-panic/assets/hud/balthazar",
+   "name": "scarlet",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/hud/scarlet",
+   "playback": "once",
+   "direction": "ping_pong",
    "frames": [
     {
-     "file": "life_f1.png",
+     "file": "idle_f1.png",
      "row": 0,
      "col": 0,
      "bbox": [
       0,
       0,
-      527,
-      623
+      550,
+      513
      ],
      "offset": {
-      "x": -263.5,
-      "y": -311.5
+      "x": -275,
+      "y": -256.5
      },
      "scale": {
       "sx": 1,
@@ -33,18 +35,18 @@
      "durUnits": 1
     },
     {
-     "file": "life_f2.png",
+     "file": "idle_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
-      527,
+      550,
       0,
-      525,
-      626
+      545,
+      522
      ],
      "offset": {
-      "x": -262.5,
-      "y": -313
+      "x": -272.5,
+      "y": -261
      },
      "scale": {
       "sx": 1,
@@ -54,18 +56,18 @@
      "durUnits": 1
     },
     {
-     "file": "life_f4.png",
+     "file": "idle_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
-      1052,
+      1095,
       0,
-      527,
-      623
+      545,
+      525
      ],
      "offset": {
-      "x": -262.5,
-      "y": -304
+      "x": -272.5,
+      "y": -262.5
      },
      "scale": {
       "sx": 1,
@@ -75,18 +77,18 @@
      "durUnits": 1
     },
     {
-     "file": "life_f3.png",
+     "file": "idle_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
-      1579,
+      1640,
       0,
-      525,
-      608
+      543,
+      528
      ],
      "offset": {
-      "x": -263.5,
-      "y": -311.5
+      "x": -271.5,
+      "y": -264
      },
      "scale": {
       "sx": 1,
@@ -97,13 +99,11 @@
     }
    ],
    "fps": 8,
-   "playback": "once",
-   "direction": "ping_pong",
    "collision": {
-    "x": -259.5,
-    "y": -307.5,
-    "w": 519,
-    "h": 615
+    "x": -271,
+    "y": -252.5,
+    "w": 542,
+    "h": 505
    },
    "pivot": {
     "x": 0,
@@ -111,10 +111,5 @@
    },
    "markers": []
   }
- ],
- "updated": "2026-11-03T02:53:30",
- "crop": {
-  "frames_dir": "petal-panic/assets/hud/balthazar",
-  "pass": "/home/goglue/tmp/balthazar-life-v1"
- }
+ ]
 }

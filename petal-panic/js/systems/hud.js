@@ -258,8 +258,8 @@ function roundRect(ctx, x, y, w, h, r) {
 
 // --- Coins + lives (top-right): glass badge tiles with real art --------------
 // Notification style: each counter is a glass square (like the weapon tiles)
-// holding REAL art — coin = gold sheet f7, lives = the hero's life avatar f1
-// (assets/hud/<hero>/life_f1.png). A small circle badge at the bottom-left
+// holding REAL art — coin = gold sheet f7, lives = the hero.s idle avatar f1
+// (assets/hud/<hero>/idle_f1.png). A small circle badge at the bottom-left
 // corner holds the count ("×N" style number). Living effect: every 10–20s a
 // random badge does its motion once — coin plays f8→f7, hero shows one
 // expression frame from its life sheet — then settles back.
@@ -381,13 +381,13 @@ function drawCoinBadge(ctx, hero, x, y, now) {
 }
 
 /** Lives badge: hero life avatar in a glass tile. Playback driven by
- *  SpritePlayer (fps, mode, direction all from life_sheet.json). */
+ *  SpritePlayer (fps, mode, direction all from idle_sheet.json). */
 const _livesPlayers = new Map(); // heroId → { player, frames: [file,...] }
 let _lastLivesNow = 0;
 async function loadLivesPlayer(heroId) {
   if (_livesPlayers.has(heroId)) return;
   try {
-    const url = new URL(`../../assets/hud/${heroId}/life_sheet.json`, import.meta.url);
+    const url = new URL(`../../assets/hud/${heroId}/idle_sheet.json`, import.meta.url);
     let json;
     if (url.protocol === 'file:') {
       const { readFile } = await import('node:fs/promises');
@@ -414,7 +414,7 @@ function drawLivesBadge(ctx, hero, x, y, now) {
   drawGlassTile(ctx, x, y, BADGE, false);
 
   const heroId = hero.heroDef?.id === 'balthazar' ? 'balthazar' : 'scarlet';
-  const base = `../../assets/hud/${heroId}/life_f`;
+  const base = `../../assets/hud/${heroId}/idle_f`;
   // Kick off async load on first call.
   if (!_livesPlayers.has(heroId)) loadLivesPlayer(heroId);
   const entry = _livesPlayers.get(heroId);
@@ -491,7 +491,7 @@ function drawCountBadge(ctx, x, y, value, color) {
 }
 
 // --- Selected-hero life avatar: now rendered inside drawLivesBadge() ---------
-// (assets/hud/<hero>/life_f1.png + expression fx). The old 32×32 idle portrait
+// (assets/hud/<hero>/idle_f1.png + expression fx). The old 32×32 idle portrait
 // is retired — the life badge IS the hero representation.
 
 
