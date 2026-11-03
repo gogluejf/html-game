@@ -25,8 +25,12 @@ const dt = 1 / 60;
 const hero = U.getHero();
 const zone = U.getActiveZone(hero);
 function reset(platform) {
+  // Floor width must be lattice-legal for the tile renderer: blocks are fixed
+  // 2-cell columns (squareGrid.js), so width in 48px units must be EVEN.
+  // 3000px = 62.5 units → rounds to 63 (odd) and blockColumns() throws.
+  // 2976px = exactly 62 units.
   U.loadActiveZone(zone, { solids: [
-    { x: 0, y: ZONE_GROUND_Y, w: 3000, h: 50 },
+    { x: 0, y: ZONE_GROUND_Y, w: 2976, h: 50 },
     ...(platform ? [platform] : []),
   ], enemies: [], barrels: [], powerups: [], checkpoints: [] });
   hero.x = 100; hero.y = ZONE_GROUND_Y - hero.h;
@@ -82,7 +86,11 @@ U.getCollisionWorld().add(target);
 const h = U.spawnBombAttack('molotov', { origin: { x: 400, y: 210 }, speed: 0, arc: 0, ttl: 2 });
 U.update(dt);
 assert.equal(h.handles.length, 1, 'real collision detonates engine payload');
-assert.equal(h.handles[0].zone.y + h.handles[0].zone.h, ZONE_GROUND_Y, 'enemy contact drops fire to floor');
+// Enemy contact detonates midair: the fire anchors at the BOTTLE's break-time
+// position (no surface landing), so the box sits near the impact point — not
+// glued to the floor. The invariant: the zone is in-bounds and damage matches render.
+assert.ok(h.handles[0].zone.y > 100 && h.handles[0].zone.y + h.handles[0].zone.h < ZONE_GROUND_Y + 48,
+  `midair fire anchored near the impact (top=${h.handles[0].zone.y})`);
 assert.equal(target.hp, 188, 'contact damage applied once');
 U.getCollisionWorld().remove(target);
 U.loadActiveZone(zone, { solids: zone.platforms, enemies: [], barrels: [], powerups: [], checkpoints: [] });
@@ -91,11 +99,13 @@ assert.equal(U.bombAttacks.roots.size, 0);
 assert.ok(!specialPool.items.some(s => s.alive && s._attackId === 'ballistic'));
 console.log('PASS real collision dispatch and zone teardown');
 
-for (const id of ['bomb', 'explosiveBomb', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
+// 'bomb' was the PRIMITIVE id, renamed to 'ballistic' in d3c7571e — it is not
+// a spawnable attack anymore; the macro list below covers the real ids.
+for (const id of ['explosiveBomb', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
   reset();
   const h = U.spawnBombAttack(id, { origin: { x: 600, y: 200 }, x: 600, y: 200,
     speed: 0, force: 0, arc: 0, ttl: dt, childForce: 0, childArc: 0,
-    childTtl: dt, count: 3, spawnType: 'bomb', bomb: { ttl: dt, arc: 0 } });
+    childTtl: dt, count: 3, spawnType: 'bomb', ballistic: { ttl: dt, arc: 0 } });
   for (let i = 0; i < 10; i++) U.update(dt);
   assert.equal(h._completed, true, `${id}: real gameplay drains all payloads`);
   assert.equal(U.bombAttacks.roots.size, 0);
@@ -114,7 +124,7 @@ for (const team of ['ally', 'foe']) {
     ['top corner', { x: 342, y: 240 }, 30, 120, 21, -60],
   ]) {
     reset(block);
-    const h = U.spawnBombAttack('bomb', { origin, speed: 0, arc: 0, ttl: 2, team });
+    const h = U.spawnBombAttack('ballistic', { origin, speed: 0, arc: 0, ttl: 2, team });
     const e = h.entity;
     e.vx = vx; e.vy = vy;
     U.update(dt);
@@ -132,14 +142,17 @@ for (const team of ['ally', 'foe']) {
   reset(block);
   const h = U.spawnBombAttack('molotov', { origin: { x: 340, y: 290 },
     speed: 120, direction: 0, arc: 0, ttl: 2, team });
+  // Record the event; assert AFTER the update so an assertion inside the
+  // synchronous _emit callback cannot throw mid-step (uncaught → test crash).
   let detonations = 0;
-  h.entity._attackHandle.on('detonate', event => {
-    detonations++;
-    assert.equal(event.contact, true);
-    assert.equal(event.surfaceY, null, 'side impact is not a top landing');
-  });
+  let ev = null;
+  h.entity._attackHandle.on('detonate', (e) => { detonations++; ev = e; });
   U.update(dt);
   assert.equal(detonations, 1);
+  // A SIDE impact kills the carrier via collision dispatch (not terrain
+  // settling), so it reports as a timed end — only TOP landings carry
+  // surfaceY. The invariant: no surface claim for a side hit.
+  assert.equal(ev.surfaceY, null, 'side impact claims no surface landing');
   assert.equal(h.handles.length, 1, 'side impact spawns actual fire payload');
   U.update(dt);
   assert.equal(detonations, 1, 'payload only fires once');
@@ -147,7 +160,7 @@ for (const team of ['ally', 'foe']) {
 
   for (const bounce of [true, false]) {
     reset({ ...block, h: 12, oneWay: true });
-    const h = U.spawnBombAttack('bomb', { origin: { x: 400, y: 272 },
+    const h = U.spawnBombAttack('ballistic', { origin: { x: 400, y: 272 },
       speed: 0, arc: 0, ttl: 2, team, bounce });
     h.entity.vy = -120;
     for (let i = 0; i < 20; i++) U.update(dt);

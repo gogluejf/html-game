@@ -45,12 +45,15 @@ test('checkpoint level + boss sheets merge into one SpriteData', () => {
   assert.equal(data.anims.level.frames.length, 1);
 });
 
-test('barrel sheets each parse with a single frame', () => {
+test('barrel sheets each parse with their declared frame count', () => {
+  // b7e2e35c: all barrel types got 4-frame idle anims — the sheet JSON's
+  // `cols` is the source of truth for the frame count.
   for (const name of ['wooden', 'coin', 'explosion']) {
-    const data = parseSheet(sheet(`objects/barrel/${name}_sheet.json`));
+    const raw = sheet(`objects/barrel/${name}_sheet.json`);
+    const data = parseSheet(raw);
     const anim = data.anims[name];
     assert.ok(anim, `missing anim ${name}`);
-    assert.equal(anim.frames.length, 1);
+    assert.equal(anim.frames.length, raw.cols, `${name}: frames match the sheet's cols`);
   }
 });
 

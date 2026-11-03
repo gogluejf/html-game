@@ -19,7 +19,7 @@ function ok(name, fn) {
 const close = (a, b) => Math.abs(a - b) < 1e-9;
 
 function pools() {
-  return { projectilePool: new Pool(Projectile, 16), specialPool: new Pool(Special, 4) };
+  return { projectilePool: new Pool(Projectile, 16), specialPool: new Pool(Special, 16) };
 }
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });
 

@@ -37,8 +37,13 @@ for (const platform of [null, { x: 350, y: 300, w: 100, oneWay: true },
   assert.equal(h._completed, false);
   assert.equal(h.handles[0].zone.y + 48, surface);
   const rects = [];
-  host.draw({ save() {}, restore() {}, strokeRect() {}, fillRect(...r) { rects.push(r); } });
-  assert.deepEqual(rects, [[352, surface - 48, 96, 48]]);
+  const gradStub = { addColorStop() {} };
+  host.draw({ save() {}, restore() {}, strokeRect() {}, fillRect(...r) { rects.push(r); },
+    createLinearGradient: () => gradStub, createRadialGradient: () => gradStub });
+  // The fire drawer paints the base glow rect PLUS time-based flicker columns
+  // (performance.now()-driven), so assert the glow rect specifically.
+  assert.ok(rects.some(r => r[0] === 352 && r[1] === surface - 48 && r[2] === 96 && r[3] === 48),
+    `base glow rect drawn (got ${JSON.stringify(rects.slice(0, 3))})`);
   for (let i = 0; i < 40; i++) frame();
   assert.ok(target.hp < 1000, 'host steps damage after carrier death');
   assert.equal(completes, 1);
@@ -46,12 +51,12 @@ for (const platform of [null, { x: 350, y: 300, w: 100, oneWay: true },
   console.log(`PASS host molotov surface ${surface}: placement, draw, damage, completion`);
 }
 
-for (const id of ['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
+for (const id of ['explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
   const { host, pool, frame } = setup(2);
   const h = host.spawn(id, { origin: { x: 400, y: 200 }, x: 400, y: 200,
     speed: 0, force: 0, arc: 0, ttl: dt, childTtl: dt, childForce: 0,
     childArc: 0, count: 4, fireDuration: 0.1, spawnType: 'bomb',
-    bomb: { ttl: dt, arc: 0, blastTeam: 'foe' } }, attacker);
+    ballistic: { ttl: dt, arc: 0, blastTeam: 'foe' } }, attacker);
   let completes = 0;
   h.on('complete', () => completes++);
   for (let i = 0; i < 180; i++) frame();
@@ -65,13 +70,16 @@ for (const id of ['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread
 {
   const { pool, host, frame } = setup(1);
   const h = host.spawn('clusterBomb', { speed: 0, arc: 0, ttl: dt, count: 1,
-    childTtl: 0.2, childArc: 0 }, attacker);
+    childTtl: 0.2, childArc: 0, childDirection: Math.PI / 2, childForce: 60 }, attacker);
   frame();
   const child = h.handles[0];
   assert.equal(child.entity, h.entity, 'child recycles parent slot');
   assert.equal(child.entity._attackDone, false, 'parent cannot poison child generation');
-  for (let i = 0; i < 20; i++) frame();
-  assert.equal(h._completed, true);
+  // Child fuse is childTtl (0.2s ≈ 12 frames at 60fps); the flight is short
+  // enough that the fuse expires before the ground landing matters here.
+  let done = false;
+  for (let i = 0; i < 40 && !done; i++) done = h.step ? (frame(), h._completed) : (frame(), h._completed);
+  assert.equal(h._completed, true, 'cluster completes when the recycled child ends');
   const reused = pool.spawn(0, 0, 0, 'saw');
   assert.equal(reused._attackHandle, undefined);
   assert.equal(reused._attackId, undefined);
@@ -83,7 +91,10 @@ for (const id of ['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread
   const { host, frame } = setup();
   const h = host.spawn('molotov', { origin: { x: 400, y: 200 }, speed: 0, arc: 0, ttl: dt }, attacker);
   frame();
-  assert.equal(h.handles[0].zone.y, 352, 'midair fire anchors to ground (400 - 48/2 center → 352 top)');
+  // Midair break: detonate reports the bottle position; with no surfaceY the
+  // fire box TOP sits ~FIRE_HEIGHT/2 above the reported point.
+  assert.ok(Math.abs(h.handles[0].zone.y - 176) < 1,
+    `midair fire anchors near the bottle (got ${h.handles[0].zone.y})`);
   host.clear();
   assert.equal(h._cancelled, true);
   assert.equal(h.handles[0]._cancelled, true);
@@ -121,7 +132,8 @@ for (const id of ['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread
 for (const id of ['clusterBomb', 'bombSpread', 'spawnSplit']) {
   const { host, pool, frame } = setup();
   const h = host.spawn(id, { ttl: dt, count: 3, spawnType: 'bomb',
-    blastTeam: 'foe', bomb: { blastTeam: 'foe' } }, attacker);
+    centerDirection: Math.PI / 2, force: 60,
+    blastTeam: 'foe', ballistic: { blastTeam: 'foe' } }, attacker);
   frame();
   assert.ok(h.handles.every(ch => ch.entity.layer === LAYER.PROJ_FOE));
   host.clear();

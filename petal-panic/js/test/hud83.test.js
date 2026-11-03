@@ -49,6 +49,14 @@ function makeFakeCtx() {
   return base;
 }
 
+// Headless Image stub: hud.js loads badge art via new Image(); without it the
+// coin/lives badges (and their count text) skip drawing entirely.
+class FakeImage {
+  constructor() { this.complete = false; this.naturalWidth = 0; this.naturalHeight = 0; }
+  set src(v) { this._src = v; this.complete = true; this.naturalWidth = 48; this.naturalHeight = 48; }
+}
+globalThis.Image = FakeImage;
+
 // Dynamic imports AFTER the stub is in place.
 const U = await import('../systems/update.js');
 const { S, setState } = await import('../core/state.js');
@@ -120,7 +128,19 @@ ok('weapon tiles: 3 glass slots drawn, selection ring follows selectedWeapon', (
   assert.ok(ctx2.rects.length >= 3, 're-draw with moved selection works');
 });
 
-ok('coins + lives: count text drawn in badge circles (top-right)', () => {
+let hudSettled = null;
+function hudReady() {
+  if (!hudSettled) {
+    // Kick the async badge loaders (coin sheet fetch + Image stubs), then
+    // settle the microtask queue so the next draw sees loaded art.
+    const warm = makeFakeCtx();
+    drawHUD(warm, hero, cam, levelDef);
+    hudSettled = new Promise((r) => setTimeout(r, 25));
+  }
+  return hudSettled;
+}
+ok('coins + lives: count text drawn in badge circles (top-right)', async () => {
+  await hudReady();
   const ctx = makeFakeCtx();
   hero.coins = 200; hero.lives = 3;
   drawHUD(ctx, hero, cam, levelDef);
@@ -129,7 +149,8 @@ ok('coins + lives: count text drawn in badge circles (top-right)', () => {
   assert.ok(texts.includes('3'), `lives count rendered`);
 });
 
-ok('top-right badges: coin + lives count circles drawn in the right corner', () => {
+ok('top-right badges: coin + lives count circles drawn in the right corner', async () => {
+  await hudReady();
   const ctx = makeFakeCtx();
   drawHUD(ctx, hero, cam, levelDef);
   const fullCircles = ctx.arcs.filter(a => a.full);

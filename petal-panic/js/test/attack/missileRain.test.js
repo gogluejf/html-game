@@ -27,7 +27,7 @@ function ctx(extra = {}) {
     world: { targets: [], hero: null },
     effects: { spawnHitSparkles() {}, fireManual() {}, triggerShake() {}, spawnExplosion() {}, bigExplosion() {} },
     groundY: GROUND_Y,
-    pools: { projectilePool: new Pool(Projectile, 32), specialPool: new Pool(Special, 8) },
+    pools: { projectilePool: new Pool(Projectile, 32), specialPool: new Pool(Special, 16) },
     ...extra,
   });
 }
@@ -100,6 +100,7 @@ ok('sequence: launch → rain → complete, all missiles activated', () => {
   let finished = false;
   for (let i = 0; i < 1200 && !finished; i++) {
     c.pools.projectilePool.updateAll(DT);
+    c.pools.specialPool.updateAll(DT);
     finished = h.step(DT, []);
     phases.add(h.state.phase);
   }
@@ -120,6 +121,7 @@ ok('sequential: activation order follows coordination (from_right drops rightmos
   let finished = false;
   for (let i = 0; i < 1200 && !finished; i++) {
     c.pools.projectilePool.updateAll(DT);
+    c.pools.specialPool.updateAll(DT);
     finished = h.step(DT, []);
     if (h.state.missiles.length > activationXs.length) {
       activationXs.push(h.state.missiles[activationXs.length].state.impact.x);
@@ -151,6 +153,7 @@ ok('sequential: activation gaps are EVEN for every coordination (no double-drops
     let prevLen = 0, finished = false;
     for (let i = 0; i < 1200 && !finished; i++) {
       c.pools.projectilePool.updateAll(DT);
+    c.pools.specialPool.updateAll(DT);
       finished = h.step(DT, []);
       if (h.state.missiles.length > prevLen) times.push(h.state.t);
       prevLen = h.state.missiles.length;
@@ -176,6 +179,7 @@ ok('a target under one of the marked spots takes a blast', () => {
   let finished = false;
   for (let i = 0; i < 1200 && !finished; i++) {
     c.pools.projectilePool.updateAll(DT);
+    c.pools.specialPool.updateAll(DT);
     finished = h.step(DT, [e]);
     // Sandbox-style contact resolution for the falling carriers.
     for (const m of h.state.missiles) {

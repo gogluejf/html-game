@@ -310,8 +310,17 @@ let _coinSheet = null; // cached parsed sheet data { fps, frames: [file,...] }
 async function loadCoinSheet() {
   if (_coinSheet) return _coinSheet;
   try {
-    const res = await fetch(new URL('../../assets/objects/coin/gold_sheet.json', import.meta.url));
-    const json = await res.json();
+    // Browser: fetch. Node (tests/headless): fs fallback — same pattern as
+    // object.js's barrel sheets (Chromium import-attributes are out).
+    const url = new URL('../../assets/objects/coin/gold_sheet.json', import.meta.url);
+    let json;
+    if (url.protocol === 'file:') {
+      const { readFile } = await import('node:fs/promises');
+      const { fileURLToPath } = await import('node:url');
+      json = JSON.parse(await readFile(fileURLToPath(url), 'utf8'));
+    } else {
+      json = await (await fetch(url)).json();
+    }
     const ent = json.entities[0];
     _coinSheet = { fps: ent.fps ?? 10, frames: ent.frames.map(f => f.file) };
   } catch { _coinSheet = { fps: 10, frames: [] }; }

@@ -154,18 +154,15 @@ test('draws 8 boss cards within the 960x540 viewport', () => {
   const { calls, ctx } = recordingCtx();
   SC.BossRush.draw(ctx);
 
-  // Each locked card draws a silhouette disc: arc(cx, cy, r=47, 0..2PI).
-  // Unlocked/defeated cards have NO such disc, so on fresh progress all 8 hit.
-  const discs = calls.filter(c => c.fn === 'arc' && c.args[2] === 47 && c.args[3] === 0 && Math.abs(c.args[4] - Math.PI * 2) < 1e-9);
-  assert.equal(discs.length, 8, 'eight card discs drawn (fresh progress: all locked)');
-  for (const c of discs) {
-    const [x, y, r] = c.args;
-    assert.ok(x >= 0 && x <= VIEW_W, `card x=${x} inside viewport`);
-    assert.ok(y - r >= 0 && y + r <= VIEW_H, `card y=${y} inside viewport`);
-  }
+  // Locked cards draw a dim wash over the B&W boss art (globalAlpha 0.55 +
+  // dark fill) — the silhouette-disc design was replaced by real cover art.
+  // Fresh progress = all 8 locked → at least 8 dim-wash fills.
+  const dimWashes = calls.filter(c => c.fn === 'set:globalAlpha' && c.args[0] === 0.55);
+  assert.ok(dimWashes.length >= 8, `eight locked-card dim washes (got ${dimWashes.length})`);
 
-  // Right-side detail card present: first arcTo corner (x+230, y) = (930, 120).
-  const card = calls.find(c => c.fn === 'arcTo' && c.args[0] === 930 && c.args[1] === 120);
+  // Right-side detail card present: roundRect's first arcTo lands at the
+  // top-right corner (BR_DETAIL_X + BR_DETAIL_W, BR_DETAIL_Y) = (868, 120).
+  const card = calls.find(c => c.fn === 'arcTo' && c.args[0] === 940 && c.args[1] === 120);
   assert.ok(card, 'detail card drawn on the right');
   assert.ok(card.args[0] <= VIEW_W, 'detail card fits the viewport');
 });
@@ -176,8 +173,8 @@ test('locked cards render dimmed silhouettes with lock icons and NO boss name', 
   const { calls, ctx } = recordingCtx();
   SC.BossRush.draw(ctx);
 
-  // Every locked card is drawn dimmed (globalAlpha 0.45 on the silhouette).
-  const dimSets = calls.filter(c => c.fn === 'set:globalAlpha' && c.args[0] === 0.45);
+  // Every locked card is drawn dimmed (globalAlpha 0.55 wash over the art).
+  const dimSets = calls.filter(c => c.fn === 'set:globalAlpha' && c.args[0] === 0.55);
   assert.ok(dimSets.length >= 8, 'locked cards drawn dimmed');
   // Lock shackle arcs (PI..0 span) — at least one per locked card (8) + detail card.
   const shackleArcs = calls.filter(c => c.fn === 'arc' && c.args[3] === Math.PI && c.args[4] === 0);

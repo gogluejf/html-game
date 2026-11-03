@@ -173,7 +173,10 @@ defineMacro('spawnSplit', {
         }, ctx);
         handles.push(child);
       } else if (c.spawnType === 'bomb') {
-        const b = p.ballistic ?? {};
+        // `ballistic` is the post-rename key (d3c7571e); `bomb` is the legacy
+        // key some composers still emit — accept both so child params (ttl,
+        // arc, blastTeam...) are never silently dropped to defaults.
+        const b = p.ballistic ?? p.bomb ?? {};
         // Classic exploding bomb → the explosiveBomb macro (composition:
         // bomb flight + explosion payload). Primitives don't compose, so the
         // "it explodes" behavior is a macro concern.

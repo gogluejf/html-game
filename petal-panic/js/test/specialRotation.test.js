@@ -138,13 +138,17 @@ ok('no-op when default weapon is selected', () => {
   h.loseSelectedSpecial();
   assert.deepEqual(h.specialSlots, ['bomb', null]);
 });
-ok('losing one of two keeps selection index on the now-empty slot', () => {
+ok('losing one of two compacts left and clamps selection to the last filled slot', () => {
   const h = makeHero();
   h.acquireSpecial('bomb');
   h.acquireSpecial('saw'); // sel 1
   h.loseSelectedSpecial();
+  // Compact-left: no "empty before filled" layout survives a loss.
   assert.deepEqual(h.specialSlots, ['bomb', null]);
-  assert.equal(h.selectedWeapon, 1, 'other special remains — index persists, rotation skips empties');
+  // Selection clamps to the LAST FILLED slot (hero.js loseSelectedSpecial):
+  // keeping the lost index would trap the player on an empty slot with the
+  // default weapon unreachable.
+  assert.equal(h.selectedWeapon, 0, 'selection clamped to the remaining special');
 });
 ok('losing the LAST special falls back to default weapon (no empty-slot trap)', () => {
   const h = makeHero();
