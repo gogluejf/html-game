@@ -213,7 +213,9 @@ function fireSpecial(h, input) {
  */
 export function explodeSpecial(s) {
   // Engine payloads are owned by their macro and dispatched after collision.
-  if (s._attackId === 'ballistic') {
+  // Arcing-recipe carriers (the former 'ballistic' tag) never explode here —
+  // their macro owns the aftermath.
+  if (s._arcRecipe) {
     s._attackHit = !s.ttlExpired;
     s.alive = false;
     return;

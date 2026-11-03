@@ -28,7 +28,7 @@ import { spreadAngles } from './spreadShot.js';
 import { makeEnemy } from '../../../world/build.js';
 import { GRAVITY } from '../../../consts.js';
 import { resolveCarrier } from '../carrierMacro.js';
-import { stepBomb, stepBombTerrain } from '../primitives/ballistic.js';
+import { stepBomb, stepBombTerrain } from '../primitives/projectile.js';
 import { stepProjectile } from '../primitives/projectile.js';
 
 // Declared effect types for THIS registration (single source of truth:
@@ -223,7 +223,7 @@ defineMacro('spawnSplit', {
         if (child._completed || child._cancelled) continue;
         if (child.step) { child.step(dt, targets); continue; }
         const inner = resolveCarrier(child);
-        if (inner.entity?._attackId === 'ballistic') {
+        if (inner.entity?._arcRecipe) {
           const groundY = p.groundY ?? ctx.groundY;
           const platforms = p.platforms ?? ctx.platforms ?? [];
           if (groundY != null) stepBombTerrain(inner.entity, dt, groundY, platforms);

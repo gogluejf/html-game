@@ -11,7 +11,7 @@
 //   - All boxes are plain {x, y, w, h} world-space AABBs.
 
 import { LAYER } from '../consts.js';
-import { retainBombContact } from '../combat/attack/primitives/ballistic.js';
+import { retainBombContact } from '../combat/attack/primitives/projectile.js';
 
 // ---------------------------------------------------------------------------
 // aabbOverlap

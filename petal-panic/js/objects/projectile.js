@@ -383,7 +383,7 @@ export class Pool {
       // handle (frozen missile bug). Plain thorns (no _attackId) are simply
       // alive → never reused while flying.
       if (!item.alive &&
-          !((item._attackId === 'ballistic' || item._attackId === 'projectile') &&
+          !((item._attackId === 'projectile') &&
           !item._attackDone &&
           item._attackHandle && !item._attackHandle._cancelled && !item._attackHandle._completed)) {
         // A collision can kill a slot AFTER updateAll's cleanup. Reusing it

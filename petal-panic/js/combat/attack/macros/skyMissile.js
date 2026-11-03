@@ -226,7 +226,7 @@ defineMacro('skyMissile', {
         // landing test runs AFTER integration, so a same-frame `>=` test
         // overshoots by up to one frame of travel.
         const ent = s.missile?.entity;
-        if (ent?.alive && ent._attackId !== 'ballistic' && !ent._attackDone) {
+        if (ent?.alive && !ent._arcRecipe && !ent._attackDone) {
           const prevBottom = ent._bombPrevBottom; // captured before integration in Projectile.update
           const newBottom = ent.y + ent.h;
           if (prevBottom <= pt.y && newBottom >= pt.y) {

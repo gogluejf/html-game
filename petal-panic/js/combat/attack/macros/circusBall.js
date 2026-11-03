@@ -27,7 +27,7 @@ const DEFAULTS = Object.freeze({
 });
 
 defineMacro('circusBall', {
-  attacks: [{ id: 'ballistic', role: 'carrier' }],
+  attacks: [{ id: 'projectile', role: 'carrier' }],
   params: { ...DEFAULTS },
   meta: {
     name: 'Circus Ball',
@@ -49,7 +49,7 @@ defineMacro('circusBall', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    return invoke('ballistic', {
+    return invoke('projectile', {
       speed: p.speed,
       direction: p.direction,
       arc: p.arc,

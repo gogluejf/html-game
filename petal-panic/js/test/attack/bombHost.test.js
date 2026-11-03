@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
-import { stepBombTerrain } from '../../combat/attack/primitives/ballistic.js';
+import { stepBombTerrain } from '../../combat/attack/primitives/projectile.js';
 import { LAYER } from '../../consts.js';
 
 const dt = 1 / 60;

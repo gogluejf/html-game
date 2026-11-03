@@ -23,7 +23,7 @@ import { makeContext } from '../combat/attack/context.js';
 import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
-import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/ballistic.js';
+import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/projectile.js';
 import { spikeDrawer, boomerangDrawer, mineDrawer } from '../combat/attack/drawers/index.js';
 import { Pool, Projectile } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
@@ -46,7 +46,6 @@ import { STAGING } from './attack-theater-staging.js';
 
 // Import every primitive module for its registration side effect.
 import '../combat/attack/primitives/projectile.js';
-import '../combat/attack/primitives/ballistic.js';
 import '../combat/attack/primitives/explosion.js';
 import '../combat/attack/primitives/meleeHitbox.js';
 import '../combat/attack/primitives/movement.js';
@@ -80,7 +79,7 @@ const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
 // gameplay) instead of raw invoke(): the host owns root lifecycle + child
 // payload promotion (carrier → fireArea / split bombs). Everything else stays
 // on the theater's direct handle path.
-const BOMB_FAMILY = new Set(['ballistic', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit', 'throwMine', 'throwEnemy']);
+const BOMB_FAMILY = new Set(['explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit', 'throwMine', 'throwEnemy']);
 
 /** Angle display helper: radians → "−45° ↗" style string. */
 function angleLabel(rad) {
@@ -148,12 +147,11 @@ const SANDBOX_PRESETS = {
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
 export const TWEAKABLE = {
-  projectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.25], ['damage', 'num', 2]],
+  projectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['bounce', 'enum', [false, true]], ['ttl', 'num', 0.25], ['damage', 'num', 2]],
   spreadShot: [['count', 'int', 1], ['angle', 'angle', 15 * DEG], ['sequenceInterval', 'num', 0.05]],
   radialShot: [['count', 'int', 1], ['startAngle', 'angle', 15 * DEG], ['speed', 'num', 50], ['sequenceInterval', 'num', 0.05]],
   burstShot: [['count', 'int', 1], ['interval', 'num', 0.02], ['direction', 'angle', 15 * DEG], ['speed', 'num', 50]],
   bomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
-  ballistic: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['bounce', 'enum', [false, true]], ['ttl', 'num', 0.5], ['damage', 'num', 5]],
   explosiveBomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   explosiveProjectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.2], ['damage', 'num', 5], ['radius', 'num', 10]],
   explosion: [['x', 'num', 20], ['y', 'num', 20], ['radius', 'num', 10], ['damage', 'num', 5]],
@@ -792,7 +790,7 @@ export const AttackTheater = {
     // a flat floor + optional stomp platforms; check both.
     const solids = [this._floorSolid, ...(this._stompPlatforms ?? [])];
     for (const p of projectilePool.activeItems) {
-      if (!p.alive || p.solidBehavior !== 'stop' || p._attackId === 'ballistic') continue;
+      if (!p.alive || p.solidBehavior !== 'stop' || p._arcRecipe) continue;
       for (const s of solids) {
         if (p.x + p.w > s.x && p.x < s.x + s.w &&
             p.y + p.h > s.y && p.y + p.h < s.y + 12) {
@@ -824,7 +822,7 @@ export const AttackTheater = {
     // (systems/update.js): pool.updateAll → stepBombTerrain per entity →
     // bombAttacks.step(dt).
     for (const s of projectilePool.items) {
-      if (s._attackId !== 'ballistic' || s._attackDone) continue;
+      if (!s._arcRecipe || s._attackDone) continue;
       stepBombTerrain(s, DT, GROUND_Y);
     }
 

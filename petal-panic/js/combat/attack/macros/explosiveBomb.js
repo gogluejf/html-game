@@ -22,7 +22,7 @@ const DEFAULTS = Object.freeze({
 
 defineMacro('explosiveBomb', {
   attacks: [
-    { id: 'ballistic', role: 'carrier' },
+    { id: 'projectile', role: 'carrier' },
     { id: 'explosion', role: 'payload', overrides: { 'screen-flash': false } },
   ],
   params: { ...DEFAULTS },
@@ -67,7 +67,7 @@ defineMacro('explosiveBomb', {
       },
     });
 
-    const carrier = invoke('ballistic', {
+    const carrier = invoke('projectile', {
       team: p.team ?? p.blastTeam,
       speed: p.speed,
       direction: p.direction,
@@ -78,7 +78,7 @@ defineMacro('explosiveBomb', {
       damage: p.damage,
       radius: p.radius,
       origin: p.origin, // cluster/spawnSplit pass the SPLIT POINT — must reach the carrier
-      weaponType: 'bomb', // the throw-bomb IS a bomb — real sheet + orientation
+      specialType: 'bomb', // the throw-bomb IS a bomb — real sheet + orientation
     }, ctx);
 
     if (!carrier?.entity) {

@@ -2,7 +2,7 @@
 // Run: node js/test/attack/bomb.test.js
 
 import { strict as assert } from 'node:assert';
-import { spawnBomb, stepBomb, stepBombTerrain } from '../../combat/attack/primitives/ballistic.js';
+import { spawnProjectile, stepBomb, stepBombTerrain } from '../../combat/attack/primitives/projectile.js';
 import { invoke, AttackHandle } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
@@ -21,7 +21,7 @@ const P = { speed: 300, direction: -Math.PI / 4, arc: 800, bounce: true, explode
 
 ok('spawns into projectilePool with ballistic velocity + gravity', () => {
   const ctx = makeCtx();
-  const ent = spawnBomb(P, ctx);
+  const ent = spawnProjectile(P, ctx);
   assert.ok(ent, 'spawned');
   assert.equal(ctx.pools.projectilePool.active.length, 1);
   const c = Math.SQRT1_2 * 300;
@@ -32,15 +32,15 @@ ok('spawns into projectilePool with ballistic velocity + gravity', () => {
 
 ok('bounce=true → solidBehavior reflect; bounce=false → stop', () => {
   const ctx = makeCtx();
-  const e1 = spawnBomb({ ...P, bounce: true }, ctx);
-  const e2 = spawnBomb({ ...P, bounce: false }, ctx);
+  const e1 = spawnProjectile({ ...P, bounce: true }, ctx);
+  const e2 = spawnProjectile({ ...P, bounce: false }, ctx);
   assert.equal(e1.solidBehavior, 'reflect');
   assert.equal(e2.solidBehavior, 'stop');
 });
 
 ok('ttl becomes the fuse on the entity', () => {
   const ctx = makeCtx();
-  const ent = spawnBomb({ ...P, ttl: 2.5 }, ctx);
+  const ent = spawnProjectile({ ...P, ttl: 2.5 }, ctx);
   // setLife drives the life/fuse timer; verify via the timers facade if present.
   assert.ok(ent.timers?.get('life') === 2.5 || ent.life === 2.5 || ent.timers?.get('fuse') === 2.5,
     `life=${ent.life} timers=${JSON.stringify([...(ent.timers?.entries?.() ?? [])])}`);
@@ -48,15 +48,15 @@ ok('ttl becomes the fuse on the entity', () => {
 
 ok('stepBomb: alive bomb returns false (still in flight)', () => {
   const ctx = makeCtx();
-  const h = new AttackHandle('ballistic');
-  const ent = spawnBomb(P, ctx);
+  const h = new AttackHandle('projectile');
+  const ent = spawnProjectile(P, ctx);
   assert.equal(stepBomb(ent, P, ctx, h), false);
 });
 
 ok('detonation emits detonate with blast point + completes', () => {
   const ctx = makeCtx();
-  const h = new AttackHandle('ballistic');
-  const ent = spawnBomb(P, ctx);
+  const h = new AttackHandle('projectile');
+  const ent = spawnProjectile(P, ctx);
   const seen = [];
   h.on('detonate', (d) => seen.push(d));
   h.on('complete', () => seen.push('done'));
@@ -71,8 +71,8 @@ ok('detonation emits detonate with blast point + completes', () => {
 
 ok('fuse expiry (no contact) still detonates, contact=false', () => {
   const ctx = makeCtx();
-  const h = new AttackHandle('ballistic');
-  const ent = spawnBomb(P, ctx);
+  const h = new AttackHandle('projectile');
+  const ent = spawnProjectile(P, ctx);
   const seen = [];
   h.on('detonate', (d) => seen.push(d.contact));
   ent.ttlExpired = true; // Projectile.update() sets this when the fuse runs out
@@ -83,8 +83,8 @@ ok('fuse expiry (no contact) still detonates, contact=false', () => {
 
 ok('stepBomb is idempotent after detonation', () => {
   const ctx = makeCtx();
-  const h = new AttackHandle('ballistic');
-  const ent = spawnBomb(P, ctx);
+  const h = new AttackHandle('projectile');
+  const ent = spawnProjectile(P, ctx);
   ent.alive = false;
   stepBomb(ent, P, ctx, h);
   let n = 0;
@@ -98,7 +98,7 @@ ok('carrier contract: terminal detonate carries the death point (macros compose)
   // macros (explosiveBomb) subscribe to 'detonate' and fire the blast at the
   // carried death point.
   const ctx = makeCtx();
-  const h = invoke('ballistic', P, ctx);
+  const h = invoke('projectile', P, ctx);
   const ent = h.entity;
   ent._attackHit = true;
   ent.alive = false;
@@ -111,7 +111,7 @@ ok('carrier contract: terminal detonate carries the death point (macros compose)
 
 ok('no payload → fizzle: detonate emits, no crash', () => {
   const ctx = makeCtx();
-  const h = invoke('ballistic', P, ctx);
+  const h = invoke('projectile', P, ctx);
   const ent = h.entity;
   ent._attackHit = true;
   ent.alive = false;
@@ -123,16 +123,16 @@ ok('no payload → fizzle: detonate emits, no crash', () => {
 
 ok('pool exhaustion: spawn returns null, handle expires', () => {
   const ctx2 = makeContext(attacker(), { pools: { projectilePool: new Pool(Projectile, 1) } });
-  const h1 = invoke('ballistic', { ...P }, ctx2);
+  const h1 = invoke('projectile', { ...P }, ctx2);
   assert.ok(h1.entity, 'first bomb spawns');
-  const h2 = invoke('ballistic', { ...P }, ctx2);
+  const h2 = invoke('projectile', { ...P }, ctx2);
   assert.equal(h2.entity, undefined, 'second bomb skipped (soft cap)');
 });
 
 
 ok('bounceHeight: constant-apex rebound, zero horizontal loss', () => {
   const ctx = makeCtx();
-  const h = invoke('ballistic', { ...P, bounceHeight: 80, arc: 1000, ttl: null }, ctx);
+  const h = invoke('projectile', { ...P, bounceHeight: 80, arc: 1000, ttl: null }, ctx);
   const ent = h.entity;
   assert.equal(ent.bounceHeight, 80, 'param stored on entity');
   // Simulate a ground hit: place the entity straddling the ground plane (y=400)
@@ -153,7 +153,7 @@ ok('bounceHeight: constant-apex rebound, zero horizontal loss', () => {
 
 ok('bounceHeight: legacy decay path unchanged when unset', () => {
   const ctx = makeCtx();
-  const h = invoke('ballistic', { ...P, arc: 800, ttl: null, bounce: true }, ctx);
+  const h = invoke('projectile', { ...P, arc: 800, ttl: null, bounce: true }, ctx);
   const ent = h.entity;
   assert.equal(ent.bounceHeight, null, 'default is legacy mode');
   ent.y = 390;
@@ -166,12 +166,12 @@ ok('bounceHeight: legacy decay path unchanged when unset', () => {
 
 ok('width/height override the carrier collision box', () => {
   const ctx = makeCtx();
-  const h = invoke('ballistic', { ...P, width: 30, height: 22, ttl: null }, ctx);
+  const h = invoke('projectile', { ...P, width: 30, height: 22, ttl: null }, ctx);
   const ent = h.entity;
   assert.equal(ent.w, 30, 'explicit width wins');
   assert.equal(ent.h, 22, 'explicit height wins');
   // Omitted → carrier default box untouched.
-  const h2 = invoke('ballistic', { ...P, ttl: null }, makeCtx());
+  const h2 = invoke('projectile', { ...P, ttl: null }, makeCtx());
   assert.ok(h2.entity.w > 0 && h2.entity.h > 0, 'default box intact');
 });
 

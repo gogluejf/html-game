@@ -73,7 +73,7 @@ assert.equal(weapon.id, 'explosiveBomb');
 // The macro's carrier is the ballistic primitive (renamed from 'bomb' in
 // d3c7571e) — the entity carries the PRIMITIVE id, the handle carries the
 // MACRO id ('explosiveBomb', asserted above).
-assert.equal(weapon.entity._attackId, 'ballistic');
+assert.equal(weapon.entity._attackId, 'projectile');
 for (let i = 0; i < 100; i++) U.update(dt);
 assert.equal(weapon._completed, true);
 console.log('PASS real tryFire bomb → host → fuse detonation');
@@ -96,7 +96,7 @@ U.getCollisionWorld().remove(target);
 U.loadActiveZone(zone, { solids: zone.platforms, enemies: [], barrels: [], powerups: [], checkpoints: [] });
 assert.equal(h._cancelled, true);
 assert.equal(U.bombAttacks.roots.size, 0);
-assert.ok(!projectilePool.items.some(s => s.alive && s._attackId === 'ballistic'));
+assert.ok(!projectilePool.items.some(s => s.alive && s._arcRecipe));
 console.log('PASS real collision dispatch and zone teardown');
 
 // 'bomb' was the PRIMITIVE id, renamed to 'ballistic' in d3c7571e — it is not
@@ -124,7 +124,7 @@ for (const team of ['ally', 'foe']) {
     ['top corner', { x: 342, y: 240 }, 30, 120, 21, -60],
   ]) {
     reset(block);
-    const h = U.spawnBombAttack('ballistic', { origin, speed: 0, arc: 0, ttl: 2, team });
+    const h = U.spawnBombAttack('projectile', { origin, speed: 0, arc: 0, ttl: 2, team });
     const e = h.entity;
     e.vx = vx; e.vy = vy;
     U.update(dt);
@@ -160,7 +160,7 @@ for (const team of ['ally', 'foe']) {
 
   for (const bounce of [true, false]) {
     reset({ ...block, h: 12, oneWay: true });
-    const h = U.spawnBombAttack('ballistic', { origin: { x: 400, y: 272 },
+    const h = U.spawnBombAttack('projectile', { origin: { x: 400, y: 272 },
       speed: 0, arc: 0, ttl: 2, team, bounce });
     h.entity.vy = -120;
     for (let i = 0; i < 20; i++) U.update(dt);

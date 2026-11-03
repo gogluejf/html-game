@@ -35,7 +35,7 @@ const DEFAULTS = Object.freeze({
 
 defineMacro('clusterBomb', {
   attacks: [
-    { id: 'ballistic', role: 'carrier' },
+    { id: 'projectile', role: 'carrier' },
     { id: 'spawnSplit', role: 'payload' },
   ],
   params: { ...DEFAULTS },
@@ -107,7 +107,7 @@ defineMacro('clusterBomb', {
       },
     });
 
-    const carrier = invoke('ballistic', {
+    const carrier = invoke('projectile', {
       team: p.team ?? p.blastTeam,
       speed: p.speed,
       direction: p.direction,
