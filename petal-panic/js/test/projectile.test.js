@@ -313,4 +313,46 @@ ok('spawnArcing e2e: rock:true gives a real rock-look Projectile', () => {
   assert.equal(ent.w, 18, `w=${ent.w}`);
   assert.equal(ent.h, 18, `h=${ent.h}`);
 });
+
+// --- Task 2.1: outline thickness is data-driven (sheet `outline` field) --------
+ok('outline: thorn (sheet declares none) gets the default contour', () => {
+  const p = new Projectile(0, 0, 0, true);
+  assert.equal(getProjectileSpriteData('thorn').outline, undefined, 'thorn sheet declares no outline');
+  assert.ok(p._outline, 'default-2 contour created for thorn');
+});
+ok('outline: rock sheet declares 0 → no outline (via applyRockLook)', () => {
+  const p = new Projectile(0, 0, 0, true);
+  p.w = 18; p.h = 18; p.applyRockLook();
+  assert.equal(getProjectileSpriteData('rock_medium').outline, 0, 'sheet value passthrough');
+  assert.equal(p._outline, null, 'outline: 0 → none');
+});
+ok('outline: bomb (sheet declares none) gets the default contour', () => {
+  const b = new Projectile(0, 0, 0, true, 'bomb');
+  assert.equal(getProjectileSpriteData('bomb').outline, undefined, 'bomb sheet declares no outline');
+  assert.ok(b._outline, 'default-2 contour created for bomb');
+});
+ok('outline: a sheet-declared custom thickness (3) reaches the render', () => {
+  // Drive a non-default thickness through the REAL initialize() path by
+  // patching the loaded thorn sheet data (restored in finally).
+  const data = getProjectileSpriteData('thorn');
+  assert.ok(data, 'thorn sheet loaded');
+  const orig = data.outline;
+  try {
+    data.outline = 3;
+    const p = new Projectile(0, 0, 0, true);
+    assert.ok(p._outline, 'outline created for the configured thickness');
+    // No frames in node → spriteOutline uses the box fallback: the stroke is
+    // centered on the path, so lineWidth = 2t. Observable wiring proof.
+    const seen = {};
+    const ctx = {
+      save() {}, restore() {},
+      strokeRect() { seen.strokeRect = true; },
+      set lineWidth(v) { seen.lineWidth = v; },
+    };
+    p._outline.render(ctx);
+    assert.equal(seen.lineWidth, 6, `lineWidth=${seen.lineWidth} — expected 2×3`);
+  } finally {
+    data.outline = orig;
+  }
+});
 console.log(`\n${passed} assertions passed.`);

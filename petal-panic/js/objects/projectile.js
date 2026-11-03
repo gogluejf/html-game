@@ -237,9 +237,14 @@ export class Projectile extends Entity {
         // nose points along travel regardless of spawn path. Bombs keep their
         // own fuse-forward orientation (mirrorX + settle ease-back).
         if (type !== 'bomb') this.orientSprite(this.vx, this.vy);
-        // White outline — keeps fast small shots readable.
+        // White outline — keeps fast small shots readable. Thickness is
+        // data-driven (task 2.1): the sheet JSON's `outline` field (rock = 0
+        // → none); default 2 = the historical contour.
         if (wantOutline) {
-          this._outline = spriteOutline({ color: '#ffffff', thickness: 2, opacity: 1.0 }, this);
+          const thickness = data.outline ?? 2;
+          if (thickness > 0) {
+            this._outline = spriteOutline({ color: '#ffffff', thickness, opacity: 1.0 }, this);
+          }
         }
       } catch { /* legacy rect path stays active */ }
     }
@@ -269,10 +274,18 @@ export class Projectile extends Entity {
    */
   applyRockLook() {
     this._rockLook = true;
-    this._outline = null; // rock: no outline (sheet declares outline: 0)
     const data = spriteData.get('rock_medium');
     const animName = SPRITE_TARGETS.rock_medium.anim;
+    // Outline is data-driven (task 2.1): the rock sheet's `outline` field is
+    // the single source of truth (declares 0 → none; default 2 matches the
+    // thorn contour). Pre-boot (data absent) → no outline — the placeholder
+    // art never draws one either.
+    this._outline = null;
     if (!data?.anims[animName]) return; // pre-boot → rockDrawer in draw()
+    const thickness = data.outline ?? 2;
+    if (thickness > 0) {
+      this._outline = spriteOutline({ color: '#ffffff', thickness, opacity: 1.0 }, this);
+    }
     const w = this.w, h = this.h; // carrier physics box (square, 18px)
     this.sprite = { anchor: 'center', anims: data.anims };
     Object.defineProperty(this.sprite, 'frames', { get: () => spriteFrames.get('rock_medium') });

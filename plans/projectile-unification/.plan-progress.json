@@ -77,10 +77,18 @@
     },
     "2.1": {
       "number": "2.1",
-      "status": "not_started",
+      "status": "done",
       "name": "Read outline from sheet JSON",
       "milestone": "Per-type Outline Config",
-      "milestone_number": 2
+      "milestone_number": 2,
+      "summary": {
+        "done": "Outline thickness is data-driven from the sheet JSON's top-level `outline` field. parseSheet (spriteData.js) extracts it (last-declared-wins across multi-sheet arrays, same replace semantics as anims; only finite non-negative NUMBERS accepted \u2014 booleans/strings rejected; absent \u2192 undefined) and returns { anims, outline } (JSDoc + header model updated). Projectile.initialize() creates the white contour with `data.outline ?? 2` and only when > 0 (replaces the hardcoded 2); applyRockLook() (1.5's opt-in rock look) reads the rock_medium sheet's value the same way \u2014 rock declares 0 \u2192 none, pre-boot \u2192 none. Net behavior change: zero for existing assets (only the two rock sheets declare outline: 0; thorn/bomb/saw/spread/homing/explosive declare none \u2192 default 2, byte-identical contour). Tests: spriteData.test.js +3 (real rock_medium=0, real thorn=undefined, synthetic 3/0/2.5/absent/'nope'/'2'/true/-1), projectile.test.js +4 (thorn default contour, rock 0\u2192none, bomb default contour, custom thickness 3 reaches the render \u2014 asserted via spriteOutline's box-fallback lineWidth=2t on a real initialize() with patched sheet data).",
+        "decisions": "parseSheet passes the raw declared value; the default (2) lives in the consumer (Projectile), per the plan ('Projectile reads animData.outline (default 2)'). Numbers-only gate (typeof number) over Number() coercion \u2014 reviewer A1/B3: the coercion gate admitted true\u21921 and \"\"\u21920, looser than the spec's 'finite numbers \u2265 0'. No upper bound added (B4 \u2014 spec only requires \u22650; canvas clamps degenerate values). spriteOutline's sub-1 clamp (0.5\u21921px) left as-is \u2014 pre-existing effect behavior (A3).",
+        "tradeoffs": "None \u2014 additive return key; all 8 parseSheet consumers verified to touch only .anims (reviewers probed levelAssets/coin/object/projectile/frameLoader/spriteBurst/hud + all 5 parseSheet test files for shape assertions).",
+        "failures": "None new: matrix = exactly the 9 known baseline failures (both reviewers re-ran). spriteData.test.js 16/16; projectile.test.js 48/48.",
+        "confidence": "high",
+        "lessons_learned": "For 'value reaches the effect' wiring tests where the effect keeps its parameter in a closure: spriteOutline's box-fallback render path sets ctx.lineWidth = 2t \u2014 a recording ctx makes the thickness observable without touching the effect."
+      }
     },
     "3.1": {
       "number": "3.1",

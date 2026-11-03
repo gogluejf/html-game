@@ -7,7 +7,9 @@
 // This module is PURE (no DOM, no game state). It turns raw sheet JSON into a
 // runtime-ready model:
 //
-//   SpriteData = { anims: { [animName]: AnimData } }
+//   SpriteData = { anims: { [animName]: AnimData },
+//                  outline: number | undefined }  // task 2.1: sheet-declared
+//                                                 // contour thickness (0 = none)
 //   AnimData   = { fps, mode, direction, timing,
 //                  frames: [{ file, offset: {x,y}|null, scale: {sx,sy}|null }],
 //                  collisionBox: {x,y,w,h},
@@ -39,13 +41,21 @@ const TIMINGS = new Set(['fps', 'relative']);
  * several sheets, e.g. checkpoint level + boss flags).
  *
  * @param {object|object[]} sheetJson parsed _sheet.json content(s)
- * @returns {{anims: Object<string, object>}} SpriteData
+ * @returns {{anims: Object<string, object>, outline: (number|undefined)}} SpriteData
  */
 export function parseSheet(sheetJson) {
   const sheets = Array.isArray(sheetJson) ? sheetJson : [sheetJson];
   const anims = {};
+  // Per-sheet outline thickness (task 2.1): top-level `outline` field in the
+  // sheet JSON (e.g. rock = 0 → no outline). Last declared wins (same
+  // replace semantics as anims); only finite non-negative NUMBERS are
+  // accepted (booleans/strings rejected); absent → undefined (consumer
+  // applies its own default — Projectile uses 2).
+  let outline;
 
   for (const sheet of sheets) {
+    const o = sheet?.outline;
+    if (typeof o === 'number' && Number.isFinite(o) && o >= 0) outline = o;
     const entities = sheet?.entities;
     if (!Array.isArray(entities)) {
       throw new Error('parseSheet: missing "entities" array in sheet JSON');
@@ -97,7 +107,7 @@ export function parseSheet(sheetJson) {
   if (Object.keys(anims).length === 0) {
     throw new Error('parseSheet: no animations found');
   }
-  return { anims };
+  return { anims, outline };
 }
 
 /** Parse the frame list of one entity: files + optional per-frame tuning. */

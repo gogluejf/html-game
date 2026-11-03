@@ -167,3 +167,29 @@ test('loadFrames resolves empty map without a DOM (node)', async () => {
   assert.ok(imgs instanceof Map);
   assert.equal(imgs.size, 0); // no Image in node → nothing loaded, no throw
 });
+
+// --- Outline field (task 2.1) -------------------------------------------------
+test('parseSheet: top-level outline passes through (rock_medium = 0)', () => {
+  const data = parseSheet(sheet('projectiles/rock_medium/medium_shoot_sheet.json'));
+  assert.equal(data.outline, 0);
+});
+
+test('parseSheet: absent outline → undefined (consumer default applies)', () => {
+  const data = parseSheet(sheet('projectiles/thorn/shoot_sheet.json'));
+  assert.equal(data.outline, undefined);
+});
+
+test('parseSheet: synthetic outline — 3 and 0 pass through, non-numbers ignored', () => {
+  const mk = (outline) => ({
+    entities: [{ anim: 'x', frames: [{ file: 'x_f1.png', row: 0, col: 0, bbox: [0, 0, 10, 10], offset: { x: -5, y: -5 }, scale: { sx: 1, sy: 1 } }] }],
+    ...(outline != null ? { outline } : {}),
+  });
+  assert.equal(parseSheet(mk(3)).outline, 3);
+  assert.equal(parseSheet(mk(0)).outline, 0);
+  assert.equal(parseSheet(mk(2.5)).outline, 2.5, 'fractional accepted (spriteOutline rounds)');
+  assert.equal(parseSheet(mk()).outline, undefined, 'absent → undefined');
+  assert.equal(parseSheet(mk('nope')).outline, undefined, 'non-numeric string ignored');
+  assert.equal(parseSheet(mk('2')).outline, undefined, 'numeric string rejected (authors write numbers)');
+  assert.equal(parseSheet(mk(true)).outline, undefined, 'boolean rejected');
+  assert.equal(parseSheet(mk(-1)).outline, undefined, 'negative ignored');
+});
