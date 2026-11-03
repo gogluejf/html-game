@@ -301,6 +301,10 @@ export function registerCollisionHandlers(collisionWorld) {
         heroEnt.timers.set('intangible', Math.max(heroEnt.timers.get('intangible'), heroEnt.iFrameTimer));
         heroEnt.iFrameTimer = 0;
       }
+      // Stamp the hit time so the HUD plays the 'angry' expression briefly.
+      // (Contact damage doesn't route through takeHit(), which is the only
+      // other place lastHitAt is set.)
+      heroEnt.lastHitAt = performance.now();
       // red vignette on contact damage (design §12 "Hero damaged").
       Effects.heroDamaged();
       // track hits taken from enemy contact (design §4.1).
