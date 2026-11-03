@@ -1,0 +1,55 @@
+{
+  "file": "petal-panic/assets/heroes/scarlet_vale/arrive_sheet.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 3,
+  "kind": "animation",
+  "description": "Scarlet clown car arrival (intro)",
+  "entities": [
+    {
+      "name": "scarlet_vale",
+      "anim": "arrive",
+      "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+      "frames": [
+        {
+          "file": "arrive_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            26,
+            131,
+            724,
+            535
+          ]
+        },
+        {
+          "file": "arrive_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            747,
+            140,
+            738,
+            526
+          ]
+        },
+        {
+          "file": "arrive_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1477,
+            146,
+            695,
+            519
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-11-03T00:42:37",
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "pass": "/home/goglue/tmp/scarlet-arrive-v1"
+  }
+}
