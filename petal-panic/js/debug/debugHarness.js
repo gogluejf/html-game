@@ -177,8 +177,8 @@ function debugDropBarrels() {
 
   for (let i = 0; i < count; i++) {
     const type = BARREL_DROP_ORDER[i];
-    const x = startX + dir * i * UNIT_PX_X; // 1 unit apart along facing
-    _debugBarrelDrops.push({ timer: i * 0.5, type, x, y: spawnY, cancelled: false });
+    const x = startX + dir * i * UNIT_PX_X * 0.5; // 0.5 units apart along facing
+    _debugBarrelDrops.push({ timer: i * 0.25, type, x, y: spawnY, cancelled: false });
   }
   Debug.logEvent(`DEBUG: dropping ${count} barrels (${BARREL_DROP_ORDER.join(', ')})`);
 }
