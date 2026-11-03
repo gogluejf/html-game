@@ -22,8 +22,8 @@
       149
      ],
      "offset": {
-      "x": -100,
-      "y": -7
+      "x": -204.5,
+      "y": -74.5
      },
      "scale": {
       "sx": 1,
@@ -43,8 +43,8 @@
       217
      ],
      "offset": {
-      "x": 0,
-      "y": 0
+      "x": -131.5,
+      "y": -108.5
      },
      "scale": {
       "sx": 1,
@@ -54,11 +54,11 @@
      "durUnits": 1
     }
    ],
-   "playback": "loop",
+   "playback": "once",
    "direction": "forward",
    "collision": {
     "x": -97,
-    "y": -100,
+    "y": -96,
     "w": 194,
     "h": 192
    },

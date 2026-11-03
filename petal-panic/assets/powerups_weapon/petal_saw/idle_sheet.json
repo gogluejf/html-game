@@ -19,7 +19,17 @@
       7,
       274,
       158
-     ]
+     ],
+     "offset": {
+      "x": -137,
+      "y": -79
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_f2.png",
@@ -30,7 +40,17 @@
       8,
       284,
       156
-     ]
+     ],
+     "offset": {
+      "x": -142,
+      "y": -78
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_f3.png",
@@ -41,7 +61,17 @@
       0,
       352,
       172
-     ]
+     ],
+     "offset": {
+      "x": -176,
+      "y": -86
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_f4.png",
@@ -52,10 +82,34 @@
       9,
       272,
       154
-     ]
+     ],
+     "offset": {
+      "x": -136,
+      "y": -77
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/powerups_weapon/petal_saw"
+   "frames_dir": "petal-panic/assets/powerups_weapon/petal_saw",
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -133,
+    "y": -75,
+    "w": 266,
+    "h": 150
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
   }
  ],
  "updated": "2026-10-21"

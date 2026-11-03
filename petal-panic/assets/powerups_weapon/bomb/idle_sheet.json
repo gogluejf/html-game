@@ -19,7 +19,17 @@
       1,
       253,
       152
-     ]
+     ],
+     "offset": {
+      "x": -126.5,
+      "y": -76
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_f2.png",
@@ -30,7 +40,17 @@
       0,
       273,
       154
-     ]
+     ],
+     "offset": {
+      "x": -136.5,
+      "y": -77
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_f3.png",
@@ -41,7 +61,17 @@
       0,
       345,
       155
-     ]
+     ],
+     "offset": {
+      "x": -172.5,
+      "y": -77.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_f4.png",
@@ -52,10 +82,34 @@
       1,
       255,
       152
-     ]
+     ],
+     "offset": {
+      "x": -127.5,
+      "y": -76
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/powerups_weapon/bomb"
+   "frames_dir": "petal-panic/assets/powerups_weapon/bomb",
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -122.5,
+    "y": -72,
+    "w": 245,
+    "h": 144
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
   }
  ],
  "updated": "2026-10-21"
