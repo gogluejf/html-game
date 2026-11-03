@@ -101,11 +101,15 @@ export class Hero extends Entity {
 
     // ---------------------------------------------------------------------
     // WALLET — the single source of truth for "what I hold right now."
-    //   current  : live values (change as you play)
-    //   snapshot : values captured on area entry (the "photo")
-    // On death-restart, current is restored from snapshot (anti-farming).
-    // `lives` is intentionally NOT here — it is managed by the life/continue
-    // system, not the per-area wallet. Score is computed on demand, not stored.
+    //   current   : live values (change as you play)
+    //   snapshots : append-only zone-snapshot chain { 'level:area' -> entry
+    //               wallet state }, recorded once per genuine zone entry
+    //               (state-persistence.md §1). Any zone's entry state can be
+    //               restored, not just the last one.
+    // On death-restart / continue, current is rolled back to the target
+    // zone's snapshot (anti-farming). `lives` is intentionally NOT here — it
+    // is managed by the life/continue system, not the per-zone wallet. Score
+    // is computed on demand from the trace, not stored.
     // ---------------------------------------------------------------------
     this.maxEnergy = heroDef.stats.stamina;
     this.wallet = {
@@ -114,11 +118,7 @@ export class Hero extends Entity {
         energy: heroDef.stats.stamina,
         kills: 0,
       },
-      snapshot: {
-        coins: 0,
-        energy: heroDef.stats.stamina,
-        kills: 0,
-      },
+      snapshots: {},
     };
     this.shield = 0;
     // Weapon selection (special-weapons.md): 'thorn' (default weapon) or a

@@ -12,7 +12,7 @@ import { S, getState, setState, tryTransition } from '../core/state.js';
 import { fireManual } from '../effects/index.js';
 import { Debug } from '../debug/debug.js';
 import { makeCheckpoint } from '../objects/object.js';
-import { showAreaEntry, formatAreaId, recordAreaEntrySnapshot, setAreaEntryFadeOutCallback, startLife, continueRun, saveCurrentRun } from '../systems/lifecycle.js';
+import { showAreaEntry, formatAreaId, recordZoneSnapshot, setAreaEntryFadeOutCallback, startLife, continueRun, saveCurrentRun } from '../systems/lifecycle.js';
 import { instantiateZone } from './build.js';
 import { restoreBossRunFloor } from '../boss/bossFlow.js';
 
@@ -151,7 +151,7 @@ export function debugWrapToNextArea() {
     }
     const sp1 = z1.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
     hero.checkpoint = { x: sp1.x, y: sp1.y - hero.h };
-    recordAreaEntrySnapshot(hero);
+    recordZoneSnapshot(hero);
     ctx.camera.setZoneBounds(z1);
     showAreaEntry(hero, ctx.areaContext);
     beginAreaEntryPresentation(); // reset the timer (transition may not fire if already in AREA_ENTRY)
@@ -191,7 +191,7 @@ export function debugWrapToNextArea() {
     const sp = nextZone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
     hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
   }
-  recordAreaEntrySnapshot(hero);
+  recordZoneSnapshot(hero);
   ctx.camera.setZoneBounds(nextZone);
   showAreaEntry(hero, ctx.areaContext);
   beginAreaEntryPresentation(); // reset the timer (transition may not fire if already in AREA_ENTRY)
@@ -264,7 +264,7 @@ export function stepClearSequence(dt) {
       // Accounting snapshot (game-rules.md §4): record the entry totals for
       // this genuine area advance so a later death restart of the area can
       // roll the run stats back to them (the 'rollback' policy).
-      recordAreaEntrySnapshot(hero);
+      recordZoneSnapshot(hero);
       showAreaEntry(hero, ctx.areaContext);
     }
   } else if (clearSeq.state === 'fadeIn') {

@@ -405,7 +405,7 @@ test('startLife: accounting rollback — a failed attempt\'s kills/coins/score d
   // The wallet is created by the Hero constructor. Record the entry snapshot
   // (fresh wallet → zero coins/kills).
   const ctx = makeAreaContext(h);
-  L.recordAreaEntrySnapshot(h);
+  L.recordZoneSnapshot(h);
 
   // Simulate a failed attempt: the hero kills an enemy and collects coins
   // during the attempt (the wallet accumulates).
@@ -432,14 +432,14 @@ test('startLife: accounting rollback — a genuine area advance records a fresh 
   h.lives = 3;
   const ctx = makeAreaContext(h);
   // Record the entry snapshot for the current area (fresh wallet).
-  L.recordAreaEntrySnapshot(h);
+  L.recordZoneSnapshot(h);
 
   // Simulate a genuine area advance: the hero advances to the next area with
   // accumulated wallet (the previous area's kills/coins).
   h.wallet.current.kills += 2;
   h.wallet.current.coins += 3;
   h.currentArea = 2; // advance to the next area
-  L.recordAreaEntrySnapshot(h); // record the NEW entry snapshot (with the accumulated stats)
+  L.recordZoneSnapshot(h); // record the NEW entry snapshot (with the accumulated stats)
 
   // Simulate a failed attempt in the new area: more kills/coins accumulate.
   h.wallet.current.kills += 1;
@@ -521,6 +521,91 @@ test('integration: continue from 2-3 lands the hero at the level entry (area -1)
   L.areaEntryOnAction('confirm', hero);
   assert.equal(getState(), S.PLAY, 'back in PLAY after confirming the entry screen');
   assert.ok(Math.abs(hero.x - ZONE_ENTRY_X) < 1, `hero at level entry x=${hero.x} (not 6000)`);
+});
+
+// --- Zone-snapshot chain (state-persistence.md §1, task 1.1) -----------------
+
+test('recordZoneSnapshot: appends one entry per genuine zone entry; death-restart never re-records', () => {
+  const h = makeTestHero(); // 1:1, fresh wallet (coins/energy/kills zeroed)
+  assert.deepEqual(h.wallet.snapshots, {}, 'no snapshots before the first entry');
+
+  // Genuine entry of 1-1 (e.g. startGame): exactly one snapshot is recorded.
+  L.recordZoneSnapshot(h);
+  assert.deepEqual(h.wallet.snapshots, { '1:1': { coins: 0, energy: h.maxEnergy, kills: 0 } }, '1-1 entry recorded');
+
+  // A failed attempt in 1-1 accumulates rewards — but a death restart of the
+  // SAME zone must NOT call recordZoneSnapshot (re-recording would launder the
+  // failed attempt's totals into the "entry" state). Simulate the restart via
+  // startLife and prove the 1-1 entry value is untouched.
+  h.wallet.current.kills += 2;
+  h.wallet.current.coins += 3;
+  const ctx = makeAreaContext(h);
+  setState(S.PLAY);
+  L.startLife(h, ctx); // same-zone death retry
+  assert.equal(Object.keys(h.wallet.snapshots).length, 1, 'still exactly one snapshot after a death-restart');
+  assert.deepEqual(h.wallet.snapshots['1:1'], { coins: 0, energy: h.maxEnergy, kills: 0 }, '1-1 entry unchanged by the retry');
+
+  // A GENUINE advance to 1-2 records a second entry with the carried totals.
+  h.wallet.current.kills += 2;
+  h.wallet.current.coins += 3;
+  h.currentArea = 2;
+  L.recordZoneSnapshot(h);
+  assert.equal(Object.keys(h.wallet.snapshots).length, 2, 'advance appended a 1-2 entry');
+  assert.deepEqual(h.wallet.snapshots['1:2'], { coins: 3, energy: h.maxEnergy, kills: 2 }, '1-2 entry = carried totals');
+});
+
+test('restoreZoneState: rolls coins back to a NAMED zone even when the hero is elsewhere', () => {
+  const h = makeTestHero();
+  L.recordZoneSnapshot(h); // 1-1 entry: coins 0
+  h.wallet.current.coins += 5; // progress through 1-1
+  h.currentArea = 2;
+  L.recordZoneSnapshot(h); // 1-2 entry: coins 5
+  h.wallet.current.coins += 7; // now deep in 1-2 with 12 coins
+
+  // Restore an EARLIER zone while currently in 1-2 (the Continue-to-1-1 shape).
+  L.restoreZoneState(h, '1:1');
+  assert.equal(h.wallet.current.coins, 0, 'coins rolled back to the 1-1 entry value from inside 1-2');
+  assert.equal(h.currentArea, 2, 'restore only touches the wallet, not the position');
+
+  // And the other direction: restore 1-2 again.
+  L.restoreZoneState(h, '1:2');
+  assert.equal(h.wallet.current.coins, 5, 'coins rolled back to the 1-2 entry value');
+});
+
+test('restoreZoneState: no-op for an unknown zone (nothing recorded there)', () => {
+  const h = makeTestHero();
+  L.recordZoneSnapshot(h); // 1-1 only
+  h.wallet.current.coins = 9;
+  L.restoreZoneState(h, '9:9');
+  assert.equal(h.wallet.current.coins, 9, 'unknown zone leaves the wallet untouched');
+});
+
+test('same-zone death-retry rollback is identical to the legacy single-slot restore', () => {
+  // Legacy behavior: a same-area death restart restores the area's entry
+  // wallet. The chain-based restoreAreaEntryStats must produce the identical
+  // result for that path.
+  const h = makeTestHero();
+  const ctx = makeAreaContext(h);
+  L.recordZoneSnapshot(h); // 1-1 entry
+  h.wallet.current.kills += 4;
+  h.wallet.current.coins += 6;
+  h.x = 3500;
+  h.checkpoint = { x: 100, y: 400 };
+  setState(S.PLAY);
+  L.startLife(h, ctx);
+  assert.equal(h.wallet.current.kills, 0, 'kills restored to the 1-1 entry value');
+  assert.equal(h.wallet.current.coins, 0, 'coins restored to the 1-1 entry value');
+  // Direct helper agrees with the startLife path.
+  h.wallet.current.coins = 8;
+  L.restoreAreaEntryStats(h);
+  assert.equal(h.wallet.current.coins, 0, 'restoreAreaEntryStats == restoreZoneState(current zone)');
+});
+
+test('startGame: seeds the snapshot chain with the 1-1 entry', () => {
+  const h = L.makeHero(HEROES.scarlet);
+  const result = L.startGame({ oldHero: h }, HEROES.scarlet);
+  assert.ok(result.wallet?.snapshots, 'wallet carries the snapshot chain');
+  assert.deepEqual(result.wallet.snapshots, { '1:1': { coins: 0, energy: result.maxEnergy, kills: 0 } }, 'fresh run has exactly the 1-1 entry');
 });
 
 // --- Menu-hub plan §5.3 — progress unlock hooks --------------------------------

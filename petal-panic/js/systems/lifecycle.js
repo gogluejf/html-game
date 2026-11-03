@@ -34,59 +34,77 @@ import { tryTransition, getState, setState, S } from '../core/state.js';
 import { TUNING } from '../tuning.js';
 import { loadStore, saveStore, clearRunSave, updateProgress, markMediaUnlocked } from './progressStore.js';
 
-// --- Area-entry accounting snapshot (game-rules.md §2/§4) -------------------
+// --- Zone-snapshot chain (state-persistence.md §1) ---------------------------
 //
-// game-rules.md §4: "Restoring enemies, barrels, and pickups is confirmed;
-// whether their rewards accumulate repeatedly or roll back to the area's entry
-// totals is not." The concrete policy is GAME_RULES.coins.accountingOnFailure
-// (the TUNING block): 'rollback'. This is ENFORCED here, not just declared —
-// a per-area-entry snapshot of the hero's run stats (score inputs, kills,
-// coins) is recorded the first time an area is entered, and restored on every
-// subsequent startLife() so a failed attempt's kills/coins/score do NOT
-// accumulate into the next attempt (which would create the extra-life / coin
-// farming loop the doc warns about).
+// Every GENUINE zone entry records a snapshot of the hero's wallet (the
+// farmable resources: coins + kills — the exact fields the anti-farming
+// rollback restores; energy is reset to full separately by the transition
+// rules). Snapshots form an append-only chain on the wallet keyed by zone id
+// (`'level:area'`), so ANY zone's entry state can be restored — not just the
+// last one. That is what makes Continue-to-1-1 and Save&Quit able to restore
+// the correct state for any target zone.
 //
-// The snapshot is keyed to the (level, area) the hero is entering, so a
-// genuine area entry (a new area) records a fresh snapshot, while a death
-// restart of the SAME area restores the original entry snapshot. Continue
-// returns to area 1 of the current level (a new area), so it records a fresh
-// snapshot — and, per GAME_RULES.coins.resetOnContinue, the coin tally is
-// additionally zeroed on the continue itself.
+// A snapshot is taken exactly once, the instant the player enters the zone —
+// on startGame, area advance, continue, and reward next-level. It is NEVER
+// re-taken on a death-restart of the same zone: that path must keep the
+// original entry snapshot (re-recording would launder a failed attempt's
+// coins/kills into the fresh attempt — the farming loop the doc forbids).
 //
-// WeakMap so the snapshot is garbage-collected with the hero.
-// (The area-entry wallet snapshot now lives on hero.wallet.snapshot +
-//  hero._walletSnapshotArea — no separate WeakMap needed.)
+// Score is intentionally NOT stored in the snapshot: it is computed on demand
+// from the append-only trace (calculateScore in stats.js), which gameplay
+// rollback never touches. The wallet fields (coins, kills) are the inputs the
+// existing rollback uses, so storing them preserves today's semantics exactly.
+//
+// The chain lives ON the wallet (hero.wallet.snapshots) so a death-restart /
+// continue can restore with a single copy and so Save&Quit can persist the
+// whole chain with the rest of the run state.
 
-/**
- * Record the area-entry snapshot for the hero's current (level, area). Called
- * on a GENUINE area entry (startArea / continueRun / rewardOnAction next
- * level / startGame) — NOT on a death restart of the same area, which must
- * keep the original entry snapshot.
- *
- * The snapshot is stored ON the wallet (wallet.snapshot), so a death-restart
- * can restore it with a single copy. We also record WHICH area the snapshot
- * belongs to so restore only applies within that same area.
- * @param {Hero} h
- */
-export function recordAreaEntrySnapshot(h) {
-  if (!h.wallet) return;
-  h.wallet.snapshot = { ...h.wallet.current };
-  h._walletSnapshotArea = `${h.currentLevel}:${h.currentArea}`;
+/** The hero's current zone id ('level:area'). */
+export function currentZoneId(h) {
+  return `${h.currentLevel}:${h.currentArea}`;
 }
 
 /**
- * Restore the hero's wallet to the recorded area-entry snapshot (if any).
- * A no-op when there is no snapshot or the snapshot was taken for a DIFFERENT
- * area (a genuine advance re-snapshots; only a same-area death-restart
- * restores). This is the anti-farming reset: a failed attempt's coins/
- * energy/kills do not carry into the fresh attempt (game-rules.md §4).
- * The append-only trace is intentionally untouched.
+ * Record the zone-entry snapshot for the hero's current (level, area). Called
+ * on a GENUINE zone entry ONLY (startGame / startArea / continueRun /
+ * rewardOnAction next level / debug wrap) — NOT on a death restart of the
+ * same zone, which must keep the original entry snapshot. Re-entering a zone
+ * later (e.g. continue back to area 1) overwrites that zone's entry with the
+ * new totals, per the doc's "recorded at entry" rule.
  * @param {Hero} h
  */
-function restoreAreaEntryStats(h) {
-  if (!h.wallet || h._walletSnapshotArea === undefined) return;
-  if (h._walletSnapshotArea !== `${h.currentLevel}:${h.currentArea}`) return;
-  h.wallet.current = { ...h.wallet.snapshot };
+export function recordZoneSnapshot(h) {
+  if (!h.wallet) return;
+  h.wallet.snapshots = h.wallet.snapshots ?? {};
+  h.wallet.snapshots[currentZoneId(h)] = { ...h.wallet.current };
+}
+
+/**
+ * Roll the hero's wallet back to the recorded entry state of a NAMED zone.
+ * No-op when that zone has no snapshot (nothing was ever recorded there).
+ * This is the anti-farming reset: a failed attempt's coins/energy/kills do
+ * not carry into the fresh attempt (state-persistence.md §2.1/§2.2). The
+ * append-only trace is intentionally untouched.
+ * @param {Hero} h
+ * @param {string} zoneId the zone whose entry state to restore ('level:area')
+ */
+export function restoreZoneState(h, zoneId) {
+  if (!h.wallet || !h.wallet.snapshots) return;
+  const s = h.wallet.snapshots[zoneId];
+  if (!s) return;
+  h.wallet.current = { ...s };
+}
+
+/**
+ * Restore the hero's wallet to the CURRENT zone's entry snapshot (if any).
+ * Equivalent to `restoreZoneState(h, currentZoneId(h))` — this is the
+ * same-zone death-retry path and behaves IDENTICALLY to the legacy
+ * single-slot restoreAreaEntryStats. Kept as a named helper for the
+ * startLife call site.
+ * @param {Hero} h
+ */
+export function restoreAreaEntryStats(h) {
+  restoreZoneState(h, currentZoneId(h));
 }
 
 // The area a fresh run begins in. Per lifecycle.md §1/§4 a new game and a
@@ -361,7 +379,7 @@ export function startGame(ctx, heroDef) {
   // Accounting snapshot (game-rules.md §4): record the (fresh) wallet entry
   // totals for the first area so a later death restart can roll the wallet
   // back to them (the anti-farming reset).
-  recordAreaEntrySnapshot(h);
+  recordZoneSnapshot(h);
   // Fresh generation choices for a genuinely new game (lifecycle.md §1/§6).
   // Only when the caller provided the area context (update.js does); a bare
   // startGame (e.g. unit tests) leaves the existing world untouched. Death and
@@ -415,7 +433,7 @@ export function startArea(h, level, areaIdx) {
   // Accounting snapshot (game-rules.md §4): record the entry totals for this
   // genuine area entry so a later death restart of the same area can roll the
   // run stats back to them (the 'rollback' policy).
-  recordAreaEntrySnapshot(h);
+  recordZoneSnapshot(h);
   // checkpoints.md §3: the shared area-entry screen also opens every area
   // advance (and the boss zone, identified as the level's boss area).
   showAreaEntry(h, ctxOf(h));
@@ -500,7 +518,7 @@ export function continueRun(h, ctx) {
   // resetLevelCoinTally above already zeroed the coin tally; the snapshot
   // captures the (now-zeroed) entry totals so a later death restart of area
   // 1 rolls back to them.
-  recordAreaEntrySnapshot(h);
+  recordZoneSnapshot(h);
   // Position the hero at area 1's entry (checkpoints.md §5, lifecycle.md §4):
   // Continue returns to the current level's area 1 with restored lives and
   // starts a FRESH attempt there — it does NOT resume beside the flag of the
@@ -1084,7 +1102,7 @@ export function rewardOnAction(action, h) {
     // Accounting snapshot (game-rules.md §4): record the (fresh) entry totals
     // for the next level's area 1 so a later death restart can roll the run
     // stats back to them (the 'rollback' policy).
-    recordAreaEntrySnapshot(h);
+    recordZoneSnapshot(h);
     // The presented reward is consumed; the next boss kill presents a fresh
     // one and credits again.
     _rewardData = null;
