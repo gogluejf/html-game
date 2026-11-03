@@ -1,0 +1,115 @@
+{
+ "file": "petal-panic/assets/projectiles/rock_medium/medium_shoot_sheet.png",
+ "size": "957x217",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "Medium rock projectile (4 frames)",
+ "entities": [
+  {
+   "name": "rock_medium",
+   "anim": "shoot",
+   "frames_dir": "petal-panic/assets/projectiles/rock_medium",
+   "frames": [
+    {
+     "file": "medium_shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      220,
+      208
+     ],
+     "offset": {
+      "x": -110,
+      "y": -104
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "medium_shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      220,
+      0,
+      236,
+      208
+     ],
+     "offset": {
+      "x": -118,
+      "y": -104
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "medium_shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      456,
+      0,
+      252,
+      209
+     ],
+     "offset": {
+      "x": -126,
+      "y": -104.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "medium_shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      708,
+      0,
+      249,
+      217
+     ],
+     "offset": {
+      "x": -124.5,
+      "y": -108.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "ping_pong",
+   "collision": {
+    "x": -76,
+    "y": -97,
+    "w": 182,
+    "h": 187
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
+  }
+ ]
+}
