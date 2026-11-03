@@ -22,9 +22,9 @@ Example: dying in 2-3 with lives remaining repeats 2-3. Running out of lives in
 The continue pool is shared across the game. It is a remaining balance, not a
 fixed maximum number of continue uses: additional continues can be earned.
 
-Whether completing a level replenishes lives or preserves the remaining count is
-a design-plan decision. Do not confuse entering a new area with receiving extra
-lives.
+Lives are **preserved** across level clear — they never refill (settled in
+[state persistence](state-persistence.md) §2.4). Do not confuse entering a new
+area with receiving extra lives.
 
 ## 2. Earning continues
 
@@ -74,23 +74,20 @@ ordinary life does not require a separate score screen.
 Score appears at Game Over and on the level reward screen, not on the area-entry
 screen. This design does not redefine the scoring formula.
 
-**Design-plan decision:** score and kill/coin accounting across failed attempts
-and continues. Restoring enemies, barrels, and pickups is confirmed; whether
-their rewards accumulate repeatedly or roll back to the area's entry totals is
-not.
-
-This distinction matters: repeatable pickups, especially extra lives, can create
-farming loops. Do not solve this silently by removing their confirmed respawn
-behavior. The design plan must choose the accounting policy explicitly.
+**Settled:** failed attempts roll coins and score back to the zone's entry
+snapshot (anti-farming). See [state persistence](state-persistence.md) — it is
+the single source of truth for what persists or resets across every transition
+(death, retry, continue, zone/level advance, save & quit).
 
 ## 5. Other persistence decisions
 
-Full-world restoration does not automatically specify the hero's inventory.
-Special slots, selected weapon, energy, temporary powerups, and super meter
-persistence across death, continue, and area advance are design-plan decisions
-(see [special weapons](../architecture/special-weapons.md) — slots clear on
-death AND area advance). Respawn
-protection must remain consistent with [hero mechanics](../architecture/hero-mechanics.md).
+**Settled — see [state persistence](state-persistence.md)** (single source of
+truth): weapon/specials/energy/shield/super reset on death, retry, and continue
+(full energy, weapon gone); everything carries across zone and level advance
+(energy refilled only on level clear); Save & Quit persists the full player
+state plus the per-zone snapshot chain and the generation seed.
+
+Respawn protection must remain consistent with [hero mechanics](../architecture/hero-mechanics.md).
 
 See [lifecycle](lifecycle.md) for the four distinct start events and the lifetime
 of the generated world.

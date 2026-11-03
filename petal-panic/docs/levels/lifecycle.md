@@ -47,8 +47,8 @@ projectiles, and effects from the failed attempt must not leak into the new one.
 The boss zone likewise restarts from its checkpoint, with the encounter reset.
 
 This is **replaying the same arrangement**, not rolling a new one. Restoring the
-world does not settle score, coin, or inventory persistence; those design-plan
-policies are listed in [game rules](game-rules.md).
+world does not settle score, coin, or inventory persistence — those rules live in
+[state persistence](state-persistence.md) (single source of truth).
 
 ## 4. Game continue
 
@@ -64,7 +64,8 @@ continuing after defeat in 2-3 returns to 2-1; reaching 2-3 again reveals the
 same terrain, enemies, barrels, and powerups as before.
 
 Continue is not a new game and does not return to Level 1 unless Level 1 was
-already the current level.
+already the current level. What resets on Continue (coins/score rollback,
+energy, weapon) is defined in [state persistence](state-persistence.md).
 
 ## 5. Normal advancement
 
