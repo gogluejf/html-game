@@ -26,6 +26,7 @@
 import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetLevelCoinTally, resetHeroInventory } from './gameRules.js';
 import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../world/level.js';
 import { getLevelConfig, LEVEL_CONFIGS, AREA_BOSS } from '../world/levelConfigs.js';
+import { getLastWorldSeed } from '../world/build.js';
 import { Hero, WEAPON_THORN } from '../hero/hero.js';
 import {createTrace, record, beginLife, beginContinue, calculateScore} from '../stats.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
@@ -563,6 +564,9 @@ export function isValidSaveMeta(sm) {
   // Areas are 1..4 (ordinary) or 5 (the boss zone, AREA_BOSS). The boss zone is
   // a property of every level (checkpoints.md §1), so any in-bounds level has it.
   if (area < 1 || area > 5) return false;
+  // Optional generation seed: when present it must be a non-negative integer
+  // (build.js newGameSeed rolls >>> 0). Absent → legacy save, fresh roll.
+  if (sm.seed !== undefined && (!Number.isInteger(sm.seed) || sm.seed < 0)) return false;
   return true;
 }
 
@@ -619,6 +623,10 @@ export function saveCurrentRun(h, overrides = {}) {
     level: overrides.level ?? h?.currentLevel ?? 1,
     area: overrides.area ?? h?.currentArea ?? 1,
     score: calculateScore(tTotal, h),
+    // The per-game generation seed (build.js newGameSeed): persisting it lets
+    // a Continue after reload rebuild the EXACT world the run was played on.
+    // Death/continue never reroll, so this is stable for the whole run.
+    seed: getLastWorldSeed(),
     timestamp: Date.now(),
   };
   const store = loadStore();
