@@ -19,7 +19,7 @@ import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../enemies/boris_loon.js';
 import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeSuperCoinBarrel, GameObj } from '../objects/object.js';
 import { Powerup, POWERUP_TYPES, POWERUP_ROLL_TYPES } from '../objects/powerup.js';
 import { ZONE_GROUND_Y, roomFloorTop } from '../world/level.js';
-import { UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
+import { UNIT_PX_X, UNIT_PX_Y, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
 import { clearSeq } from '../world/zoneLifecycle.js';
 import { Effects } from '../effects.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from './debug.js';
@@ -170,6 +170,10 @@ function debugDropBarrels() {
   const dir = h.facing ?? 1;
   const startX = h.x + h.w / 2 + dir * 2 * UNIT_PX_X; // first barrel: 2 units ahead
   const count = BARREL_DROP_ORDER.length;
+  // Fall distance the barrels cover (spawn top → floor). Used to pre-seed each
+  // barrel's velocity so the staggered spawns all LAND together — otherwise the
+  // later (younger) barrels catch up mid-fall and stack on the earlier ones.
+  const fallDist = Math.max(0, floorTop - spawnY);
 
   // Cancel any previous unfinished drop sequence (re-press restarts clean).
   for (const d of _debugBarrelDrops) d.cancelled = true;
@@ -178,7 +182,13 @@ function debugDropBarrels() {
   for (let i = 0; i < count; i++) {
     const type = BARREL_DROP_ORDER[i];
     const x = startX + dir * i * UNIT_PX_X * 0.5; // 0.5 units apart along facing
-    _debugBarrelDrops.push({ timer: i * 0.25, type, x, y: spawnY, cancelled: false });
+    const delay = i * 0.25;
+    // Velocity that makes a barrel spawned `delay` seconds late arrive at the
+    // floor at the same instant as the first: v = sqrt(v0² + 2·g·d − g²·t²),
+    // clamped to terminal velocity (a clamped barrel just lands a hair later).
+    const v0 = 0;
+    const vy = Math.min(MAX_FALL_SPEED, Math.sqrt(Math.max(0, v0 * v0 + 2 * GRAVITY * fallDist - GRAVITY * GRAVITY * delay * delay)));
+    _debugBarrelDrops.push({ timer: delay, type, x, y: spawnY, vy, cancelled: false });
   }
   Debug.logEvent(`DEBUG: dropping ${count} barrels (${BARREL_DROP_ORDER.join(', ')})`);
 }
@@ -193,7 +203,7 @@ export function tickDebugBarrelDrops(dt) {
       d.cancelled = true; // spawn once
       const b = BARREL_DROP_FACTORIES[d.type](d.x, d.y);
       b.gravity = 1; // fall with real gravity (GameObj default is 0 = static)
-      b.vy = 0;
+      b.vy = d.vy ?? 0; // pre-seeded so staggered spawns land together
       ctx.barrels.push(b);
       ctx.collisionWorld.add(b);
       rememberInitial(b); // death-restart restores it to its spawn spot
