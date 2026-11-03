@@ -1,7 +1,7 @@
 // Attack Engine — Ballistic primitive (Task 1.4; formerly 'bomb').
 //
 // The arcing-body primitive: gravity arc, bounce or stop on impact, contact
-// damage, terminal 'detonate' event. Spawns the Special-class 'bomb' physics
+// damage, terminal 'detonate' event. Spawns a Projectile 'bomb' physics
 // carrier (SPECIAL_TYPES id stays 'bomb' — that is the pool/carrier type,
 // NOT this primitive's id).
 //
@@ -11,7 +11,7 @@
 // blast VFX — "what happens when it goes off" is a MACRO concern
 // (explosiveBomb owns the explosion; cluster bombs own the split, etc.).
 //
-// Reuses the EXISTING Special-class physics (gravityValue integration +
+// Reuses the EXISTING Projectile physics (gravityValue integration +
 // solidBehavior bounce via collisionHandlers.js) — this file only owns:
 // spawn translation, per-frame stepping, and lifecycle bridging.
 //
@@ -64,8 +64,8 @@ const DEFAULTS = Object.freeze({
 export const BOMB_SETTLE_VY = 40;
 
 /**
- * Spawn the bomb entity into the special pool (ballistic carrier).
- * @returns {object|null} the Special entity, or null if the pool is exhausted
+ * Spawn the bomb entity into the unified pool (ballistic carrier).
+ * @returns {object|null} the Projectile entity, or null if the pool is exhausted
  */
 export function spawnBomb(p, ctx, h = null) {
   const a = ctx.attacker;
@@ -79,13 +79,13 @@ export function spawnBomb(p, ctx, h = null) {
   const size = 18; // generic ballistic carrier box
   // TYPELESS carrier by default: no weapon identity → no sheet art. The
   // ballistic primitive is a dumb physics body (rocks, mines, thrown enemies);
-  // its look comes from the entity's own draw() — Special's neutral rock body
+  // its look comes from the entity's own draw() — Projectile's neutral rock body
   // for typeless slots, the real sheet when p.weaponType opts in (the
   // throw-bomb passes 'bomb'). Weapon-specific carriers never get a forced
   // drawer (visual-identity contract: one look-owner per entity type).
-  const ent = ctx.pools.specialPool?.spawn(ox - size / 2, oy - size / 2, 0, p.weaponType ?? null);
+  const ent = ctx.pools.projectilePool?.spawn(ox - size / 2, oy - size / 2, 0, true, p.weaponType ?? null);
   if (!ent) return null;
-  // Typeless Special defaults its box to the natural square (targetH × 48) —
+  // Typeless Projectile defaults its box to the natural square (targetH × 48) —
   // restore the 18px carrier box so spawn centering and collision match the
   // bomb-sized physics body. A weapon-typed carrier is SHEET-OWNED: its box
   // follows the active anim's collision box via setAnim() (§4 pipeline).
@@ -105,7 +105,7 @@ export function spawnBomb(p, ctx, h = null) {
   ent.damage = p.damage;
   ent.friendly = p.team !== 'foe';
   ent.layer = ent.friendly ? LAYER.PROJ_ALLY : LAYER.PROJ_FOE;
-  // Fuse: the bomb's TTL label is 'fuse' (Special relabels it), so setLife()
+  // Fuse: the bomb's TTL label is 'fuse' (Projectile relabels it), so setLife()
   // — which writes the 'life' timer — would be ignored by tickTtl(). Write
   // the labeled timer directly so the declared ttl actually governs expiry.
   const label = ent._ttlLabel ?? 'life';
@@ -126,8 +126,8 @@ export function spawnBomb(p, ctx, h = null) {
   ent.bounceHeight = p.bounceHeight ?? null;
   // Drawer: EXPLICIT param only (visual-identity contract — primitives are
   // look-blind, one look-owner per entity type). A weapon-typed carrier
-  // (weaponType) draws its own sheet/procedural art via Special.draw(); a
-  // typeless carrier falls back to Special's neutral rock body. Never a
+  // (weaponType) draws its own sheet/procedural art via Projectile.draw(); a
+  // typeless carrier falls back to Projectile's neutral rock body. Never a
   // forced default drawer here.
   if (p.drawer) ent.drawer = p.drawer;
   ent._attackId = 'ballistic';
@@ -148,13 +148,13 @@ export function spawnBomb(p, ctx, h = null) {
  * floor + platform tops) and the sandbox (flat ground line) both call this,
  * so bounce numbers can never drift between the two hosts.
  *
- * Rules (match Special physics):
+ * Rules (match Projectile physics):
  *  - falling onto a surface with solidBehavior 'reflect' → bounce
  *    (restitution 0.5, friction 0.7); when the rebound is too weak to matter
  *    (< BOMB_SETTLE_VY), the bomb rests alive until its fuse expires.
  *  - solidBehavior 'stop' → immediate settle (impact = end).
  *
- * @param {object} ent          the Special entity (must be alive)
+ * @param {object} ent          the Projectile entity (must be alive)
  * @param {number} dt           seconds
  * @param {number} groundY      floor top y (world)
  * @param {Array}  [platforms]  optional extra surfaces [{x, y, w}] (tops only)
@@ -224,14 +224,14 @@ export function stepBombTerrain(ent, dt, groundY, platforms = []) {
  * End triggers:
  *  - contact: stepBombTerrain() settles the entity against terrain
  *    (sets _attackHit), or a collision handler kills it against an enemy.
- *  - fuse: ttlExpired flag set by Special.update() when the life timer ends.
+ *  - fuse: ttlExpired flag set by Projectile.update() when the life timer ends.
  *  - off-screen: caller sets ent.alive=false via cullOffScreen().
  *
  * On end the handle emits 'detonate' { x, y, contact } at the death point —
  * ALWAYS (even a fizzle), so composed macros know exactly where the carrier
  * died. No VFX here: the carrier is dumb; macros own the aftermath.
  *
- * @param {object} ent   the spawned Special
+ * @param {object} ent   the spawned Projectile
  * @param {object} p     merged params
  * @param {object} ctx   AttackContext
  * @param {AttackHandle} h handle to emit on

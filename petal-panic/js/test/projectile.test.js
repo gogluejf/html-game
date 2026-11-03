@@ -3,7 +3,6 @@
 // No DOM needed: entity.js / consts.js / projectile.js are pure modules.
 
 import { strict as assert } from 'node:assert';
-import { Special } from '../objects/projectile.js';
 import {
   Projectile, Pool, projectilePool, MAX_PROJECTILES,
   dirAngle, aimFromInput, PROJECTILE_TARGET_H,
@@ -111,7 +110,7 @@ ok('explode=true → _ttlLabel=fuse and a real fuse timer counts down', () => {
   assert.equal(p.alive, true);
   p.update(1.6);
   assert.equal(p.alive, false, 'fuse expiry kills the shot');
-  assert.equal(p.ttlExpired, true, 'expiry flagged ttlExpired like Special');
+  assert.equal(p.ttlExpired, true, 'expiry flagged ttlExpired');
 });
 ok('arcing motion: gravityValue=800 integrates vy += g*dt and moves by v*dt', () => {
   const p = new Projectile(0, 0, 0, true); // dir 0: vx=600, vy=0
@@ -178,7 +177,7 @@ ok('shared projectilePool is pre-allocated once', () => {
 
 // --- Bomb bounce off solids (special-weapons.md: bombs reflect, saws fizzle) ---
 ok('bomb bounce reflects horizontal velocity with energy loss', () => {
-  const b = new Special(0, 0, 0, 'bomb');
+  const b = new Projectile(0, 0, 0, true, 'bomb');
   assert.equal(b.solidBehavior, 'reflect', 'bomb data declares reflect');
   b.x = 60; b.y = 50; b.vx = 300; b.vy = -100;
   const box = { x: 50, y: 0, w: 20, h: 100 }; // right edge at x=70 = bomb center
@@ -187,9 +186,9 @@ ok('bomb bounce reflects horizontal velocity with energy loss', () => {
   assert.ok(Math.abs(b.vx) < 300, 'energy lost on bounce');
 });
 ok('saw data declares stop; bomb vertical reflection works', () => {
-  const sw = new Special(0, 0, 0, 'saw');
+  const sw = new Projectile(0, 0, 0, true, 'saw');
   assert.equal(sw.solidBehavior, 'stop', 'saw data declares stop');
-  const b = new Special(0, 0, 0, 'bomb');
+  const b = new Projectile(0, 0, 0, true, 'bomb');
   b.x = 0; b.y = 90; b.vx = 100; b.vy = 300;
   const box = { x: -50, y: 80, w: 200, h: 40 };
   b.reflectVelocity(box);

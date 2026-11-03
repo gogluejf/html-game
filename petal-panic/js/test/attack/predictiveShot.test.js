@@ -31,7 +31,7 @@ function pools() {
       updateAll() {},
     };
   };
-  return { projectilePool: mk(64), specialPool: mk(16) };
+  return { projectilePool: mk(64) };
 }
 
 ok('interceptPoint: bullet travel distance equals speed × flight time', () => {

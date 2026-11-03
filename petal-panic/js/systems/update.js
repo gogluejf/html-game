@@ -16,7 +16,7 @@ import { Camera } from '../core/camera.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
-import { projectilePool, specialPool } from '../objects/projectile.js';
+import { projectilePool } from '../objects/projectile.js';
 import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { stepBombTerrain, stepBomb } from '../combat/attack/primitives/ballistic.js';
 import { S, getState, tryTransition, onTransition } from '../core/state.js';
@@ -733,11 +733,12 @@ ctx.handleBarrelDestroyed = handleBarrelDestroyed;
 ctx.popSuperCoinHit = popSuperCoinHit;
 ctx.coins = coins;
 ctx.projectilePool = projectilePool;
-ctx.specialPool = specialPool;
+// Unified pool: specials ARE projectiles now (Special folded into Projectile,
+// task 1.3) — the engine has ONE pool.
 export const bombAttacks = new BombAttackHost(() => {
   const az = getActiveZone(hero);
   return {
-    pools: { projectilePool, specialPool }, collisionWorld, bombTerrainStepped: true,
+    pools: { projectilePool }, collisionWorld, bombTerrainStepped: true,
     groundY: roomFloorTop(az.rooms[0], az.orientation),
     platforms: [...SOLIDS.slice(1), ...barrelSolidBoxes],
     camera: ctx.camera,
@@ -1010,17 +1011,42 @@ export function update(dt) {
 
   // 2c. thorn integration: advance the pool, cull off-screen shots,
   //     then refresh the collision world's live set from the pool.
-  projectilePool.updateAll(dt);
+  // Engine-owned carriers (ballistic/projectile with a live attack handle) are
+  // integrated by their OWN host clock (bombAttacks.step / carrierMacro h.step /
+  // theater _stepOnce) — same as the old separate-pool updateAll pass.
+  // Stepping them here too would double-integrate; skipping them alone would
+  // leave them frozen when no host steps them this frame. Net: every entity
+  // gets exactly one update() per frame, from whichever clock owns it.
+  for (let i = projectilePool.active.length - 1; i >= 0; i--) {
+    const item = projectilePool.active[i];
+    if (item._attackId === 'ballistic' || item._attackId === 'projectile') continue;
+    item.update(dt);
+    if (!item.alive) projectilePool.active.splice(i, 1);
+  }
+  // Host-stepped carriers (bombAttacks roots + nested macro children): the
+  // hosts call stepBomb/stepProjectile (lifecycle only) and never integrate —
+  // the OLD architecture moved them via the separate pool's updateAll pass.
+  // Keep that contract: one explicit integration per frame, splice the dead
+  // carriers here (loop A splices non-carriers only), BEFORE the terrain/
+  // collision passes below read their positions.
+  for (let i = projectilePool.active.length - 1; i >= 0; i--) {
+    const s = projectilePool.active[i];
+    if (s._attackId !== 'ballistic' && s._attackId !== 'projectile') continue; // non-carriers: loop A
+    if (!s._attackDone) s.update(dt);
+    if (!s.alive) projectilePool.active.splice(i, 1);
+  }
   cullOffScreen(projectilePool.activeItems);
   syncProjectilesToWorld();
 
-  // Special projectiles: update + handle bomb explosions.
-  specialPool.updateAll(dt);
+  // Special projectiles: update + handle bomb explosions. Unified pool —
+  // projectilePool.updateAll() above already stepped EVERY live entity exactly
+  // once this frame (specials ARE projectiles now), so there is no second
+  // step here; only the post-step sweeps run on the same pool.
   // Engine-owned ballistic carriers (homing / explosive specials) fly on the
   // macro's clock — cull them off-screen like thorns so a missed shot can't
   // live forever chasing its target. The macro completes on entity death.
   const engineCarriers = [];
-  for (const s of specialPool.activeItems) {
+  for (const s of projectilePool.activeItems) {
     if (s._attackId === 'ballistic') engineCarriers.push(s);
   }
   cullOffScreen(engineCarriers);
@@ -1032,7 +1058,7 @@ export function update(dt) {
   // calls stepBomb on it. Carriers stepped by their own host root (bombAttacks)
   // are safe here too: _attackDone latches after the first fire, so a
   // second call is a no-op.
-  for (const s of specialPool.items) {
+  for (const s of projectilePool.items) {
     if (!s._attackId || s._attackDone || !s._attackHandle) continue;
     stepBomb(s, s._attackHandle._params ?? {}, ctx, s._attackHandle);
   }
@@ -1043,7 +1069,7 @@ export function update(dt) {
   // Floor is the active room's floor (single formula — REVISION-zones-as-data §1).
   const activeZone = getActiveZone(hero);
   const bombGroundY = roomFloorTop(activeZone.rooms[0], activeZone.orientation);
-  for (const s of specialPool.activeItems) {
+  for (const s of projectilePool.activeItems) {
     if (!s.alive || s.type !== 'bomb' || s._attackId === 'ballistic') continue;
     const settled = stepBombTerrain(s, dt, bombGroundY, SOLIDS.slice(1));
     if (settled && !s.exploded) {
@@ -1053,7 +1079,7 @@ export function update(dt) {
   syncSpecialsToWorld();
   // TTL expiry: check the FULL pool (not just activeItems, which already
   // spliced dead items) for specials that just died from TTL this frame.
-  for (const s of specialPool.items) {
+  for (const s of projectilePool.items) {
     if (s._attackId !== 'ballistic' && s.ttlExpired && !s.exploded) {
       explodeSpecial(s);
       s.ttlExpired = false;
@@ -1076,7 +1102,7 @@ export function update(dt) {
     ignoreOneWay: hero.droppingThrough,
   });
   // Shared top-surface collision before broadphase; payloads after dispatch.
-  for (const s of specialPool.items) {
+  for (const s of projectilePool.items) {
     if (s._attackId === 'ballistic' && !s._attackDone) {
       stepBombTerrain(s, dt, bombGroundY, [...SOLIDS.slice(1), ...barrelSolidBoxes]);
     }

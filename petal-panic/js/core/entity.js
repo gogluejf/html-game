@@ -209,7 +209,7 @@ export class Entity {
    * Advance the TTL clock. Call from update() or let the engine do it.
    * Delegates to the unified timer set: ticks every labeled timer, then flips
    * alive=false when this entity's life timer expires. The life timer's label
-   * defaults to 'life' but subclasses (e.g. Special bombs) may use another
+   * defaults to 'life' but subclasses (e.g. bomb projectiles) may use another
    * label ('fuse') via this._ttlLabel so the debug stack reads descriptively.
    * Subclasses that scale time pass a pre-scaled dt (e.g. coin passes dt*TTL_SPEED).
    * @param {number} dt seconds

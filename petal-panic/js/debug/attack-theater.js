@@ -25,7 +25,7 @@ import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js'
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
 import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/ballistic.js';
 import { spikeDrawer, boomerangDrawer, mineDrawer } from '../combat/attack/drawers/index.js';
-import { Pool, Projectile, Special } from '../objects/projectile.js';
+import { Pool, Projectile } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
 import { LAYER } from '../consts.js';
 import { ENEMY_TYPE_IDS } from '../world/build.js';
@@ -402,7 +402,11 @@ export const AttackTheater = {
 
   _resetSandbox() {
     this._teardown();
-    this._pools = { projectilePool: new Pool(Projectile, 64), specialPool: new Pool(Special, 16) };
+    // Unified pool: specials ARE projectiles now (Special folded into
+    // Projectile, task 1.3) — one pool serves both roles, matching the
+    // engine's single projectilePool.
+    const pp = new Pool(Projectile, 64);
+    this._pools = { projectilePool: pp };
     this._world = new CollisionWorld({ cellSize: 64 });
     // Flat floor solid so spawned enemies land and stick (resolve() against it),
     // mirroring the real engine's ctx.solids. Bombs use stepBombTerrain(GROUND_Y);
@@ -494,9 +498,7 @@ export const AttackTheater = {
     this._thrownEnemies = [];
     if (this._pools) {
       for (const p of this._pools.projectilePool.activeItems) p.alive = false;
-      for (const s of this._pools.specialPool.activeItems) s.alive = false;
       this._pools.projectilePool.active.length = 0;
-      this._pools.specialPool.active.length = 0;
     }
     this._pools = null;
     this._world = null;
@@ -577,10 +579,8 @@ export const AttackTheater = {
       this._handles = [];
       if (this._bombHost) { try { this._bombHost.clear(); } catch { /* noop */ } }
       for (const p of this._pools?.projectilePool.activeItems ?? []) p.alive = false;
-      for (const s of this._pools?.specialPool.activeItems ?? []) s.alive = false;
       if (this._pools) {
         this._pools.projectilePool.active.length = 0;
-        this._pools.specialPool.active.length = 0;
       }
       // Fresh VFX slate: drop the previous run's leftover sparkles/particles so
       // replays don't stack. (resetEffects only clears effect instances, not the
@@ -731,7 +731,7 @@ export const AttackTheater = {
   },
 
   _stepOnce() {
-    const { projectilePool, specialPool } = this._pools;
+    const { projectilePool } = this._pools;
     // Input repeat ticks at FIXED-step rate (exactly 60Hz) so the debounce
     // cadence is even — calling it here, not in update(), keeps it locked to
     // the simulation clock instead of the variable rAF delta.
@@ -751,8 +751,10 @@ export const AttackTheater = {
       this._choreo = null;
     }
 
+    // Single pool: specials are projectiles now, so one updateAll pass steps
+    // every live entity exactly once (the old two-pool step would have
+    // double-stepped everything under the unified pool).
     projectilePool.updateAll(DT);
-    specialPool.updateAll(DT);
 
     // Spawned enemies (spawnSplit spawnType='enemy' with enemy.thrown=false):
     // run their real update each frame. Enemy.update() drives ai() + gravity
@@ -782,14 +784,14 @@ export const AttackTheater = {
       // BombAttackHost -> throwEnemy.step owns hostStep (TTL/contact), once.
     }
     // Off-screen cull (sandbox bounds instead of level zone).
-    for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
+    for (const p of projectilePool.activeItems) {
       if (p.x + p.w < -40 || p.x > VIEW_W + 40 || p.y + p.h < -40 || p.y > VIEW_H + 40) p.alive = false;
     }
     // Projectile terrain stop: solidBehavior 'stop' shots die on floor/platform
     // contact (same rule as collisionHandlers.js in gameplay). The sandbox has
     // a flat floor + optional stomp platforms; check both.
     const solids = [this._floorSolid, ...(this._stompPlatforms ?? [])];
-    for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
+    for (const p of projectilePool.activeItems) {
       if (!p.alive || p.solidBehavior !== 'stop' || p._attackId === 'ballistic') continue;
       for (const s of solids) {
         if (p.x + p.w > s.x && p.x < s.x + s.w &&
@@ -821,7 +823,7 @@ export const AttackTheater = {
     // child payloads. This IS the gameplay external-stepping pattern
     // (systems/update.js): pool.updateAll → stepBombTerrain per entity →
     // bombAttacks.step(dt).
-    for (const s of specialPool.items) {
+    for (const s of projectilePool.items) {
       if (s._attackId !== 'ballistic' || s._attackDone) continue;
       stepBombTerrain(s, DT, GROUND_Y);
     }
@@ -1187,10 +1189,9 @@ export const AttackTheater = {
       for (const p of this._pools.projectilePool.activeItems) {
         p.draw(ctx);
       }
-      for (const s of this._pools.specialPool.activeItems) {
-        if (s._attackVisualOwned) continue;
-        s.draw(ctx);
-      }
+      // Unified pool: specials are drawn in the pass above. Engine-owned
+      // carriers (_attackVisualOwned) skip their pool draw there too, so no
+      // separate pool pass is needed.
     }
 
     // Spawned enemies (spawnSplit spawnType='enemy').

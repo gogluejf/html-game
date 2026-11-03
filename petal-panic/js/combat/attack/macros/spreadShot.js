@@ -85,7 +85,7 @@ defineMacro('spreadShot', {
     h.angles = angles;
 
     const spawnOne = (a) => {
-      // No drawer, no size: the shot is a REAL Special('spread') entity —
+      // No drawer, no size: the shot is a typed Projectile('spread') entity —
       // its class owns the look (sheet + outline in high mode, procedural
       // pellet in primitive mode) and keeps its natural sheet box.
       const shot = invoke('projectile', {

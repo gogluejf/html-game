@@ -143,83 +143,146 @@ export class Projectile extends Entity {
    * @param {number} y spawn y
    * @param {number} dir 0..7 aim index (see DIR_ANGLES)
    * @param {boolean} [friendly=true] true = hero's shot, false = enemy/boss shot
+   * @param {string|null} [type=null] special-weapon id ('saw'|'bomb'|…). null =
+   *   plain thorn (the standard straight-line Contra-style shot).
    */
-  constructor(x, y, dir, friendly = true) {
+  constructor(x, y, dir, friendly = true, type = null) {
     super();
-    this.initialize(x, y, dir, friendly);
+    this.initialize(x, y, dir, friendly, type);
   }
 
-  initialize(x, y, dir, friendly = true) {
+  initialize(x, y, dir, friendly = true, type = null) {
+    // Per-type registry lookup: type != null → meta drives size/layer/tuning;
+    // type == null → the plain thorn defaults (exactly as before this fold).
+    const meta = type != null ? specialById[type] : null;
+    if (type != null && !meta) throw new Error(`Unknown special weapon: ${type}`);
+    const isThorn = type == null;
     super.initialize({
       x, y,
-      targetH: PROJECTILE_TARGET_H, // pure size model — width is sheet-owned (§4)
+      targetH: isThorn ? PROJECTILE_TARGET_H : (meta.size ?? 1 / 3),
       layer: friendly ? LAYER.PROJ_ALLY : LAYER.PROJ_FOE,
-      debugColor: friendly ? '#ff6ec7' : '#ff4444',
-      gravity: 0, // projectiles fly straight
+      debugColor: isThorn ? (friendly ? '#ff6ec7' : '#ff4444') : (meta.color ?? '#888'),
+      gravity: isThorn ? 0 : ((meta.gravity ?? 0) > 0 ? 1 : 0),
     });
 
     invalidateImpactMotion(this);
-    this.friendly = friendly;
-    this.speed = PROJECTILE_SPEED;
-    this.damage = PROJECTILE_DAMAGE;
-    this.life = PROJECTILE_LIFETIME;
-    // Register the life countdown in the shared timer set: tickTtl() (called
-    // from update()) counts down the _ttlLabel timer and flips alive=false.
-    // Without this, _maxTtl stays 0 and the shot never dies.
-    this.setLife(PROJECTILE_LIFETIME);
+    this.type = type;
+    // Aim index for dirAngle() consumers (contextualAim, debug). Preserved from
+    // the pre-fold Projectile contract.
     this.dir = dir;
+    // Pose state resets per life (pooled slots keep fields across reuse):
+    // default to the horizontal-flight pose.
+    this._poseTransposed = false;
+    this.friendly = friendly;
+    this.speed = isThorn ? PROJECTILE_SPEED : (meta.speed ?? 0);
+    this.damage = isThorn ? PROJECTILE_DAMAGE : (meta.damage ?? 0);
+    this.life = isThorn ? PROJECTILE_LIFETIME : (meta.lifetime ?? 0);
     // Ballistic motion (data, not class): 0 = straight flight (thorn default).
     // Callers mutate these fields POST-SPAWN (established pattern — ballistic.js
     // sets ent.gravityValue / ent.solidBehavior after pool spawn); initialize()
     // only establishes safe defaults for pooled slots.
-    this.gravityValue = 0;   // px/s² applied to vy each frame while > 0
-    this.explode = false;    // AoE: detonate on TTL expiry / contact
+    this.gravityValue = isThorn ? 0 : (meta.gravity ?? 0);
+    this.explode = isThorn ? false : !!meta.explode;
     // Countdown label: 'fuse' when exploding so the debug stack reads it as a
-    // fuse, 'life' otherwise. tickTtl() honors _ttlLabel (same wiring Special uses).
-    this._ttlLabel = 'life';
-    // Solid-collision behavior (data, not class): 'phase' — thorns fly through
-    // terrain; only barrels (GameObj) stop them.
-    this.solidBehavior = 'phase';
+    // fuse, 'life' otherwise. tickTtl() honors _ttlLabel.
+    this._ttlLabel = this.explode ? 'fuse' : 'life';
+    this.setLife(this.life);
+    if (this.explode) {
+      // Relabel the life timer as 'fuse' for display; tickTtl() honors _ttlLabel.
+      this.timers.clear('life');
+      this.timers.set('fuse', this.life);
+    }
+    this.radius = this.explode ? meta.radius : 0;
+    this.exploded = false;
+    // Solid-collision behavior (data, not class): thorns phase through terrain;
+    // specials take their WEAPON's policy (bombs reflect, saws/spread absorb).
+    this.solidBehavior = isThorn ? 'phase' : (meta.solidBehavior ?? 'stop');
 
     const angle = dirAngle(dir);
     this.vx = Math.cos(angle) * this.speed;
     this.vy = Math.sin(angle) * this.speed;
-    // Orientation: nose along velocity (rotation-only, no mirror).
-    this.orientSprite(this.vx, this.vy);
-
-    // Sprite (SOTA): thorn sheet via the standard pipeline. `frames` is a LIVE
-    // accessor so boot-time image loading is picked up without rebuilds.
-    // Node / pre-boot: sprite data null → primitive rect fallback (unchanged).
-    const thornData = spriteData.get('thorn');
-    if (thornData?.anims.shoot) {
-      this.sprite = { anchor: 'center', anims: thornData.anims };
-      Object.defineProperty(this.sprite, 'frames', { get: () => spriteFrames.get('thorn') });
-      try { this.setAnim('shoot'); } catch { /* legacy rect path stays active */ }
+    // Orientation: nose along velocity (rotation-only, no mirror) for every
+    // type EXCEPT the bomb, which flies fuse-forward: mirrorX flips for
+    // leftward throws so the art faces its travel direction; rotation follows
+    // the velocity tangent.
+    if (type === 'bomb') {
+      this.mirrorX = this.vx < -1e-9;
+      this.rotation = Math.atan2(this.vy, this.mirrorX ? -this.vx : this.vx);
+    } else {
+      this.orientSprite(this.vx, this.vy);
     }
-    // Persistent 6px white outline (same effect as the checkpoint flag —
-    // follows silhouette + rotation; box fallback when no sheet frame loaded).
-    this._outline = spriteOutline({ color: '#ffffff', thickness: 2, opacity: 1.0 }, this);
+
+    // Sprite (SOTA): per-type sheet via the standard pipeline. `frames` is a
+    // LIVE accessor so boot-time image loading is picked up without rebuilds.
+    // Node / pre-boot: sprite data null → primitive rect fallback (unchanged).
+    // Typeless ballistic: use the thorn sheet + thorn outline (byte-identical
+    // to a plain thorn); the rock_medium default arrives with task 1.5.
+    const spriteType = type ?? 'thorn';
+    const animName = SPRITE_TARGETS[spriteType]?.anim ?? 'shoot';
+    // Outline: every shot (thorn, typeless, and special weapons) gets the
+    // white contour.
+    const wantOutline = isThorn || type != null;
+    const data = spriteData.get(spriteType);
+    if (data?.anims[animName]) {
+      this.sprite = { anchor: 'center', anims: data.anims };
+      Object.defineProperty(this.sprite, 'frames', { get: () => spriteFrames.get(spriteType) });
+      try {
+        this.setAnim(animName);
+        // Re-aim AFTER setAnim: the sheet's authored start-frame offset can
+        // shift the pivot-derived angle, and pooled slots may carry stale
+        // orientation from their previous life. orientSprite() is idempotent
+        // (pure function of vx/vy), so re-applying it here guarantees the
+        // nose points along travel regardless of spawn path. Bombs keep their
+        // own fuse-forward orientation (mirrorX + settle ease-back).
+        if (type !== 'bomb') this.orientSprite(this.vx, this.vy);
+        // White outline — keeps fast small shots readable.
+        if (wantOutline) {
+          this._outline = spriteOutline({ color: '#ffffff', thickness: 2, opacity: 1.0 }, this);
+        }
+      } catch { /* legacy rect path stays active */ }
+    }
 
     // Drawer: optional render override. Contract: (ctx, entity) => void.
-    // null = use default draw (sheet sprite or debug rect). Set per-shot by
-    // the attack engine or weapon code to customize visuals without subclassing.
+    // null = use default draw (sheet sprite or per-type fallback drawer). Set
+    // per-shot by the attack engine or weapon code to customize visuals
+    // without subclassing.
     this.drawer = null;
   }
 
   /**
    * Draw this projectile. Delegates to `this.drawer` if set; otherwise falls
-   * back to the Entity debug rect. The drawer receives (ctx, this) so it has
-   * full access to position, size, rotation, etc.
+   * back to the high-graphic sheet sprite (+ white outline) in high-res mode,
+   * then to a per-type primitive drawer (visual-identity contract: one drawer
+   * file per weapon under combat/attack/drawers/). The thorn keeps its
+   * original rect/outline path via super.draw().
    */
   draw(ctx) {
     if (this.visible === false) return;
+    if (!this.alive || this._attackVisualOwned) return;
+    // Drawer override: standalone (ctx, entity) => void.
     if (typeof this.drawer === 'function') {
       this.drawer(ctx, this);
       return;
     }
-    super.draw(ctx);
-    // White outline on top of the sprite (high-graphic only, like checkpoint).
-    if (isHighGraphic() && this._outline && !this._outline.done) this._outline.render(ctx);
+    // Thorn (typeless): original path — Entity default (sheet sprite or debug
+    // rect) plus the white outline on top in high-graphic mode.
+    if (this.type == null) {
+      super.draw(ctx);
+      if (isHighGraphic() && this._outline && !this._outline.done) this._outline.render(ctx);
+      return;
+    }
+    // Special types: real sheet art ONLY in high-graphic mode — primitive mode
+    // must keep the procedural shapes (same contract as thorn's rect fallback).
+    // Pre-boot (frames not loaded) also falls through to the procedural drawer.
+    if (isHighGraphic() && this.drawSprite(ctx)) {
+      if (this._outline && !this._outline.done) this._outline.render(ctx);
+      return;
+    }
+    // Primitive look: ONE drawer per weapon identity. No inline branches —
+    // every special owns its file under combat/attack/drawers/. Typeless
+    // pooled slot → generic rock.
+    const drawer = SPECIAL_FALLBACK_DRAWERS[this.type] ?? rockDrawer;
+    drawer(ctx, this);
   }
 
   reflectVelocity(box) {
@@ -231,6 +294,7 @@ export class Projectile extends Entity {
     this._impactPrevX = this.x;
     this._impactPrevY = this.y;
     this._impactPoint = null;
+    this._bombPrevBottom = this.y + this.h;
     // Gravity for ballistic shots (same integration Special used to own):
     // vy += g·dt before position, gated by the settled flag so a resting
     // bomb stays put. No-op while gravityValue is 0 (straight thorn flight).
@@ -239,13 +303,47 @@ export class Projectile extends Entity {
     }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
-    this.orientSprite(this.vx, this.vy);
+
+    // Re-aim the art nose along velocity every frame. Engine-owned carriers
+    // (homing missiles steered by their macro, explosive shots) have vx/vy
+    // mutated OUTSIDE this class — without this, the sheet art would stay
+    // frozen at the launch angle while the body curves. Bombs handle their
+    // own fuse-forward orientation below (mirrorX + settle ease-back).
+    if (this.type !== 'bomb') this.orientSprite(this.vx, this.vy);
+
+    // Bomb orientation (sheet art): while flying, the fuse trails the motion —
+    // rotation follows the velocity tangent and mirrorX tracks horizontal
+    // direction. Once settled (resting on a surface), ease back to upright so
+    // the fuse sits on top instead of frozen at the landing angle.
+    if (this.type === 'bomb' && this.sprite) {
+      // TEMP: settle ease-back disabled — bomb stays frozen at landing angle.
+      // Orientation freezes at immobilization (see stepBombTerrain,
+      // _bombOrientFrozen): no more re-aim snaps on the settle frame.
+      if (!this._bombOrientFrozen) {
+        const speed = Math.hypot(this.vx, this.vy);
+        // Hop-apex gate (mirrors the physics settle threshold): while the
+        // current hop would rise >= 3px, re-aim along the velocity tangent.
+        // Below that (micro-bounces / over-head apex), holding the last angle
+        // kills the tail-up/tail-down flicker; immobilization then locks it.
+        const reaim = this.gravityValue > 0
+          ? (speed * speed) / (2 * this.gravityValue) >= 3
+          : speed > 1;
+        if ((speed > 1 || !this._bombSettled) && reaim) {
+          if (speed > 1) {
+            this.mirrorX = this.vx < -1e-9;
+            this.rotation = Math.atan2(this.vy, this.mirrorX ? -this.vx : this.vx);
+          }
+        }
+      }
+    }
+
     this.tickAnim(dt);
     // TTL countdown via the shared timer set: honors _ttlLabel ('life' or
     // 'fuse'). ttlExpired lets hosts (gameplay/theater) distinguish a fuse/
-    // lifetime expiry from a contact kill — same contract Special uses.
+    // lifetime expiry from a contact kill. Gated by _bombFuseDisabled so a
+    // thrown carrier with no flight fuse never self-detonates.
     const wasAlive = this.alive;
-    this.tickTtl(dt);
+    if (!this._bombFuseDisabled) this.tickTtl(dt);
     if (wasAlive && !this.alive) this.ttlExpired = true;
   }
 
@@ -279,13 +377,20 @@ export class Pool {
    */
   spawn(...args) {
     for (const item of this.items) {
-      if (!item.alive && !(item._attackId === 'ballistic' && !item._attackDone &&
+      // Reuse only DEAD slots — and never a live engine-owned carrier whose
+      // attack handle is still active (ballistic/projectile). Wiping a live
+      // carrier mid-flight would reset it to parked position under a live
+      // handle (frozen missile bug). Plain thorns (no _attackId) are simply
+      // alive → never reused while flying.
+      if (!item.alive &&
+          !((item._attackId === 'ballistic' || item._attackId === 'projectile') &&
+          !item._attackDone &&
           item._attackHandle && !item._attackHandle._cancelled && !item._attackHandle._completed)) {
         // A collision can kill a slot AFTER updateAll's cleanup. Reusing it
         // must not append the same object a second time (double physics).
         // Remove extension fields from the previous attack generation.
         for (const key of Object.keys(item)) delete item[key];
-        // Reinitialize the LIVE slot: copying a temporary instance leaves
+        // Reinitialize the slot in place: copying a temporary instance leaves
         // effect closures bound to that unmoving temporary carrier.
         item.initialize(...args);
         item.alive = true;
@@ -334,201 +439,3 @@ export const SPECIAL_WEAPON_DEFS = Object.fromEntries(
   }]),
 );
 
-export class Special extends Entity {
-  /**
-   * @param {number} x spawn x
-   * @param {number} y spawn y
-   * @param {number} dir 0..7 aim index
-   * @param {string} type special weapon id (see SPECIAL_WEAPONS registry)
-   */
-  constructor(x, y, dir, type) {
-    super();
-    this.initialize(x, y, dir, type);
-  }
-
-  initialize(x, y, dir, type) {
-    // Parked pool slots are built with no type; they stay inert until spawn()
-    // copies a fully-built instance over them via Object.assign.
-    const meta = type != null ? specialById[type] : null;
-    if (type != null && !meta) throw new Error(`Unknown special weapon: ${type}`);
-    super.initialize({
-      x, y,
-      // SHEET-OWNED size (sprites.md contract): no baseW. Height = targetH × 48
-      // from the REGISTRY's unit size (single source of truth — specialWeapons.js);
-      // width follows the active anim's collision box via setAnim(). Pre-boot
-      // fallback is the natural square (targetH × 48) until the sheet loads.
-      targetH: meta?.size ?? 1 / 3,
-      layer: LAYER.PROJ_ALLY,
-      debugColor: meta?.color ?? '#888',
-      gravity: (meta?.gravity ?? 0) > 0 ? 1 : 0,
-    });
-
-    this.type = type;
-    // Pose state resets per life (pooled slots keep fields across reuse):
-    // default to the horizontal-flight pose.
-    this._poseTransposed = false;
-    invalidateImpactMotion(this);
-    this.friendly = true;
-    // Solid-collision behavior per WEAPON (special-weapons.md): bombs BOUNCE
-    // off terrain (reflect + keep flying, fuse still runs); saws/spread ABSORB
-    // (the short-range blade dies on impact). Policy is consumed by the collision
-    // handler via this flag — the physics primitive is reflectVelocity().
-    this.solidBehavior = meta?.solidBehavior ?? 'stop';
-    this.speed = meta?.speed ?? 0;
-    this.damage = meta?.damage ?? 0;
-    this.life = meta?.lifetime ?? 0;
-    this.gravityValue = meta?.gravity ?? 0; // actual px/s² for ballistic weapons
-    // Register the countdown under a descriptive label so the debug stack reads
-    // 'fuse' for AoE weapons and 'life' for range-limited ones. Both are driven
-    // by the same tickTtl()/ttlExpired expiry path.
-    this._ttlLabel = meta?.explode ? 'fuse' : 'life';
-    this.setLife(this.life);
-    if (meta?.explode) {
-      // Relabel the life timer as 'fuse' for display; tickTtl() honors _ttlLabel.
-      this.timers.clear('life');
-      this.timers.set('fuse', this.life);
-    }
-    this.radius = meta?.explode ? meta.radius : 0;
-    this.exploded = false;
-
-    const angle = dirAngle(dir);
-    this.vx = Math.cos(angle) * this.speed;
-    this.vy = Math.sin(angle) * this.speed;
-    // Orient the art nose along velocity (same contract as Projectile).
-    // Bombs fly fuse-forward: mirrorX flips for leftward throws so the art
-    // faces its travel direction; rotation follows the velocity tangent.
-    if (type === 'bomb') {
-      this.mirrorX = this.vx < -1e-9;
-      this.rotation = Math.atan2(this.vy, this.mirrorX ? -this.vx : this.vx);
-    } else {
-      this.orientSprite(this.vx, this.vy);
-    }
-
-    // Sprite (Step A): per-type sheet via the standard pipeline. `frames` is a
-    // LIVE accessor so boot-time image loading is picked up without rebuilds.
-    // Node / pre-boot: sprite data null → procedural fallback in draw().
-    if (type != null) {
-      const data = spriteData.get(type);
-      const cfg = SPRITE_TARGETS[type];
-      if (data?.anims[cfg.anim]) {
-        this.sprite = { anchor: 'center', anims: data.anims };
-        Object.defineProperty(this.sprite, 'frames', { get: () => spriteFrames.get(type) });
-        try {
-          this.setAnim(cfg.anim);
-          // Re-aim AFTER setAnim: the sheet's authored start-frame offset can
-          // shift the pivot-derived angle, and pooled slots may carry stale
-          // orientation from their previous life. orientSprite() is idempotent
-          // (pure function of vx/vy), so re-applying it here guarantees the
-          // nose points along travel regardless of spawn path.
-          this.orientSprite(this.vx, this.vy);
-          // White outline like the thorn — keeps fast small shots readable.
-          this._outline = spriteOutline({ color: '#ffffff', thickness: 2, opacity: 1.0 }, this);
-        } catch { /* procedural path stays active */ }
-      }
-    } else if (spriteData.get('rock_medium')?.anims.shoot) {
-      // Typeless ballistic (default rock): use rock_medium sheet, same pattern
-      // as thorn for Projectile. High-res renders sprite; low-res falls back
-      // to the primitive drawer in draw().
-      const rockData = spriteData.get('rock_medium');
-      this.sprite = { anchor: 'center', anims: rockData.anims };
-      Object.defineProperty(this.sprite, 'frames', { get: () => spriteFrames.get('rock_medium') });
-      try {
-        this.setAnim('shoot');
-        this.orientSprite(this.vx, this.vy);
-        // No outline for rock (sheet declares outline: 0).
-      } catch { /* procedural path stays active */ }
-    }
-
-    // Drawer: optional render override. Contract: (ctx, entity) => void.
-    // null = use default Special.draw (type-branched). Set per-shot to
-    // customize visuals without subclassing.
-    this.drawer = null;
-  }
-
-  reflectVelocity(box) {
-    super.reflectVelocity(box);
-    invalidateImpactMotion(this);
-  }
-
-  update(dt) {
-    this._impactPrevX = this.x;
-    this._impactPrevY = this.y;
-    this._impactPoint = null;
-    this._bombPrevBottom = this.y + this.h;
-    // Gravity for ballistic weapons (bombs).
-    if (this.gravityValue > 0 && !this._bombSettled) {
-      this.vy += this.gravityValue * dt;
-    }
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
-
-    // Re-aim the art nose along velocity every frame. Engine-owned carriers
-    // (homing missiles steered by their macro, explosive shots) have vx/vy
-    // mutated OUTSIDE this class — without this, the sheet art would stay
-    // frozen at the launch angle while the body curves. Bombs handle their
-    // own fuse-forward orientation below (mirrorX + settle ease-back).
-    if (this.type !== 'bomb') this.orientSprite(this.vx, this.vy);
-
-    // Bomb orientation (sheet art): while flying, the fuse trails the motion —
-    // rotation follows the velocity tangent and mirrorX tracks horizontal
-    // direction. Once settled (resting on a surface), ease back to upright so
-    // the fuse sits on top instead of frozen at the landing angle.
-    if (this.type === 'bomb' && this.sprite) {
-      // TEMP: settle ease-back disabled — bomb stays frozen at landing angle.
-      // Orientation freezes at immobilization (see stepBombTerrain,
-      // _bombOrientFrozen): no more re-aim snaps on the settle frame.
-      if (!this._bombOrientFrozen) {
-        const speed = Math.hypot(this.vx, this.vy);
-        // Hop-apex gate (mirrors the physics settle threshold): while the
-        // current hop would rise >= 3px, re-aim along the velocity tangent.
-        // Below that (micro-bounces / over-head apex), holding the last angle
-        // kills the tail-up/tail-down flicker; immobilization then locks it.
-        const reaim = this.gravityValue > 0
-          ? (speed * speed) / (2 * this.gravityValue) >= 3
-          : speed > 1;
-        if ((speed > 1 || !this._bombSettled) && reaim) {
-          if (speed > 1) {
-            this.mirrorX = this.vx < -1e-9;
-            this.rotation = Math.atan2(this.vy, this.mirrorX ? -this.vx : this.vx);
-          }
-        }
-      }
-    }
-
-    this.tickAnim(dt);
-
-    // TTL countdown.
-    const wasAlive = this.alive;
-    if (!this._bombFuseDisabled) this.tickTtl(dt);
-    // If we just died from TTL, flag it so the update loop can call explodeSpecial().
-    if (wasAlive && !this.alive) {
-      this.ttlExpired = true;
-    }
-  }
-
-  draw(ctx) {
-    if (!this.alive || this._attackVisualOwned) return;
-    // Drawer override: standalone (ctx, entity) => void.
-    if (typeof this.drawer === 'function') {
-      this.drawer(ctx, this);
-      return;
-    }
-    // Sheet sprite (Step A): real art ONLY in high-graphic mode — primitive
-    // mode must keep the procedural shapes (same contract as thorn's rect
-    // fallback). Pre-boot (frames not loaded) also falls through to procedural.
-    if (isHighGraphic() && this.drawSprite(ctx)) {
-      // White outline on top of the sprite (high-graphic only, like thorn).
-      if (this._outline && !this._outline.done) this._outline.render(ctx);
-      return;
-    }
-    // Primitive look: ONE drawer per weapon identity (visual-identity
-    // contract). No inline branches — every special owns its file under
-    // combat/attack/drawers/. Typeless pooled slot → generic rock.
-    const drawer = SPECIAL_FALLBACK_DRAWERS[this.type] ?? rockDrawer;
-    drawer(ctx, this);
-  }
-}
-
-// Pool for specials (smaller than thorn pool — lower fire rate).
-export const MAX_SPECIALS = 16;
-export const specialPool = new Pool(Special, MAX_SPECIALS);

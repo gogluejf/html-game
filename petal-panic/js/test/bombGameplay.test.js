@@ -17,7 +17,7 @@ const U = await import('../systems/update.js');
 const { render } = await import('../systems/render.js');
 const { S, setState } = await import('../core/state.js');
 const { ZONE_GROUND_Y } = await import('../world/level.js');
-const { specialPool } = await import('../objects/projectile.js');
+const { projectilePool } = await import('../objects/projectile.js');
 const { tryFire } = await import('../combat/shooting.js');
 const { Entity } = await import('../core/entity.js');
 const { LAYER } = await import('../consts.js');
@@ -96,7 +96,7 @@ U.getCollisionWorld().remove(target);
 U.loadActiveZone(zone, { solids: zone.platforms, enemies: [], barrels: [], powerups: [], checkpoints: [] });
 assert.equal(h._cancelled, true);
 assert.equal(U.bombAttacks.roots.size, 0);
-assert.ok(!specialPool.items.some(s => s.alive && s._attackId === 'ballistic'));
+assert.ok(!projectilePool.items.some(s => s.alive && s._attackId === 'ballistic'));
 console.log('PASS real collision dispatch and zone teardown');
 
 // 'bomb' was the PRIMITIVE id, renamed to 'ballistic' in d3c7571e — it is not

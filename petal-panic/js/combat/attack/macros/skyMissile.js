@@ -218,14 +218,21 @@ defineMacro('skyMissile', {
         // Surface landing: plain projectiles get NO terrain handling (only
         // bombs do), so without this the carrier would phase through the
         // marked surface and fizzle at TTL below it — marker says "boom HERE",
-        // boom happens elsewhere. Kill the carrier the frame its bottom reaches
-        // the impact line; _attackHit routes the death through stepProjectile's
-        // 'hit' → the blast resolves at exactly the marked point. Marker and
-        // blast share state.impact, so they can never drift apart.
+        // boom happens elsewhere. Kill the carrier when its bottom CROSSES
+        // the impact line this frame; _attackHit routes the death through
+        // stepProjectile's 'hit' → the blast resolves at exactly the marked
+        // point. Marker and blast share state.impact, so they can never
+        // drift apart. Crossing check (prev <= line < new) is exact: the
+        // landing test runs AFTER integration, so a same-frame `>=` test
+        // overshoots by up to one frame of travel.
         const ent = s.missile?.entity;
-        if (ent?.alive && ent._attackId !== 'ballistic' && !ent._attackDone && ent.y + ent.h >= pt.y) {
-          ent.alive = false;
-          ent._attackHit = true;
+        if (ent?.alive && ent._attackId !== 'ballistic' && !ent._attackDone) {
+          const prevBottom = ent._bombPrevBottom; // captured before integration in Projectile.update
+          const newBottom = ent.y + ent.h;
+          if (prevBottom <= pt.y && newBottom >= pt.y) {
+            ent.alive = false;
+            ent._attackHit = true;
+          }
         }
         if (s.missile?._completed) {
           s.done = true;

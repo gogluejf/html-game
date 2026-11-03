@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { loadTestMacros } from './_macroSetup.mjs';
 import { entryImpactPoint, snapToImpact } from '../combat/entryImpact.js';
-import { Pool, Projectile, Special } from '../objects/projectile.js';
+import { Pool, Projectile } from '../objects/projectile.js';
 
 let passed = 0;
 function test(name, fn) {
@@ -45,13 +45,13 @@ test('negative travel and subpixel travel have bounded entry', () => {
   assert.equal(entryImpactPoint(q, { x: 100, y: 100, w: 100, h: 100 }).x, 94);
 });
 test('both real integrators record position and reset history on pooled reuse', () => {
-  for (const Class of [Projectile, Special]) {
-    const pool = new Pool(Class, 1);
-    const p = pool.spawn(10, 20, 0, ...(Class === Special ? ['bomb'] : []));
+  for (const type of [null, 'bomb']) {
+    const pool = new Pool(Projectile, 1);
+    const p = pool.spawn(10, 20, 0, true, ...(type == null ? [] : [type]));
     p.update(1 / 60);
     assert.equal(p._impactPrevX, 10); assert.equal(p._impactPrevY, 20);
     p._impactPoint = { x: 999, y: 999 }; p.alive = false;
-    const reused = pool.spawn(300, 400, 0, ...(Class === Special ? ['bomb'] : []));
+    const reused = pool.spawn(300, 400, 0, true, ...(type == null ? [] : [type]));
     assert.equal(reused, p);
     assert.equal(reused._impactPrevX, null); assert.equal(reused._impactPrevY, null);
     assert.equal(reused._impactPoint, null);
@@ -82,7 +82,7 @@ function setup() {
   resetEffects();
   const world = new CollisionWorld({ cellSize: 64 });
   registerCollisionHandlers(world);
-  const pools = { specialPool: new Pool(Special, 4), projectilePool: new Pool(Projectile, 4) };
+  const pools = { projectilePool: new Pool(Projectile, 4) };
   const context = makeContext({ x: 0, y: 0, w: 32, h: 32 }, {
     pools, collisionWorld: world, world: { targets: [] }, bombTerrainStepped: true,
   });
@@ -98,7 +98,7 @@ for (const correction of ['top', 'wall']) test(`${correction} bounce then enemy:
   const h = invoke('explosiveBomb', { origin: { x: 340, y: 290 }, speed: 0, arc: 0,
     team: 'ally', blastTeam: 'ally', ttl: 2 }, context);
   const p = h.entity; p.vx = 120; p.vy = 120;
-  pools.specialPool.updateAll(1 / 60);
+  pools.projectilePool.updateAll(1 / 60);
   if (correction === 'top') stepBombTerrain(p, 1 / 60, 300);
   else { world.add(new SolidBox({ x: 350, y: 250, w: 100, h: 100 })); world.update(); }
   assert.ok(p.alive); assert.equal(p._impactPoint, null);

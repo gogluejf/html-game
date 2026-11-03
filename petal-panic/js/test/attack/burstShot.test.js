@@ -4,7 +4,7 @@
 import { strict as assert } from 'node:assert';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
-import { Pool, Projectile, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 import { stepProjectile } from '../../combat/attack/primitives/projectile.js'; // burst invokes it natively
 import '../../combat/attack/macros/burstShot.js';       // registers the macro
 
@@ -17,7 +17,8 @@ function ok(name, fn) {
 const close = (a, b) => Math.abs(a - b) < 1e-9;
 
 function pools() {
-  return { projectilePool: new Pool(Projectile, 16), specialPool: new Pool(Special, 4) };
+  const projectilePool = new Pool(Projectile, 16);
+  return { projectilePool };
 }
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 }); // center (116, 116)
 
@@ -48,7 +49,7 @@ ok('completion is owned by the macro: early child death does NOT end the burst',
   // still pending must not complete the handle. (Bullets die via TTL — the
   // pool's updateAll drives entity.update, same as the theater host.)
   const { projectilePool } = pools();
-  const ctx = makeContext(attacker(), { pools: { projectilePool, specialPool: new Pool(Special, 4) } });
+  const ctx = makeContext(attacker(), { pools: { projectilePool } });
   const h = invoke('burstShot', { count: 4, interval: 0.2, direction: 0, speed: 300, ttl: 5 }, ctx);
   const DT = 1 / 60;
   let completedAt = null;

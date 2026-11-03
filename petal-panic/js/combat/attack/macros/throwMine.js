@@ -25,7 +25,7 @@ defineMacro('throwMine', {
     const ent = carrier.entity;
     if (!ent) { h._complete(); return h; }
     h.entity = ent;
-    // Same rectangular body for collision and visual; Special remains the only integrator.
+    // Same rectangular body for collision and visual; Projectile remains the only integrator.
     const cx = ent.x + ent.w / 2, cy = ent.y + ent.h / 2;
     Object.assign(ent, { x: cx - 12, y: cy - 4, w: 24, h: 8, _attackVisualOwned: true });
     const box = h.state.box;

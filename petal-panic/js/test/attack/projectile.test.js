@@ -9,7 +9,7 @@ import { registerPrimitive, resetRegistries } from '../../combat/attack/registry
 import { attackEngine, invoke, AttackHandle } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { spawnProjectile, stepProjectile } from '../../combat/attack/primitives/projectile.js';
-import { Pool, Projectile, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -17,9 +17,10 @@ function ok(name, fn) {
   catch (e) { console.error(`  ✗ ${name}\n    ${e.message}`); process.exitCode = 1; }
 }
 
-/** Minimal pool pair for tests (fresh, small). */
+/** Minimal pool for tests (fresh, small). Unified: specials are typed Projectiles. */
 function makePools() {
-  return { projectilePool: new Pool(Projectile, 4), specialPool: new Pool(Special, 2) };
+  const projectilePool = new Pool(Projectile, 4);
+  return { projectilePool };
 }
 
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });
@@ -31,7 +32,6 @@ ok('straight shot spawns into projectilePool with exact velocity', () => {
   const ent = spawnProjectile({ speed: 600, direction: 0, ttl: 2, damage: 7 }, ctx, h);
   assert.ok(ent, 'should spawn');
   assert.equal(pools.projectilePool.active.length, 1, 'in straight pool');
-  assert.equal(pools.specialPool.active.length, 0, 'not in special pool');
   assert.ok(Math.abs(ent.vx - 600) < 1e-9 && Math.abs(ent.vy) < 1e-9, `velocity (${ent.vx},${ent.vy})`);
   assert.equal(ent.damage, 7);
   assert.equal(ent.life, 2);

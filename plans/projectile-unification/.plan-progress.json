@@ -17,7 +17,7 @@
     },
     "1.2": {
       "number": "1.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Merge sprite pipeline into single path",
       "milestone": "Merge Special into Projectile",
       "milestone_number": 1,
@@ -32,10 +32,18 @@
     },
     "1.3": {
       "number": "1.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Delete Special class + specialPool",
       "milestone": "Merge Special into Projectile",
-      "milestone_number": 1
+      "milestone_number": 1,
+      "summary": {
+        "failures": "Pre-existing failures in scope files, NOT caused by this batch's renames (verified via git stash of full working tree against HEAD 37febdd4): entryImpact.test.js 'top/wall bounce then enemy' (collisionHandlers ballistic early-return skips snapToImpact \u2192 _impactPrevX 331 !== null); bombGameplay.test.js terrain reflection block (120 !== -96, same root cause); attack/bombHost.test.js midair molotov anchor (got 352 vs 176 \u2014 molotov resolveImpactPoint fallback anchors to floor when no surfaceY); theaterParity laneSequence charge/beam (t.takeHit is not a function \u2014 Enemy lacks takeHit, staging patch covers it elsewhere); missileRain 'target under marked spot takes a blast' (blast damage path not applied to dummy target). All other assertions pass: projectile 34, specialRotation 20, mine 18, clusterBomb 2, fireArea 11, radialShot 6, attack/projectile 14, theaterParity 16, missileRain 10.",
+        "lessons_learned": "git stash push/pop of the whole working tree is a reliable way to attribute pre-existing failures vs new ones when the task state arrives mid-refactor with many dirty non-test files. Several assigned test files already contained the unification diff (from prior batches touching the same files) \u2014 always check git diff HEAD before assuming the file needs editing.",
+        "decisions": "missileRain: set specialPool:null and deleted the redundant specialPool.updateAll(DT) lines instead of aliasing to projectilePool \u2014 the pool was already aliased at HEAD for most files, but here double-stepping one pool twice per frame would have changed physics timing. Removed rather than aliased since the unified pool is stepped once via projectilePool.",
+        "confidence": "medium",
+        "tradeoffs": "Kept ctx.pools.specialPool key names in test contexts where production primitives (ballistic.js, projectile.js) still read them \u2014 renaming keys would break out-of-scope production code. Kept assertion intents byte-identical; only class/pool names changed.",
+        "done": "Batch 3a (test files part 1): repointed all Special/specialPool references in the 12 assigned test files to Projectile/projectilePool. Verified Projectile ctor arg order (x, y, dir, friendly=true, type=null) before edits. Changes: entryImpact.test.js (drop Special import; loop over [null,'bomb'] types with unified Pool(Projectile); setup pools both Projectile), missileRain.test.js (specialPool:null + removed 4 now-null specialPool.updateAll calls that would crash), bombGameplay.test.js (dynamic import specialPool\u2192projectilePool). Other files already carried correct unification diffs from earlier work and were verified as-is (mine/clusterBomb/bombHost/fireArea/radialShot/theaterParity/attack-projectile/specialRotation/top-level projectile tests)."
+      }
     },
     "1.4": {
       "number": "1.4",

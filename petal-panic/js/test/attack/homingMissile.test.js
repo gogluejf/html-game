@@ -32,7 +32,7 @@ function pools() {
       updateAll() {},
     };
   };
-  return { projectilePool: mk(64), specialPool: mk(16) };
+  return { projectilePool: mk(64) };
 }
 
 ok('steerVelocity: turns toward desired by at most maxTurn', () => {

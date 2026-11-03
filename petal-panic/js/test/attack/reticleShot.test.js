@@ -18,7 +18,7 @@ function ok(name, fn) {
 
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 }); // center (116,116)
 const target = () => ({ x: 400, y: 200, w: 32, h: 32, alive: true, vx: -160, vy: 0 });
-const pools = () => ({ projectilePool: new Pool(Projectile, 32), specialPool: new Pool(Projectile, 8) });
+const pools = () => ({ projectilePool: new Pool(Projectile, 32) });
 
 ok('tracks then locks: ONE shot fires at the LOCKED point, not current position', () => {
   const t = target();

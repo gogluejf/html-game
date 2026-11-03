@@ -15,7 +15,7 @@ import { invoke } from '../../combat/attack/engine.js';
 import { Enemy } from '../../enemies/enemy.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
 import { stepBombTerrain } from '../../combat/attack/primitives/ballistic.js';
-import { Pool, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 import { LAYER } from '../../consts.js';
 import '../../combat/attack/primitives/projectile.js';
 import '../../combat/attack/primitives/ballistic.js';
@@ -180,8 +180,8 @@ ok('molotov parity: identical zone placement across context shapes', () => {
   const attacker = { x: 140, y: GROUND_Y - 48, w: 32, h: 48, alive: true, layer: LAYER.HERO };
 
   const run = (targets) => {
-    const pool = new Pool(Special, 16);
-    const ctx = { pools: { specialPool: pool }, groundY: GROUND_Y, platforms: [],
+    const pool = new Pool(Projectile, 16);
+    const ctx = { pools: { projectilePool: pool }, groundY: GROUND_Y, platforms: [],
       bombTerrainStepped: true, world: { targets } };
     const host = new BombAttackHost(() => ctx);
     const h = host.spawn('molotov', { ...params }, attacker);

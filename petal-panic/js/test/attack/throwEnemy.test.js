@@ -6,7 +6,7 @@ import '../../effects/registry.js';
 import '../../combat/attack/macros/index.js'; // registers throwEnemy + spawnSplit
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
-import { Pool, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
 import { stepBombTerrain } from '../../combat/attack/primitives/ballistic.js';
 import { getMacro } from '../../combat/attack/registry.js';
@@ -27,9 +27,9 @@ const target = () => ({ x: 560, y: GROUND_Y - 24, w: 24, h: 24, layer: LAYER.ENE
 
 /** Gameplay-shaped host context (same pattern as bombHost.test.js). */
 function setup(targets = [target()]) {
-  const pool = new Pool(Special, 16);
+  const pool = new Pool(Projectile, 16);
   const attacker = { x: 100, y: GROUND_Y - 48, w: 32, h: 48 };
-  const context = { pools: { specialPool: pool }, groundY: GROUND_Y, platforms: [],
+  const context = { pools: { projectilePool: pool }, groundY: GROUND_Y, platforms: [],
     bombTerrainStepped: true, world: { targets, hero: null } };
   const host = new BombAttackHost(() => context);
   const frame = () => {
@@ -148,7 +148,7 @@ ok('cancellation removes the entity cleanly and suppresses payload', () => {
   assert.equal(poolAliveCount(context), 0, 'no live carriers remain');
 });
 function poolAliveCount(context) {
-  return context.pools.specialPool.items.filter((e) => e.alive).length;
+  return context.pools.projectilePool.items.filter((e) => e.alive).length;
 }
 
 ok('spawnSplit enemy children are THROWN (throwEnemy handles) with inherited velocity', () => {

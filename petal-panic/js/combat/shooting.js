@@ -4,7 +4,7 @@
 // index holding any id from SPECIAL_TYPES. N never fires — it only rotates the
 // selection (hero.rotateWeapon, called by the update step).
 
-import { projectilePool, specialPool } from '../objects/projectile.js';
+import { projectilePool } from '../objects/projectile.js';
 import { specialById, isSpecialType } from '../objects/specialWeapons.js';
 import { dirAngle } from '../core/vec.js';
 import { damage } from './damage.js';
@@ -75,11 +75,12 @@ function fireThorn(h, input, dt) {
 /** Build the Attack Engine context for a hero-fired shot. Supplies the shared
  * pools + collision world so the spawned projectile registers for real gameplay
  * collision (the same routing the bomb host uses). The engine reads
- * ctx.pools.projectilePool and ctx.collisionWorld. */
+ * ctx.pools.projectilePool and ctx.collisionWorld. Unified pool: specials are
+ * projectiles now, so both keys alias the one pool. */
 function makeHeroContext(h) {
   return {
     attacker: h,
-    pools: { projectilePool, specialPool },
+    pools: { projectilePool },
     collisionWorld: ctx.collisionWorld,
     // Full damageable set — blast macros pass this straight to the explosion
     // primitive and the team flag does the filtering. No hand-rolled lists.
@@ -133,8 +134,8 @@ function fireSpecial(h, input) {
   const oy = Math.sin(baseAngle) * 20;
 
   // M4 Step B (Task 4.3): all specials spawn through the engine's projectile
-  // primitive with specialType — real Special entities, class-owned look,
-  // identical velocity/damage/ttl/box as the old inline specialPool.spawn.
+  // primitive with specialType — typed Projectile entities, class-owned look,
+  // identical velocity/damage/ttl/box as the old inline special spawn.
   if (type === 'bomb' && ctx.bombAttacks) {
     const attack = ctx.bombAttacks.spawn('explosiveBomb', {
       origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,

@@ -45,7 +45,7 @@ const DEFAULTS = Object.freeze({
   width: null,           // explicit box width px (overrides size); null = size
   height: null,          // explicit box height px (overrides size); null = size
   specialType: null,     // special-weapon id ('saw'|'spread'|'bomb'|'homing'|'explosive') → routes to
-                         // specialPool with that type; null = Projectile/thorn path
+                         // the unified pool with that type; null = Projectile/thorn path
   drawer: null,          // (ctx, entity) => void — custom render override
 });
 
@@ -82,14 +82,14 @@ export function spawnProjectile(p, ctx, h) {
   const angle = typeof p.direction === 'number' ? p.direction : dirAngle(p.direction);
   const cos = Math.cos(angle), sin = Math.sin(angle);
 
-  // Special-weapon routing (Step B): specialType spawns a REAL Special entity
-  // from the special pool — the class owns look (sheet/procedural dual-mode)
+  // Special-weapon routing (Step B): specialType spawns a typed Projectile
+  // from the unified pool — the class owns look (sheet/procedural dual-mode)
   // and its sheet-owned box. Data-only: velocity/damage/ttl below apply to
   // both paths.
   if (p.specialType != null) {
     const meta = specialById[p.specialType];
     if (!meta) throw new Error(`projectile: unknown specialType '${p.specialType}'`);
-    const ent = ctx.pools.specialPool?.spawn(center.x, center.y, 0, p.specialType);
+    const ent = ctx.pools.projectilePool?.spawn(center.x, center.y, 0, true, p.specialType);
     if (!ent) return null; // pool exhausted — caller skips this shot (soft cap)
     ent.vx = cos * p.speed;
     ent.vy = sin * p.speed;
@@ -244,7 +244,7 @@ registerPrimitive('projectile', {
       { key: 'size', desc: 'square box size px; null = keep the entity\'s natural sheet box' },
       { key: 'width', desc: 'explicit box width px (overrides size)' },
       { key: 'height', desc: 'explicit box height px (overrides size)' },
-      { key: 'specialType', desc: "special-weapon id ('saw'|'spread'|'bomb'|'homing'|'explosive') → real Special entity; null = thorn path" },
+      { key: 'specialType', desc: "special-weapon id ('saw'|'spread'|'bomb'|'homing'|'explosive') → typed Projectile entity; null = thorn path" },
     ],
   },
   impl(params, ctx) {

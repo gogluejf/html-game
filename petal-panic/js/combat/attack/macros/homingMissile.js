@@ -79,7 +79,7 @@ defineMacro('homingMissile', {
     const p = { ...DEFAULTS, ...params };
 
     // 1. Spawn the bullet (the projectile primitive owns flight + collision).
-    // specialType routes to the Special pool with sheet art (hero weapons);
+    // specialType routes to the unified pool with sheet art (hero weapons);
     // null keeps the plain thorn path (enemy use).
     const shot = invoke('projectile', {
       direction: p.direction, speed: p.speed, ttl: p.ttl, damage: p.damage,

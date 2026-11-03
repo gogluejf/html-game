@@ -2,12 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { invoke } from '../../combat/attack/engine.js';
 import '../../combat/attack/macros/index.js';
-import { Pool, Special, Projectile } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 
 function context() {
   return {
     attacker: { x: 0, y: 0, w: 20, h: 20 },
-    pools: { specialPool: new Pool(Special, 2), projectilePool: new Pool(Projectile, 2) },
+    pools: { projectilePool: new Pool(Projectile, 2) },
     world: { targets: [] }, groundY: 400,
   };
 }
@@ -26,7 +26,7 @@ for (const [id, defaultType] of [['homingMissile', 'homing'], ['explosiveProject
         h.step(1 / 60, []);
         entity = h.state.missile.entity;
       }
-      assert.ok(entity instanceof (expected === null ? Projectile : Special));
+      assert.ok(entity instanceof Projectile);
       assert.equal(entity.type ?? null, expected);
     });
   }

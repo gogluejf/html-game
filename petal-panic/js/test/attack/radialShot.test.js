@@ -5,7 +5,7 @@ import { strict as assert } from 'node:assert';
 import { radialAngle } from '../../combat/attack/macros/radialShot.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
-import { Pool, Projectile, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 import '../../combat/attack/primitives/projectile.js';
 import '../../combat/attack/macros/spreadShot.js'; // radial wraps it
 import '../../combat/attack/macros/radialShot.js'; // registers the macro
@@ -19,7 +19,8 @@ function ok(name, fn) {
 const close = (a, b) => Math.abs(a - b) < 1e-9;
 
 function pools() {
-  return { projectilePool: new Pool(Projectile, 16), specialPool: new Pool(Special, 16) };
+  const projectilePool = new Pool(Projectile, 16);
+  return { projectilePool };
 }
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });
 

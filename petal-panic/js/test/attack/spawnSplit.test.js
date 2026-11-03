@@ -60,7 +60,7 @@ ok('2π distribution produces a radial pattern', () => {
 
 ok('macro materializes projectile children into live handles', () => {
   const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:12,h:12,vx:0,vy:0,orientSprite(){},setLife(){},timers:new Map()};items.push(e);return e;}, updateAll(){} }; };
-  const ctx = makeContext(attacker(), { pools: { projectilePool: mk(), specialPool: mk() } });
+  const ctx = makeContext(attacker(), { pools: { projectilePool: mk() } });
   const h = invoke('spawnSplit', P, ctx); // default spawnType = projectile
   assert.equal(h.children.length, 3, 'raw vectors exposed');
   assert.equal(h.handles.length, 3, 'each child → a live projectile handle');
@@ -68,7 +68,7 @@ ok('macro materializes projectile children into live handles', () => {
 
 ok('macro materializes enemy children as thrown carriers (throwEnemy)', () => {
   const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:18,h:18,vx:0,vy:0,orientSprite(){},setLife(){},timers:new Map()};items.push(e);return e;}, updateAll(){} }; };
-  const ctx = makeContext(attacker(), { pools: { projectilePool: mk(), specialPool: mk() } });
+  const ctx = makeContext(attacker(), { pools: { projectilePool: mk() } });
   const h = invoke('spawnSplit', { ...P, spawnType: 'enemy' }, ctx);
   assert.equal(h.handles.length, 3, 'each child → a live throwEnemy handle');
   assert.ok(h.handles.every((ch) => ch.id === 'throwEnemy'));
@@ -87,10 +87,10 @@ ok('macro materializes immediate enemy children when enemy.thrown=false', () => 
 ok('spawnSplit thrown monkey detonates on victim contact through host stepping', () => {
   const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:18,h:18,vx:0,vy:0,gravityValue:0,orientSprite(){},setLife(){},timers:new Map()};items.push(e);return e;}, updateAll(dt){ for(const e of items){ if(!e.alive) continue; if(e.gravityValue>0) e.vy+=e.gravityValue*dt; e.x+=e.vx*dt; e.y+=e.vy*dt; } } }; };
   const hero = { x: 260, y: 92, w: 24, h: 24, alive: true, hp: 100, team: 'hero', worldBox(){return this;}, loseSelectedSpecial(){}, takeHit(){} };
-  const ctx = makeContext(attacker(), { pools: { projectilePool: mk(), specialPool: mk() }, world: { targets: [hero], hero } });
+  const ctx = makeContext(attacker(), { pools: { projectilePool: mk() }, world: { targets: [hero], hero } });
   const h = invoke('spawnSplit', { spawnType: 'enemy', enemyType: 'explosive_monkey', count: 1, centerDirection: 0, angle: 0, force: 80, groundY: 100, target: hero }, ctx);
   for (let i = 0; i < 240 && !h._completed; i++) {
-    ctx.pools.specialPool.updateAll(1/60);
+    ctx.pools.projectilePool.updateAll(1/60);
     h.step(1/60, [hero]);
     const e = h.enemies[0];
     if (e?.alive) {

@@ -4,7 +4,7 @@ import '../../effects/registry.js';
 import '../../combat/attack/macros/index.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { activeInstances, resetEffects } from '../../effects/index.js';
-import { Pool, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
 import { AttackTheater } from '../../debug/attack-theater.js';
 
@@ -13,8 +13,8 @@ const enemy = (x = 0, y = 92) => ({ x, y, w: 16, h: 8, alive: true, hp: 999,
   takeDamage(n) { this.hp -= n; return n; } });
 let currentContext;
 const context = () => (currentContext = { attacker: { x: -200, y: 0, w: 20, h: 20 }, groundY: 100,
-  world: { targets: [], hero: null }, pools: { specialPool: new Pool(Special, 16) } });
-const frame = (h, targets = [], c = currentContext) => { c.pools.specialPool.updateAll(dt); h.step(dt, targets); };
+  world: { targets: [], hero: null }, pools: { projectilePool: new Pool(Projectile, 16) } });
+const frame = (h, targets = [], c = currentContext) => { c.pools.projectilePool.updateAll(dt); h.step(dt, targets); };
 const run = (h, seconds, targets = []) => { for (let i = 0; i < Math.ceil(seconds / dt); i++) frame(h, targets); };
 
 test('default two-second TTL, separate overlay and base, exactly one detonation/completion', () => {
@@ -175,7 +175,7 @@ test('actual bomb composition: production wall dispatch reflects and contact ret
     const h = invoke('throwMine', { origin: { x: 88, y: 30 }, speed: 120,
       direction: 0, arc: 0, ttl: null, team }, c);
     const e = h.entity;
-    assert.equal(h.inner.id, 'ballistic'); assert.ok(e instanceof Special);
+    assert.equal(h.inner.id, 'ballistic'); assert.ok(e instanceof Projectile);
     assert.equal(e._attackHandle, h.inner);
     assert.deepEqual(e.worldBox(), { x: 76, y: 26, w: 24, h: 8 });
     // Wall reflection is covered by the bomb primitive's own tests; here we
@@ -201,31 +201,31 @@ for (const id of ['throwMine', 'skyMissile', 'missileRain', 'spawnSplit', 'clust
     const find = h => h.id === 'throwMine' ? h : (h.handles ?? []).map(find).find(Boolean);
     let mine;
     for (let i = 0; i < 120 && !mine; i++) {
-      c.pools.specialPool.updateAll(dt); host.step(dt); mine = find(root);
+      c.pools.projectilePool.updateAll(dt); host.step(dt); mine = find(root);
     }
     assert.ok(mine); const e = mine.entity;
-    assert.ok(e instanceof Special);
+    assert.ok(e instanceof Projectile);
     const x = e.x, y = e.y, vx = e.vx, vy = e.vy;
-    c.pools.specialPool.updateAll(dt); host.step(dt);
+    c.pools.projectilePool.updateAll(dt); host.step(dt);
     assert.equal(e.x, x + vx * dt);
     assert.equal(e.y, y + (vy + e.gravityValue * dt) * dt);
     for (let i = 0; i < 600 && !mine.state.settled; i++) {
-      c.pools.specialPool.updateAll(dt); host.step(dt);
+      c.pools.projectilePool.updateAll(dt); host.step(dt);
     }
     assert.equal(mine.state.settled, true); assert.equal(mine.state.elapsed, 0);
     assert.equal(e.alive, false); assert.equal(e._attackDone, true);
-    for (let i = 0; i < 300; i++) { c.pools.specialPool.updateAll(dt); host.step(dt); }
+    for (let i = 0; i < 300; i++) { c.pools.projectilePool.updateAll(dt); host.step(dt); }
     assert.equal(mine.state.phase, 'idle', 'null TTL survives resting');
     host.clear(); assert.equal(host.roots.size, 0);
-    assert.ok(c.pools.specialPool.items.every(e => !e.alive));
-    const recycled = c.pools.specialPool.spawn(0, 0, 0, 'bomb');
+    assert.ok(c.pools.projectilePool.items.every(e => !e.alive));
+    const recycled = c.pools.projectilePool.spawn(0, 0, 0, true, 'bomb');
     assert.equal(recycled._bombFuseDisabled, undefined);
     assert.equal(recycled._attackVisualOwned, undefined);
   });
 }
 
 test('pool exhaustion finishes throwMine without leaving a root', () => {
-  const c = context(); c.pools.specialPool = new Pool(Special, 0);
+  const c = context(); c.pools.projectilePool = new Pool(Projectile, 0);
   const host = new BombAttackHost(() => c);
   assert.equal(host.spawn('throwMine', {}, c.attacker)._completed, true);
   assert.equal(host.roots.size, 0);

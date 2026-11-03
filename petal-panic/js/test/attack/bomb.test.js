@@ -5,7 +5,7 @@ import { strict as assert } from 'node:assert';
 import { spawnBomb, stepBomb, stepBombTerrain } from '../../combat/attack/primitives/ballistic.js';
 import { invoke, AttackHandle } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
-import { Pool, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -15,15 +15,15 @@ function ok(name, fn) {
 
 const attacker = () => ({ x: 100, y: 200, w: 32, h: 32 });
 function makeCtx() {
-  return makeContext(attacker(), { pools: { specialPool: new Pool(Special, 4) } });
+  return makeContext(attacker(), { pools: { projectilePool: new Pool(Projectile, 4) } });
 }
 const P = { speed: 300, direction: -Math.PI / 4, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 60 };
 
-ok('spawns into specialPool with ballistic velocity + gravity', () => {
+ok('spawns into projectilePool with ballistic velocity + gravity', () => {
   const ctx = makeCtx();
   const ent = spawnBomb(P, ctx);
   assert.ok(ent, 'spawned');
-  assert.equal(ctx.pools.specialPool.active.length, 1);
+  assert.equal(ctx.pools.projectilePool.active.length, 1);
   const c = Math.SQRT1_2 * 300;
   assert.ok(Math.abs(ent.vx - c) < 1e-6, `vx=${ent.vx}`);
   assert.ok(Math.abs(ent.vy + c) < 1e-6, `vy=${ent.vy}`);
@@ -75,7 +75,7 @@ ok('fuse expiry (no contact) still detonates, contact=false', () => {
   const ent = spawnBomb(P, ctx);
   const seen = [];
   h.on('detonate', (d) => seen.push(d.contact));
-  ent.ttlExpired = true; // Special.update() sets this when the fuse runs out
+  ent.ttlExpired = true; // Projectile.update() sets this when the fuse runs out
   ent.alive = false;
   stepBomb(ent, P, ctx, h);
   assert.deepEqual(seen, [false]);
@@ -122,7 +122,7 @@ ok('no payload → fizzle: detonate emits, no crash', () => {
 });
 
 ok('pool exhaustion: spawn returns null, handle expires', () => {
-  const ctx2 = makeContext(attacker(), { pools: { specialPool: new Pool(Special, 1) } });
+  const ctx2 = makeContext(attacker(), { pools: { projectilePool: new Pool(Projectile, 1) } });
   const h1 = invoke('ballistic', { ...P }, ctx2);
   assert.ok(h1.entity, 'first bomb spawns');
   const h2 = invoke('ballistic', { ...P }, ctx2);

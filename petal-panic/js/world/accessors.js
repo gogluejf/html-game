@@ -3,7 +3,8 @@
 // world state without importing the orchestrator (which would be circular).
 import { ctx } from './context.js';
 import { roomFloorTop } from './level.js';
-import { projectilePool, specialPool } from '../objects/projectile.js';
+import { projectilePool } from '../objects/projectile.js';
+import { isSpecialType } from '../objects/specialWeapons.js';
 import { particles, coins } from '../effects/particles.js';
 import { Effects } from '../effects.js';
 import { floatTexts } from '../hero/floatText.js';
@@ -23,9 +24,12 @@ export function getLiveEnemies() {
   }
   return out;
 }
-// live thorns come from the shared pool (pooled, no allocation).
-export function getProjectiles() { return projectilePool.activeItems; }
-export function getSpecials() { return specialPool.activeItems; }
+// Unified pool (Special folded into Projectile, task 1.3): thorns and typed
+// specials live in the SAME pool, partitioned by `type`. getProjectiles() is
+// the typeless shots; getSpecials() is the typed ones — the two partitions are
+// disjoint and together cover every live entity in projectilePool.
+export function getProjectiles() { return projectilePool.activeItems.filter(e => e.type == null); }
+export function getSpecials() { return projectilePool.activeItems.filter(e => e.type != null && isSpecialType(e.type)); }
 export function getPickups() { return []; }
 export function getCamera() { return ctx.camera; }
 // full real-enemy list (from generateLevel) for render/debug.

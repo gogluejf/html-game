@@ -3,7 +3,7 @@
 // The generic "throw a living thing" composition, built on the SAME bomb
 // (Ballistic Arc) primitive + stepBombTerrain() path as throwMine — no
 // duplicated physics. Two phases with two owners:
-//   FLYING  — the pooled Special carrier (projectile/bomb layer). This macro
+//   FLYING  — the pooled Projectile carrier (projectile/bomb layer). This macro
 //             steps it exactly like throwMine does (terrain, retain flags).
 //   LANDED  — a REAL Enemy entity spawned at the rest point via makeEnemy().
 //             From here it lives in the enemy layer: host AI stepping, world

@@ -13,7 +13,7 @@
 import { strict as assert } from 'node:assert';
 import { Hero, WEAPON_THORN, SPECIAL_SLOT_COUNT } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
-import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS } from '../objects/projectile.js';
+import { projectilePool, SPECIAL_WEAPON_DEFS } from '../objects/projectile.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -34,7 +34,7 @@ function fireSelected(h, input = noInput()) {
     if (!type) return false;
     const dir = h.resolveAim(inp);
     const { x: cx, y: cy } = h.bodyCenter();
-    const s = specialPool.spawn(cx - 10, cy - 10, dir, type);
+    const s = projectilePool.spawn(cx - 10, cy - 10, dir, true, type);
     if (!s) return false;
     h.timers.set('special', SPECIAL_WEAPON_DEFS[type].fireCooldown);
     return true;
@@ -50,8 +50,6 @@ function fireSelected(h, input = noInput()) {
 function clearPools() {
   for (const p of projectilePool.activeItems) p.alive = false;
   projectilePool.active.length = 0;
-  for (const s of specialPool.activeItems) s.alive = false;
-  specialPool.active.length = 0;
 }
 
 console.log('Slot state');
@@ -179,7 +177,6 @@ ok('J fires thorn while default is selected', () => {
   clearPools();
   assert.ok(fireSelected(h), 'thorn shot should succeed');
   assert.equal(projectilePool.count, 1);
-  assert.equal(specialPool.count, 0);
   clearPools();
 });
 ok('J fires the selected slot\'s special WITHOUT mutating the slot', () => {
@@ -187,8 +184,7 @@ ok('J fires the selected slot\'s special WITHOUT mutating the slot', () => {
   h.acquireSpecial('saw'); // sel 0
   clearPools();
   assert.ok(fireSelected(h), 'special shot should succeed');
-  assert.equal(specialPool.count, 1);
-  assert.equal(projectilePool.count, 0);
+  assert.equal(projectilePool.count, 1);
   assert.equal(h.specialSlots[0], 'saw', 'slot still holds the weapon after firing');
   clearPools();
 });
@@ -197,7 +193,6 @@ ok('firing with an empty selected slot spawns nothing and does not throw', () =>
   h.selectedWeapon = 1; // slot 1 is empty
   clearPools();
   assert.equal(fireSelected(h), false);
-  assert.equal(specialPool.count, 0);
   assert.equal(projectilePool.count, 0);
   clearPools();
 });
@@ -223,7 +218,6 @@ ok('switchWeapon intent changes selection and fires nothing', () => {
   h.rotateWeapon();           // the update system applies it edge-triggered
   assert.equal(h.selectedWeapon, 0);
   assert.equal(projectilePool.count, 0, 'no thorn fired');
-  assert.equal(specialPool.count, 0, 'no special fired');
   clearPools();
 });
 

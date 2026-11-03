@@ -5,7 +5,7 @@ import { strict as assert } from 'node:assert';
 import '../../combat/attack/primitives/projectile.js'; // register carrier primitive
 import '../../combat/attack/primitives/explosion.js';  // register blast primitive
 import '../../combat/attack/macros/explosiveProjectile.js';
-import { Pool, Projectile, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 import { resolveImpactPoint } from '../../combat/attack/macros/skyMissile.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
@@ -22,7 +22,8 @@ const GROUND_Y = 400;
 const attacker = () => ({ x: 300, y: GROUND_Y - 48, w: 32, h: 48 });
 
 function pools() {
-  return { projectilePool: new Pool(Projectile, 16), specialPool: new Pool(Special, 4) };
+  const projectilePool = new Pool(Projectile, 16);
+  return { projectilePool };
 }
 
 function ctx(extra = {}) {
@@ -93,8 +94,7 @@ ok('sequence: warning → drop → complete', () => {
   const phases = new Set();
   let finished = false;
   for (let i = 0; i < 600 && !finished; i++) {
-    c.pools.projectilePool.updateAll(DT);
-    c.pools.specialPool.updateAll(DT); // carrier is a Special (specialPool)
+    c.pools.projectilePool.updateAll(DT); // unified pool — stepping the pool twice per frame double-integrates
     finished = h.step(DT, []);
     phases.add(h.state.phase);
   }
@@ -124,8 +124,7 @@ ok('a target standing at the marked spot takes the blast', () => {
   const h = invoke('skyMissile', { x: 500, timeToTarget: 0.1, fallSpeed: 600, damage: 30, radius: 60 }, c);
   let finished = false;
   for (let i = 0; i < 600 && !finished; i++) {
-    c.pools.projectilePool.updateAll(DT);
-    c.pools.specialPool.updateAll(DT); // carrier is a Special (specialPool)
+    c.pools.projectilePool.updateAll(DT); // unified pool — stepping the pool twice per frame double-integrates
     finished = h.step(DT, [e]);
     // Sandbox-style contact resolution: the falling carrier body vs the
     // target (the theater/gameplay collision handler does this in-engine).
@@ -149,8 +148,7 @@ ok('a target far from the marked spot is untouched', () => {
   const h = invoke('skyMissile', { x: 500, timeToTarget: 0.1, fallSpeed: 600, damage: 30, radius: 60 }, c);
   let finished = false;
   for (let i = 0; i < 600 && !finished; i++) {
-    c.pools.projectilePool.updateAll(DT);
-    c.pools.specialPool.updateAll(DT); // carrier is a Special (specialPool)
+    c.pools.projectilePool.updateAll(DT); // unified pool — stepping the pool twice per frame double-integrates
     finished = h.step(DT, [e]);
   }
   assert.ok(finished);
@@ -170,8 +168,7 @@ ok('the missile detonates ON the platform top, not below it (marker/blast agree)
   let finished = false;
   for (let i = 0; i < 600 && !finished; i++) {
     const ent = h.state.missile?.entity;
-    c.pools.projectilePool.updateAll(DT);
-    c.pools.specialPool.updateAll(DT); // carrier is a Special (specialPool)
+    c.pools.projectilePool.updateAll(DT); // unified pool — stepping the pool twice per frame double-integrates
     finished = h.step(DT, []);
     if (ent && !ent.alive && deathY == null) deathY = ent.y + ent.h;
   }

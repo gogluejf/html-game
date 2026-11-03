@@ -15,7 +15,7 @@ const DEFAULTS = Object.freeze({
   radius: 70,           // blast radius (px)
   origin: null,         // marker label | {x,y} | null → attacker center
   solidBehavior: 'stop', // phase | stop | reflect — stop: detonate on contact
-  gravity: 0,           // px/s²; >0 routes to the ballistic (Special) pool
+  gravity: 0,           // px/s²; >0 routes to the ballistic (Projectile) pool
   team: 'ally',        // ally | foe — who the carrier shot hurts
   size: 12,             // box size
   blastTeam: 'neutral', // blast team: foe | ally | neutral

@@ -1,7 +1,7 @@
 // Drawer contract: (ctx, entity) => void
 //
 // Mine body — ONE drawer for both phases of throwMine/mine:
-//   flying  — entity is the ballistic carrier's pooled Special (x/y/w/h live,
+//   flying  — entity is the ballistic carrier's pooled Projectile (x/y/w/h live,
 //             rotation set by the arc integrator); drawn at its flight pose.
 //   landed  — entity is a plain { x, y, w, h } snapshot of the resting box
 //             (the mine macro's state.box); same art, no rotation.

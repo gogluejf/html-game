@@ -2,13 +2,13 @@ import { strict as assert } from 'node:assert';
 import '../../combat/attack/primitives/explosion.js';
 import '../../combat/attack/macros/index.js';
 import { invoke } from '../../combat/attack/engine.js';
-import { Pool, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 
 const dt = 1 / 60;
 function context() {
   return {
     attacker: { x: 0, y: 0, w: 32, h: 48 },
-    pools: { specialPool: new Pool(Special, 16) },
+    pools: { projectilePool: new Pool(Projectile, 16) },
     groundY: 10000, world: { targets: [] },
     effects: { spawnExplosion() {}, bigExplosion() {}, triggerShake() {} },
   };
@@ -23,14 +23,14 @@ for (const death of ['impact', 'fuse']) {
     h.entity.alive = false;
     h.entity._attackHit = true;
   } else {
-    ctx.pools.specialPool.updateAll(dt);
+    ctx.pools.projectilePool.updateAll(dt);
   }
   const x = h.entity.x + h.entity.w / 2;
   const y = h.entity.y + h.entity.h / 2;
   h.step(dt);
   assert.equal(h.handles.length, 4);
   assert.equal(h._completed, false, 'parent must wait for children');
-  const pool = ctx.pools.specialPool;
+  const pool = ctx.pools.projectilePool;
   assert.equal(pool.active.length, 4);
   assert.equal(new Set(pool.active).size, 4, 'no duplicate active entries');
 
@@ -42,7 +42,7 @@ for (const death of ['impact', 'fuse']) {
   }, directCtx);
   for (let frame = 0; frame < 30; frame++) {
     pool.updateAll(dt);
-    directCtx.pools.specialPool.updateAll(dt);
+    directCtx.pools.projectilePool.updateAll(dt);
     h.step(dt);
     direct.step(dt);
     for (let i = 0; i < 4; i++) {

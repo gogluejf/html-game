@@ -26,7 +26,7 @@ const DEFAULTS = Object.freeze({
   fireDamage: 8,        // damage per tick in the area
   origin: null,         // marker label | {x,y} | null → attacker center
   solidBehavior: 'stop', // phase | stop | reflect — stop: ignite on contact
-  gravity: 0,           // px/s²; >0 routes to the ballistic (Special) pool
+  gravity: 0,           // px/s²; >0 routes to the ballistic (Projectile) pool
   team: 'ally',         // ally | foe — who the carrier shot hurts
   size: 12,             // box size
   blastTeam: 'neutral', // fire team: foe | ally | neutral — who the fire hurts

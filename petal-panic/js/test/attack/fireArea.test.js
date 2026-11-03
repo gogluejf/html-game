@@ -4,7 +4,7 @@
 import { strict as assert } from 'node:assert';
 import { fireAreaBox } from '../../combat/attack/primitives/fireArea.js';
 import '../../combat/attack/macros/molotov.js';
-import { Pool, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { LAYER } from '../../consts.js';
@@ -104,13 +104,13 @@ for (const scenario of [
   ok(`Molotov ${scenario.name}: rendered fire and damage share the impact box`, () => {
     const ctx = {
       attacker: attacker(), groundY: 400, platforms: scenario.platforms ?? [],
-      pools: { specialPool: new Pool(Special, 4) }, world: { targets: [] },
+      pools: { projectilePool: new Pool(Projectile, 4) }, world: { targets: [] },
     };
     const h = invoke('molotov', {
       origin: { x: 400, y: scenario.y }, speed: 0, arc: 0, ttl: DT,
     }, ctx);
     if (scenario.impact) h.entity.vy = 10;
-    else ctx.pools.specialPool.updateAll(DT);
+    else ctx.pools.projectilePool.updateAll(DT);
     h.step(DT);
     assert.equal(h.handles.length, 1);
     const fire = h.handles[0];

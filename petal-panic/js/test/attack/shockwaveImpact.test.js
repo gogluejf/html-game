@@ -59,7 +59,7 @@ function ringOrigin() {
 
 ok('projectile: telegraph centers on the carrier death point, not the recycled slot', () => {
   resetEffects();
-  const pools = { projectilePool: new Pool(Projectile, 4), specialPool: new Pool(Projectile, 2) };
+  const pools = { projectilePool: new Pool(Projectile, 4) };
   const c = ctx({ pools });
   const h = invoke('shockwaveProjectile', {
     origin: { x: 100, y: 300 }, direction: 0, speed: 700, ttl: 99,
@@ -98,7 +98,7 @@ ok('projectile: telegraph centers on the carrier death point, not the recycled s
 
 ok('projectile: shockwave ring launches at the captured impact point', () => {
   resetEffects();
-  const pools = { projectilePool: new Pool(Projectile, 4), specialPool: new Pool(Projectile, 2) };
+  const pools = { projectilePool: new Pool(Projectile, 4) };
   const c = ctx({ pools });
   const h = invoke('shockwaveProjectile', {
     origin: { x: 100, y: 300 }, direction: 0, speed: 700, ttl: 99,
@@ -131,7 +131,7 @@ ok('projectile: shockwave ring launches at the captured impact point', () => {
 // ---------------------------------------------------------------------------
 
 ok('stepProjectile: hit/expire payloads carry the death point at emit time', () => {
-  const pools = { projectilePool: new Pool(Projectile, 4), specialPool: new Pool(Projectile, 2) };
+  const pools = { projectilePool: new Pool(Projectile, 4) };
   const c = ctx({ pools });
   const h = invoke('projectile', { origin: { x: 100, y: 300 }, direction: 0, speed: 700, ttl: 99, damage: 5 }, c);
   const ent = h.entity;

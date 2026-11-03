@@ -1,16 +1,16 @@
 import { strict as assert } from 'node:assert';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
-import { Pool, Special } from '../../objects/projectile.js';
+import { Pool, Projectile } from '../../objects/projectile.js';
 import { stepBombTerrain } from '../../combat/attack/primitives/ballistic.js';
 import { LAYER } from '../../consts.js';
 
 const dt = 1 / 60;
 const attacker = { x: 0, y: 0, w: 32, h: 32 };
 function setup(size = 16, platforms = []) {
-  const pool = new Pool(Special, size);
+  const pool = new Pool(Projectile, size);
   const target = { x: 390, y: 376, w: 24, h: 24, layer: LAYER.ENEMY,
     alive: true, hp: 1000, takeDamage(n) { this.hp -= n; return n; } };
-  const context = { pools: { specialPool: pool }, groundY: 400, platforms,
+  const context = { pools: { projectilePool: pool }, groundY: 400, platforms,
     bombTerrainStepped: true, world: { targets: [target] } };
   const host = new BombAttackHost(() => context);
   const frame = () => {

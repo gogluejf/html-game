@@ -224,7 +224,7 @@ export function syncProjectilesToWorld() {
 
 /** Sync live specials into the collision world (same pattern as projectiles). */
 export function syncSpecialsToWorld() {
-  const live = ctx.specialPool.activeItems;
+  const live = ctx.projectilePool.activeItems;
   for (const e of ctx.collisionWorld.entities) {
     if (isSpecialType(e.type)) {
       if (!live.includes(e)) ctx.collisionWorld.remove(e);
