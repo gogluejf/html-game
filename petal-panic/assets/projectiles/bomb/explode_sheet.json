@@ -107,7 +107,7 @@
     "y": 0
    },
    "fps": 8,
-   "playback": "loop",
+   "playback": "once",
    "direction": "forward",
    "markers": []
   }

@@ -20,7 +20,17 @@
       11,
       270,
       236
-     ]
+     ],
+     "offset": {
+      "x": -135,
+      "y": -118
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "explode_f2.png",
@@ -31,7 +41,17 @@
       2,
       275,
       254
-     ]
+     ],
+     "offset": {
+      "x": -137.5,
+      "y": -127
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "explode_f3.png",
@@ -42,7 +62,17 @@
       0,
       301,
       258
-     ]
+     ],
+     "offset": {
+      "x": -150.5,
+      "y": -129
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "explode_f4.png",
@@ -53,7 +83,17 @@
       6,
       296,
       245
-     ]
+     ],
+     "offset": {
+      "x": -148,
+      "y": -122.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "explode_f5.png",
@@ -64,7 +104,17 @@
       11,
       263,
       236
-     ]
+     ],
+     "offset": {
+      "x": -131.5,
+      "y": -118
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "explode_f6.png",
@@ -75,9 +125,33 @@
       36,
       208,
       185
-     ]
+     ],
+     "offset": {
+      "x": -104,
+      "y": -92.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-   ]
+   ],
+   "fps": 8,
+   "playback": "once",
+   "direction": "forward",
+   "collision": {
+    "x": -131,
+    "y": -114,
+    "w": 262,
+    "h": 228
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
   }
  ],
  "updated": "2026-10-22"
