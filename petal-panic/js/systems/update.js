@@ -31,7 +31,7 @@ import { buildWorld, captureAreaMap, newGameSeed, getLastWorldSeed } from '../wo
 import { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver };
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, roomFloorTop, BOSS_TRIGGER_X } from '../world/level.js';
-import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry } from '../systems/lifecycle.js';
+import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, applySavedState } from '../systems/lifecycle.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
 import { loadStore } from '../systems/progressStore.js';
 import { Theater } from '../debug/effect-theater.js';
@@ -591,6 +591,13 @@ onTransition((from, to) => {
       world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, sm.seed);
       console.log(`[lifecycle] continue: rebuilt world from saved seed ${sm.seed}`);
     }
+    // Full-state resume (state-persistence.md §2.6): AFTER the seed rebuild and
+    // BEFORE the zone installs, restore the saved player state onto the hero —
+    // exactly what was on screen at quit time wins over any reset. The entry
+    // screen then shows the saved life count, and startLife keeps the saved
+    // wallet/inventory (failure transitions restore from the restored snapshot
+    // chain). Legacy saves without a `state` block keep today's behavior.
+    if (sm?.state && typeof sm.state === 'object') applySavedState(h, sm.state);
     // Tear down any lingering boss battle room before swapping zones (a fresh
     // resume must not inherit COMBAT state from a finished run).
     if (bossZone.active) { bossZone.reset(); camera.unlock(); restoreBossRunFloor(); }

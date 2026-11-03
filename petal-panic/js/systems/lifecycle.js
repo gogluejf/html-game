@@ -614,10 +614,84 @@ export function continueFromMenu(h) {
   if (!isValidSaveMeta(sm)) return false;
   const level = sm.level;
   const area = sm.area;
-  if (h) { h.currentLevel = level; h.currentArea = area; }
+  if (h) {
+    h.currentLevel = level;
+    h.currentArea = area;
+    // Full-state resume (state-persistence.md §2.6): a save carrying a `state`
+    // block restores the exact on-screen player state at quit time (wallet,
+    // weapon/specials, lives, continues, snapshot chain) BEFORE the zone
+    // installs, so the entry screen shows the saved life count and startLife
+    // keeps it. Legacy saves without `state` keep today's behavior — the hero
+    // is untouched beyond its run identity (no crash).
+    if (sm.state && typeof sm.state === 'object') applySavedState(h, sm.state);
+  }
   showAreaEntry(h ?? { currentLevel: level, currentArea: area, lives: GAME_RULES.startingLives });
   console.log(`[lifecycle] MENU → AREA_ENTRY (continue ${level}-${area})`);
   return getState() === S.AREA_ENTRY;
+}
+
+/**
+ * Serialize the hero's full player state for a Save & Quit (state-persistence.md
+ * §2.5): coins, score, energy, weapon, specials, lives, continues — the exact
+ * on-screen state at quit time. Score is computed from the append-only trace
+ * (the same source saveMeta.score uses). The zone-snapshot chain is carried
+ * inside the returned `state` object as `snapshots` so applySavedState restores
+ * it in one place (§2.6) and a post-reload death rolls back to pre-quit values.
+ * @param {object} h the hero
+ * @returns {{coins:number, score:number, energy:number, weapon:*, specialSlots:*, lives:number, continues:number}}
+ */
+export function capturePlayerState(h) {
+  const tTotal = h?.traceStats?.total ?? {};
+  return {
+    coins: h?.wallet?.current?.coins ?? 0,
+    score: calculateScore(tTotal, h),
+    energy: h?.wallet?.current?.energy ?? h?.maxEnergy ?? 0,
+    weapon: h?.selectedWeapon,
+    specialSlots: Array.isArray(h?.specialSlots) ? [...h.specialSlots] : [],
+    lives: h?.lives ?? GAME_RULES.startingLives,
+    continues: h?.continues?.remaining ?? 0,
+  };
+}
+
+/**
+ * Restore a saved player state onto a live hero (state-persistence.md §2.6):
+ * exactly what was on screen at quit time wins over any reset. Applied on a
+ * reload-Continue BEFORE the zone installs, so the entry screen shows the
+ * saved life count and startLife keeps the saved wallet/inventory (it only
+ * touches them on the failure transitions, which restore from snapshots).
+ *
+ * Called from BOTH continueFromMenu (menu path) and update.js's MENU→AREA_ENTRY
+ * hook (transition path); every field is a plain guarded assignment, so the
+ * function is idempotent — both firing on one resume is harmless. Keep new
+ * fields assignment-only (no accumulation) to preserve that property.
+ *
+ * Tolerates missing/legacy fields: each field falls back to the hero's current
+ * value, so a partial or mistyped block can never crash the resume.
+ * @param {object} h the live hero to restore onto
+ * @param {object} st the saved state block (saveMeta.state)
+ */
+export function applySavedState(h, st) {
+  if (!h || !st || typeof st !== 'object') return;
+  // Wallet: coins + energy are the live wallet fields (hero.js exposes them as
+  // getters/setters over wallet.current). Only touch present, sane values.
+  if (Number.isFinite(st.coins)) h.wallet.current.coins = st.coins;
+  if (Number.isFinite(st.energy)) h.wallet.current.energy = st.energy;
+  // Inventory: weapon selection + held specials (the doc's "weapon" column).
+  if (st.weapon !== undefined) h.selectedWeapon = st.weapon;
+  if (Array.isArray(st.specialSlots) && Array.isArray(h.specialSlots)) {
+    h.specialSlots.fill(null);
+    st.specialSlots.forEach((v, i) => { if (i < h.specialSlots.length) h.specialSlots[i] = v; });
+  }
+  // Money: lives + continue pool.
+  if (Number.isInteger(st.lives) && st.lives >= 0) h.lives = st.lives;
+  if (Number.isInteger(st.continues) && st.continues >= 0 && h.continues) {
+    h.continues.remaining = st.continues;
+  }
+  // Zone-snapshot chain (state-persistence.md §1): persisting it means a death
+  // AFTER a reload-continue rolls back to the pre-quit zone-entry values.
+  if (st.snapshots && typeof st.snapshots === 'object' && !Array.isArray(st.snapshots)) {
+    h.wallet.snapshots = { ...st.snapshots };
+  }
 }
 
 /**
@@ -630,6 +704,13 @@ export function continueFromMenu(h) {
  * saveMeta lives at the TOP LEVEL of the store document (not under progress),
  * so it is set directly on the loaded document and flushed with saveStore().
  *
+ * Full-state persistence (state-persistence.md §2.5): alongside the legacy
+ * {level, area, score, seed}, the save now carries the FULL player state
+ * (`state`: coins, score, energy, weapon, specials, lives, continues) and the
+ * whole zone-snapshot chain (`snapshots`) so a Continue after a page reload
+ * resumes with EXACTLY the on-screen state at quit time. Saving costs nothing
+ * and changes nothing in the run itself.
+ *
  * `overrides` lets a caller persist a resume point that differs from the hero's
  * CURRENT position — the autosave on boss defeat (showLevelReward) saves the
  * NEXT level's area 1, mirroring what rewardOnAction() does when the player
@@ -639,17 +720,24 @@ export function continueFromMenu(h) {
  * @returns {{level:number, area:number, score:number, timestamp:number}|null}
  */
 export function saveCurrentRun(h, overrides = {}) {
-  const tTotal = h?.traceStats?.total ?? {};
   const meta = {
     level: overrides.level ?? h?.currentLevel ?? 1,
     area: overrides.area ?? h?.currentArea ?? 1,
-    score: calculateScore(tTotal, h),
+    score: calculateScore(h?.traceStats?.total ?? {}, h),
     // The per-game generation seed (build.js newGameSeed): persisting it lets
     // a Continue after reload rebuild the EXACT world the run was played on.
     // Death/continue never reroll, so this is stable for the whole run.
     seed: getLastWorldSeed(),
+    // Full player state at quit time (state-persistence.md §2.5) — restored
+    // onto the hero by applySavedState on a reload-Continue (§2.6).
+    state: capturePlayerState(h),
+    // The whole zone-snapshot chain (state-persistence.md §1/§2.5): carried
+    // inside `state` so applySavedState restores it in one place.
     timestamp: Date.now(),
   };
+  meta.state.snapshots = h?.wallet?.snapshots && typeof h.wallet.snapshots === 'object'
+    ? structuredClone(h.wallet.snapshots)
+    : {};
   const store = loadStore();
   store.saveMeta = meta;
   return saveStore(store) ? meta : null;

@@ -286,3 +286,130 @@ test('saveCurrentRun() then Continue resumes exactly where the run was saved', (
   assert.equal(resumed.currentArea, 4, 'resumed at the saved area');
   assert.equal(L.getAreaEntryData().areaId, '2-4', 'entry screen shows the saved area');
 });
+
+// --- Task 3.2 — full-state Save & Quit round-trip (state-persistence.md §2.5–2.6) ---
+
+test('saveCurrentRun persists the full player state + snapshot chain', () => {
+  PS.resetStore();
+  const hero = makeTestHero(2, 3);
+  // Distinct mid-run values so a restore that silently no-ops would be caught.
+  hero.wallet.current.coins = 77;
+  hero.wallet.current.energy = 11;
+  hero.selectedWeapon = 1;
+  hero.specialSlots[0] = 'bomb';
+  hero.lives = 1;
+  hero.continues.remaining = 2;
+  hero.wallet.snapshots['2:1'] = { coins: 10, energy: 20, kills: 1 };
+  hero.wallet.snapshots['2:3'] = { coins: 77, energy: 11, kills: 9 };
+
+  const meta = L.saveCurrentRun(hero);
+  assert.ok(meta.state, 'saveMeta carries a state block');
+  assert.equal(meta.state.coins, 77, 'saved coins');
+  assert.equal(meta.state.score, 700, 'saved score from the trace');
+  assert.equal(meta.state.energy, 11, 'saved energy');
+  assert.equal(meta.state.weapon, 1, 'saved weapon selection');
+  assert.deepEqual(meta.state.specialSlots, ['bomb', null], 'saved special slots');
+  assert.equal(meta.state.lives, 1, 'saved lives');
+  assert.equal(meta.state.continues, 2, 'saved continue pool');
+  assert.deepEqual(meta.state.snapshots, hero.wallet.snapshots, 'snapshot chain persisted');
+
+  // Round-trips through storage (what a page reload would parse).
+  PS._resetCache();
+  const reloaded = PS.loadStore().saveMeta;
+  assert.deepEqual(reloaded.state, meta.state, 'state block survives serialization');
+});
+
+test('reload-Continue restores the exact saved player state onto the hero', () => {
+  PS.resetStore();
+  const saver = makeTestHero(1, 3);
+  saver.wallet.current.coins = 55;
+  saver.wallet.current.energy = 7;
+  saver.selectedWeapon = 1;
+  saver.specialSlots[1] = 'spread';
+  saver.lives = 2;
+  saver.continues.remaining = 1;
+  saver.wallet.snapshots['1:1'] = { coins: 5, energy: 20, kills: 0 };
+  saver.wallet.snapshots['1:3'] = { coins: 55, energy: 7, kills: 4 };
+  L.saveCurrentRun(saver);
+
+  // Simulate the reload: forget the cache and resume on a FRESH hero with
+  // default (mid-boot) values that must all be overwritten by the save.
+  PS._resetCache();
+  const resumed = new Hero(HEROES.scarlet, 100, 400);
+  resumed.lives = GAME_RULES.startingLives;
+  resumed.continues = { remaining: GAME_RULES.startingContinues };
+  Object.defineProperty(resumed, 'continuesUsed', {
+    get() { return GAME_RULES.startingContinues - resumed.continues.remaining; },
+    set(n) { resumed.continues.remaining = GAME_RULES.startingContinues - n; },
+    configurable: true,
+  });
+  resumed.currentLevel = 1;
+  resumed.currentArea = 1;
+  resumed.traceStats = createTrace();
+
+  setState(S.MENU);
+  assert.equal(L.continueFromMenu(resumed), true, 'resume transition made');
+  assert.equal(resumed.currentLevel, 1, 'saved level');
+  assert.equal(resumed.currentArea, 3, 'saved area');
+  assert.equal(resumed.wallet.current.coins, 55, 'saved coins restored');
+  assert.equal(resumed.wallet.current.energy, 7, 'saved energy restored');
+  assert.equal(resumed.selectedWeapon, 1, 'saved weapon restored');
+  assert.deepEqual(resumed.specialSlots, [null, 'spread'], 'saved specials restored');
+  assert.equal(resumed.lives, 2, 'saved lives restored');
+  assert.equal(resumed.continues.remaining, 1, 'saved continues restored');
+  assert.deepEqual(resumed.wallet.snapshots, saver.wallet.snapshots, 'snapshot chain restored');
+  assert.equal(L.getAreaEntryData().lives, 2, 'entry screen shows the SAVED life count');
+});
+
+test('dying after a reload-continue rolls back to the pre-quit zone entry values', () => {
+  PS.resetStore();
+  const saver = makeTestHero(1, 2);
+  saver.wallet.snapshots['1:1'] = { coins: 5, energy: 20, kills: 0 };
+  saver.wallet.snapshots['1:2'] = { coins: 40, energy: 20, kills: 3 };
+  saver.wallet.current.coins = 99; // farmed this attempt
+  L.saveCurrentRun(saver);
+
+  PS._resetCache();
+  const resumed = new Hero(HEROES.scarlet, 100, 400);
+  resumed.lives = GAME_RULES.startingLives;
+  resumed.continues = { remaining: GAME_RULES.startingContinues };
+  resumed.currentLevel = 1;
+  resumed.currentArea = 1;
+  resumed.traceStats = createTrace();
+  setState(S.MENU);
+  assert.equal(L.continueFromMenu(resumed), true, 'resume transition made');
+  assert.equal(resumed.wallet.current.coins, 99, 'saved coins before the death');
+
+  // A death restart of the saved zone must roll back to the PRE-QUIT entry
+  // snapshot (the chain round-tripped through the save), not to a fresh zero.
+  L.restoreAreaEntryStats(resumed);
+  assert.equal(resumed.wallet.current.coins, 40, 'rolled back to the 1-2 entry snapshot from the save');
+  assert.equal(resumed.wallet.current.kills, 3, 'kills rolled back too');
+});
+
+test('legacy saves without a state block keep today\'s behavior (no crash)', () => {
+  PS.resetStore();
+  writeSave({ level: 1, area: 2, score: 300, timestamp: 1 }); // no `state`, no `seed`
+  const hero = makeTestHero(1, 1);
+  const coinsBefore = hero.wallet.current.coins;
+  const livesBefore = hero.lives;
+  setState(S.MENU);
+  assert.equal(L.continueFromMenu(hero), true, 'legacy save still resumes');
+  assert.equal(hero.currentLevel, 1, 'level restored as before');
+  assert.equal(hero.currentArea, 2, 'area restored as before');
+  assert.equal(hero.wallet.current.coins, coinsBefore, 'wallet untouched (today\'s behavior)');
+  assert.equal(hero.lives, livesBefore, 'lives untouched (today\'s behavior)');
+});
+
+test('New Game after a saved run clears the saved state (fresh start)', () => {
+  PS.resetStore();
+  const hero = makeTestHero(2, 3);
+  hero.wallet.current.coins = 50;
+  L.saveCurrentRun(hero);
+  assert.equal(PS.hasSave(), true, 'a full-state save exists');
+
+  setState(S.MENU);
+  assert.equal(L.newGameFromMenu(), true, 'SELECT transition made');
+  assert.equal(PS.hasSave(), false, 'the full-state save is cleared entirely');
+  assert.equal(PS.loadStore().saveMeta, null, 'saveMeta is null (not just stripped)');
+});
