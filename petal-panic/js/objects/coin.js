@@ -390,6 +390,65 @@ export class CoinPool {
   }
 
   /**
+   * Intense coin burst — like dropCoins() but every coin's launch velocity is
+   * scaled by cfg.intense and pushed higher by cfg.upBias (launches into the
+   * sky). Used by the super-coin barrel's final burst so the coins arc high
+   * and scatter wide instead of pinging out gently.
+   *
+   * @param {{min:number,max:number,chance:number,types?:object,intense?:number,upBias?:number}} cfg
+   * @param {number} cx center x
+   * @param {number} cy center y
+   * @returns {number} number spawned
+   */
+  dropCoinsIntense(cfg, cx, cy) {
+    if (!cfg) return 0;
+    if (Math.random() > (cfg.chance ?? 1)) return 0;
+    const n = cfg.min + Math.floor(Math.random() * (cfg.max - cfg.min + 1));
+    const intense = cfg.intense ?? 1;
+    const upBias = cfg.upBias ?? 1;
+    let spawned = 0;
+    for (let i = 0; i < n; i++) {
+      const type = rollCoinType(cfg.types);
+      // Wide popcorn angle (±150° from straight up), speed scaled by `intense`,
+      // plus an extra upward component (`upBias`) so coins climb into the sky.
+      const base = POP_SPEED_BASE * (POP_SPEED_VARIATION[type] ?? 1) * intense;
+      const angle = (-Math.PI / 2) + (Math.random() - 0.5) * (Math.PI * 5 / 6);
+      const vx = Math.cos(angle) * base;
+      const vy = Math.sin(angle) * base - POP_SPEED_BASE * (upBias - 1) * intense;
+      const c = this.spawnOne(type, cx, cy, { vx, vy });
+      if (c) spawned++;
+    }
+    return spawned;
+  }
+
+  /**
+   * Per-hit popcorn: a small number of coins pop out of a super-coin barrel on
+   * every landed hit (not just on destruction). Lighter than the final burst —
+   * a satisfying "tick" of coins each shot.
+   *
+   * @param {{min:number,max:number,intense?:number}} cfg
+   * @param {number} cx center x
+   * @param {number} cy center y
+   * @returns {number} number spawned
+   */
+  popHitCoins(cfg, cx, cy) {
+    if (!cfg) return 0;
+    const n = cfg.min + Math.floor(Math.random() * (cfg.max - cfg.min + 1));
+    const intense = cfg.intense ?? 1;
+    let spawned = 0;
+    for (let i = 0; i < n; i++) {
+      const type = rollCoinType({ bronze: 0.4, silver: 0.4, gold: 0.2 });
+      const base = POP_SPEED_BASE * (POP_SPEED_VARIATION[type] ?? 1) * intense;
+      const angle = (-Math.PI / 2) + (Math.random() - 0.5) * (Math.PI * 0.9);
+      const vx = Math.cos(angle) * base;
+      const vy = Math.sin(angle) * base;
+      const c = this.spawnOne(type, cx, cy, { vx, vy });
+      if (c) spawned++;
+    }
+    return spawned;
+  }
+
+  /**
    * Advance all active coins; bounce them off the floor line and any platform
    * tops passed in; cull off-screen coins.
    *

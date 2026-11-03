@@ -7,7 +7,7 @@ import { VIEW_W, VIEW_H } from '../core/view.js';
 import { roomFloorTop } from '../world/level.js';
 import { Effects } from '../effects.js';
 import { particles, coins } from '../effects/particles.js';
-import { BARREL_DAMAGE } from './object.js';
+import { BARREL_DAMAGE, SUPERCOIN_BARREL_DEF } from './object.js';
 import { invoke } from '../combat/attack/engine.js';
 import '../combat/attack/primitives/explosion.js'; // registers the 'explosion' primitive
 import { isSpecialType } from '../objects/specialWeapons.js';
@@ -53,6 +53,15 @@ export function handleBarrelDestroyed(barrel) {
     if (h._lastResult?.hit?.includes(hero)) {
       record(hero, { kind: 'hitTaken', source: 'explosion' });
     }
+  } else if (barrel.type === SUPERCOIN_BARREL_DEF.id) {
+    // Super-coin barrel: big final coin burst launched high into the sky, plus
+    // screen shake + white flash (explosion-feel) but NO blast damage and NO
+    // explosion art — just the regular barrel-break particles + the coin shower.
+    coins.dropCoinsIntense(barrel.coinDrop, cx, cy);
+    Effects.fireParticleBurst(cx, cy, 8);   // regular barrel-break particles
+    Effects.bigExplosion(0.9);              // white screen flash
+    Effects.triggerShake(14);               // camera shake
+    // SFX: big coin burst
   } else if (barrel.coinDrop) {
     // Coin barrel (or any object with a coinDrop config): spawn the burst.
     coins.dropCoins(barrel.coinDrop, cx, cy);
@@ -70,6 +79,19 @@ export function handleBarrelDestroyed(barrel) {
   const bkey = barrel.type; // 'woodBarrel' | 'barrel' | 'coinBarrel'
   record(hero, { kind: 'barrel', type: bkey });
   if (Debug.enabled) Debug.logEvent(`barrel destroyed (${bkey})`);
+}
+
+/**
+ * Per-hit popcorn for the super-coin barrel: on every landed hit (not just
+ * destruction) a few coins pop out with intense velocity. Called by the
+ * projectile-hit path right after target.hit() when the target is a supercoin.
+ * @param {GameObj} barrel the struck super-coin barrel
+ */
+export function popSuperCoinHit(barrel) {
+  if (!barrel || barrel.type !== SUPERCOIN_BARREL_DEF.id || !barrel.def?.hitCoins) return;
+  const cx = barrel.x + barrel.w / 2;
+  const cy = barrel.y + barrel.h / 2;
+  coins.popHitCoins(barrel.def.hitCoins, cx, cy);
 }
 
 /** Keep the collision world's coin set in sync with the pool. */

@@ -13,7 +13,7 @@ import { Violetta } from '../enemies/violetta.js';
 import { JackOLantern } from '../enemies/jackolantern.js';
 import {makeBoris, makeBorisBaby} from '../enemies/boris_loon.js';
 import { ENEMY_TYPES as _ENEMY_TYPES, ENEMY_TYPE_IDS as _ENEMY_TYPE_IDS, enemyById as _enemyById, isEnemyType as _isEnemyType } from './enemyTypes.js';
-import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeCheckpoint } from '../objects/object.js';
+import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeSuperCoinBarrel, makeCheckpoint } from '../objects/object.js';
 import { Powerup } from '../objects/powerup.js';
 import { recordAreaMap } from '../stats.js';
 import { formatAreaId } from '../systems/lifecycle.js';
@@ -118,6 +118,7 @@ const BARREL_FACTORIES = {
   explosive: (x, y) => makeBarrel(x, y),
   wood: (x, y) => makeWoodBarrel(x, y),
   coin: (x, y) => makeCoinBarrel(x, y),
+  supercoin: (x, y) => makeSuperCoinBarrel(x, y),
 };
 
 /**

@@ -62,6 +62,29 @@ export const COIN_BARREL_DEF = {
   spriteAnim: 'coin',
 };
 
+/** Super-coin barrel: tanky (hp 120). Every landed hit pops a few coins out
+ *  (popcorn scatter); on destruction it fires a big final burst of many coins
+ *  launched high into the sky, plus screen shake + white flash (explosion-feel
+ *  but NO blast damage, NO explosion art — just the regular barrel particles).
+ *  All coin velocities are more intense than a normal coin barrel. */
+export const SUPERCOIN_BARREL_DEF = {
+  id: 'superCoinBarrel',
+  w: 32, h: 48,
+  hp: 120,
+  explosion: null,   // no AoE damage — pure reward
+  // Final burst on destruction: many coins, high arc. `intense` scales the
+  // pop speed; `upBias` pushes the arc higher into the sky.
+  coinDrop: {
+    min: 14, max: 22, chance: 1.0,
+    types: { bronze: 0.35, silver: 0.4, gold: 0.25 },
+    intense: 1.9,     // velocity multiplier vs. normal coin pop
+    upBias: 1.5,      // extra upward component (launches into the sky)
+  },
+  // Per-hit popcorn: a few coins pop out on every landed hit.
+  hitCoins: { min: 2, max: 4, intense: 1.7 },
+  spriteAnim: 'supercoin',
+};
+
 // --- Barrel type registry (typed spawn) --------------------------------------
 // Ordered list of all barrel types — the single source of truth for "which
 // barrel types exist". The macro editor cycles these; the composer resolves
@@ -71,6 +94,7 @@ export const BARREL_TYPES = [
   { id: 'wood', label: 'Wood' },
   { id: 'explosive', label: 'Explosive' },
   { id: 'coin', label: 'Coin' },
+  { id: 'supercoin', label: 'Super Coin' },
 ];
 
 /** Lookup map: id → barrel meta. O(1) access. */
@@ -96,7 +120,7 @@ export function getBarrelSpriteData() { return barrelSpriteData; }
 export function initBarrelSprites() {
   if (barrelSpriteData || typeof fetch === 'undefined') return Promise.resolve();
   const base = new URL('../../assets/objects/barrel/', import.meta.url).href;
-  const files = ['wooden_sheet.json', 'coin_sheet.json', 'explosion_sheet.json'];
+  const files = ['wooden_sheet.json', 'coin_sheet.json', 'explosion_sheet.json', 'supercoin_sheet.json'];
   const load = base.startsWith('file:')
     ? Promise.all(files.map((f) => readFileJson(new URL(f, base))))
     : Promise.all(files.map((f) => fetch(base + f).then((r) => r.json())));
@@ -270,6 +294,12 @@ export function makeWoodBarrel(x, y) {
 /** Create a coin-bursting barrel at (x, y). */
 export function makeCoinBarrel(x, y) {
   return new GameObj(COIN_BARREL_DEF, x, y);
+}
+
+/** Create a super-coin barrel at (x, y): tanky, pops coins on every hit and
+ *  fires a big sky-high coin burst + shake/flash on destruction. */
+export function makeSuperCoinBarrel(x, y) {
+  return new GameObj(SUPERCOIN_BARREL_DEF, x, y);
 }
 
 // ---------------------------------------------------------------------------

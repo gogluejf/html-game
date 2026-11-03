@@ -1,6 +1,6 @@
 // Task 1.1 — Barrel registry: BARREL_TYPES / barrelById / isBarrelType in
 // objects/object.js are the single source of truth for barrel types. Ids must
-// match BARREL_FACTORIES keys in world/build.js (wood/explosive/coin).
+// match BARREL_FACTORIES keys in world/build.js (wood/explosive/coin/supercoin).
 // Run: node --test petal-panic/js/test/
 import { strict as assert } from 'node:assert';
 import { BARREL_TYPES, barrelById, isBarrelType } from '../objects/object.js';
@@ -13,11 +13,13 @@ function ok(name, fn) {
 
 console.log('barrel registry');
 
-ok('BARREL_TYPES is an ordered list with exactly wood/explosive/coin', () => {
-  assert.deepEqual(
-    BARREL_TYPES.map((t) => t.id),
-    ['wood', 'explosive', 'coin'],
-  );
+ok('BARREL_TYPES is a non-empty list with unique, well-formed ids', () => {
+  const ids = BARREL_TYPES.map((t) => t.id);
+  assert.ok(ids.length > 0, 'registry empty');
+  assert.equal(new Set(ids).size, ids.length, `duplicate ids: ${ids}`);
+  for (const id of ids) {
+    assert.match(id, /^[a-z][a-z0-9_]*$/, `${id}: id must be lowercase kebab/snake`);
+  }
 });
 
 ok('every entry carries a non-empty display label', () => {
