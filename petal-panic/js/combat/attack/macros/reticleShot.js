@@ -24,7 +24,8 @@
 // live effect instance (state._fx) for renderers/debug.
 
 import { defineMacro } from '../defineMacro.js';
-import { invoke, AttackHandle } from '../engine.js';
+import { AttackHandle } from '../engine.js';
+import { invokeChild } from '../attackIds.js';
 import { targetCenter } from '../context.js';
 import { fireDeclared } from '../../../effects/index.js';
 // Ensure payload macros are registered (otherwise only pulled in by the theater).
@@ -165,38 +166,26 @@ defineMacro('reticleShot', {
         const dir = Math.atan2(pt.y - o.y, pt.x - o.x);
         const child = params.child ?? 'projectile';
         const blast = params.blast ?? {};
-        // projectile: the primitive itself. Anything else: a payload macro
-        // that composes the projectile carrier with its detonation. Each
+        // 'projectile' is the primitive itself; the other values are payload
+        // macros that compose the projectile carrier with their detonation —
+        // invokeChild (attackIds.js) resolves child to the concrete id. Each
         // payload reads its OWN size key from `blast`.
-        let shot;
-        if (child === 'projectile') {
-          shot = invoke('projectile', {
-            origin: { x: o.x, y: o.y },
-            direction: dir,
-            speed: params.speed,
-            ttl: params.ttl,
-            damage: params.damage,
-            solidBehavior: 'stop',
-          }, ctx);
-        } else {
-          const payloadId = child === 'shockwave' ? 'shockwaveProjectile'
-            : child === 'napalm' ? 'napalm'
-            : 'explosiveProjectile';
-          const payloadSize = child === 'shockwave'
-            ? { radius: blast.shockRadius }
-            : child === 'napalm'
-              ? { fireWidth: blast.fireWidth }
+        const payloadSize = child === 'shockwave'
+          ? { radius: blast.shockRadius }
+          : child === 'napalm'
+            ? { fireWidth: blast.fireWidth }
+            : child === 'projectile'
+              ? {}
               : { radius: blast.explosionRadius };
-          shot = invoke(payloadId, {
-            origin: { x: o.x, y: o.y },
-            direction: dir,
-            speed: params.speed,
-            ttl: params.ttl,
-            damage: params.damage,
-            solidBehavior: 'stop',
-            ...payloadSize,
-          }, ctx);
-        }
+        const shot = invokeChild(child, {
+          origin: { x: o.x, y: o.y },
+          direction: dir,
+          speed: params.speed,
+          ttl: params.ttl,
+          damage: params.damage,
+          solidBehavior: 'stop',
+          ...payloadSize,
+        }, ctx);
         if (shot?.entity) {
           h.shot = shot;
           // Promote the payload macro into the root's deferred-children list

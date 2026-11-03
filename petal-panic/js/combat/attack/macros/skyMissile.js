@@ -24,7 +24,8 @@
 //   hit / complete      — hit per damaged target (via the blast); complete {}
 
 import { defineMacro } from '../defineMacro.js';
-import { invoke, AttackHandle } from '../engine.js';
+import { AttackHandle } from '../engine.js';
+import { invokeChild } from '../attackIds.js';
 import { fireDeclared } from '../../../effects/index.js';
 import { VIEW_H } from '../../../core/view.js';
 // Ensure payload macros are registered (otherwise only pulled in by the theater).
@@ -145,13 +146,12 @@ defineMacro('skyMissile', {
       // ttl covers the full fall from the view top to the impact line (+ small
       // margin so the surface contact resolves first, not the fuse).
       const fallTtl = ((pt.y - spawnY) / Math.max(1, p.fallSpeed)) + 0.25;
-      // Payload choice: explosion (default) | shockwave | napalm. All three
+      // Payload choice: explosion (default) | shockwave | napalm | mine. All
       // share the same carrier surface (origin/direction/speed/ttl/team), so
-      // one call site works. Each payload reads its OWN size key from `blast`.
+      // one call site works; invokeChild (attackIds.js) resolves p.child to
+      // the concrete payload id. Each payload reads its OWN size key from
+      // `blast`.
       const blast = p.blast ?? {};
-      const payloadId = p.child === 'mine' ? 'throwMine' : p.child === 'shockwave' ? 'shockwaveProjectile'
-        : p.child === 'napalm' ? 'napalm'
-        : 'explosiveProjectile';
       // Map our named keys → the param each payload macro actually reads:
       //   explosiveProjectile reads `radius`
       //   shockwaveProjectile reads `radius`
@@ -161,7 +161,7 @@ defineMacro('skyMissile', {
         shockwave: () => ({ radius: blast.shockRadius }),
         napalm: () => ({ fireWidth: blast.fireWidth }),
       }[p.child === 'shockwave' ? 'shockwave' : p.child === 'napalm' ? 'napalm' : 'explosionRadius']();
-      const m = invoke(payloadId, {
+      const m = invokeChild(p.child, {
         origin: { x: pt.x, y: spawnY },
         direction: Math.PI / 2,
         speed: p.fallSpeed,

@@ -107,17 +107,25 @@
     },
     "3.2": {
       "number": "3.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Rename blastType/spawnType to child in all macros",
       "milestone": "Unified Attack Invoke List",
       "milestone_number": 3
     },
     "3.3": {
       "number": "3.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Replace if/else chains with invokeChild",
       "milestone": "Unified Attack Invoke List",
-      "milestone_number": 3
+      "milestone_number": 3,
+      "summary": {
+        "decisions": "(1) Kept the per-child if/else branches in spawnSplit for param shaping only \u2014 all leaves now call the uniform invokeChild(c.child, ...), so the chain maps child\u2192params, not child\u2192invoke target. (2) No per-macro whitelist guards added: engine.invoke merges DEFAULTS before impl so child is always defined (splitChildren's ?? 'projectile' covers explicit-undefined too); unknown values fail loud via invokeChild's throw, per the plan's fail-loud contract. (3) reticleShot converted even though the plan's file list omits it \u2014 the acceptance criterion is global ('no if/else chains mapping type strings to invoke calls remain in macros') and its payloadId chain qualifies. (4) reticleShot unified params: projectile branch spreads {} (no size keys, byte-identical to old), other values keep their per-payload size key.",
+        "failures": "None new. Attack suite: 58/62 pass; the 4 failures (bombHost, meleeHitbox, shockwaveImpact, theaterParity) are the known pre-existing baseline \u2014 verified identical via git-stash baseline run. barrel.solid.test.js also fails on baseline (pre-existing, unrelated).",
+        "done": "Replaced the child\u2192invoke-id if/else chains with invokeChild() (attackIds.js) in spawnSplit (5 branch invokes), skyMissile (payloadId chain removed), and reticleShot (if/else collapsed to one invokeChild call). Per-target param shaping (blast.* size keys, mine-only spread, per-child descriptors) stays in each macro; each branch now calls invokeChild(c.child/p.child, shapedParams, ctx) so id resolution is centralized and unknown child values fail loud via invokeChild's throw. clusterBomb and missileRain needed no code change: they carry no child\u2192invoke chain \u2014 they forward child to spawnSplit/skyMissile, so their materialization now flows through invokeChild transitively. No attacks arrays / meta.invokes touched \u2192 theater INVOKES sidebar unchanged.",
+        "confidence": "high",
+        "tradeoffs": "For child values a macro never documented (e.g. child:'shockwave' to spawnSplit, or 'projectile' to skyMissile), the old code silently fell into an implicit default (plain projectile / explosiveProjectile); post-conversion the same ATTACK_IDS value resolves to its canonical target macro instead of the macro-local default. Verified no caller, test, level, or theater staging passes such out-of-domain values, so no reachable behavior change. mine.js's mineType\u2192zone-primitive chain (explosion/shockwave zone primitives, a different 2-value param) intentionally left as-is \u2014 invokeChild would wrongly resolve to the carrier macros.",
+        "lessons_learned": "The plan's 3.3 file list (spawnSplit/missileRain/skyMissile/clusterBomb) is a floor: the actual chain sites were spawnSplit/skyMissile/reticleShot \u2014 clusterBomb and missileRain never had chains (pure child passthrough), while reticleShot (omitted from the list) had one. engine.invoke merging def.params into impl() means macro DEFAULTS are applied twice (engine + local spread) \u2014 child can never be undefined at the chain. spawnSplit's attacks array is missing 'molotov' (invoked by its molotov branch) \u2014 pre-existing meta.invokes gap, out of scope, noted for a follow-up."
+      }
     }
   }
 }

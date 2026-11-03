@@ -23,7 +23,8 @@
 
 import './throwMine.js';
 import { defineMacro } from '../defineMacro.js';
-import { invoke, AttackHandle } from '../engine.js';
+import { AttackHandle } from '../engine.js';
+import { invokeChild } from '../attackIds.js';
 import { spreadAngles } from './spreadShot.js';
 import { makeEnemy } from '../../../world/build.js';
 import { GRAVITY } from '../../../consts.js';
@@ -133,6 +134,9 @@ defineMacro('spawnSplit', {
     const handles = [];
     const enemies = [];
 
+    // The child → invoke-target mapping is centralized in attackIds.js:
+    // each branch below only shapes the params its target reads; invokeChild
+    // resolves c.child to the concrete id (and fails loud on an unknown one).
     for (const c of children) {
       const speed = Math.hypot(c.vx, c.vy);
       if (c.child === 'enemy') {
@@ -151,7 +155,7 @@ defineMacro('spawnSplit', {
           e.hitstunTimer = flightStun(c.vy);
           enemies.push(e);
         } else {
-          const child = invoke('throwEnemy', {
+          const child = invokeChild(c.child, {
             ...ec,
             enemyType: c.enemyType ?? p.enemyType,
             origin: { x: c.x, y: c.y }, direction: Math.atan2(c.vy, c.vx), speed,
@@ -167,7 +171,7 @@ defineMacro('spawnSplit', {
           child.on('land', ({ enemy }) => { if (enemy) enemies.push(enemy); });
         }
       } else if (c.child === 'mine') {
-        const child = invoke('throwMine', {
+        const child = invokeChild(c.child, {
           ...p.mine, mineType: p.mineType,
           origin: { x: c.x, y: c.y }, direction: Math.atan2(c.vy, c.vx), speed,
           groundY: p.groundY, platforms: p.platforms,
@@ -181,7 +185,7 @@ defineMacro('spawnSplit', {
         // Classic exploding bomb → the explosiveBomb macro (composition:
         // bomb flight + explosion payload). Primitives don't compose, so the
         // "it explodes" behavior is a macro concern.
-        const child = invoke('explosiveBomb', {
+        const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           arc: b.arc ?? 700, bounce: b.bounce ?? true, ttl: b.ttl ?? 1.5,
           damage: b.damage ?? 25, radius: b.radius ?? 60,
@@ -193,7 +197,7 @@ defineMacro('spawnSplit', {
         // Fire lobe → the molotov macro (ballistic carrier + fireArea payload
         // on impact). Same composition pattern as the bomb branch above.
         const m = p.molotov ?? {};
-        const child = invoke('molotov', {
+        const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           arc: m.arc ?? 800, bounce: m.bounce ?? false, ttl: m.ttl ?? 2,
           damage: m.damage ?? 12, fireWidth: m.fireWidth ?? 96,
@@ -204,7 +208,7 @@ defineMacro('spawnSplit', {
         if (child?.entity) handles.push(child);
       } else {
         const pr = p.projectile ?? {};
-        const child = invoke('projectile', {
+        const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           ttl: pr.ttl ?? 2, damage: pr.damage ?? 8,
         }, ctx);
