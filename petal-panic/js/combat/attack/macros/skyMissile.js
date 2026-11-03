@@ -56,7 +56,7 @@ const DEFAULTS = Object.freeze({
   mineType: 'explosion',
   mineTtl: 2,
   blinkDuration: 2,
-  blastType: 'explosion', // explosion | shockwave | napalm | mine — payload on impact
+  child: 'explosion',    // explosion | shockwave | napalm | mine — payload on impact
   blast: {               // per-payload size params (each payload reads its own key)
     explosionRadius: 60, // explosion blast circle (px)
     shockRadius: 150,    // shockwave ring max radius (px)
@@ -104,7 +104,7 @@ defineMacro('skyMissile', {
       { type: 'surface-target-marker', desc: 'landing warning fixed at the impact point for the whole warning window' },
     ],
     params: [
-      { key: 'blastType', desc: 'explosion | shockwave | napalm | mine — payload on impact' },
+      { key: 'child', desc: 'explosion | shockwave | napalm | mine — payload on impact' },
       { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'x', desc: 'impact x (world) — marker and drop share it' },
       { key: 'groundY', desc: 'fallback impact y; null → highest surface in the drop column' },
@@ -117,7 +117,7 @@ defineMacro('skyMissile', {
       { key: 'specialType', desc: 'optional projectile style override; omitted inherits payload default, null selects plain projectile' },
       { key: 'mineTtl', desc: 'resting mine seconds; null = contact only' },
       { key: 'blinkDuration', desc: 'mine warning seconds' },
-      { key: 'blastType', desc: 'explosion | shockwave | napalm | mine — payload on impact' },
+      { key: 'child', desc: 'explosion | shockwave | napalm | mine — payload on impact' },
       { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
       { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
       { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
@@ -149,8 +149,8 @@ defineMacro('skyMissile', {
       // share the same carrier surface (origin/direction/speed/ttl/team), so
       // one call site works. Each payload reads its OWN size key from `blast`.
       const blast = p.blast ?? {};
-      const payloadId = p.blastType === 'mine' ? 'throwMine' : p.blastType === 'shockwave' ? 'shockwaveProjectile'
-        : p.blastType === 'napalm' ? 'napalm'
+      const payloadId = p.child === 'mine' ? 'throwMine' : p.child === 'shockwave' ? 'shockwaveProjectile'
+        : p.child === 'napalm' ? 'napalm'
         : 'explosiveProjectile';
       // Map our named keys → the param each payload macro actually reads:
       //   explosiveProjectile reads `radius`
@@ -160,7 +160,7 @@ defineMacro('skyMissile', {
         explosionRadius: () => ({ radius: blast.explosionRadius }),
         shockwave: () => ({ radius: blast.shockRadius }),
         napalm: () => ({ fireWidth: blast.fireWidth }),
-      }[p.blastType === 'shockwave' ? 'shockwave' : p.blastType === 'napalm' ? 'napalm' : 'explosionRadius']();
+      }[p.child === 'shockwave' ? 'shockwave' : p.child === 'napalm' ? 'napalm' : 'explosionRadius']();
       const m = invoke(payloadId, {
         origin: { x: pt.x, y: spawnY },
         direction: Math.PI / 2,
@@ -174,7 +174,7 @@ defineMacro('skyMissile', {
         ...payloadSize,
         // Do not pass an absent override: the named payload owns its default.
         ...(p.specialType !== undefined ? { specialType: p.specialType } : {}),
-        ...(p.blastType === 'mine' ? {
+        ...(p.child === 'mine' ? {
           origin: { x: pt.x, y: spawnY }, groundY: pt.y, arc: 0, bounce: false,
           ttl: p.mineTtl, blinkDuration: p.blinkDuration, mineType: p.mineType,
           team: p.blastTeam, radius: p.mineType === 'shockwave' ? blast.shockRadius : blast.explosionRadius,

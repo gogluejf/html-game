@@ -105,7 +105,7 @@ for (const id of ['explosiveBomb', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
   reset();
   const h = U.spawnBombAttack(id, { origin: { x: 600, y: 200 }, x: 600, y: 200,
     speed: 0, force: 0, arc: 0, ttl: dt, childForce: 0, childArc: 0,
-    childTtl: dt, count: 3, spawnType: 'bomb', ballistic: { ttl: dt, arc: 0 } });
+    childTtl: dt, count: 3, child: 'bomb', ballistic: { ttl: dt, arc: 0 } });
   for (let i = 0; i < 10; i++) U.update(dt);
   assert.equal(h._completed, true, `${id}: real gameplay drains all payloads`);
   assert.equal(U.bombAttacks.roots.size, 0);

@@ -99,7 +99,7 @@ const SANDBOX_PRESETS = {
   charge: { direction: 0, speed: 700, distanceType: 'fixed', distance: 300, acceleration: 1000, announceMarker: false, announceDelay: 1.0 },
   bodyContact: { damage: 20, enabled: true, temporaryOverride: true },
   // --- Wave 2 -----------------------------------------------------------------
-  reticleShot: { duration: 1.3, lockTime: 1.1, color: '#ff5555', radius: 30, tracking: true, speed: 500, ttl: 2, damage: 10, blastType: 'plain', blast: { explosionRadius: 70, shockRadius: 150, fireWidth: 96 } },
+  reticleShot: { duration: 1.3, lockTime: 1.1, color: '#ff5555', radius: 30, tracking: true, speed: 500, ttl: 2, damage: 10, child: 'projectile', blast: { explosionRadius: 70, shockRadius: 150, fireWidth: 96 } },
   homingMissile: { direction: -0.3, turnRate: 3, speed: 400, ttl: 2, damage: 10 },
   predictiveShot: { speed: 300, ttl: 3, damage: 10 },
   beam: { direction: 0, length: 1000, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
@@ -108,7 +108,7 @@ const SANDBOX_PRESETS = {
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 8, width: 144, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
-  spawnSplit: { mineType: 'explosion', enemy: { mineType: 'explosion', ttl: null }, x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'explosive_monkey' },
+  spawnSplit: { mineType: 'explosion', enemy: { mineType: 'explosion', ttl: null }, x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, child: 'bomb', enemyType: 'explosive_monkey' },
   spreadShot: { count: 3, direction: 0, angle: 60 * DEG, speed: 500, ttl: 2, damage: 10 },
   radialShot: { count: 24, startAngle: -Math.PI / 2, speed: 400, ttl: 2.5, damage: 10, sequenceInterval: 0.15 },
   burstShot: { count: 3, interval: 0.12, direction: 0.5, speed: 600, ttl: 2, damage: 10 },
@@ -128,9 +128,9 @@ const SANDBOX_PRESETS = {
   shockwaveBomb: { direction: -0.5, arc: 800, bounce: false, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
   shockwaveProjectile: { direction: 0, speed: 700, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, solidBehavior: 'stop', blastTeam: 'neutral' },
   stomp: { impact: 'strike', buildTime: 0.9, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, damage: 30, team: 'neutral', shakeStrength: 5, radius: 590, strike: { width: Infinity, height: 30, reach: Infinity, duration: 0.35 }, wave: { sides: 'both', speed: 300, height: 24, width: 28, ttl: null } },
-  skyMissile: { mineType: 'explosion', x: TARGET_POS.x + 16, timeToTarget: 1.0, fallSpeed: 500, damage: 30, team: 'ally', blastTeam: 'neutral', blastType: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
+  skyMissile: { mineType: 'explosion', x: TARGET_POS.x + 16, timeToTarget: 1.0, fallSpeed: 500, damage: 30, team: 'ally', blastTeam: 'neutral', child: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
   skyDiveStomp: { x: VIEW_W / 2, groundY: GROUND_Y, timeToTarget: 1.0, dropHeight: 480, fallSpeed: 500, size: 14, impact: 'wave', stomp: { sides: 'both', hopHeight: 0, hopTime: 0.001, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'ally', shakeStrength: 6 }, vanish: true, lingerOnGround: 0.4, vanishTime: 2 },
-  missileRain: { mineType: 'explosion', count: 5, distanceType: 'relative', distance: 90, pattern: 'simultaneous', interval: 0.15, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0.5, timeToTarget: 0.9, descentSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', blastType: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
+  missileRain: { mineType: 'explosion', count: 5, distanceType: 'relative', distance: 90, pattern: 'simultaneous', interval: 0.15, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0.5, timeToTarget: 0.9, descentSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', child: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
   dashCombo: {
     direction: 0,
     startup: 0.2,
@@ -160,7 +160,7 @@ export const TWEAKABLE = {
   charge: [['speed', 'num', 100], ['distanceType', 'enum', ['fixed', 'infinit']], ['distance', 'num', 50], ['acceleration', 'num', 500], ['direction', 'angle', 15 * DEG], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
   bodyContact: [['damage', 'num', 5]],
   // --- Wave 2 -----------------------------------------------------------------
-  reticleShot: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['speed', 'num', 50], ['blastType', 'enum', ['plain', 'explosion', 'shockwave', 'napalm']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
+  reticleShot: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['speed', 'num', 50], ['child', 'enum', ['projectile', 'explosion', 'shockwave', 'napalm']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   homingMissile: [['turnRate', 'num', 0.5], ['direction', 'angle', 15 * DEG], ['ttl', 'num', 0.25]],
   predictiveShot: [['speed', 'num', 50]],
   beam: [['direction', 'angle', 15 * DEG], ['length', 'num', 20], ['width', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
@@ -169,20 +169,20 @@ export const TWEAKABLE = {
   spike: [['x', 'num', 16], ['width', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['minRadius', 'num', 10], ['maxRadius', 'num', 10], ['pulseSpeed', 'num', 0.25], ['speed', 'num', 0.25]],
   boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
-  spawnSplit: [['spawnType', 'enum', ['projectile', 'bomb', 'mine', 'enemy']], ['mineType', 'enum', ['explosion', 'shockwave']], ['enemyType', 'enum', ENEMY_TYPE_IDS], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['enemy.mineType', 'enum', ['explosion', 'shockwave']], ['enemy.ttl', 'enum', [null, 1, 2, 4, 8]]],
+  spawnSplit: [['child', 'enum', ['projectile', 'bomb', 'mine', 'molotov', 'enemy']], ['mineType', 'enum', ['explosion', 'shockwave']], ['enemyType', 'enum', ENEMY_TYPE_IDS], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['enemy.mineType', 'enum', ['explosion', 'shockwave']], ['enemy.ttl', 'enum', [null, 1, 2, 4, 8]]],
   bodyExplosion: [['payloadDelay', 'num', 0.05]],
   bombSpread: [['count', 'int', 1], ['direction', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   molotov: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['fireWidth', 'num', 16], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
-  clusterBomb: [['spawnType', 'enum', ['bomb', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
+  clusterBomb: [['child', 'enum', ['bomb', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
   targetedBeam: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['beamDuration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   sweepingBeam: [['direction', 'angle', 15 * DEG], ['sweepAngle', 'angle', 10 * DEG], ['speed', 'num', 20], ['holdDuration', 'num', 0.1], ['sweepDuration', 'num', 0.1], ['endHoldDuration', 'num', 0.05], ['fadeOut', 'num', 0.05], ['damage', 'num', 2], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
   laneSequence: [['mode', 'enum', ['charge', 'beam']], ['laneCount', 'int', 1], ['laneSpacing', 'num', 20], ['laneOffset', 'num', 10], ['laneOrder', 'enum', ['bottom_to_top', 'top_to_bottom', 'random']], ['sideMode', 'enum', ['same_side', 'zigzag', 'sweep', 'random']], ['startSide', 'enum', ['left', 'right', 'random']], ['repeat', 'int', 1], ['announceDelay', 'num', 0.1], ['dashSpeed', 'num', 100], ['beamDuration', 'num', 0.1], ['damage', 'num', 5], ['tickRate', 'int', 1], ['interval', 'num', 0.05]],
   surfaceWave: [['speed', 'num', 50], ['height', 'num', 4], ['width', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5]],
   surfaceStrike: [['x', 'num', 20], ['width', 'num', 20], ['height', 'num', 4], ['reach', 'num', 20], ['duration', 'num', 0.1], ['damage', 'num', 5]],
   stomp: [['impact', 'enum', ['strike', 'radius', 'wave']], ['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['damage', 'num', 5], ['shakeStrength', 'num', 1], ['radius', 'num', 10], ['strike.width', 'num', 20], ['strike.height', 'num', 4], ['strike.duration', 'num', 0.1], ['wave.sides', 'enum', ['left', 'right', 'both']], ['wave.speed', 'num', 50], ['wave.height', 'num', 4], ['wave.ttl', 'num', 0.25]],
-  skyMissile: [['blastType', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
+  skyMissile: [['child', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   skyDiveStomp: [['impact', 'enum', ['wave', 'strike']], ['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['stomp.sides', 'enum', ['left', 'right', 'both']], ['stomp.hopHeight', 'num', 4], ['stomp.waveSpeed', 'num', 50], ['stomp.waveHeight', 'num', 4], ['stomp.ttl', 'num', 0.25], ['stomp.damage', 'num', 5], ['stomp.shakeStrength', 'num', 1], ['vanish', 'enum', [true, false]], ['lingerOnGround', 'num', 0.1], ['vanishTime', 'num', 0.05]],
-  missileRain: [['blastType', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['fallDelay', 'num', 0.05], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
+  missileRain: [['child', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['fallDelay', 'num', 0.05], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   dashCombo: [['direction', 'angle', 15 * DEG], ['startup', 'num', 0.05], ['recovery', 'num', 0.05], ['seg0.speed', 'num', 20], ['seg1.speed', 'num', 20], ['seg2.speed', 'num', 20], ['seg0.damage', 'num', 2], ['seg1.damage', 'num', 2], ['seg2.damage', 'num', 2]],
   shockwave: [['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1], ['easing', 'enum', ['linear', 'easeIn', 'easeInCubic']], ['knockbackIntensity', 'num', 1]],
   mine: [['mineType', 'enum', ['explosion', 'shockwave']], ['ttl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['team', 'enum', ['ally', 'foe', 'neutral']], ['radius', 'num', 10], ['damage', 'num', 5]],
@@ -476,7 +476,7 @@ export const AttackTheater = {
     this._aimPoint = null;
     this._kamikaze = null;
     this._attackerVisible = true;
-    // Spawned enemies (spawnSplit spawnType='enemy'): removed from the world
+    // Spawned enemies (spawnSplit child='enemy'): removed from the world
     // on replay/teardown so they don't leak into the next run.
     for (const e of this._spawnedEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
     this._spawnedEnemies = [];
@@ -666,7 +666,7 @@ export const AttackTheater = {
             this._spawnedEnemies.push(e);
             this._world.add(e);
           }
-          const st = this._params.spawnType;
+          const st = this._params.child;
           this._log.unshift(`split → ${h.children?.length ?? 0} ${st === 'bomb' ? 'bombs' : st === 'enemy' ? 'enemies' : 'shots'}`);
           if (st === 'enemy') {
             // Thrown children land asynchronously: register each as it does so
@@ -755,7 +755,7 @@ export const AttackTheater = {
     // double-stepped everything under the unified pool).
     projectilePool.updateAll(DT);
 
-    // Spawned enemies (spawnSplit spawnType='enemy' with enemy.thrown=false):
+    // Spawned enemies (spawnSplit child='enemy' with enemy.thrown=false):
     // run their real update each frame. Enemy.update() drives ai() + gravity
     // + integration internally and honors hit-stun (skips ai() while stunned),
     // so a launched enemy's fan velocity integrates freely during its arc —
@@ -847,7 +847,7 @@ export const AttackTheater = {
         finished = h.step([this._target]);
       } else if (h.id === 'reticleShot') {
         // Dumb host: the macro owns track → lock → fire. The shot handle may
-        // be a plain projectile (blastType=plain) OR a carrier macro
+        // be a plain projectile (child=projectile) OR a carrier macro
         // (explosiveProjectile/napalm/shockwaveProjectile). For carrier
         // macros the entity lives at h.shot.inner.entity and the macro's
         // .step() drives the carrier + payload. Step both correctly.
@@ -1193,7 +1193,7 @@ export const AttackTheater = {
       // separate pool pass is needed.
     }
 
-    // Spawned enemies (spawnSplit spawnType='enemy').
+    // Spawned enemies (spawnSplit child='enemy').
     for (const e of this._spawnedEnemies ?? []) {
       if (!e.alive) continue;
       e.draw(ctx);

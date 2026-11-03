@@ -156,7 +156,7 @@ ok('spawnSplit enemy children are THROWN (throwEnemy handles) with inherited vel
   const h = host.spawn('spawnSplit', {
     x: 200, y: 300, count: 3, centerDirection: 0, angle: Math.PI / 3, force: 300,
     inheritVelocity: 0.5, parentVx: 200, parentVy: 0,
-    spawnType: 'enemy', enemyType: 'explosive_monkey',
+    child: 'enemy', enemyType: 'explosive_monkey',
   }, attacker);
   assert.equal(h.children.length, 3);
   assert.equal(h.handles.length, 3, 'each child → a live throwEnemy handle');
@@ -171,7 +171,7 @@ ok('spawnSplit thrown enemies land as real entities and propagate to h.enemies',
   const { host, attacker, frame } = setup();
   const h = host.spawn('spawnSplit', {
     x: 200, y: 250, count: 1, centerDirection: Math.PI / 2, angle: 0, force: 200,
-    spawnType: 'enemy', enemyType: 'explosive_monkey',
+    child: 'enemy', enemyType: 'explosive_monkey',
   }, attacker);
   let landed = 0;
   for (const ch of h.handles) ch.on('land', () => landed++);
@@ -185,7 +185,7 @@ ok('spawnSplit legacy path preserved with enemy.thrown=false', () => {
   const { host, attacker } = setup();
   const h = host.spawn('spawnSplit', {
     x: 200, y: 300, count: 2, centerDirection: 0, angle: Math.PI / 3, force: 300,
-    spawnType: 'enemy', enemyType: 'jester', enemy: { thrown: false },
+    child: 'enemy', enemyType: 'jester', enemy: { thrown: false },
   }, attacker);
   assert.equal(h.enemies.length, 2, 'immediate makeEnemy path still works');
   assert.ok(h.enemies.every((e) => e.type === 'jester'));

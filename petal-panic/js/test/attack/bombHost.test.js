@@ -55,7 +55,7 @@ for (const id of ['explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spaw
   const { host, pool, frame } = setup(2);
   const h = host.spawn(id, { origin: { x: 400, y: 200 }, x: 400, y: 200,
     speed: 0, force: 0, arc: 0, ttl: dt, childTtl: dt, childForce: 0,
-    childArc: 0, count: 4, fireDuration: 0.1, spawnType: 'bomb',
+    childArc: 0, count: 4, fireDuration: 0.1, child: 'bomb',
     ballistic: { ttl: dt, arc: 0, blastTeam: 'foe' } }, attacker);
   let completes = 0;
   h.on('complete', () => completes++);
@@ -131,7 +131,7 @@ for (const id of ['explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spaw
 }
 for (const id of ['clusterBomb', 'bombSpread', 'spawnSplit']) {
   const { host, pool, frame } = setup();
-  const h = host.spawn(id, { ttl: dt, count: 3, spawnType: 'bomb',
+  const h = host.spawn(id, { ttl: dt, count: 3, child: 'bomb',
     centerDirection: Math.PI / 2, force: 60,
     blastTeam: 'foe', ballistic: { blastTeam: 'foe' } }, attacker);
   frame();

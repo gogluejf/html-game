@@ -60,7 +60,7 @@ const DEFAULTS = Object.freeze({
   mineType: 'explosion',
   mineTtl: 2,
   blinkDuration: 2,
-  blastType: 'explosion', // explosion | shockwave | napalm | mine — payload on impact (per missile)
+  child: 'explosion',    // explosion | shockwave | napalm | mine — payload on impact (per missile)
   blast: {                // per-payload size params (each payload reads its own key)
     explosionRadius: 60,  // explosion blast circle (px)
     shockRadius: 150,     // shockwave ring max radius (px)
@@ -131,7 +131,7 @@ defineMacro('missileRain', {
       { type: 'trail', desc: 'ascent visual riding each rocket while it leaves the play area' },
     ],
     params: [
-      { key: 'blastType', desc: "explosion | shockwave | napalm | mine — payload on impact (per missile)" },
+      { key: 'child', desc: "explosion | shockwave | napalm | mine — payload on impact (per missile)" },
       { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'count', desc: 'missiles in the rain' },
       { key: 'xCoordinate', desc: 'center x (null → view center)' },
@@ -149,7 +149,7 @@ defineMacro('missileRain', {
       { key: 'damage', desc: 'per-missile contact + blast damage' },
       { key: 'mineTtl', desc: 'resting mine seconds; null = contact only' },
       { key: 'blinkDuration', desc: 'mine warning seconds' },
-      { key: 'blastType', desc: "explosion | shockwave | napalm | mine — payload on impact (per missile)" },
+      { key: 'child', desc: "explosion | shockwave | napalm | mine — payload on impact (per missile)" },
       { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
       { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
       { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
@@ -199,7 +199,7 @@ defineMacro('missileRain', {
         blastTeam: p.blastTeam,
         size: p.size,
         markerStyle: p.markerStyle,
-        blastType: p.blastType,
+        child: p.child,
         mineType: p.mineType, mineTtl: p.mineTtl, blinkDuration: p.blinkDuration,
         blast: p.blast,
       }, ctx);

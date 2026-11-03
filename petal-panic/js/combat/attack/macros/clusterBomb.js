@@ -19,7 +19,7 @@ const DEFAULTS = Object.freeze({
   origin: null,
   blastTeam: 'neutral',
   // Children
-  spawnType: 'bomb',
+  child: 'bomb',
   mineType: 'explosion',
   mineTtl: 2,
   blinkDuration: 2,
@@ -44,7 +44,7 @@ defineMacro('clusterBomb', {
     effects: [],
     desc: 'Parent bomb detonates → spawns N smaller bombs in a fan. Each child explodes on its own impact/fuse.',
     params: [
-      { key: 'spawnType', desc: 'bomb | mine (children)' },
+      { key: 'child', desc: 'bomb | mine (children)' },
       { key: 'mineType', desc: 'explosion | shockwave' },
       { key: 'speed', desc: 'parent launch force (px/s)' },
       { key: 'direction', desc: 'parent throw direction (radians)' },
@@ -79,7 +79,7 @@ defineMacro('clusterBomb', {
             centerDirection: p.childDirection,
             angle: p.childAngle,
             force: p.childForce,
-            spawnType: p.spawnType,
+            child: p.child,
             mineType: p.mineType,
             mine: { ttl: p.mineTtl, blinkDuration: p.blinkDuration,
               arc: p.childArc, bounce: true, damage: p.childDamage, radius: p.childRadius, team: p.blastTeam },

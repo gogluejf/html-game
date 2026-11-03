@@ -90,17 +90,17 @@ ok('every macro is registered with an invokes list (composition metadata)', () =
   }
 });
 
-// Sidebar contract: the discriminating param — blastType/mineType/enemyType —
+// Sidebar contract: the discriminating param — child/mineType/enemyType —
 // must be the FIRST row of meta.params so the theater sidebar leads with it.
 ok('discriminating params lead meta.params in the sidebar order', () => {
   const cases = [
     ['mine', 'mineType'],
     ['throwMine', 'mineType'],
     ['throwEnemy', 'enemyType'],
-    ['spawnSplit', 'spawnType'],
-    ['clusterBomb', 'spawnType'],
-    ['skyMissile', 'blastType'],
-    ['missileRain', 'blastType'],
+    ['spawnSplit', 'child'],
+    ['clusterBomb', 'child'],
+    ['skyMissile', 'child'],
+    ['missileRain', 'child'],
   ];
   for (const [id, first] of cases) {
     const keys = (getMacro(id)?.meta?.params ?? []).map((p) => p.key);
@@ -213,7 +213,7 @@ ok('composition: homingMissile macro steers its own projectile', () => {
 ok('composition: spawnSplit macro materializes child projectiles', () => {
   const ctx = makeContext(attacker(), { pools: pools(), world: { targets: [] } });
   // The macro owns materialization: one invoke → live projectile handles.
-  const fan = invoke('spawnSplit', { x: 300, y: 300, count: 4, centerDirection: -Math.PI / 2, angle: 2 * Math.PI, force: 250, spawnType: 'projectile' }, ctx);
+  const fan = invoke('spawnSplit', { x: 300, y: 300, count: 4, centerDirection: -Math.PI / 2, angle: 2 * Math.PI, force: 250, child: 'projectile' }, ctx);
   assert.equal(fan.children.length, 4, 'raw vectors exposed');
   assert.equal(fan.handles.length, 4, 'each child → a live projectile handle');
   for (const k of fan.handles) assert.ok(k.entity, 'child projectile spawned');

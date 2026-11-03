@@ -52,18 +52,18 @@ const DEFAULTS = Object.freeze({
   parentVx: 0,
   parentVy: 0,
   delay: 0,
-  spawnType: 'projectile', // 'projectile' | 'bomb' | 'mine' | 'molotov' | 'enemy'
+  child: 'projectile',     // 'projectile' | 'bomb' | 'mine' | 'molotov' | 'enemy'
   mineType: 'explosion',
   mine: { ttl: 2, blinkDuration: 2 },
   enemyType: 'explosive_monkey',
-  enemy: { mineType: 'explosion', ttl: null }, // nested throwEnemy config when spawnType='enemy'
+  enemy: { mineType: 'explosion', ttl: null }, // nested throwEnemy config when child='enemy'
   bomb: null,
   projectile: { ttl: 2, damage: 8 },
 });
 
 /**
  * Generate N child launch descriptors (pure vector math). Exported for tests.
- * Each child: { x, y, vx, vy, angle, spawnType, enemyType?, bomb? }.
+ * Each child: { x, y, vx, vy, angle, child, enemyType?, bomb? }.
  */
 export function splitChildren(p) {
   const angles = spreadAngles(p.count, p.centerDirection, p.angle);
@@ -74,9 +74,9 @@ export function splitChildren(p) {
     vx: Math.cos(a) * p.force + ivx,
     vy: Math.sin(a) * p.force + ivy,
     angle: a,
-    spawnType: p.spawnType ?? 'projectile',
-    enemyType: p.spawnType === 'enemy' ? (p.enemyType ?? 'explosive_monkey') : undefined,
-    ballistic: p.spawnType === 'bomb' ? (p.ballistic ?? {}) : undefined,
+    child: p.child ?? 'projectile',
+    enemyType: p.child === 'enemy' ? (p.enemyType ?? 'explosive_monkey') : undefined,
+    ballistic: p.child === 'bomb' ? (p.ballistic ?? {}) : undefined,
   }));
 }
 
@@ -110,17 +110,17 @@ defineMacro('spawnSplit', {
     effects: [],
     desc: 'Fan out N children and materialize each into a live projectile/bomb or enemy. Declarative — one invoke, live results.',
     params: [
-      { key: 'spawnType', desc: 'projectile | bomb | mine | molotov | enemy' },
+      { key: 'child', desc: 'projectile | bomb | mine | molotov | enemy' },
       { key: 'mineType', desc: 'explosion | shockwave' },
-      { key: 'enemyType', desc: 'enemy id when spawnType=enemy' },
+      { key: 'enemyType', desc: 'enemy id when child=enemy' },
       { key: 'count', desc: 'children created' },
       { key: 'centerDirection', desc: 'central direction (radians)' },
       { key: 'angle', desc: 'distribution width (radians)' },
       { key: 'force', desc: 'launch speed (px/s)' },
       { key: 'mine', desc: 'throwMine params; ttl null = contact only' },
-      { key: 'enemy', desc: 'nested throwEnemy config when spawnType=enemy (ttl, mineType, team, damage, radius, thrown…)' },
-      { key: 'ballistic', desc: 'ballistic params when spawnType=bomb (children are exploding bombs)' },
-      { key: 'molotov', desc: 'molotov params when spawnType=molotov (fire lobes; arc/fireWidth/team…)' },
+      { key: 'enemy', desc: 'nested throwEnemy config when child=enemy (ttl, mineType, team, damage, radius, thrown…)' },
+      { key: 'ballistic', desc: 'ballistic params when child=bomb (children are exploding bombs)' },
+      { key: 'molotov', desc: 'molotov params when child=molotov (fire lobes; arc/fireWidth/team…)' },
     ],
   },
   impl(params, ctx) {
@@ -135,7 +135,7 @@ defineMacro('spawnSplit', {
 
     for (const c of children) {
       const speed = Math.hypot(c.vx, c.vy);
-      if (c.spawnType === 'enemy') {
+      if (c.child === 'enemy') {
         const ec = p.enemy ?? {};
         // Default: the child is THROWN (ballistic arc → real enemy on
         // landing) via throwEnemy — same bomb primitive + terrain path as
@@ -166,14 +166,14 @@ defineMacro('spawnSplit', {
           // post-loop subscription would miss early landings.
           child.on('land', ({ enemy }) => { if (enemy) enemies.push(enemy); });
         }
-      } else if (c.spawnType === 'mine') {
+      } else if (c.child === 'mine') {
         const child = invoke('throwMine', {
           ...p.mine, mineType: p.mineType,
           origin: { x: c.x, y: c.y }, direction: Math.atan2(c.vy, c.vx), speed,
           groundY: p.groundY, platforms: p.platforms,
         }, ctx);
         handles.push(child);
-      } else if (c.spawnType === 'bomb') {
+      } else if (c.child === 'bomb') {
         // `ballistic` is the post-rename key (d3c7571e); `bomb` is the legacy
         // key some composers still emit — accept both so child params (ttl,
         // arc, blastTeam...) are never silently dropped to defaults.
@@ -189,7 +189,7 @@ defineMacro('spawnSplit', {
           explodeOnContact: b.explodeOnContact ?? true,
         }, ctx);
         if (child?.entity) handles.push(child);
-      } else if (c.spawnType === 'molotov') {
+      } else if (c.child === 'molotov') {
         // Fire lobe → the molotov macro (ballistic carrier + fireArea payload
         // on impact). Same composition pattern as the bomb branch above.
         const m = p.molotov ?? {};

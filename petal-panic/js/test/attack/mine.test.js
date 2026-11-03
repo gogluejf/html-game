@@ -106,16 +106,16 @@ test('throw flight does not consume TTL; bounce settles; airborne contact waits 
 test('mine payload configuration propagates through split, cluster, sky missile and rain', () => {
   const c = context();
   const check = h => { assert.equal(h._params.mineType, 'shockwave'); assert.equal(h._params.ttl, null); assert.equal(h._params.blinkDuration, 0.7); };
-  const split = invoke('spawnSplit', { spawnType: 'mine', mineType: 'shockwave', mine: { ttl: null, blinkDuration: 0.7 }, count: 2 }, c);
+  const split = invoke('spawnSplit', { child: 'mine', mineType: 'shockwave', mine: { ttl: null, blinkDuration: 0.7 }, count: 2 }, c);
   assert.equal(split.handles.length, 2); split.handles.forEach(check);
-  const cluster = invoke('clusterBomb', { spawnType: 'mine', mineType: 'shockwave', mineTtl: null, blinkDuration: 0.7 }, c);
+  const cluster = invoke('clusterBomb', { child: 'mine', mineType: 'shockwave', mineTtl: null, blinkDuration: 0.7 }, c);
   cluster.inner.entity.alive = false; cluster.step(dt, []);
   assert.equal(cluster.handles.length, 4); cluster.handles.forEach(check);
-  const sky = invoke('skyMissile', { blastType: 'mine', mineType: 'shockwave', mineTtl: null, blinkDuration: 0.7, timeToTarget: 0 }, c);
+  const sky = invoke('skyMissile', { child: 'mine', mineType: 'shockwave', mineTtl: null, blinkDuration: 0.7, timeToTarget: 0 }, c);
   sky.step(dt, []); check(sky.state.missile);
   run(sky, 2); assert.equal(sky.state.missile.state.settled, true);
   assert.equal(sky.state.missile.state.box.y + 8, 100);
-  const rain = invoke('missileRain', { count: 1, blastType: 'mine', mineType: 'shockwave', mineTtl: null, blinkDuration: 0.7, timeToTarget: 0 }, c);
+  const rain = invoke('missileRain', { count: 1, child: 'mine', mineType: 'shockwave', mineTtl: null, blinkDuration: 0.7, timeToTarget: 0 }, c);
   run(rain, 2); check(rain.state.missiles[0].state.missile);
 });
 
@@ -149,7 +149,7 @@ test('foe theater mine walks hero candidate into warning and completes safely', 
 });
 
 test('split cancellation tears down held warning overlays', () => {
-  const h = invoke('spawnSplit', { spawnType: 'mine', count: 1, x: 0, y: 96,
+  const h = invoke('spawnSplit', { child: 'mine', count: 1, x: 0, y: 96,
     force: 0, mine: { bounce: false, ttl: 0 } }, context());
   run(h, 0.1); const child = h.handles[0]; assert.ok(child.warning);
   h.cancel(); assert.equal(child._cancelled, true); assert.equal(child.warning.done, true);
@@ -196,7 +196,7 @@ for (const id of ['throwMine', 'skyMissile', 'missileRain', 'spawnSplit', 'clust
     const c = context(); const host = new BombAttackHost(() => c);
     const root = host.spawn(id, { origin: { x: 0, y: 10 }, speed: 0, arc: 400,
       ttl: id === 'clusterBomb' ? dt : null, mineTtl: null, timeToTarget: 0,
-      fallDelay: 0, count: 1, spawnType: 'mine', blastType: 'mine',
+      fallDelay: 0, count: 1, child: 'mine',
       mine: { ttl: null }, childForce: 80 }, c.attacker);
     const find = h => h.id === 'throwMine' ? h : (h.handles ?? []).map(find).find(Boolean);
     let mine;

@@ -51,7 +51,7 @@ const DEFAULTS = Object.freeze({
   radius: 30,          // reticle size (px)
   tracking: true,      // follow the target until lockTime
   // Shot stage.
-  blastType: 'plain',   // plain | explosion | shockwave | napalm — payload on impact
+  child: 'projectile', // projectile | explosion | shockwave | napalm — payload on impact
   speed: 500,          // projectile speed px/s
   ttl: 2,              // projectile lifetime (s)
   damage: 10,          // projectile / contact damage
@@ -94,7 +94,7 @@ defineMacro('reticleShot', {
       { key: 'color', desc: 'VFX color' },
       { key: 'radius', desc: 'reticle size (px)' },
       { key: 'tracking', desc: 'follow the target until lockTime' },
-      { key: 'blastType', desc: "plain | explosion | shockwave | napalm — payload on impact" },
+      { key: 'child', desc: "projectile | explosion | shockwave | napalm — payload on impact" },
       { key: 'speed', desc: 'projectile speed px/s' },
       { key: 'ttl', desc: 'projectile lifetime (s)' },
       { key: 'damage', desc: 'projectile / contact damage' },
@@ -163,13 +163,13 @@ defineMacro('reticleShot', {
         const pt = s.locked ?? s.pt;
         const o = targetCenter(ctx.attacker) ?? { x: 0, y: 0 };
         const dir = Math.atan2(pt.y - o.y, pt.x - o.x);
-        const blastType = params.blastType ?? 'plain';
+        const child = params.child ?? 'projectile';
         const blast = params.blast ?? {};
-        // Plain: the primitive itself. Anything else: a payload macro that
-        // composes the projectile carrier with its detonation. Each payload
-        // reads its OWN size key from `blast`.
+        // projectile: the primitive itself. Anything else: a payload macro
+        // that composes the projectile carrier with its detonation. Each
+        // payload reads its OWN size key from `blast`.
         let shot;
-        if (blastType === 'plain') {
+        if (child === 'projectile') {
           shot = invoke('projectile', {
             origin: { x: o.x, y: o.y },
             direction: dir,
@@ -179,12 +179,12 @@ defineMacro('reticleShot', {
             solidBehavior: 'stop',
           }, ctx);
         } else {
-          const payloadId = blastType === 'shockwave' ? 'shockwaveProjectile'
-            : blastType === 'napalm' ? 'napalm'
+          const payloadId = child === 'shockwave' ? 'shockwaveProjectile'
+            : child === 'napalm' ? 'napalm'
             : 'explosiveProjectile';
-          const payloadSize = blastType === 'shockwave'
+          const payloadSize = child === 'shockwave'
             ? { radius: blast.shockRadius }
-            : blastType === 'napalm'
+            : child === 'napalm'
               ? { fireWidth: blast.fireWidth }
               : { radius: blast.explosionRadius };
           shot = invoke(payloadId, {

@@ -119,7 +119,7 @@ export function handleBarrelDestroyed(barrel) {
       centerDirection: -Math.PI / 2,        // straight up
       angle: Math.PI * 0.7,                 // ~126° fan — wide popcorn spread
       force: 520,                           // lobe launch speed
-      spawnType: 'molotov',
+      child: 'molotov',
       molotov: { arc: 800, bounce: false, ttl: 1.2, fireWidth: 96, team: 'neutral' },
       groundY: floorY,
     }, barrel);

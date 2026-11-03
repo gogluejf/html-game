@@ -92,7 +92,7 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Define ATTACK_IDS + invokeChild helper",
       "milestone": "Unified Attack Invoke List",
       "milestone_number": 3,
@@ -107,7 +107,7 @@
     },
     "3.2": {
       "number": "3.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Rename blastType/spawnType to child in all macros",
       "milestone": "Unified Attack Invoke List",
       "milestone_number": 3
