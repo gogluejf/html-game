@@ -210,9 +210,9 @@ async function boot() {
   // costs one short fetch round-trip at boot and makes every entity — in
   // every zone, on every reload — construct with real sprite data.
   const { initBarrelSprites, initCheckpointSprites } = await import('./objects/object.js');
-  const { initProjectileSprites, initSpecialSprites } = await import('./objects/projectile.js');
+  const { initProjectileSprites, initSpecialSprites, initRockSprites } = await import('./objects/projectile.js');
   const { initCoinSprites } = await import('./objects/coin.js');
-  await Promise.all([initBarrelSprites(), initCheckpointSprites(), initProjectileSprites(), initSpecialSprites(), initCoinSprites()]);
+  await Promise.all([initBarrelSprites(), initCheckpointSprites(), initProjectileSprites(), initSpecialSprites(), initRockSprites(), initCoinSprites()]);
   const { update } = await import('./systems/update.js');
   const { render } = await import('./systems/render.js');
   // VIRTUAL GAMEPAD option (fullscreen-layout plan): default ON; the pad only

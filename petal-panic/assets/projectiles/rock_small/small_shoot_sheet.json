@@ -1,115 +1,122 @@
 {
- "file": "petal-panic/assets/projectiles/rock_small/small_shoot_sheet.png",
- "size": "1011x190",
- "rows": 1,
- "cols": 4,
- "kind": "animation",
- "description": "Small rock projectile (4 frames)",
- "entities": [
-  {
-   "name": "rock_small",
-   "anim": "shoot",
-   "frames_dir": "petal-panic/assets/projectiles/rock_small",
-   "frames": [
+  "file": "petal-panic/assets/projectiles/rock_small/small_shoot_sheet.png",
+  "size": "1011x190",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "Small rock projectile (4 frames)",
+  "entities": [
     {
-     "file": "small_shoot_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      222,
-      189
-     ],
-     "offset": {
-      "x": -111,
-      "y": -94.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "small_shoot_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      222,
-      0,
-      254,
-      190
-     ],
-     "offset": {
-      "x": -127,
-      "y": -95
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "small_shoot_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      476,
-      0,
-      269,
-      183
-     ],
-     "offset": {
-      "x": -134.5,
-      "y": -91.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "small_shoot_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      745,
-      0,
-      266,
-      188
-     ],
-     "offset": {
-      "x": -133,
-      "y": -94
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
+      "name": "rock_small",
+      "anim": "shoot",
+      "frames_dir": "petal-panic/assets/projectiles/rock_small",
+      "frames": [
+        {
+          "file": "small_shoot_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            222,
+            189
+          ],
+          "offset": {
+            "x": -111,
+            "y": -94.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "small_shoot_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            222,
+            0,
+            254,
+            190
+          ],
+          "offset": {
+            "x": -127,
+            "y": -95
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "small_shoot_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            476,
+            0,
+            269,
+            183
+          ],
+          "offset": {
+            "x": -134.5,
+            "y": -91.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "small_shoot_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            745,
+            0,
+            266,
+            188
+          ],
+          "offset": {
+            "x": -133,
+            "y": -94
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "fps": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": -69,
+        "y": -93,
+        "w": 171,
+        "h": 178
+      },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "markers": [],
+      "collisionBox": {
+        "x": -134.5,
+        "y": -95.0,
+        "w": 269,
+        "h": 190
+      }
     }
-   ],
-   "fps": 8,
-   "playback": "loop",
-   "direction": "forward",
-   "collision": {
-    "x": -69,
-    "y": -93,
-    "w": 171,
-    "h": 178
-   },
-   "pivot": {
-    "x": 0,
-    "y": 0
-   },
-   "markers": []
-  }
- ]
+  ],
+  "outline": 0
 }

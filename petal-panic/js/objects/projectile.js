@@ -57,6 +57,13 @@ let projectileFrames = new Map(); // shared frame cache, filled at boot
 export function getProjectileSpriteData() { return projectileSpriteData; }
 export function getProjectileFrames() { return projectileFrames; }
 
+// Default ballistic sprite (rock_medium) — same pattern as thorn for Projectile.
+// Typeless Special entities use this in high-graphic mode; primitive fallback in low.
+let rockSpriteData = null;
+let rockFrames = new Map();
+export function getRockSpriteData() { return rockSpriteData; }
+export function getRockFrames() { return rockFrames; }
+
 // Special-weapon sheets (Step A): per-type shoot/fly anim + bomb's explode
 // anim. The SHEET IS THE SOURCE OF TRUTH: the editor-authored collision box
 // is the scaling reference (§4) and the entity box derives from it — width =
@@ -71,6 +78,8 @@ const SPECIAL_SPRITE_TARGETS = Object.freeze({
   bomb: { anim: 'shoot' },
   homing: { anim: 'fly' },
   explosive: { anim: 'fly' },
+  rock_small: { anim: 'shoot' },
+  rock_medium: { anim: 'shoot' },
 });
 const specialSpriteData = new Map();   // type → parsed sheet (anims patched)
 const specialSpriteFrames = new Map(); // type → frame image map
@@ -137,6 +146,21 @@ export function initProjectileSprites() {
     })
     .then((imgs) => { if (imgs && imgs.size > 0) projectileFrames = imgs; })
     .catch((e) => console.warn('[sprite] thorn sheet failed to load', e));
+}
+
+export function initRockSprites() {
+  if (rockSpriteData || typeof fetch === 'undefined') return Promise.resolve();
+  const base = new URL('../../assets/projectiles/rock_medium/', import.meta.url).href;
+  const load = base.startsWith('file:')
+    ? readFileJson(new URL('medium_shoot_sheet.json', base))
+    : fetch(base + 'medium_shoot_sheet.json').then((r) => r.json());
+  return load
+    .then((sheet) => {
+      rockSpriteData = parseSheet(sheet);
+      return loadFrames(rockSpriteData, base);
+    })
+    .then((imgs) => { if (imgs && imgs.size > 0) rockFrames = imgs; })
+    .catch((e) => console.warn('[sprite] rock_medium sheet failed to load', e));
 }
 async function readFileJson(url) {
   const { readFile } = await import('node:fs/promises');
@@ -214,7 +238,7 @@ export class Projectile extends Entity {
     }
     // Persistent 6px white outline (same effect as the checkpoint flag —
     // follows silhouette + rotation; box fallback when no sheet frame loaded).
-    this._outline = spriteOutline({ color: '#ffffff', thickness: 4, opacity: 1.0 }, this);
+    this._outline = spriteOutline({ color: '#ffffff', thickness: 2, opacity: 1.0 }, this);
 
     // Drawer: optional render override. Contract: (ctx, entity) => void.
     // null = use default draw (sheet sprite or debug rect). Set per-shot by
@@ -431,6 +455,17 @@ export class Special extends Entity {
           this._outline = spriteOutline({ color: '#ffffff', thickness: 2, opacity: 1.0 }, this);
         } catch { /* procedural path stays active */ }
       }
+    } else if (rockSpriteData?.anims.shoot) {
+      // Typeless ballistic (default rock): use rock_medium sheet, same pattern
+      // as thorn for Projectile. High-res renders sprite; low-res falls back
+      // to the primitive drawer in draw().
+      this.sprite = { anchor: 'center', anims: rockSpriteData.anims };
+      Object.defineProperty(this.sprite, 'frames', { get: () => rockFrames });
+      try {
+        this.setAnim('shoot');
+        this.orientSprite(this.vx, this.vy);
+        // No outline for rock (sheet declares outline: 0).
+      } catch { /* procedural path stays active */ }
     }
 
     // Drawer: optional render override. Contract: (ctx, entity) => void.
