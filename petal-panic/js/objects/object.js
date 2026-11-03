@@ -62,6 +62,30 @@ export const COIN_BARREL_DEF = {
   spriteAnim: 'coin',
 };
 
+/** Toxic barrel: on destruction erupts into a huge dust cloud (7×5 units,
+ *  centered on the barrel) that ticks damage to everyone inside. No AoE
+ *  blast — the cloud IS the damage. */
+export const TOXIC_BARREL_DEF = {
+  id: 'toxicBarrel',
+  w: 32, h: 48,
+  hp: 45,
+  explosion: null,   // no instant blast — the dust zone is the payload
+  coinDrop: null,
+  spriteAnim: 'toxic',
+};
+
+/** Propane barrel: volatile. On destruction it pops a popcorn fan of molotov
+ *  lobes (gravity arcs) that shatter into burning areas where they land.
+ *  No AoE blast — the fire zones ARE the damage. */
+export const PROPANE_BARREL_DEF = {
+  id: 'propaneBarrel',
+  w: 32, h: 48,
+  hp: 50,
+  explosion: null,   // no instant blast — the lobe fan is the payload
+  coinDrop: null,
+  spriteAnim: 'propane',
+};
+
 /** Super-coin barrel: tanky (hp 120). Every landed hit pops a few coins out
  *  (popcorn scatter); on destruction it fires a big final burst of many coins
  *  launched high into the sky, plus screen shake + white flash (explosion-feel
@@ -96,6 +120,8 @@ export const BARREL_TYPES = [
   { id: 'explosive', label: 'Explosive' },
   { id: 'coin', label: 'Coin' },
   { id: 'supercoin', label: 'Super Coin' },
+  { id: 'propane', label: 'Propane' },
+  { id: 'toxic', label: 'Toxic' },
 ];
 
 /** Lookup map: id → barrel meta. O(1) access. */
@@ -121,7 +147,7 @@ export function getBarrelSpriteData() { return barrelSpriteData; }
 export function initBarrelSprites() {
   if (barrelSpriteData || typeof fetch === 'undefined') return Promise.resolve();
   const base = new URL('../../assets/objects/barrel/', import.meta.url).href;
-  const files = ['wooden_sheet.json', 'coin_sheet.json', 'explosion_sheet.json', 'supercoin_sheet.json'];
+  const files = ['wooden_sheet.json', 'coin_sheet.json', 'explosion_sheet.json', 'supercoin_sheet.json', 'propane_sheet.json', 'toxic_sheet.json'];
   const load = base.startsWith('file:')
     ? Promise.all(files.map((f) => readFileJson(new URL(f, base))))
     : Promise.all(files.map((f) => fetch(base + f).then((r) => r.json())));
@@ -301,6 +327,18 @@ export function makeCoinBarrel(x, y) {
  *  fires a big sky-high coin burst + shake/flash on destruction. */
 export function makeSuperCoinBarrel(x, y) {
   return new GameObj(SUPERCOIN_BARREL_DEF, x, y);
+}
+
+/** Create a propane barrel at (x, y): on destruction pops a fan of molotov
+ *  lobes that burn where they land. */
+export function makePropaneBarrel(x, y) {
+  return new GameObj(PROPANE_BARREL_DEF, x, y);
+}
+
+/** Create a toxic barrel at (x, y): on destruction erupts into a huge dust
+ *  cloud centered on it. */
+export function makeToxicBarrel(x, y) {
+  return new GameObj(TOXIC_BARREL_DEF, x, y);
 }
 
 // ---------------------------------------------------------------------------

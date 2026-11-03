@@ -13,7 +13,7 @@ import { Violetta } from '../enemies/violetta.js';
 import { JackOLantern } from '../enemies/jackolantern.js';
 import {makeBoris, makeBorisBaby} from '../enemies/boris_loon.js';
 import { ENEMY_TYPES as _ENEMY_TYPES, ENEMY_TYPE_IDS as _ENEMY_TYPE_IDS, enemyById as _enemyById, isEnemyType as _isEnemyType } from './enemyTypes.js';
-import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeSuperCoinBarrel, makeCheckpoint } from '../objects/object.js';
+import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeSuperCoinBarrel, makePropaneBarrel, makeToxicBarrel, makeCheckpoint } from '../objects/object.js';
 import { Powerup } from '../objects/powerup.js';
 import { recordAreaMap } from '../stats.js';
 import { formatAreaId } from '../systems/lifecycle.js';
@@ -119,7 +119,19 @@ const BARREL_FACTORIES = {
   wood: (x, y) => makeWoodBarrel(x, y),
   coin: (x, y) => makeCoinBarrel(x, y),
   supercoin: (x, y) => makeSuperCoinBarrel(x, y),
+  propane: (x, y) => makePropaneBarrel(x, y),
+  toxic: (x, y) => makeToxicBarrel(x, y),
 };
+
+/** Ordered barrel factory ids — derived from the BARREL_TYPES registry so a
+ * new barrel type never needs a second edit here. Exported for the debug
+ * harness (B-key rain) and tests. */
+export const BARREL_FACTORY_IDS = Object.keys(BARREL_FACTORIES);
+
+/** Create a live barrel by registry id (BARREL_TYPES). Null for unknown ids. */
+export function makeBarrelById(id, x, y) {
+  return BARREL_FACTORIES[id]?.(x, y) ?? null;
+}
 
 /**
  * Central enemy factory — the ONE place "type id → live Enemy" is answered.

@@ -16,7 +16,8 @@ import { VineHound } from '../enemies/vine_hound.js';
 import { Violetta } from '../enemies/violetta.js';
 import { JackOLantern } from '../enemies/jackolantern.js';
 import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../enemies/boris_loon.js';
-import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeSuperCoinBarrel, GameObj } from '../objects/object.js';
+import { makeBarrel, makeCoinBarrel, GameObj, BARREL_TYPES } from '../objects/object.js';
+import { makeBarrelById } from '../world/build.js';
 import { Powerup, POWERUP_TYPES, POWERUP_ROLL_TYPES } from '../objects/powerup.js';
 import { ZONE_GROUND_Y, roomFloorTop } from '../world/level.js';
 import { UNIT_PX_X, UNIT_PX_Y, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
@@ -152,13 +153,10 @@ function debugSpawn(type, x, y, state) {
  * a 0.5s delay between each and fall with gravity (barrel.gravity = 1).
  */
 let _debugBarrelDrops = []; // { timer, type } pending spawns
-const BARREL_DROP_ORDER = ['explosive', 'wood', 'coin', 'supercoin'];
-const BARREL_DROP_FACTORIES = {
-  explosive: makeBarrel,
-  wood: makeWoodBarrel,
-  coin: makeCoinBarrel,
-  supercoin: makeSuperCoinBarrel,
-};
+// The drop list is DYNAMIC: BARREL_TYPES (objects/object.js) is the single
+// source of truth for barrel types; BARREL_FACTORIES (world/build.js) maps id
+// → factory. Adding a new barrel type never touches this file.
+const BARREL_DROP_ORDER = BARREL_TYPES.map((t) => t.id);
 
 function debugDropBarrels() {
   const h = ctx.hero;
@@ -178,7 +176,8 @@ function debugDropBarrels() {
   // DYNAMIC spacing: measure the first barrel's live collision width (sheet-
   // owned, ~44px at 48px height) from a throwaway instance, then place each
   // next one [width + 0.5 unit] further along. No hardcoded pixels.
-  const probe = BARREL_DROP_FACTORIES[BARREL_DROP_ORDER[0]](0, 0);
+  const probe = makeBarrelById(BARREL_DROP_ORDER[0], 0, 0);
+  if (!probe) return; // registry/factory out of sync — don't crash the frame
   const gap = probe.w + UNIT_PX_X * 0.5;
 
   // Cancel any previous unfinished drop sequence (re-press restarts clean).
@@ -206,8 +205,9 @@ export function tickDebugBarrelDrops(dt) {
     if (d.cancelled) continue;
     d.timer -= dt;
     if (d.timer <= 0) {
-      d.cancelled = true; // spawn once
-      const b = BARREL_DROP_FACTORIES[d.type](d.x, d.y);
+      d.cancelled = true; // spawn once (even on failure — no retry storm)
+      const b = makeBarrelById(d.type, d.x, d.y);
+      if (!b) { Debug.logEvent(`DEBUG: no factory for barrel type '${d.type}'`); continue; }
       b.gravity = 1; // fall with real gravity (GameObj default is 0 = static)
       b.vy = d.vy ?? 0; // pre-seeded so staggered spawns land together
       ctx.barrels.push(b);

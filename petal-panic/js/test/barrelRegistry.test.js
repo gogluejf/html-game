@@ -44,4 +44,17 @@ ok('isBarrelType accepts known ids and rejects unknowns', () => {
   assert.ok(!isBarrelType('Wood'), 'ids are case-sensitive');
 });
 
+// Registry ↔ factory sync: every BARREL_TYPES id must have a live factory.
+// This is the invariant the debug B-key rain (and level population) depend on —
+// a missing factory used to crash the frame loop with "b is null".
+ok('every registry id has a factory (BARREL_FACTORIES covers BARREL_TYPES)', async () => {
+  const build = await import('../world/build.js');
+  const factoryIds = new Set(build.BARREL_FACTORY_IDS);
+  for (const t of BARREL_TYPES) {
+    assert.ok(factoryIds.has(t.id), `missing factory for '${t.id}'`);
+    const probe = build.makeBarrelById(t.id, 0, 0);
+    assert.ok(probe, `makeBarrelById('${t.id}') returned null`);
+  }
+});
+
 console.log(`${passed} passed`);

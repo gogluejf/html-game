@@ -366,10 +366,14 @@ export class Hero extends Entity {
     if (this.dying) return false;
     if (this.intangible) return false; // intangible absorbs it
     const profile = KNOCKBACK_PROFILES[source] ?? KNOCKBACK_PROFILES[DEFAULT_KNOCKBACK_SOURCE];
-    const len = Math.hypot(dirX, dirY) || 1;
-    const kb = profile.strength * HERO_KNOCKBACK_RESISTANCE;
-    this.vx += (dirX / len) * kb;
-    this.vy += (dirY / len) * kb;
+    // Zero-magnitude direction = no shove (persistent zones tick damage without
+    // flinging): arm the timers only. A real impact always carries a direction.
+    if (dirX !== 0 || dirY !== 0) {
+      const len = Math.hypot(dirX, dirY) || 1;
+      const kb = profile.strength * HERO_KNOCKBACK_RESISTANCE;
+      this.vx += (dirX / len) * kb;
+      this.vy += (dirY / len) * kb;
+    }
     // Hit-stun (§24/§26): input locked, physics keep running; knockback decays
     // under friction during the window and control resumes cleanly after.
     this.timers.set('rec', profile.recovery);

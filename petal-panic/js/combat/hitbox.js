@@ -16,6 +16,7 @@
 
 import { LAYER } from '../consts.js';
 import { Effects } from '../effects.js';
+import { damage } from './damage.js';
 
 /** Methods whose connect deals blood (melee-family strikes). */
 const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
@@ -88,25 +89,41 @@ export function processHitboxes(hitboxes, targets, onHit) {
         if (t.dying) continue;
       }
 
-      // Route damage: prefer takeDamage (enemies run death pipeline),
-      // fall back to .hit() (objects/barrels), then central damage().
+      // Route damage: prefer takeDamage (enemies run death pipeline, set their
+      // own flash), fall back to .hit() (objects/barrels, same). The HERO has
+      // neither — like the blast path (explosion.js) it routes through central
+      // damage(), which drains energy/shield and flags death. Without this
+      // branch the hero fell into a 0-damage fallback and zones never hurt it.
       let dealt = 0;
+      const pipeline = typeof t.takeDamage === 'function' || typeof t.hit === 'function';
       if (typeof t.takeDamage === 'function') {
         dealt = t.takeDamage(hb.damage, hb.owner, hb.method);
       } else if (typeof t.hit === 'function') {
         dealt = t.hit(hb.damage, hb.owner, hb.method);
       } else {
-        // Fallback: central damage (shouldn't happen for real entities)
-        dealt = 0;
+        dealt = damage(hb.owner, t, hb.damage, hb.method);
       }
 
       if (dealt > 0) {
         hb.hitSet.add(t);
+        // Hero hit reaction — parity with the blast path (explosion.js): a
+        // damaging tick on the hero arms i-frames via the zone's method
+        // profile ('dust' falls back to contact). Without this, persistent
+        // zones melt the hero every tick while enemies get their own
+        // iFrameTimer from applyKnockback.
+        if (t.layer === LAYER.HERO) {
+          t.takeHit({ source: hb.method, dirX: 0, dirY: 0 });
+          Effects.heroDamaged();
+        }
         // Hit juice lives in the ENGINE, not in host callbacks: every caller
         // of processHitboxes (gameplay hitbox registry AND attack primitives
         // like meleeHitbox/beam/spike) gets the same reaction. Blood sparkles
-        // on melee-family connects; shake + flash on everything else.
-        if (t.layer !== LAYER.HERO) {
+        // on melee-family connects; shake + flash on everything else. Pipeline
+        // targets already flashed themselves inside takeDamage()/hit() — the
+        // engine must not double-set or INVENT a flash for non-pipeline
+        // placeholders (hitFlashOwnership contract), so the shake (which
+        // bumps hitFlash) runs only for pipeline targets.
+        if (t.layer !== LAYER.HERO && pipeline) {
           if (BLOOD_METHODS.has(hb.method)) {
             const tb = t.worldBox ? t.worldBox() : t;
             Effects.spawnHitSparkles(tb.x + tb.w / 2, tb.y + tb.h / 2);

@@ -87,15 +87,16 @@ ok('processHitboxes does not double-set hitFlash on pipeline targets', () => {
 });
 
 ok('processHitboxes leaves non-pipeline placeholders untouched by the engine', () => {
-  // Plain placeholder entity: no takeDamage, no hit. The engine's damage
-  // branch deals nothing to it (dealt stays 0), so the juice block never runs
-  // and the engine assigns no flash — matching pre-cleanup behavior for such
-  // targets (the old line only fired when dealt > 0, which required a
-  // pipeline target).
-  const t = { alive: true, hp: 999, layer: 2 /* LAYER.ENEMY */, hitFlash: 0, x: 0, y: 0, w: 32, h: 48 };
+  // Plain placeholder entity: no takeDamage, no hit. The engine routes it
+  // through central damage() (same as the hero — see explosion.js parity), so
+  // its hp drains, but the ENGINE never assigns a flash: pipeline targets set
+  // their own flash inside takeDamage()/hit(), and the engine must not invent
+  // one for entities that don't run a pipeline.
+  const t = { alive: true, hp: 999, layer: 2 /* LAYER.ENEMY */, x: 0, y: 0, w: 32, h: 48 };
   const hb = makeHitbox({ owner: {}, team: 'ally', box: { x: -10, y: -10, w: 60, h: 60 }, damage: 5, method: 'melee' });
   processHitboxes([hb], [t]);
-  assert.equal(t.hitFlash, 0, 'engine did not invent a flash for a non-damaged target');
+  assert.equal(t.hitFlash, undefined, 'engine did not invent a flash field');
+  assert.ok(t.hp < 999, 'central damage() still drained hp');
 });
 
 console.log(`\nhitFlash ownership: ${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);
