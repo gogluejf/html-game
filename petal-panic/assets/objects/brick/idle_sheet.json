@@ -37,14 +37,14 @@
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": -189.5,
-    "y": -393,
+    "x": -183,
+    "y": -421,
     "w": 379,
     "h": 393
    },
    "pivot": {
-    "x": 0,
-    "y": -196
+    "x": 7,
+    "y": -224
    },
    "markers": []
   }

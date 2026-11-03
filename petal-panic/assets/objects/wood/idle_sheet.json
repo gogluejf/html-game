@@ -1,0 +1,65 @@
+{
+  "file": "petal-panic/assets/objects/wood/idle_sheet.png",
+  "size": "454x464",
+  "rows": 1,
+  "cols": 1,
+  "kind": "animation",
+  "description": "Crate idle (single frame)",
+  "entities": [
+    {
+      "name": "wood",
+      "anim": "idle",
+      "frames_dir": "petal-panic/assets/objects/wood",
+      "frames": [
+        {
+          "file": "idle_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            454,
+            464
+          ],
+          "size": [
+            454,
+            464
+          ],
+          "center": [
+            227,
+            232
+          ],
+          "offset": {
+            "x": -227,
+            "y": -464
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "fps": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": -183,
+        "y": -421,
+        "w": 379,
+        "h": 393
+      },
+      "pivot": {
+        "x": 7,
+        "y": -224
+      },
+      "markers": []
+    }
+  ],
+  "updated": "2026-11-03T00:26:18",
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects/crate",
+    "pass": ""
+  }
+}

@@ -1,0 +1,204 @@
+{
+ "file": "petal-panic/assets/objects/brick/debris_sheet.png",
+ "size": "1774x887",
+ "rows": 2,
+ "cols": 4,
+ "kind": "animation",
+ "description": "Brick debris sequence (8 frames)",
+ "entities": [
+  {
+   "name": "brick",
+   "anim": "debris",
+   "frames_dir": "petal-panic/assets/objects/brick",
+   "frames": [
+    {
+     "file": "debris_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      101,
+      114,
+      245,
+      276
+     ],
+     "offset": {
+      "x": -122.5,
+      "y": -138
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "debris_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      517,
+      137,
+      277,
+      241
+     ],
+     "offset": {
+      "x": -138.5,
+      "y": -120.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "debris_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      982,
+      111,
+      246,
+      259
+     ],
+     "offset": {
+      "x": -123,
+      "y": -129.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "debris_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1422,
+      136,
+      251,
+      224
+     ],
+     "offset": {
+      "x": -125.5,
+      "y": -112
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "debris_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      93,
+      524,
+      225,
+      255
+     ],
+     "offset": {
+      "x": -112.5,
+      "y": -127.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "debris_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      506,
+      526,
+      275,
+      271
+     ],
+     "offset": {
+      "x": -137.5,
+      "y": -135.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "debris_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      986,
+      537,
+      236,
+      253
+     ],
+     "offset": {
+      "x": -118,
+      "y": -126.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "debris_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1392,
+      524,
+      321,
+      271
+     ],
+     "offset": {
+      "x": -160.5,
+      "y": -135.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -118.5,
+    "y": -134,
+    "w": 237,
+    "h": 268
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-03T00:36:54",
+ "crop": {
+  "frames_dir": "petal-panic/assets/objects/brick",
+  "pass": "/home/goglue/tmp/brick-debris-v1"
+ }
+}

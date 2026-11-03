@@ -1,0 +1,288 @@
+{
+  "file": "petal-panic/assets/objects/wood/destroy_sheet.png",
+  "size": "1536x2048",
+  "rows": 4,
+  "cols": 3,
+  "kind": "animation",
+  "description": "Circus crate destruction sequence (12 frames)",
+  "entities": [
+    {
+      "name": "wood",
+      "anim": "destroy",
+      "frames_dir": "petal-panic/assets/objects/wood",
+      "frames": [
+        {
+          "file": "destroy_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            25,
+            21,
+            454,
+            464
+          ],
+          "offset": {
+            "x": -227,
+            "y": -464
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            539,
+            21,
+            452,
+            464
+          ],
+          "offset": {
+            "x": -226,
+            "y": -464
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1051,
+            22,
+            458,
+            463
+          ],
+          "offset": {
+            "x": -229,
+            "y": -463
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f4.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            26,
+            533,
+            453,
+            462
+          ],
+          "offset": {
+            "x": -226.5,
+            "y": -462
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f5.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            541,
+            533,
+            450,
+            463
+          ],
+          "offset": {
+            "x": -225,
+            "y": -463
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f6.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            1052,
+            533,
+            454,
+            462
+          ],
+          "offset": {
+            "x": -227,
+            "y": -462
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f7.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            24,
+            1045,
+            456,
+            464
+          ],
+          "offset": {
+            "x": -228,
+            "y": -464
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f8.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            532,
+            1047,
+            456,
+            462
+          ],
+          "offset": {
+            "x": -228,
+            "y": -462
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f9.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            1044,
+            1051,
+            454,
+            458
+          ],
+          "offset": {
+            "x": -227,
+            "y": -458
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f10.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            22,
+            1561,
+            456,
+            450
+          ],
+          "offset": {
+            "x": -228,
+            "y": -450
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f11.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            531,
+            1567,
+            460,
+            444
+          ],
+          "offset": {
+            "x": -230,
+            "y": -444
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "destroy_f12.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            1044,
+            1820,
+            461,
+            191
+          ],
+          "offset": {
+            "x": -230.5,
+            "y": -191
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "fps": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": -183,
+        "y": -421,
+        "w": 379,
+        "h": 393
+      },
+      "pivot": {
+        "x": 7,
+        "y": -224
+      },
+      "markers": []
+    }
+  ],
+  "updated": "2026-11-03T00:26:07",
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects/crate",
+    "pass": "/home/goglue/tmp/crate-destroy-v2"
+  }
+}
