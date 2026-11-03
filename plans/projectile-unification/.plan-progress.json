@@ -2,7 +2,7 @@
   "tasks": {
     "1.1": {
       "number": "1.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Add gravity+bounce fields to Projectile",
       "milestone": "Merge Special into Projectile",
       "milestone_number": 1,
@@ -17,10 +17,18 @@
     },
     "1.2": {
       "number": "1.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Merge sprite pipeline into single path",
       "milestone": "Merge Special into Projectile",
-      "milestone_number": 1
+      "milestone_number": 1,
+      "summary": {
+        "done": "Deleted initSpecialSprites + initRockSprites; merged all sheets (thorn, rock_medium [medium_shoot_sheet.json], rock_small, bomb, bomb_explode [explode_sheet.json], saw, spread, homing, explosive) into a single SPRITE_TARGETS map with one initProjectileSprites() loader using shared spriteData/spriteFrames maps. Updated main.js boot call to the single init; in-file Projectile/Special sprite wiring now reads from the unified maps. getProjectileSpriteData/getProjectileFrames gained an optional type param (default 'thorn') so hud.js keeps working unchanged.",
+        "confidence": "high",
+        "lessons_learned": "hud.js comment referenced the removed projectileFrames variable name but behavior is identical (same default-thorn frames); left as-is since it's a comment only.",
+        "tradeoffs": "getProjectileSpriteData(type) signature extended rather than keeping two getters \u2014 old callers pass nothing and still get thorn data; getRockSpriteData/getRockFrames deleted (no external callers).",
+        "decisions": "Single map keyed by logical type with per-entry dir/file/anim overrides handles the non-default filenames (rock_medium \u2192 medium_shoot_sheet.json, bomb_explode \u2192 bomb/explode_sheet.json). Idempotent per-type (skip if already loaded), preserving old per-init guard semantics. Special class rendering untouched \u2014 it just reads the same unified maps until 1.3 deletes it.",
+        "failures": "None new: projectileSprite.test.js T4 (fps 14 assertion) fails identically on unmodified HEAD \u2014 pre-existing."
+      }
     },
     "1.3": {
       "number": "1.3",

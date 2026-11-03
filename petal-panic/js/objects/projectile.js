@@ -51,116 +51,62 @@ export function aimRotation(vx, vy) {
   return Math.atan2(vy, vx) - PROJECTILE_BASE_ROTATION;
 }
 
-// --- Sprite data (thorn sheet — SOTA wiring, sprite-player-projectile plan T5) --
-let projectileSpriteData = null;
-let projectileFrames = new Map(); // shared frame cache, filled at boot
-export function getProjectileSpriteData() { return projectileSpriteData; }
-export function getProjectileFrames() { return projectileFrames; }
-
-// Default ballistic sprite (rock_medium) — same pattern as thorn for Projectile.
-// Typeless Special entities use this in high-graphic mode; primitive fallback in low.
-let rockSpriteData = null;
-let rockFrames = new Map();
-export function getRockSpriteData() { return rockSpriteData; }
-export function getRockFrames() { return rockFrames; }
-
-// Special-weapon sheets (Step A): per-type shoot/fly anim + bomb's explode
-// anim. The SHEET IS THE SOURCE OF TRUTH: the editor-authored collision box
-// is the scaling reference (§4) and the entity box derives from it — width =
-// collisionBox.w × scale, no baseW, no synthetic fallback. A sheet without an
-// authored box is an asset bug: setAnim() → uniformScale() throws loudly.
-// Per-weapon size + anim live in the REGISTRY (specialWeapons.js): size is
-// declared there in Y-units (single source of truth); this table only maps
-// type → sheet dir/anim for the loader.
-const SPECIAL_SPRITE_TARGETS = Object.freeze({
-  saw: { anim: 'shoot' },
-  spread: { anim: 'shoot' },
-  bomb: { anim: 'shoot' },
-  homing: { anim: 'fly' },
-  explosive: { anim: 'fly' },
-  rock_small: { anim: 'shoot' },
-  rock_medium: { anim: 'shoot' },
+// --- Sprite data (single pipeline for ALL flying-entity sheets) --------------
+// One SPRITE_TARGETS map drives every projectile/special sheet: type →
+// { dir, file, anim }. `dir` defaults to the type name; `file` to
+// `<anim>_sheet.json`. The SHEET IS THE SOURCE OF TRUTH: the editor-authored
+// collision box is the scaling reference (§4) and the entity box derives from
+// it — width = collisionBox.w × scale, no baseW, no synthetic fallback. A
+// sheet without an authored box is an asset bug: setAnim() → uniformScale()
+// throws loudly. Per-weapon size lives in the REGISTRY (specialWeapons.js).
+const SPRITE_TARGETS = Object.freeze({
+  thorn:       { anim: 'shoot' },
+  rock_medium: { file: 'medium_shoot_sheet.json', anim: 'shoot' },
+  rock_small:  { file: 'small_shoot_sheet.json', anim: 'shoot' },
+  bomb:        { anim: 'shoot' },
+  bomb_explode:{ dir: 'bomb', file: 'explode_sheet.json', anim: 'explode' },
+  saw:         { anim: 'shoot' },
+  spread:      { anim: 'shoot' },
+  homing:      { anim: 'fly' },
+  explosive:   { anim: 'fly' },
 });
-const specialSpriteData = new Map();   // type → parsed sheet (anims patched)
-const specialSpriteFrames = new Map(); // type → frame image map
-export function getSpecialSpriteData(type) { return specialSpriteData.get(type) ?? null; }
-export function initSpecialSprites() {
+const spriteData = new Map();   // type → parsed sheet (anims patched)
+const spriteFrames = new Map(); // type → frame image map
+/** @returns {object|null} parsed sheet for a type (null pre-boot / unknown). */
+export function getProjectileSpriteData(type = 'thorn') { return spriteData.get(type) ?? null; }
+/** @returns {Map} frame image map for a type (empty pre-boot). */
+export function getProjectileFrames(type = 'thorn') { return spriteFrames.get(type) ?? new Map(); }
+/** Back-compat alias — specials share the same map now. */
+export function getSpecialSpriteData(type) { return spriteData.get(type) ?? null; }
+/** Single boot-time loader: loads EVERY sheet in SPRITE_TARGETS. Idempotent. */
+export function initProjectileSprites() {
   if (typeof fetch === 'undefined') return Promise.resolve();
   const jobs = [];
-  for (const [type, cfg] of Object.entries(SPECIAL_SPRITE_TARGETS)) {
-    if (specialSpriteData.has(type)) continue;
-    const base = new URL(`../../assets/projectiles/${type}/`, import.meta.url).href;
+  for (const [type, cfg] of Object.entries(SPRITE_TARGETS)) {
+    if (spriteData.has(type)) continue;
+    const dir = cfg.dir ?? type;
+    const file = cfg.file ?? `${cfg.anim}_sheet.json`;
+    const base = new URL(`../../assets/projectiles/${dir}/`, import.meta.url).href;
     const load = base.startsWith('file:')
-      ? readFileJson(new URL(`${cfg.anim}_sheet.json`, base))
-      : fetch(base + `${cfg.anim}_sheet.json`).then((r) => r.json());
+      ? readFileJson(new URL(file, base))
+      : fetch(base + file).then((r) => r.json());
     jobs.push(load
       .then((sheet) => {
         const data = parseSheet(sheet);
-        // SHEET IS THE SOURCE OF TRUTH: the editor-authored collision box +
-        // pivot are used as-is. No synthetic fallback — a sheet without an
-        // authored box is an asset bug and must fail loudly (scaleReference).
+        // SHEET IS THE SOURCE OF TRUTH: authored collision box + pivot as-is.
         data.anims[cfg.anim]._frames = null; // filled by loadFrames below
-        specialSpriteData.set(type, data);
+        spriteData.set(type, data);
         return loadFrames(data, base);
       })
       .then((imgs) => {
         if (imgs && imgs.size > 0) {
-          specialSpriteFrames.set(type, imgs);
-          specialSpriteData.get(type).anims[cfg.anim]._frames = imgs;
+          spriteFrames.set(type, imgs);
+          spriteData.get(type).anims[cfg.anim]._frames = imgs;
         }
       })
       .catch((e) => console.warn(`[sprite] ${type} sheet failed to load`, e)));
   }
-  // Bomb detonation art: plays over the impact point on explosion (visual only).
-  const bbase = new URL('../../assets/projectiles/bomb/', import.meta.url).href;
-  const bload = bbase.startsWith('file:')
-    ? readFileJson(new URL('explode_sheet.json', bbase))
-    : fetch(bbase + 'explode_sheet.json').then((r) => r.json());
-  jobs.push(bload
-    .then((sheet) => {
-      const data = parseSheet(sheet);
-      // Sheet is the source of truth (see above): authored box/pivot as-is.
-      data.anims.explode._frames = null;
-      specialSpriteData.set('bomb_explode', data);
-      return loadFrames(data, bbase);
-    })
-    .then((imgs) => {
-      if (imgs && imgs.size > 0) {
-        specialSpriteFrames.set('bomb_explode', imgs);
-        specialSpriteData.get('bomb_explode').anims.explode._frames = imgs;
-      }
-    })
-    .catch((e) => console.warn('[sprite] bomb explode sheet failed to load', e)));
   return Promise.all(jobs);
-}
-export function initProjectileSprites() {
-  if (projectileSpriteData || typeof fetch === 'undefined') return Promise.resolve();
-  const base = new URL('../../assets/projectiles/thorn/', import.meta.url).href;
-  const load = base.startsWith('file:')
-    ? readFileJson(new URL('shoot_sheet.json', base))
-    : fetch(base + 'shoot_sheet.json').then((r) => r.json());
-  return load
-    .then((sheet) => {
-      projectileSpriteData = parseSheet(sheet);
-      return loadFrames(projectileSpriteData, base);
-    })
-    .then((imgs) => { if (imgs && imgs.size > 0) projectileFrames = imgs; })
-    .catch((e) => console.warn('[sprite] thorn sheet failed to load', e));
-}
-
-export function initRockSprites() {
-  if (rockSpriteData || typeof fetch === 'undefined') return Promise.resolve();
-  const base = new URL('../../assets/projectiles/rock_medium/', import.meta.url).href;
-  const load = base.startsWith('file:')
-    ? readFileJson(new URL('medium_shoot_sheet.json', base))
-    : fetch(base + 'medium_shoot_sheet.json').then((r) => r.json());
-  return load
-    .then((sheet) => {
-      rockSpriteData = parseSheet(sheet);
-      return loadFrames(rockSpriteData, base);
-    })
-    .then((imgs) => { if (imgs && imgs.size > 0) rockFrames = imgs; })
-    .catch((e) => console.warn('[sprite] rock_medium sheet failed to load', e));
 }
 async function readFileJson(url) {
   const { readFile } = await import('node:fs/promises');
@@ -244,9 +190,10 @@ export class Projectile extends Entity {
     // Sprite (SOTA): thorn sheet via the standard pipeline. `frames` is a LIVE
     // accessor so boot-time image loading is picked up without rebuilds.
     // Node / pre-boot: sprite data null → primitive rect fallback (unchanged).
-    if (projectileSpriteData?.anims.shoot) {
-      this.sprite = { anchor: 'center', anims: projectileSpriteData.anims };
-      Object.defineProperty(this.sprite, 'frames', { get: () => projectileFrames });
+    const thornData = spriteData.get('thorn');
+    if (thornData?.anims.shoot) {
+      this.sprite = { anchor: 'center', anims: thornData.anims };
+      Object.defineProperty(this.sprite, 'frames', { get: () => spriteFrames.get('thorn') });
       try { this.setAnim('shoot'); } catch { /* legacy rect path stays active */ }
     }
     // Persistent 6px white outline (same effect as the checkpoint flag —
@@ -461,11 +408,11 @@ export class Special extends Entity {
     // LIVE accessor so boot-time image loading is picked up without rebuilds.
     // Node / pre-boot: sprite data null → procedural fallback in draw().
     if (type != null) {
-      const data = specialSpriteData.get(type);
-      const cfg = SPECIAL_SPRITE_TARGETS[type];
+      const data = spriteData.get(type);
+      const cfg = SPRITE_TARGETS[type];
       if (data?.anims[cfg.anim]) {
         this.sprite = { anchor: 'center', anims: data.anims };
-        Object.defineProperty(this.sprite, 'frames', { get: () => specialSpriteFrames.get(type) });
+        Object.defineProperty(this.sprite, 'frames', { get: () => spriteFrames.get(type) });
         try {
           this.setAnim(cfg.anim);
           // Re-aim AFTER setAnim: the sheet's authored start-frame offset can
@@ -478,12 +425,13 @@ export class Special extends Entity {
           this._outline = spriteOutline({ color: '#ffffff', thickness: 2, opacity: 1.0 }, this);
         } catch { /* procedural path stays active */ }
       }
-    } else if (rockSpriteData?.anims.shoot) {
+    } else if (spriteData.get('rock_medium')?.anims.shoot) {
       // Typeless ballistic (default rock): use rock_medium sheet, same pattern
       // as thorn for Projectile. High-res renders sprite; low-res falls back
       // to the primitive drawer in draw().
-      this.sprite = { anchor: 'center', anims: rockSpriteData.anims };
-      Object.defineProperty(this.sprite, 'frames', { get: () => rockFrames });
+      const rockData = spriteData.get('rock_medium');
+      this.sprite = { anchor: 'center', anims: rockData.anims };
+      Object.defineProperty(this.sprite, 'frames', { get: () => spriteFrames.get('rock_medium') });
       try {
         this.setAnim('shoot');
         this.orientSprite(this.vx, this.vy);
