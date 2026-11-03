@@ -1,0 +1,191 @@
+{
+  "plan_name": "state-persistence",
+  "title": "State Persistence Rules",
+  "why": "The agreed persistence design (docs/levels/state-persistence.md) is not implemented: zone snapshots are single-slot, Continue nukes the loadout and coin tally instead of rolling back to the 1-1 zone snapshot, Save&Quit stores only {level,area,score,seed} so a reload loses wallet/weapon/lives/continues, and level clear does not refill energy. Coins/score/lives/continues are money \u2014 this must be exact.",
+  "outcomes": "Per-zone snapshot chain (coins+score) as the rollback anchor / die-retry and continue reset exactly per the doc (full energy, weapon gone, zone-snapshot rollback) / Save&Quit persists full player state + snapshot chain + seed and restores it on reload / level clear refills energy / regression tests per transition",
+  "milestones": [
+    {
+      "number": "1",
+      "name": "Zone Snapshot Chain",
+      "pattern": [
+        "Event Sourcing / Append-Only Log"
+      ],
+      "objective": "Replace the single-slot wallet.snapshot with an append-only per-zone chain {zoneId -> {coins, score}} so any zone (not just the last) can be restored \u2014 the foundation for Continue-to-1-1 and Save&Quit.",
+      "success": "recordZoneSnapshot(h) appends one entry per genuine zone entry; restoreZoneState(h, zoneId) rolls coins+score back to that zone's entry; the old single-slot path is gone or delegates to the chain; existing die/retry rollback behavior is unchanged (same-zone restore still works).",
+      "diagram": "graph LR\n  A[zone entry] --> B[append snapshot to chain]\n  C[die in 1-3] --> D[lookup 1-3 in chain]\n  E[continue] --> F[lookup 1-1 in chain]\n  G[save and quit] --> H[persist whole chain]",
+      "tasks": [
+        {
+          "number": "1.1",
+          "name": "Zone snapshot chain on the hero wallet",
+          "type": "refactor",
+          "what": "Replace single-slot wallet.snapshot/_walletSnapshotArea in lifecycle.js with an append-only chain: h.wallet.snapshots = { '1-1': {coins, score}, ... }. recordZoneSnapshot appends (genuine entries only), restoreZoneState(h, zoneId) rolls coins+score back to a named zone. Source of truth: docs/levels/state-persistence.md \u00a71.",
+          "why": "Continue-to-1-1 and Save&Quit need to restore ANY zone's entry state, not just the last one; the chain is the rollback anchor for all failure transitions.",
+          "files": [
+            "~ petal-panic/js/systems/lifecycle.js",
+            "~ petal-panic/js/hero/hero.js"
+          ],
+          "snippet": [
+            "// hero.js wallet gains the chain (snapshot kept as alias for the active zone):\nh.wallet = { current: {coins, energy, kills}, snapshots: {} };\n\n// lifecycle.js:\nexport function recordZoneSnapshot(h) {\n  const id = `${h.currentLevel}:${h.currentArea}`;\n  h.wallet.snapshots[id] = { coins: h.wallet.current.coins, score: /* current computed score */ };\n}\nexport function restoreZoneState(h, zoneId) {\n  const s = h.wallet.snapshots[zoneId];\n  if (!s) return;\n  h.wallet.current.coins = s.coins; // score derives from trace \u2014 see doc \u00a71\n}"
+          ],
+          "acceptance": [
+            "recordZoneSnapshot appends exactly once per genuine zone entry (startGame, area advance, continue, reward next-level) and never on death-restart",
+            "restoreZoneState(h, '1-1') rolls coins back to the 1-1 entry value even when the hero is currently in 1-3",
+            "same-zone death-retry rollback produces the identical result as today's restoreAreaEntryStats",
+            "no other module reads wallet.snapshot directly (grep clean or delegates)"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "2",
+      "name": "Failure Transitions",
+      "pattern": [
+        "Transactional Rollback"
+      ],
+      "objective": "Make die/retry and continue reset exactly per docs/levels/state-persistence.md \u00a72.1\u20132.2: zone-snapshot rollback for coins+score, full energy, weapon gone, lives \u22121 or refill.",
+      "success": "Dying in 1-3 restores the 1-3 entry state; a manual retry costs 1 life with identical resets; Continue from Game Over lands in 1-1 with the 1-1 entry state, full energy, default weapon, refilled lives, continues \u22121 \u2014 all asserted by tests.",
+      "diagram": "stateDiagram-v2\n  Playing --> Dead : lose last hit\n  Dead --> ZoneEntry : spend 1 life\n  ZoneEntry --> Playing : restore zone snapshot + full energy + no weapon\n  Dead --> GameOver : zero lives\n  GameOver --> ZoneEntry : spend 1 continue, target 1-1, refill lives",
+      "tasks": [
+        {
+          "number": "2.1",
+          "name": "Die and manual retry per the persistence doc",
+          "type": "feature",
+          "what": "Align startLife/death-retry in lifecycle.js with state-persistence.md \u00a72.1: restoreZoneState to the CURRENT zone, energy full, weapon+specials+shield+super cleared (resetHeroInventory already does this \u2014 verify), lives \u22121. Wire a manual retry path that costs exactly 1 life with identical resets.",
+          "why": "Failure must cost a life and roll back to zone-entry state; today's rollback is single-zone only and a manual retry either doesn't exist or is free.",
+          "files": [
+            "~ petal-panic/js/systems/lifecycle.js",
+            "~ petal-panic/js/systems/gameRules.js"
+          ],
+          "snippet": [
+            "// death restart (startLife):\nrestoreZoneState(h, currentZoneId(h)); // was restoreAreaEntryStats\nresetHeroInventory(h);                 // energy full + weapon gone (existing)\n\n// manual retry (pause menu) \u2014 same price as dying:\nexport function manualRetry(h) {\n  if (!canSpend(livesPool(h))) return false;\n  spend one life;\n  // identical reset sequence to a death restart\n}"
+          ],
+          "acceptance": [
+            "dying in zone N restores coins to N's entry snapshot while keeping energy-full/weapon-default",
+            "manual retry consumes exactly 1 life and applies the same resets as death",
+            "manual retry with 0 usable lives is rejected (no free restarts)",
+            "failed-attempt kills/coins do not accumulate into the fresh attempt (anti-farming preserved)"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/"
+          ]
+        },
+        {
+          "number": "2.2",
+          "name": "Continue rolls back to the 1-1 zone snapshot",
+          "type": "feature",
+          "what": "Rework continueRun in lifecycle.js per state-persistence.md \u00a72.2: target zone 1-1 of the current level, restoreZoneState(h, 'level:1'), full energy + weapon gone (same reset sequence as die), lives refilled, continues \u22121. Remove the legacy resetLevelCoinTally coin-tally nuke.",
+          "why": "Today Continue zeroes the level coin tally and nukes inventory via a different path; the doc says it is exactly a die-style reset aimed at 1-1.",
+          "files": [
+            "~ petal-panic/js/systems/lifecycle.js",
+            "~ petal-panic/js/systems/gameRules.js"
+          ],
+          "snippet": [
+            "// continueRun:\nspend(h.continues);\nh.lives = GAME_RULES.startingLives;\nh.currentArea = ENTRY_AREA;\nrestoreZoneState(h, `${h.currentLevel}:1`); // replaces resetLevelCoinTally\nresetHeroInventory(h);                        // same as die\nbeginContinue(h); h._lifeBucketArmed = true;"
+          ],
+          "acceptance": [
+            "continue after defeat in 2-3 lands in 2-1 with coins equal to the 2-1 entry snapshot",
+            "energy is full and selectedWeapon is the hero default after continue",
+            "lives equal GAME_RULES.startingLives and the continue pool decreased by exactly one",
+            "the world arrangement for 2-1 is unchanged (no reroll)"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "3",
+      "name": "Progress Transitions and Save State",
+      "pattern": [
+        "Save Slot / Full-State Serialization"
+      ],
+      "objective": "Progress never resets: zone advance keeps everything, level clear refills energy only; Save&Quit persists the full player state + snapshot chain + seed and Continue after reload restores it.",
+      "success": "Passing a zone changes nothing in wallet/inventory; clearing a boss refills energy and keeps lives; saveMeta round-trips {zone, snapshot chain, coins, score, energy, weapon, specials, lives, continues, seed} and reload-Continue resumes with exactly the saved on-screen state.",
+      "diagram": "graph TD\n  A[zone advance] --> B[keep all + new snapshot]\n  C[boss defeated] --> D[keep all + energy full]\n  E[save and quit] --> F[serialize zone + chain + player state + seed]\n  G[reload continue] --> H[restore world from seed]\n  H --> I[restore player state + snapshots]\n  I --> J[area entry at saved zone]",
+      "tasks": [
+        {
+          "number": "3.1",
+          "name": "Level clear refills energy, keeps everything else",
+          "type": "feature",
+          "what": "In the boss-defeat/reward path (lifecycle.js rewardOnAction + showLevelReward), set hero energy to maxEnergy when advancing to the next level; verify lives/continues/wallet/weapon are untouched by the transition. Source: state-persistence.md \u00a72.4.",
+          "why": "Level clear is the only progress transition that touches energy; lives must NOT refill (agreed design).",
+          "files": [
+            "~ petal-panic/js/systems/lifecycle.js"
+          ],
+          "snippet": [
+            "// on level advance (reward confirmed):\nh.energy = h.maxEnergy; // ONLY energy changes\n// lives, continues, wallet, weapon, specials: untouched"
+          ],
+          "acceptance": [
+            "after boss defeat + reward confirm, energy === maxEnergy",
+            "lives and continues are unchanged by the level transition",
+            "coins/score/weapon/specials carry into the next level's area 1"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/"
+          ]
+        },
+        {
+          "number": "3.2",
+          "name": "Save&Quit persists full state, reload-Continue restores it",
+          "type": "feature",
+          "what": "Extend saveMeta in lifecycle.js saveCurrentRun with the full player state: {coins, score, energy, weapon, specialSlots, lives, continues, snapshots (zone chain)} alongside the existing {level, area, seed}. On MENU->AREA_ENTRY continue after a reload, restore that state onto the hero before the zone installs. Source: state-persistence.md \u00a72.5\u20132.6.",
+          "why": "Today a reload loses wallet/weapon/lives/continues \u2014 quitting punishes the player; the save must be a true resume.",
+          "files": [
+            "~ petal-panic/js/systems/lifecycle.js",
+            "~ petal-panic/js/systems/update.js"
+          ],
+          "snippet": [
+            "// saveCurrentRun meta gains:\nstate: { coins, score, energy, weapon, specialSlots, lives, continues },\nsnapshots: h.wallet.snapshots, // the whole zone chain\n\n// update.js MENU->AREA_ENTRY hook (after seed rebuild):\nif (sm.state) applySavedState(hero, sm); // wallet, inventory, lives, continues, snapshots\nisValidSaveMeta tolerates legacy saves without state (fallback = today's behavior)"
+          ],
+          "acceptance": [
+            "save then reload then Continue resumes with the exact saved coins/score/energy/weapon/lives/continues",
+            "the snapshot chain round-trips: dying after a reload-continue rolls back to the pre-quit zone entry values",
+            "legacy saves without a state block still load with today's behavior (no crash)",
+            "New Game after a saved run clears the saved state (fresh start)"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "4",
+      "name": "Regression Gate",
+      "pattern": [
+        "Property-Based Transition Tests"
+      ],
+      "objective": "Prove every transition in the doc's table behaves exactly as specified, and that nothing else regressed.",
+      "success": "A dedicated test file walks each transition (die, manual retry, continue, zone advance, level clear, save/reload-continue, new game) and asserts the full keep/reset row from state-persistence.md \u00a73; full suite at baseline or better.",
+      "diagram": "graph LR\n  T[transition table rows] --> D[die / retry]\n  T --> C[continue]\n  T --> Z[zone advance]\n  T --> L[level clear]\n  T --> S[save and reload]\n  D --> V[assert keep-reset row]\n  C --> V\n  Z --> V\n  L --> V\n  S --> V\n  V --> G[full suite at baseline]",
+      "tasks": [
+        {
+          "number": "4.1",
+          "name": "Per-transition persistence tests",
+          "type": "test",
+          "what": "Add petal-panic/js/test/statePersistence.test.js: one test per row of the state-persistence.md \u00a73 table asserting the full keep/reset outcome (coins, score, energy, weapon, lives, continues) using a scripted hero + zone chain. Update any existing tests that assert the OLD continue/die behavior.",
+          "why": "Coins/lives/continues are money \u2014 the transition table must be mechanically enforced, not vibes; old-behavior assertions would silently encode the wrong design.",
+          "files": [
+            "+ petal-panic/js/test/statePersistence.test.js"
+          ],
+          "snippet": [
+            "// helper: script a run to zone 1-3 with known coin/score deltas, then:\n// die()        -> expect 1-3 snapshot coins, full energy, default weapon, lives-1\n// manualRetry()-> same as die, lives-1\n// continue()   -> expect 1-1 snapshot coins, full energy, default weapon, lives refilled, continues-1\n// advanceZone()-> everything kept\n// clearLevel() -> energy full, lives kept\n// save/reload  -> full state round-trip"
+          ],
+          "acceptance": [
+            "each of the 7 table rows has a test asserting every column it defines",
+            "no existing test asserts the removed coin-tally-nuke or free-manual-retry behavior",
+            "full node --test run shows zero new failures vs baseline"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/"
+          ]
+        }
+      ]
+    }
+  ],
+  "source_of_truth": "petal-panic/docs/levels/state-persistence.md (single source of truth for keep/reset rules); supporting: docs/levels/game-rules.md, docs/levels/lifecycle.md"
+}
