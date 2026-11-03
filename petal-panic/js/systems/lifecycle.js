@@ -23,7 +23,7 @@
 // This module is pure over the pieces handed to it (hero, entities, pools,
 // effects) so the rules are unit-testable in node without a DOM.
 
-import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetLevelCoinTally, resetHeroInventory } from './gameRules.js';
+import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetHeroInventory } from './gameRules.js';
 import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../world/level.js';
 import { getLevelConfig, LEVEL_CONFIGS, AREA_BOSS } from '../world/levelConfigs.js';
 import { getLastWorldSeed } from '../world/build.js';
@@ -488,8 +488,13 @@ export function startLife(h, ctx) {
 /**
  * §4 Game continue. Requires a remaining continue and consumes exactly one,
  * restores the global starting life count, returns to area 1 of the CURRENT
- * level, and starts a fresh attempt there. All previously generated areas keep
- * their arrangements — continue never rerolls generation choices.
+ * level, and starts a fresh attempt there. Per state-persistence.md §2.2 this
+ * is a die-style reset aimed at zone 1-1: coins+score roll back to that zone's
+ * entry snapshot (restoreZoneState), energy is full and the weapon is gone
+ * (resetHeroInventory — the same sequence as a death restart), lives are
+ * refilled, and the continue pool decreases by exactly one. All previously
+ * generated areas keep their arrangements — continue never rerolls generation
+ * choices.
  *
  * @param {Hero} h
  * @param {object} ctx the area context (see restoreArea)
@@ -505,20 +510,18 @@ export function continueRun(h, ctx) {
   beginContinue(h);
   h._lifeBucketArmed = true;
   h.lives = GAME_RULES.startingLives;
-  // Return to area 1 of the CURRENT level (lifecycle.md §4). The level is
-  // unchanged; the area index is reset to the first area.
+  // Return to area 1 of the CURRENT level (lifecycle.md §4, state-persistence.md
+  // §2.2). The level is unchanged; the area index is reset to the first area.
   h.currentArea = ENTRY_AREA;
-  // Coin accounting (game-rules.md §2): what happens to the current level's
-  // coin tally after using Continue. The concrete policy is GAME_RULES.coins
-  // (the TUNING block): a continue resets the current level's tally so the
-  // fresh attempt starts clean and the failed attempt's coins do not count.
-  if (GAME_RULES.coins.resetOnContinue) resetLevelCoinTally(h);
-  // Accounting snapshot (game-rules.md §4): the continue returns to area 1
-  // of the current level (a NEW area), so record a fresh entry snapshot. The
-  // resetLevelCoinTally above already zeroed the coin tally; the snapshot
-  // captures the (now-zeroed) entry totals so a later death restart of area
-  // 1 rolls back to them.
-  recordZoneSnapshot(h);
+  // Accounting rollback (state-persistence.md §2.2): Continue is a die-style
+  // reset aimed at zone 1-1 — coins + score roll back to that zone's entry
+  // snapshot (the append-only chain from task 1.1), NOT zeroed by a tally nuke.
+  // This replaces the legacy resetLevelCoinTally call, which polluted the
+  // freshly recorded 1-1 snapshot with coins=0.
+  restoreZoneState(h, `${h.currentLevel}:${ENTRY_AREA}`);
+  // Inventory persistence (game-rules.md §5): same reset sequence as a death
+  // restart — full energy, weapon gone, specials/shield/super cleared.
+  resetHeroInventory(h);
   // Position the hero at area 1's entry (checkpoints.md §5, lifecycle.md §4):
   // Continue returns to the current level's area 1 with restored lives and
   // starts a FRESH attempt there — it does NOT resume beside the flag of the

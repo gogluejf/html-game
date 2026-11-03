@@ -25,7 +25,7 @@ import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
 import { TUNING, TUNING_REACH, TUNING_BARREL, TUNING_MACRO, TUNING_COINS, TUNING_INVENTORY, TUNING_SCROLL, TUNING_LIVES, TUNING_MUSIC } from '../tuning.js';
-import { GAME_RULES, resetLevelCoinTally, resetHeroInventory } from '../systems/gameRules.js';
+import { GAME_RULES, resetHeroInventory } from '../systems/gameRules.js';
 import { REACH_MARGIN } from '../world/terrain.js';
 import { BARREL_STRUCTURE, STAGE_WEIGHTS, classifyBarrelStructure } from '../world/macros.js';
 import { BOSS_ZONE_TIMINGS } from '../boss/bossZone.js';
@@ -287,7 +287,11 @@ test('coin carryover policy is concrete and wired to GAME_RULES (game-rules.md �
   // level; failed attempts do NOT count; a continue RESETS the tally.
   assert.equal(GAME_RULES.coins.carryoverRemainder, false, 'remainder does not carry between levels');
   assert.equal(GAME_RULES.coins.countFailedAttempts, false, 'failed attempts do not count toward the reward');
-  assert.equal(GAME_RULES.coins.resetOnContinue, true, 'a continue resets the current level coin tally');
+  // state-persistence.md §2.2 supersedes the legacy "continue resets the coin
+  // tally" rule: Continue rolls coins+score back to zone 1-1's entry snapshot
+  // (restoreZoneState), so the resetLevelCoinTally nuke is gone. The TUNING
+  // flag now documents that the tally is NOT zeroed on continue.
+  assert.equal(GAME_RULES.coins.resetOnContinue, false, 'a continue does NOT zero the coin tally (snapshot rollback instead)');
   assert.equal(GAME_RULES.coins.accountingOnFailure, 'rollback', 'failed attempts roll back to entry totals');
   // The policy is owned by the TUNING block (single owner).
   assert.equal(GAME_RULES.coins.carryoverRemainder, TUNING_COINS.carryoverRemainder);
@@ -306,25 +310,6 @@ test('inventory persistence policy is concrete and wired to GAME_RULES (game-rul
   // The policy is owned by the TUNING block (single owner).
   assert.equal(GAME_RULES.inventory.powerups, TUNING_INVENTORY.powerups);
   assert.equal(GAME_RULES.inventory.superMeter, TUNING_INVENTORY.superMeter);
-});
-
-// --- resetLevelCoinTally: obsolete under the trace/currentStats split --------
-// The boss reward now reads a per-level delta (diffCounters since the
-// level-start snapshot), so an explicit coin-tally zeroing is no longer needed
-// — and zeroing would corrupt the append-only trace. The function is kept as a
-// no-op for call-site compatibility.
-test('resetLevelCoinTally is a no-op (reward uses per-level delta accounting)', () => {
-  const h = { runStats: { coinsCollected: { bronze: 3, silver: 2, gold: 1, total: 6 } } };
-  resetLevelCoinTally(h);
-  // Untouched: the tally is preserved (the trace must never be zeroed).
-  assert.deepEqual(h.runStats.coinsCollected, { bronze: 3, silver: 2, gold: 1, total: 6 },
-    'the coin tally is NOT reset (no-op by design)');
-});
-
-test('resetLevelCoinTally is a safe no-op when runStats is absent', () => {
-  const h = {};
-  resetLevelCoinTally(h); // must not throw
-  assert.equal(h.runStats, undefined);
 });
 
 // --- resetHeroInventory: temporary state does not persist across death -------

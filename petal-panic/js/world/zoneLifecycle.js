@@ -498,6 +498,12 @@ export function retryFromGameOver() {
  */
 export function continueFromGameOver() {
   const hero = ctx.hero;
+  // Continue rolls the wallet back to zone 1-1's entry snapshot (lifecycle.js
+  // §4 / state-persistence.md §2.2). The respawned zone must therefore be
+  // area 1 of the CURRENT level — install it BEFORE continueRun so the
+  // restored arrangement matches the zone the hero lands in (and so a later
+  // startLife restores that same preserved arrangement, never rerolling).
+  if (hero.currentArea !== 1) resetActiveZoneContent();
   const applied = continueRun(hero, ctx.areaContext);
   if (applied) console.log('[lifecycle] continue applied');
   return applied;

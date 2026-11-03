@@ -362,6 +362,77 @@ test('continueRun: re-positions the hero at the level entry (area -1), not the d
   assert.equal(h.energy, h.maxEnergy, 'full energy after continue');
 });
 
+test('continueRun: rolls coins back to the 1-1 zone snapshot (state-persistence.md §2.2)', () => {
+  const h = makeTestHero();
+  h.currentLevel = 2;
+  h.currentArea = 3; // died deep in 2-3
+  h.lives = 0;
+  const ctx = makeAreaContext(h);
+
+  // Genuine zone entries with known wallet states: the 2-1 entry snapshot is
+  // the rollback target, and the live wallet has since accumulated more.
+  h.wallet.snapshots['2:1'] = { coins: 40, energy: h.maxEnergy, kills: 5 };
+  h.wallet.snapshots['2:3'] = { coins: 90, energy: h.maxEnergy, kills: 12 };
+  h.wallet.current = { coins: 150, energy: 10, kills: 20 }; // failed-attempt state
+
+  setState(S.OVER);
+  const applied = L.continueRun(h, ctx);
+
+  assert.equal(applied, true, 'continue applied');
+  assert.equal(h.currentLevel, 2, 'level unchanged');
+  assert.equal(h.currentArea, 1, 'back to area 1 of the current level (2-1)');
+  assert.equal(h.wallet.current.coins, 40, 'coins rolled back to the 2-1 entry snapshot');
+  assert.equal(h.wallet.current.kills, 5, 'kills rolled back to the 2-1 entry snapshot');
+  // The 2-1 snapshot itself is NOT re-recorded/overwritten by the continue.
+  assert.deepEqual(h.wallet.snapshots['2:1'], { coins: 40, energy: h.maxEnergy, kills: 5 },
+    'the 2-1 entry snapshot is preserved (no pollution)');
+});
+
+test('continueRun: full energy + default weapon + refilled lives + continues −1 (§2.2)', () => {
+  const h = makeTestHero();
+  h.currentLevel = 2;
+  h.currentArea = 3;
+  h.lives = 0;
+  // Simulate a loaded-out hero at game over: drained energy, non-default
+  // weapon, held specials, active shield, charged super.
+  h.energy = 5;
+  h.selectedWeapon = 1;
+  h.specialSlots.fill('spread');
+  h.shield = 3;
+  h.supermoveMeter = 80;
+  const ctx = makeAreaContext(h);
+
+  setState(S.OVER);
+  const before = h.continues.remaining;
+  const applied = L.continueRun(h, ctx);
+
+  assert.equal(applied, true, 'continue applied');
+  assert.equal(h.energy, h.maxEnergy, 'energy restored to full');
+  assert.equal(h.selectedWeapon, 'thorn', 'weapon reset to the hero default');
+  assert.ok(h.specialSlots.every((s) => s === null), 'special slots cleared');
+  assert.equal(h.shield, 0, 'shield cleared');
+  assert.equal(h.supermoveMeter, 0, 'super meter cleared');
+  assert.equal(h.lives, GAME_RULES.startingLives, 'lives refilled to the starting count');
+  assert.equal(h.continues.remaining, before - 1, 'exactly one continue spent');
+});
+
+test('continueRun: no 1-1 snapshot → wallet untouched (safe no-op restore)', () => {
+  const h = makeTestHero();
+  h.currentLevel = 2;
+  h.currentArea = 3;
+  h.lives = 0;
+  h.wallet.current = { coins: 77, energy: h.maxEnergy, kills: 9 };
+  // No snapshots recorded at all (e.g. test-built hero): restore is a no-op.
+  const ctx = makeAreaContext(h);
+
+  setState(S.OVER);
+  const applied = L.continueRun(h, ctx);
+
+  assert.equal(applied, true, 'continue still applies (lives/area/pool updates)');
+  assert.equal(h.wallet.current.coins, 77, 'wallet untouched when no snapshot exists');
+  assert.equal(h.lives, GAME_RULES.startingLives, 'lives still refilled');
+});
+
 test('resetHeroTransient: clears death flags and stale i-frames without touching lives', () => {
   const h = makeTestHero();
   h.lives = 1;

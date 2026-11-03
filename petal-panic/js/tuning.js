@@ -205,12 +205,14 @@ export const TUNING_COINS = Object.freeze({
   // the next level starts from zero. (Implemented as the per-level reset.)
   carryoverRemainder: false,
   // Coins collected during FAILED area attempts do NOT count toward the
-  // reward (game-rules.md §2). A death/continue resets the current level's
-  // coin tally, so only the winning attempt's coins are rewarded.
+  // reward (game-rules.md §2). A death rolls coins back to the zone-entry
+  // snapshot, so only the winning attempt's coins are rewarded.
   countFailedAttempts: false,
-  // After using Continue, the current level's coin tally is RESET (game-rules.md
-  // §2). Continue restarts area -1 of the current level with a fresh tally.
-  resetOnContinue: true,
+  // After using Continue, the current level's coin tally is NOT zeroed
+  // (state-persistence.md §2.2 supersedes game-rules.md §2): coins+score roll
+  // back to zone 1-1's entry snapshot via restoreZoneState instead of a tally
+  // nuke. The legacy resetLevelCoinTally call was removed in task 2.2.
+  resetOnContinue: false,
   // Converted 1000-coin chunks are MARKED REWARDED, not deducted from a
   // spendable balance (game-rules.md §2: "Are converted coins deducted from a
   // spendable balance or only marked rewarded?"). Coins are not a spendable

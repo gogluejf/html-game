@@ -30,7 +30,8 @@ export const GAME_RULES = Object.freeze({
     carryoverRemainder: TUNING_COINS.carryoverRemainder,
     // Coins on failed area attempts do NOT count toward the reward (§2).
     countFailedAttempts: TUNING_COINS.countFailedAttempts,
-    // A Continue resets the current level's coin tally (§2).
+    // Continue does NOT zero the coin tally (state-persistence.md §2.2):
+    // coins+score roll back to zone 1-1's entry snapshot instead.
     resetOnContinue: TUNING_COINS.resetOnContinue,
     // Converted 1000-coin chunks are MARKED REWARDED, not deducted from a
     // spendable balance (§2). Coins stay in the displayed tally; only the
@@ -75,21 +76,6 @@ export function spend(pool) {
 export function credit(pool, n) {
   pool.remaining += n;
   return pool.remaining;
-}
-
-/**
- * Reset the current level's coin tally (game-rules.md §2).
- *
- * NOTE: in the trace/currentStats split this is now a NO-OP. The boss reward
- * reads a per-level delta (diffCounters since the level-start snapshot), so it
- * never double-counts across levels or continues — no explicit zeroing is
- * needed, and zeroing would corrupt the append-only trace. Kept for call-site
- * compatibility.
- *
- * @param {object} h the hero
- */
-export function resetLevelCoinTally(_h) {
-  // Intentionally empty — see note above.
 }
 
 /**
