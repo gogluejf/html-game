@@ -34,37 +34,43 @@
       "slot": "landing-enemy",
       "x": 8,
       "type": "enemy",
-      "y": 1
+      "y": 1,
+      "value": "random"
     },
     {
       "slot": "landing-enemy2",
       "x": 12,
       "type": "enemy",
-      "y": 1
+      "y": 1,
+      "value": "random"
     },
     {
       "slot": "landing-enemy3",
       "x": 16,
       "type": "enemy",
-      "y": 1
+      "y": 1,
+      "value": "random"
     },
     {
       "slot": "landing",
       "x": 10,
       "type": "powerup",
-      "y": 1
+      "y": 1,
+      "value": "random"
     },
     {
       "slot": "landing-barrel",
       "x": 14,
       "type": "barrel",
-      "y": 1
+      "y": 1,
+      "value": "random"
     },
     {
       "slot": "barrel-1",
       "type": "barrel",
       "x": 5,
-      "y": 0
+      "y": 0,
+      "value": "random"
     }
   ]
 }

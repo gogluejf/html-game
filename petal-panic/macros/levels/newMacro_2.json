@@ -27,19 +27,22 @@
       "slot": "powerup-1",
       "type": "powerup",
       "x": 10,
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "powerup-2",
       "type": "powerup",
       "x": 16,
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "barrel-1",
       "type": "barrel",
       "x": 13,
-      "y": 2
+      "y": 2,
+      "value": "random"
     }
   ]
 }

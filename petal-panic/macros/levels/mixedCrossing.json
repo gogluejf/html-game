@@ -62,37 +62,43 @@
       "slot": "on-h1",
       "x": 4,
       "type": "enemy",
-      "y": 1
+      "y": 1,
+      "value": "random"
     },
     {
       "slot": "before-gap",
       "x": 8,
       "type": "enemy",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "on-platform",
       "x": 14,
       "type": "enemy",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "on-platform2",
       "x": 16,
       "type": "enemy",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "after-platform",
       "x": 22,
       "type": "barrel",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "on-h3",
       "x": 20,
       "type": "barrel",
-      "y": 3
+      "y": 3,
+      "value": "random"
     }
   ]
 }

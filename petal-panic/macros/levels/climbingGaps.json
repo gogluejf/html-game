@@ -38,25 +38,29 @@
       "slot": "tier1",
       "x": 8,
       "type": "enemy",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "tier2",
       "x": 14,
       "type": "enemy",
-      "y": 5
+      "y": 5,
+      "value": "random"
     },
     {
       "slot": "tier3",
       "x": 10,
       "type": "enemy",
-      "y": 4
+      "y": 4,
+      "value": "random"
     },
     {
       "slot": "tier3b",
       "x": 16,
       "type": "powerup",
-      "y": 0
+      "y": 0,
+      "value": "random"
     }
   ]
 }

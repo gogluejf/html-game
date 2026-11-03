@@ -26,25 +26,29 @@
       "slot": "tier1-left",
       "x": 8,
       "type": "enemy",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "tier2-right",
       "x": 14,
       "type": "enemy",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "tier1-rest",
       "x": 12,
       "type": "enemy",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "tier2-peak",
       "x": 18,
       "type": "powerup",
-      "y": 4
+      "y": 4,
+      "value": "random"
     }
   ]
 }

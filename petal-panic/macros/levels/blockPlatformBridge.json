@@ -55,37 +55,43 @@
       "slot": "on-h1",
       "x": 4,
       "type": "enemy",
-      "y": 1
+      "y": 1,
+      "value": "random"
     },
     {
       "slot": "on-h2",
       "x": 6,
       "type": "enemy",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "on-bridge",
       "x": 14,
       "type": "enemy",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "on-bridge-pu",
       "x": 16,
       "type": "powerup",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "on-far-h2",
       "x": 22,
       "type": "barrel",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "on-far-h1",
       "x": 24,
       "type": "barrel",
-      "y": 1
+      "y": 1,
+      "value": "random"
     }
   ]
 }

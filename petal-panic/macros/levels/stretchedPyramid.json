@@ -35,43 +35,50 @@
       "slot": "low",
       "x": 8,
       "type": "enemy",
-      "y": 1
+      "y": 1,
+      "value": "random"
     },
     {
       "slot": "low2",
       "x": 10,
       "type": "enemy",
-      "y": 1
+      "y": 1,
+      "value": "random"
     },
     {
       "slot": "mid-enemy",
       "x": 18,
       "type": "enemy",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "mid2",
       "x": 20,
       "type": "barrel",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "high-barrel",
       "x": 28,
       "type": "barrel",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "high2",
       "x": 30,
       "type": "powerup",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "barrel-1",
       "type": "barrel",
       "x": 5,
-      "y": 1
+      "y": 1,
+      "value": "random"
     }
   ]
 }

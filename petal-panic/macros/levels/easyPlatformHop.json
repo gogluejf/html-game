@@ -32,25 +32,29 @@
       "slot": "on-t1",
       "x": 6,
       "type": "enemy",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "on-t1b",
       "x": 8,
       "type": "barrel",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "on-t2",
       "x": 14,
       "type": "powerup",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "on-t2b",
       "x": 16,
       "type": "barrel",
-      "y": 3
+      "y": 3,
+      "value": "random"
     }
   ]
 }

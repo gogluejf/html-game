@@ -26,19 +26,22 @@
       "slot": "tier1",
       "x": 12,
       "type": "enemy",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "tier2",
       "x": 16,
       "type": "powerup",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "tier1-barrel",
       "x": 14,
       "type": "barrel",
-      "y": 2
+      "y": 2,
+      "value": "random"
     }
   ]
 }

@@ -38,31 +38,36 @@
       "slot": "tier1",
       "x": 8,
       "type": "enemy",
-      "y": 2
+      "y": 2,
+      "value": "random"
     },
     {
       "slot": "tier2",
       "x": 14,
       "type": "enemy",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "tier3-peak",
       "x": 10,
       "type": "enemy",
-      "y": 4
+      "y": 4,
+      "value": "random"
     },
     {
       "slot": "tier2-rest",
       "x": 18,
       "type": "enemy",
-      "y": 3
+      "y": 3,
+      "value": "random"
     },
     {
       "slot": "tier3-final",
       "x": 12,
       "type": "powerup",
-      "y": 4
+      "y": 4,
+      "value": "random"
     }
   ]
 }
