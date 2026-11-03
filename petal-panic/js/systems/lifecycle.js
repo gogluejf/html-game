@@ -1097,6 +1097,12 @@ export function rewardOnAction(action, h) {
     // §4 — the reward counts the level just cleared). The global continue
     // pool is preserved (it is a shared remaining balance, game-rules.md §1).
     h.levelConfig = getLevelConfig(h.currentLevel);
+    // State-persistence.md §2.4 / §3 "Next level": level clear is the ONLY
+    // progress transition that touches energy — it refills to full. Everything
+    // else (coins, score, weapon, specials, lives, continues) carries over
+    // UNTOUCHED: no resetHeroInventory() here (that would nuke the weapon and
+    // specials), and lives are deliberately NOT refilled on level clear.
+    if (h.maxEnergy !== undefined) h.energy = h.maxEnergy;
     // Per-level reward accounting: snapshot the wallet's kill/coin tallies so
     // the next boss's reward reflects THIS level only (boss-arena.md §4). The
     // wallet keeps accumulating globally; the reward reads the delta since this

@@ -356,6 +356,49 @@ test('confirming the reward screen starts the next level at area -1 with its ent
   assert.ok(!('score' in data), 'no score on the entry screen (game-rules.md §3)');
 });
 
+test('level clear refills energy and keeps everything else (state-persistence.md §2.4)', async () => {
+  L._resetRewardForTest();
+  resetState();
+  const h = makeTestHero();
+  h.currentLevel = 1;
+  tally(h, { kills: { jester: 3 }, coins: 1500 });
+  // Deliberately dirty the "keep" fields so the transition must preserve them:
+  // drained energy, a non-default weapon, held specials, reduced lives.
+  h.energy = 3;
+  h.selectedWeapon = 'petal';
+  if (Array.isArray(h.specialSlots)) h.specialSlots[0] = 'spread';
+  h.lives = GAME_RULES.startingLives - 1;
+  const continuesBefore = h.continues.remaining;
+  const coinsBefore = h.wallet.current.coins;
+  L.bindAreaContext(h, makeAreaContext(h));
+  setState(S.PLAY);
+  L.showLevelReward(h);
+  assert.equal(getState(), S.REWARD);
+
+  const savedLen = LEVELS.length;
+  LEVELS.push({ name: 'Second Level' });
+  try {
+    L._advanceRewardDwellForTest(); L.rewardOnAction('confirm', h);
+  } finally {
+    LEVELS.length = savedLen;
+  }
+
+  assert.equal(h.currentLevel, 2, 'the level advanced');
+  assert.equal(h.currentArea, 1, 'the next level starts at area 1');
+  // §2.4 / §3 "Next level": energy is FULL — the only progress transition that
+  // touches energy.
+  assert.equal(h.energy, h.maxEnergy, 'energy refilled to max on level clear');
+  // Everything else carries over UNTOUCHED:
+  assert.equal(h.lives, GAME_RULES.startingLives - 1, 'lives are NOT refilled on level clear');
+  // The reward screen itself credits continues earned this level (game-rules.md
+  // §2 — a documented part of the boss-defeat flow); the NEXT-LEVEL transition
+  // must not touch the pool beyond that credit.
+  assert.equal(h.continues.remaining, continuesBefore + 1, 'continues untouched by the level transition (only the reward credit applies)');
+  assert.equal(h.wallet.current.coins, coinsBefore, 'coins carry into the next level');
+  assert.equal(h.selectedWeapon, 'petal', 'weapon selection carries into the next level');
+  assert.equal(h.specialSlots[0], 'spread', 'held specials carry into the next level');
+});
+
 test('confirming the reward screen on the final level shows the end-of-game screen (not a next level)', async () => {
   L._resetRewardForTest();
   resetState();
