@@ -17,6 +17,7 @@ import { cv, ctx, s2c, setDrawHook } from './viewport.js';
 import { drawRide, setRedrawHook } from './ghost.js';
 import { macroEndpoint } from './clearance.js';
 import { UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H } from './state.js';
+import { placementTooltip } from './pointer.js';
 
 // Authoritative square-grid constants (state.js re-exports consts.js). No
 // pre-boot fallback values: boot always calls setConstants() before any draw.
@@ -130,6 +131,25 @@ function drawTarget(target, macro, selected=false, erase=false){
     const r=descriptorScreenRect(item,macro);
     ctx.strokeRect(r.left,r.top,r.width,r.height);
     if (selected) drawHandles(item,macro);
+  }
+  // Typed-spawn tooltip: 'barrel - Coin' / 'enemy - random' on hover/selection.
+  const tip = target.kind === 'slot' ? placementTooltip(item) : '';
+  if (tip){
+    ctx.shadowBlur=0;
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.textBaseline='alphabetic';
+    const tw=ctx.measureText(tip).width;
+    const ux=_consts.unitPxX,uy=_consts.unitPxY,off=bodyOffset(macro);
+    let [tx,ty]=W((item.x+off+.5)*ux,(item.y+.5)*uy);
+    tx+=12; ty-=10;
+    ctx.fillStyle='rgba(7,9,18,.85)';
+    ctx.fillRect(tx-3,ty-12,tw+6,16);
+    ctx.strokeStyle=erase?'#ff4545':'#3ef0ff';
+    ctx.lineWidth=1;
+    ctx.strokeRect(tx-3,ty-12,tw+6,16);
+    ctx.fillStyle='#fff';
+    ctx.fillText(tip,tx,ty);
   }
   ctx.restore();
 }

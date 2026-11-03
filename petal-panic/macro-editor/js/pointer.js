@@ -10,6 +10,9 @@ import { validateMacroCandidate, validateDeletion, previewLayout, reasonFromErro
 import { macroSchemaErrors } from '../../js/world/macroSchema.js';
 import { validateLayout } from '../../js/world/macros.js';
 import { normalizeUnit, snapCellX, BLOCK_FOOTPRINT } from '../../js/world/squareGrid.js';
+import { BARREL_TYPES } from '../../js/objects/object.js';
+import { ENEMY_TYPES } from '../../js/world/enemyTypes.js';
+import { POWERUP_ROLL_TYPES, POWERUP_DEFS } from '../../js/objects/powerup.js';
 import { showToast } from './toast.js';
 import { pushUndo } from './undo.js';
 import { syncToolButtons, cursorForTool } from './tools.js';
@@ -17,6 +20,10 @@ import { ride, cancelSpaceToggle, fireSpaceToggle, rebuildRideWorld } from './gh
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
+// A pointerup closer than this (in canvas px) to the pointerdown is a "click"
+// — anything further counts as a drag. Used to cycle a typed-spawn slot's
+// value on a plain click without breaking the move-drag interaction.
+const CLICK_DRAG_THRESHOLD_PX = 5;
 export let lastCell = null;
 let spaceHeld = false;
 
@@ -84,6 +91,59 @@ export function uniqueSlotName(type, placements, preserve=''){
   let n=1;
   while (used.has(`${type}-${n}`)) n++;
   return `${type}-${n}`;
+}
+
+// ---------- typed-spawn value cycling (placeholder-typed-spawn plan, task 4.1) ----------
+// Family registries come straight from the game JS so new types appear in the
+// editor automatically — nothing is hardcoded here. Barrel/enemy registries
+// are already [{id,label}]; powerup ids are strings, so map them through
+// POWERUP_DEFS for their labels.
+const FAMILY_TYPES = {
+  barrel: BARREL_TYPES,
+  enemy: ENEMY_TYPES,
+  powerup: POWERUP_ROLL_TYPES.map(id => ({ id, label: POWERUP_DEFS[id]?.label ?? id })),
+};
+
+/** True when a placement type participates in typed-spawn value cycling. */
+export function hasValueCycle(type){ return !!FAMILY_TYPES[type]; }
+
+/** Display text for a placement's current value: 'random' or the registry label. */
+export function valueLabel(placement){
+  const list = FAMILY_TYPES[placement?.type];
+  if (!list) return '';
+  const v = placement.value;
+  if (v == null || v === 'random') return 'random';
+  const entry = list.find(t => t.id === v);
+  return entry ? entry.label : String(v);
+}
+
+/** Tooltip text for a placement dot: 'barrel - Coin', 'enemy - random'. */
+export function placementTooltip(placement){
+  if (!hasValueCycle(placement?.type)) return '';
+  return `${placement.type} - ${valueLabel(placement)}`;
+}
+
+/** Next value in the cycle: random -> each family id in registry order -> random. */
+export function nextValue(placement){
+  const list = FAMILY_TYPES[placement?.type];
+  if (!list) return placement.value;
+  const cur = placement.value ?? 'random';
+  const idx = list.findIndex(t => t.id === cur);
+  if (idx === -1) return list[0].id;      // 'random' (or stale value) -> first type
+  return idx + 1 < list.length ? list[idx + 1].id : 'random';
+}
+
+/** Cycle a placement's value in place and commit it as an undoable edit. */
+export function cyclePlacementValue(index){
+  if (!app.cur) return false;
+  const placements = app.cur.st.placements || [];
+  const p = placements[index];
+  if (!p || !hasValueCycle(p.type)) return false;
+  pushUndo();
+  p.value = nextValue(p);
+  markChanged();
+  draw();
+  return true;
 }
 
 function surfaceY(unit){ return unit.kind==='block' ? unit.y+unit.height : unit.y+1; }
@@ -566,6 +626,14 @@ function onPointerDown(e){
       ? {...original,type:tool.slice(5)}
       : clone(original);
     const interaction={mode:hit.kind==='slot'?'moving-slot':'moving-object',targetKind:hit.kind,targetIndex:hit.index,anchorCell:cell,currentCell:cell,original,candidate,attachedPlacements:hit.kind==='unit'?attachedPlacements(original):[],valid:true,reason:''};
+    // Typed-spawn slots (barrel/enemy/powerup) cycle their value on a plain
+    // CLICK (pointerup with no movement), while still starting the normal
+    // moving-slot drag — the click/drag decision is made in finishPointer.
+    if (hit.kind === 'slot' && hasValueCycle(original.type)) {
+      interaction.cycleOnNoMove = true;
+      interaction.downX = e.clientX;
+      interaction.downY = e.clientY;
+    }
     validateInteraction(interaction);app.editor.interaction=interaction;
   } else if (tool === 'block' || tool === 'platform'){
     const mode=tool==='block'?'creating-block':'creating-platform';
@@ -628,6 +696,13 @@ function onPointerMove(e){
   validateInteraction(i); draw();
 }
 
+// True when the pointer moved more than the click threshold (canvas px) from
+// where the interaction started — i.e. this was a drag, not a click.
+function movedBeyondClickThreshold(interaction, e){
+  if (interaction.downX == null || interaction.downY == null) return true;
+  return Math.hypot(e.clientX - interaction.downX, e.clientY - interaction.downY) > CLICK_DRAG_THRESHOLD_PX;
+}
+
 function finishPointer(e, cancelled=false){
   app.editor.pan=null;
   const i=app.editor.interaction;
@@ -640,6 +715,16 @@ function finishPointer(e, cancelled=false){
     return;
   }
   if (!cancelled && i.valid){
+    // Plain click (no drag) on a typed-spawn slot: cycle its value instead of
+    // committing the move. The selection was already set on pointerdown; the
+    // move interaction itself is discarded (candidate == original anyway).
+    if (i.cycleOnNoMove && !movedBeyondClickThreshold(i, e)){
+      app.editor.interaction=null;
+      endTransientSelect();
+      cyclePlacementValue(i.targetIndex);
+      try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+      return;
+    }
     if (i.mode === 'moving-multi' || i.mode === 'resizing-multi' || i.mode === 'copying-multi') {
       // Multi-drag commit: apply all moves from nextMacro
       pushUndo();
