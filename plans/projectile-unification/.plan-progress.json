@@ -1,0 +1,75 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "in_progress",
+      "name": "Add gravity+bounce fields to Projectile",
+      "milestone": "Merge Special into Projectile",
+      "milestone_number": 1,
+      "summary": {
+        "tradeoffs": "Bounce behavior is declared as a data flag (this.bounce) mirroring the ballistic primitive's p.bounce param; actual terrain reflection remains in stepBombTerrain()/collision handlers which read solidBehavior \u2014 full unification of that path lands with tasks 1.2/1.3. Special class untouched per task scope.",
+        "decisions": "Fields default to inert values so the existing straight-flight thorn path is byte-identical in behavior. Kept _ttlLabel on Projectile (Special already sets its own); tickTtl in Entity honors it for both classes. Did not touch Special.update() gravity line yet since Special still exists until 1.3 \u2014 Projectile now owns an equivalent integration so ballistic can route through either pool.",
+        "failures": "None",
+        "done": "Added gravityValue, bounce, explode, radius, _ttlLabel fields to Projectile.initialize() (defaults: 0/false/false/0/'life'). Moved gravity integration (vy += gravityValue*dt gated by _bombSettled) from Special.update() into Projectile.update(). Existing thorn callers unaffected (gravityValue defaults 0). node --check passes; projectile.test.js (31), specialRotation.test.js (20), bomb.test.js (13), bombGameplay.test.js all pass.",
+        "confidence": "high",
+        "lessons_learned": "Previous attempt likely burned budget exploring before editing; the plan snippet was empty and the 'bounce' acceptance criterion maps to the ballistic primitive's solidBehavior='reflect' mapping, not a new physics method \u2014 reading ballistic.js once resolved the ambiguity. Pool.spawn() deletes ALL entity keys before re-initialize, so new fields must be set in initialize(), never only at spawn time."
+      }
+    },
+    "1.2": {
+      "number": "1.2",
+      "status": "not_started",
+      "name": "Merge sprite pipeline into single path",
+      "milestone": "Merge Special into Projectile",
+      "milestone_number": 1
+    },
+    "1.3": {
+      "number": "1.3",
+      "status": "not_started",
+      "name": "Delete Special class + specialPool",
+      "milestone": "Merge Special into Projectile",
+      "milestone_number": 1
+    },
+    "1.4": {
+      "number": "1.4",
+      "status": "not_started",
+      "name": "Convert ballistic to projectile with gravity",
+      "milestone": "Merge Special into Projectile",
+      "milestone_number": 1
+    },
+    "1.5": {
+      "number": "1.5",
+      "status": "not_started",
+      "name": "Make rock the default arcing projectile",
+      "milestone": "Merge Special into Projectile",
+      "milestone_number": 1
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "not_started",
+      "name": "Read outline from sheet JSON",
+      "milestone": "Per-type Outline Config",
+      "milestone_number": 2
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "not_started",
+      "name": "Define ATTACK_IDS + invokeChild helper",
+      "milestone": "Unified Attack Invoke List",
+      "milestone_number": 3
+    },
+    "3.2": {
+      "number": "3.2",
+      "status": "not_started",
+      "name": "Rename blastType/spawnType to child in all macros",
+      "milestone": "Unified Attack Invoke List",
+      "milestone_number": 3
+    },
+    "3.3": {
+      "number": "3.3",
+      "status": "not_started",
+      "name": "Replace if/else chains with invokeChild",
+      "milestone": "Unified Attack Invoke List",
+      "milestone_number": 3
+    }
+  }
+}

@@ -81,11 +81,52 @@ ok('dies after 2s of updates', () => {
   p.update(0.02); // t=2.01
   assert.equal(p.alive, false);
 });
+
+console.log('Lifetime cull');
 ok('moves straight (no gravity drift)', () => {
   const p = new Projectile(0, 0, 0, true);
   p.update(0.5);
   assert.ok(approx(p.x, 300), `x=${p.x} want 300`);
   assert.ok(approx(p.y, 0), `y=${p.y} want 0`);
+});
+
+console.log('Ballistic fields (Task 1.1)');
+ok('defaults: gravityValue=0, explode=false, _ttlLabel=life', () => {
+  const p = new Projectile(0, 0, 0, true);
+  assert.equal(p.gravityValue, 0);
+  assert.equal(p.explode, false);
+  assert.equal(p._ttlLabel, 'life');
+});
+ok('explode=true → _ttlLabel=fuse and a real fuse timer counts down', () => {
+  const p = new Projectile(0, 0, 0, true);
+  p.initialize(0, 0, 0, true); // fresh slot
+  p.timers.clear('fuse');
+  // Wire the fuse exactly as initialize() does for exploding shots.
+  p._ttlLabel = 'fuse';
+  p.setLife(2);
+  p.timers.clear('life');
+  p.timers.set('fuse', 2);
+  p.update(0.5);
+  assert.ok(Math.abs(p.ttl - 1.5) < 1e-9, `ttl=${p.ttl} want 1.5`);
+  assert.equal(p.alive, true);
+  p.update(1.6);
+  assert.equal(p.alive, false, 'fuse expiry kills the shot');
+  assert.equal(p.ttlExpired, true, 'expiry flagged ttlExpired like Special');
+});
+ok('arcing motion: gravityValue=800 integrates vy += g*dt and moves by v*dt', () => {
+  const p = new Projectile(0, 0, 0, true); // dir 0: vx=600, vy=0
+  p.gravityValue = 800;
+  const dt = 0.1;
+  // Step 1: vy 0→80, x += 600*0.1, y += 80*0.1 (gravity applied before move).
+  p.update(dt);
+  assert.ok(Math.abs(p.vy - 80) < 1e-9, `vy=${p.vy} want 80`);
+  assert.ok(Math.abs(p.x - 60) < 1e-9, `x=${p.x} want 60`);
+  assert.ok(Math.abs(p.y - 8) < 1e-9, `y=${p.y} want 8`);
+  // Step 2: vy 80→160, x += 60, y += 160*0.1 (move uses the UPDATED vy).
+  p.update(dt);
+  assert.ok(Math.abs(p.vy - 160) < 1e-9, `vy=${p.vy} want 160`);
+  assert.ok(Math.abs(p.x - 120) < 1e-9, `x=${p.x} want 120`);
+  assert.ok(Math.abs(p.y - 24) < 1e-9, `y=${p.y} want 24`);
 });
 
 console.log('Object Pool');

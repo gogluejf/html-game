@@ -217,7 +217,20 @@ export class Projectile extends Entity {
     this.speed = PROJECTILE_SPEED;
     this.damage = PROJECTILE_DAMAGE;
     this.life = PROJECTILE_LIFETIME;
+    // Register the life countdown in the shared timer set: tickTtl() (called
+    // from update()) counts down the _ttlLabel timer and flips alive=false.
+    // Without this, _maxTtl stays 0 and the shot never dies.
+    this.setLife(PROJECTILE_LIFETIME);
     this.dir = dir;
+    // Ballistic motion (data, not class): 0 = straight flight (thorn default).
+    // Callers mutate these fields POST-SPAWN (established pattern — ballistic.js
+    // sets ent.gravityValue / ent.solidBehavior after pool spawn); initialize()
+    // only establishes safe defaults for pooled slots.
+    this.gravityValue = 0;   // px/s² applied to vy each frame while > 0
+    this.explode = false;    // AoE: detonate on TTL expiry / contact
+    // Countdown label: 'fuse' when exploding so the debug stack reads it as a
+    // fuse, 'life' otherwise. tickTtl() honors _ttlLabel (same wiring Special uses).
+    this._ttlLabel = 'life';
     // Solid-collision behavior (data, not class): 'phase' — thorns fly through
     // terrain; only barrels (GameObj) stop them.
     this.solidBehavior = 'phase';
@@ -271,12 +284,22 @@ export class Projectile extends Entity {
     this._impactPrevX = this.x;
     this._impactPrevY = this.y;
     this._impactPoint = null;
+    // Gravity for ballistic shots (same integration Special used to own):
+    // vy += g·dt before position, gated by the settled flag so a resting
+    // bomb stays put. No-op while gravityValue is 0 (straight thorn flight).
+    if (this.gravityValue > 0 && !this._bombSettled) {
+      this.vy += this.gravityValue * dt;
+    }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.orientSprite(this.vx, this.vy);
     this.tickAnim(dt);
-    this.life -= dt;
-    if (this.life <= 0) this.alive = false;
+    // TTL countdown via the shared timer set: honors _ttlLabel ('life' or
+    // 'fuse'). ttlExpired lets hosts (gameplay/theater) distinguish a fuse/
+    // lifetime expiry from a contact kill — same contract Special uses.
+    const wasAlive = this.alive;
+    this.tickTtl(dt);
+    if (wasAlive && !this.alive) this.ttlExpired = true;
   }
 
 }

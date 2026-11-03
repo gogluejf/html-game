@@ -129,7 +129,9 @@ export function spawnProjectile(p, ctx, h) {
     // Re-aim the sprite nose to the exact (possibly non-8-way) angle.
     ent.orientSprite(ent.vx, ent.vy);
     ent.damage = p.damage;
-    ent.life = p.ttl;
+    // setLife() writes the 'life' timer — Projectile's _ttlLabel is 'life', so
+    // tickTtl() honors it (legacy `this.life` field stays in sync too).
+    ent.setLife(p.ttl);
   }
 
   if (!ent) return null; // pool exhausted — caller skips this shot (soft cap)

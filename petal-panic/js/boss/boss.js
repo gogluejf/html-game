@@ -261,7 +261,7 @@ export class Elephant extends Enemy {
       p.vx = Math.cos(ang) * TRUNK_SPEED;
       p.vy = Math.sin(ang) * TRUNK_SPEED;
       p.damage = TRUNK_DAMAGE;
-      p.life = 1.6;
+      p.setLife(1.6); // writes the 'life' timer tickTtl() counts down
     }
   }
 

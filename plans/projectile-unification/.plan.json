@@ -3,233 +3,234 @@
   "title": "Unify Projectile + Special into Single Class",
   "why": "Two classes (Projectile, Special) duplicate flight/rotation/render logic. Rock is awkwardly a 'typeless Special' when it should be a basic Projectile with gravity. Merging eliminates dual sprite init paths, dual pools, and the confusing typeless concept.",
   "outcomes": "One Projectile class handles all flying entities (thorn, rock, bomb, saw). One pool. One sprite pipeline. ballistic.js becomes a param config on projectile, not a separate primitive. Rock = default arcing projectile, same as thorn is default straight projectile.",
+  "commit_prefix": "refactor(petal-panic)",
   "milestones": [
     {
       "number": "1",
       "name": "Merge Special into Projectile",
-      "pattern": [
-        "Single Responsibility, Parameterized Behavior"
-      ],
+      "pattern": "Single Responsibility, Parameterized Behavior",
       "objective": "Collapse Special class fields (gravity, explode, fuse) into Projectile. Delete Special class + specialPool. All flying entities use one class, one pool.",
       "success": "Special class deleted. specialPool deleted. All references updated. Tests pass. No behavior change.",
       "diagram": "graph TD\n    A[Entity] --> B[Projectile]\n    B --> C[thorn: gravity=0, type=null]\n    B --> D[rock: gravity=800, type=null]\n    B --> E[bomb: gravity=800, type=bomb]\n    B --> F[saw: gravity=0, type=saw]\n    G[specialPool DELETED] -.->|removed| B\n    H[projectilePool] -->|single pool| B",
       "tasks": [
         {
-          "number": "1.1",
           "name": "Add gravity+bounce fields to Projectile",
           "type": "refactor",
           "what": "Add gravityValue, bounce, explode, fuseLabel fields to Projectile class. Move the gravity integration from Special.update() into Projectile.update().",
           "why": "Projectile needs to handle arcing motion natively so rock/bomb don't need a separate class.",
           "files": [
-            "~ petal-panic/js/objects/projectile.js"
-          ],
-          "snippet": [
-            "// In Projectile class:\nthis.gravityValue = opts.gravity ?? 0;\nthis.bounce = opts.bounce ?? false;\nthis.explode = opts.explode ?? false;\nthis._ttlLabel = opts.explode ? 'fuse' : 'life';\n\n// In update(dt):\nif (this.gravityValue > 0) this.vy += this.gravityValue * dt;"
+            "petal-panic/js/objects/projectile.js"
           ],
           "acceptance": [
             "Projectile can arc when gravityValue > 0",
             "Bounce behavior matches current Special behavior"
           ],
-          "verify": [
+          "verification": [
             "node --check petal-panic/js/objects/projectile.js"
-          ]
+          ],
+          "status": "pending",
+          "number": "1.1"
         },
         {
-          "number": "1.2",
           "name": "Merge sprite pipeline into single path",
           "type": "refactor",
           "what": "Delete initRockSprites + initSpecialSprites. Add all types (rock_medium, rock_small, bomb, saw, etc) to a single SPRITE_TARGETS map. One init function loads all sheets.",
           "why": "Eliminates three separate sprite init paths. One call at boot loads everything.",
           "files": [
-            "~ petal-panic/js/objects/projectile.js"
-          ],
-          "snippet": [
-            "// Single registry:\nconst SPRITE_TARGETS = Object.freeze({\n  thorn: { anim: 'shoot', dir: 'thorn' },\n  rock_medium: { anim: 'shoot', dir: 'rock_medium' },\n  rock_small: { anim: 'shoot', dir: 'rock_small' },\n  bomb: { anim: 'shoot', dir: 'bomb' },\n  saw: { anim: 'shoot', dir: 'saw' },\n  // ...\n});\n\n// Single init:\nexport function initAllProjectiles() { /* loads all SPRITE_TARGETS */ }"
+            "petal-panic/js/objects/projectile.js"
           ],
           "acceptance": [
             "One init function replaces initProjectileSprites + initSpecialSprites + initRockSprites",
             "All sprites load correctly at boot"
           ],
-          "verify": [
+          "verification": [
             "node --check petal-panic/js/objects/projectile.js"
-          ]
+          ],
+          "status": "pending",
+          "number": "1.2"
         },
         {
-          "number": "1.3",
           "name": "Delete Special class + specialPool",
           "type": "refactor",
           "what": "Remove Special class, specialPool, and all references. Update collision handlers, update loop, attack theater, and tests to use Projectile/projectilePool exclusively.",
           "why": "Eliminates the dual-class confusion. One class, one pool, one code path.",
           "files": [
-            "~ petal-panic/js/objects/projectile.js",
-            "~ petal-panic/js/systems/update.js",
-            "~ petal-panic/js/debug/attack-theater.js",
-            "~ petal-panic/js/core/collision.js"
+            "petal-panic/js/objects/projectile.js",
+            "petal-panic/js/systems/update.js",
+            "petal-panic/js/debug/attack-theater.js",
+            "petal-panic/js/core/collision.js"
           ],
-          "snippet": [],
           "acceptance": [
             "grep -r 'specialPool' returns 0 results",
             "grep -r 'class Special' returns 0 results",
             "All existing tests pass"
           ],
-          "verify": [
+          "verification": [
             "grep -rn 'specialPool|class Special' petal-panic/js/ --include='*.js' | wc -l"
-          ]
+          ],
+          "status": "pending",
+          "number": "1.3"
         },
         {
-          "number": "1.4",
           "name": "Convert ballistic to projectile with gravity",
           "type": "refactor",
           "what": "Delete ballistic.js primitive. Add gravity+bounce params to projectile primitive. Update all macros that invoke 'ballistic' to invoke 'projectile' with gravity params.",
           "why": "One primitive for all flying entities. Gravity is a param, not a separate class.",
           "files": [
-            "~ petal-panic/js/combat/attack/primitives/ballistic.js",
-            "~ petal-panic/js/combat/attack/primitives/projectile.js",
-            "~ petal-panic/js/combat/attack/macros/molotov.js",
-            "~ petal-panic/js/combat/attack/macros/clusterBomb.js",
-            "~ petal-panic/js/combat/attack/macros/shockwaveBomb.js"
+            "petal-panic/js/combat/attack/primitives/ballistic.js",
+            "petal-panic/js/combat/attack/primitives/projectile.js",
+            "petal-panic/js/combat/attack/macros/molotov.js",
+            "petal-panic/js/combat/attack/macros/clusterBomb.js",
+            "petal-panic/js/combat/attack/macros/shockwaveBomb.js"
           ],
-          "snippet": [],
           "acceptance": [
             "ballistic.js deleted or is a thin alias to projectile",
             "All macros updated to invoke projectile with gravity",
             "Attack theater still works for arcing shots"
           ],
-          "verify": [
+          "verification": [
             "node --check petal-panic/js/combat/attack/primitives/projectile.js"
-          ]
+          ],
+          "status": "pending",
+          "number": "1.4"
         },
         {
-          "number": "1.5",
           "name": "Make rock the default arcing projectile",
           "type": "refactor",
           "what": "Typeless Projectile with gravity > 0 renders rock_medium sprite (high-res) or rockDrawer primitive (low-res). Same as thorn is default for gravity = 0.",
           "why": "Rock is a basic projectile, not a special. Default look for arcing typeless shots.",
           "files": [
-            "~ petal-panic/js/objects/projectile.js"
+            "petal-panic/js/objects/projectile.js"
           ],
-          "snippet": [],
           "acceptance": [
             "Typeless Projectile with gravity shows rock sprite in high-res",
             "Typeless Projectile with gravity shows rockDrawer in low-res",
             "No outline on rock (thickness 0)"
           ],
-          "verify": [
+          "verification": [
             "node --check petal-panic/js/objects/projectile.js"
-          ]
+          ],
+          "status": "pending",
+          "number": "1.5"
         }
       ]
     },
     {
       "number": "2",
       "name": "Per-type Outline Config",
-      "pattern": [
-        "Data-Driven Configuration"
-      ],
+      "pattern": "Data-Driven Configuration",
       "objective": "Read outline thickness from sheet JSON. Each type declares its own outline (thorn=2, bomb=2, rock=0, etc). No hardcoded values in code.",
       "success": "Changing a sheet's outline field changes the rendered outline without code changes.",
       "diagram": "graph LR\n    A[sheet.json] --> B[parseSheet]\n    B --> C[Projectile constructor]\n    C --> D[spriteOutline with configured thickness]\n    E[rock sheet outline 0] --> F[no outline rendered]",
       "tasks": [
         {
-          "number": "2.1",
           "name": "Read outline from sheet JSON",
           "type": "feature",
           "what": "Add outline field to parseSheet output. Projectile constructor reads animData.outline (default 2) and passes to spriteOutline. Rock sheets declare outline: 0.",
           "why": "Per-type outline without code changes. Data-driven.",
           "files": [
-            "~ petal-panic/js/core/spriteData.js",
-            "~ petal-panic/js/objects/projectile.js"
+            "petal-panic/js/core/spriteData.js",
+            "petal-panic/js/objects/projectile.js"
           ],
-          "snippet": [],
           "acceptance": [
             "parseSheet returns outline value from sheet JSON",
             "Projectile uses configured thickness for spriteOutline",
             "Rock renders with no outline, thorn/bomb with thickness 2"
           ],
-          "verify": [
+          "verification": [
             "node --check petal-panic/js/objects/projectile.js"
-          ]
+          ],
+          "status": "pending",
+          "number": "2.1"
         }
       ]
     },
     {
       "number": "3",
       "name": "Unified Attack Invoke List",
-      "pattern": [
-        "Single Source of Truth, Delegation"
-      ],
+      "pattern": "Single Source of Truth, Delegation",
       "objective": "Replace blastType/spawnType/weaponType with one param (child) referencing a shared ATTACK_IDS list. Eliminate duplicated if/else invoke chains across macros.",
       "success": "One ATTACK_IDS array. One param name. One invoke helper. All macros use the same list and same helper. Adding a new attack type requires zero macro changes.",
       "diagram": "graph TD\n    A[ATTACK_IDS list] --> B[spawnSplit: child=bomb]\n    A --> C[skyMissile: child=napalm]\n    A --> D[missileRain: child=mine]\n    A --> E[clusterBomb: child=mine]\n    B --> F[invoke child params ctx]\n    C --> F\n    D --> F\n    E --> F\n    F --> G[target primitive or macro]",
       "tasks": [
         {
-          "number": "3.1",
           "name": "Define ATTACK_IDS + invokeChild helper",
           "type": "refactor",
           "what": "Create shared ATTACK_IDS frozen array (all invocable attack ids). Create invokeChild(type, params, ctx) helper that maps type to the right invoke call. Place in engine.js or a new attacks-registry.js.",
           "why": "Single source of truth for all invocable attacks. One helper replaces 5-6 duplicated if/else chains.",
           "files": [
-            "+ petal-panic/js/combat/attack/attackIds.js",
-            "~ petal-panic/js/combat/attack/engine.js"
-          ],
-          "snippet": [
-            "// attackIds.js\nexport const ATTACK_IDS = Object.freeze([\n  'projectile', 'ballistic', 'bomb', 'mine',\n  'throwMine', 'throwEnemy', 'enemy',\n  'homing', 'explosive', 'saw', 'spread',\n  'explosion', 'shockwave', 'napalm', 'fireArea',\n]);\n\nexport function invokeChild(type, params, ctx) {\n  return invoke(type, params, ctx);\n}"
+            "petal-panic/js/combat/attack/engine.js"
           ],
           "acceptance": [
             "ATTACK_IDS contains all currently invocable attack ids",
             "invokeChild delegates to engine.invoke correctly"
           ],
-          "verify": [
+          "verification": [
             "node --check petal-panic/js/combat/attack/attackIds.js"
-          ]
+          ],
+          "status": "pending",
+          "number": "3.1"
         },
         {
-          "number": "3.2",
           "name": "Rename blastType/spawnType to child in all macros",
           "type": "refactor",
           "what": "Replace blastType, spawnType, weaponType params with single 'child' param across spawnSplit, clusterBomb, missileRain, skyMissile, reticleShot. Update TWEAKABLE lists in attack-theater.js.",
           "why": "One param name everywhere. No more confusion between 4 different names for the same concept.",
           "files": [
-            "~ petal-panic/js/combat/attack/macros/spawnSplit.js",
-            "~ petal-panic/js/combat/attack/macros/clusterBomb.js",
-            "~ petal-panic/js/combat/attack/macros/missileRain.js",
-            "~ petal-panic/js/combat/attack/macros/skyMissile.js",
-            "~ petal-panic/js/combat/attack/macros/reticleShot.js",
-            "~ petal-panic/js/debug/attack-theater.js"
+            "petal-panic/js/combat/attack/macros/spawnSplit.js",
+            "petal-panic/js/combat/attack/macros/clusterBomb.js",
+            "petal-panic/js/combat/attack/macros/missileRain.js",
+            "petal-panic/js/combat/attack/macros/skyMissile.js",
+            "petal-panic/js/combat/attack/macros/reticleShot.js",
+            "petal-panic/js/debug/attack-theater.js"
           ],
-          "snippet": [],
           "acceptance": [
             "grep -r 'blastType|spawnType' returns 0 results in macros/",
             "All macros use 'child' param",
             "Theater param panels updated"
           ],
-          "verify": [
+          "verification": [
             "grep -rn 'blastType|spawnType' petal-panic/js/combat/attack/macros/ | wc -l"
-          ]
+          ],
+          "status": "pending",
+          "number": "3.2"
         },
         {
-          "number": "3.3",
           "name": "Replace if/else chains with invokeChild",
           "type": "refactor",
           "what": "Replace all if/else if chains that map type strings to invoke calls with a single invokeChild(p.child, params, ctx) call. Remove duplicated mapping logic from each macro.",
           "why": "Eliminates 5-6 copies of the same switch logic. Adding a new attack type requires zero macro changes.",
           "files": [
-            "~ petal-panic/js/combat/attack/macros/spawnSplit.js",
-            "~ petal-panic/js/combat/attack/macros/missileRain.js",
-            "~ petal-panic/js/combat/attack/macros/skyMissile.js",
-            "~ petal-panic/js/combat/attack/macros/clusterBomb.js"
+            "petal-panic/js/combat/attack/macros/spawnSplit.js",
+            "petal-panic/js/combat/attack/macros/missileRain.js",
+            "petal-panic/js/combat/attack/macros/skyMissile.js",
+            "petal-panic/js/combat/attack/macros/clusterBomb.js"
           ],
-          "snippet": [],
           "acceptance": [
             "No if/else chains mapping type strings to invoke calls remain in macros",
             "All child materialization goes through invokeChild()",
             "Existing tests pass"
           ],
-          "verify": [
+          "verification": [
             "grep -rn 'blastType ===|spawnType ===' petal-panic/js/combat/attack/macros/ | wc -l"
-          ]
+          ],
+          "status": "pending",
+          "number": "3.3"
         }
       ]
     }
-  ]
+  ],
+  "source_of_truth": "the plan file itself (plans/projectile-unification/projectile-unification.md)",
+  "reviewers": {
+    "A": {
+      "model": "ninfer/qwen3.8-27b",
+      "max_steps": 75,
+      "max_time": "15m"
+    },
+    "B": {
+      "model": "ninfer/qwen3.8-27b",
+      "max_steps": 75,
+      "max_time": "15m"
+    }
+  }
 }
