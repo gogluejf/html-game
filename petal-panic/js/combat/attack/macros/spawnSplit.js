@@ -52,7 +52,7 @@ const DEFAULTS = Object.freeze({
   parentVx: 0,
   parentVy: 0,
   delay: 0,
-  spawnType: 'projectile', // 'projectile' | 'bomb' | 'enemy'
+  spawnType: 'projectile', // 'projectile' | 'bomb' | 'mine' | 'molotov' | 'enemy'
   mineType: 'explosion',
   mine: { ttl: 2, blinkDuration: 2 },
   enemyType: 'explosive_monkey',
@@ -110,7 +110,7 @@ defineMacro('spawnSplit', {
     effects: [],
     desc: 'Fan out N children and materialize each into a live projectile/bomb or enemy. Declarative — one invoke, live results.',
     params: [
-      { key: 'spawnType', desc: 'projectile | bomb | mine | enemy' },
+      { key: 'spawnType', desc: 'projectile | bomb | mine | molotov | enemy' },
       { key: 'mineType', desc: 'explosion | shockwave' },
       { key: 'enemyType', desc: 'enemy id when spawnType=enemy' },
       { key: 'count', desc: 'children created' },
@@ -120,6 +120,7 @@ defineMacro('spawnSplit', {
       { key: 'mine', desc: 'throwMine params; ttl null = contact only' },
       { key: 'enemy', desc: 'nested throwEnemy config when spawnType=enemy (ttl, mineType, team, damage, radius, thrown…)' },
       { key: 'ballistic', desc: 'ballistic params when spawnType=bomb (children are exploding bombs)' },
+      { key: 'molotov', desc: 'molotov params when spawnType=molotov (fire lobes; arc/fireWidth/team…)' },
     ],
   },
   impl(params, ctx) {
@@ -186,6 +187,19 @@ defineMacro('spawnSplit', {
           damage: b.damage ?? 25, radius: b.radius ?? 60,
           blastTeam: b.blastTeam, groundY: p.groundY, platforms: p.platforms,
           explodeOnContact: b.explodeOnContact ?? true,
+        }, ctx);
+        if (child?.entity) handles.push(child);
+      } else if (c.spawnType === 'molotov') {
+        // Fire lobe → the molotov macro (ballistic carrier + fireArea payload
+        // on impact). Same composition pattern as the bomb branch above.
+        const m = p.molotov ?? {};
+        const child = invoke('molotov', {
+          origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
+          arc: m.arc ?? 800, bounce: m.bounce ?? false, ttl: m.ttl ?? 2,
+          damage: m.damage ?? 12, fireWidth: m.fireWidth ?? 96,
+          fireDuration: m.fireDuration ?? 3, fireTickRate: m.fireTickRate ?? 5,
+          fireDamage: m.fireDamage ?? 8, team: m.team ?? 'neutral',
+          groundY: p.groundY, platforms: p.platforms,
         }, ctx);
         if (child?.entity) handles.push(child);
       } else {

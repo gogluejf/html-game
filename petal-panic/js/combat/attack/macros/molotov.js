@@ -10,6 +10,7 @@ import { createCarrierHandle } from '../carrierMacro.js';
 import { FIRE_HEIGHT } from '../primitives/fireArea.js';
 import { resolveImpactPoint } from './skyMissile.js';
 import { molotovDrawer } from '../drawers/index.js';
+import { getActiveFloorY } from '../../../world/accessors.js';
 
 const DEFAULTS = Object.freeze({
   speed: 600,           // launch force (px/s)
@@ -24,6 +25,7 @@ const DEFAULTS = Object.freeze({
   fireDamage: 8,        // damage per tick in the area
   origin: null,         // marker label | {x,y} | null → attacker center
   team: 'neutral',      // who the fire hurts
+  groundY: null,        // floor y for fallback anchoring (set by spawnSplit/barrelSync)
 });
 
 defineMacro('molotov', {
@@ -61,16 +63,16 @@ defineMacro('molotov', {
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
           const aimed = p.target ?? ctx.target;
           if (aimed) targets.add(aimed);
-          // Ground-anchor the fire on the HIGHEST surface in the impact column
-          // (floor OR platform). The bomb's terrain detection already reports
-          // the exact top it landed on via surfaceY — prefer that. If the
-          // bottle broke midair (enemy contact / fuse expiry), resolve the
-          // column so fire never renders below ground or through a platform.
           let anchor = null;
           if (surfaceY != null) anchor = surfaceY;
           else {
-            const pt = resolveImpactPoint({ x, groundY: null }, ctx);
-            if (pt.y != null && y + FIRE_HEIGHT / 2 > pt.y) anchor = pt.y;
+            const floorY = p.groundY ?? ctx.groundY ?? getActiveFloorY();
+            const pt = resolveImpactPoint({ x, groundY: typeof floorY === 'number' ? floorY : null }, ctx);
+            // Anchor to the resolved surface whenever it's a valid floor.
+            // The old guard (y + FIRE_HEIGHT/2 > pt.y) was backwards for
+            // ground impacts: the floor is ALWAYS below the carrier center,
+            // so the condition always failed and the fire floated in air.
+            if (pt.y > 0) anchor = pt.y;
           }
           const zoneY = anchor != null ? anchor - FIRE_HEIGHT / 2 : y;
           const fire = invoke('fireArea', {

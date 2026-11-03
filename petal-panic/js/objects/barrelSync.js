@@ -2,18 +2,57 @@
 // barrel, coin, projectile, and special pools, and advances the VFX pools.
 // Extracted from systems/update.js; reads/writes shared state via ctx.
 import { ctx } from '../world/context.js';
-import { LAYER } from '../consts.js';
+import { LAYER, UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { roomFloorTop } from '../world/level.js';
 import { Effects } from '../effects.js';
 import { particles, coins } from '../effects/particles.js';
-import { BARREL_DAMAGE, SUPERCOIN_BARREL_DEF } from './object.js';
+import { BARREL_DAMAGE, SUPERCOIN_BARREL_DEF, PROPANE_BARREL_DEF, TOXIC_BARREL_DEF } from './object.js';
 import { invoke } from '../combat/attack/engine.js';
 import '../combat/attack/primitives/explosion.js'; // registers the 'explosion' primitive
+import '../combat/attack/primitives/dustZone.js'; // registers the 'dustZone' primitive (toxic cloud)
+import '../combat/attack/macros/index.js'; // registers spawnSplit + molotov (propane fan)
 import { isSpecialType } from '../objects/specialWeapons.js';
-import { getDamageables } from '../world/accessors.js';
+import { getDamageables, getActiveFloorY } from '../world/accessors.js';
 import { record } from '../stats.js';
 import { Debug } from '../debug/debug.js';
+
+/** Toxic barrel dust zones: the dustZone primitive is a bare handle (no macro
+ *  host), so gameplay owns its step/draw lifecycle here. Zones self-complete
+ * after their duration; dead handles are pruned each frame. */
+const toxicZones = [];
+
+export function spawnToxicDustZone(params, attacker) {
+  const h = invoke('dustZone', params, {
+    attacker,
+    world: { hero: ctx.hero, targets: getDamageables() },
+  });
+  if (!h._completed) toxicZones.push(h);
+  return h;
+}
+
+export function stepToxicZones(dt) {
+  for (let i = toxicZones.length - 1; i >= 0; i--) {
+    const h = toxicZones[i];
+    if (h._completed || h._cancelled) { toxicZones.splice(i, 1); continue; }
+    h.step(dt, getDamageables());
+    if (h._completed || h._cancelled) toxicZones.splice(i, 1);
+  }
+}
+
+export function drawToxicZones(c) {
+  for (const h of toxicZones) {
+    if (h._completed || h._cancelled) continue;
+    h.zone?.draw(c);
+  }
+}
+
+/** Propane-barrel molotov fan routes through the shared bombAttacks host (the
+ *  same one every other barrel bomb uses) so its fire zones get stepped + drawn
+ *  by the standard gameplay path — no separate registry. Lazy getter avoids an
+ *  import cycle (systems/update.js imports this module). */
+let _getBombHost = null;
+export function setBombHostGetter(fn) { _getBombHost = fn; }
 
 /** Rebuild the dynamic solid registry (world boxes of every LIVE barrel). */
 export function refreshBarrelSolidBoxes() {
@@ -65,6 +104,43 @@ export function handleBarrelDestroyed(barrel) {
     Effects.bigExplosion(0.9);              // white screen flash
     Effects.triggerShake(14);               // camera shake
     // SFX: big coin burst
+  } else if (barrel.type === PROPANE_BARREL_DEF.id) {
+    // Propane barrel: popcorn fan of molotov lobes — gravity arcs that shatter
+    // into burning areas where they land. The fire zones ARE the damage; no
+    // instant AoE. spawnSplit owns the fan math; each child is a full molotov
+    // macro (ballistic carrier + fireArea payload). Neutral team: the fire
+    // hurts whoever stands in it (hero AND enemies).
+    const floorY = getActiveFloorY();
+    // Route through the shared bombAttacks host (like every other barrel bomb)
+    // so the molotov fire zones are stepped + drawn by the standard path.
+    _getBombHost().spawn('spawnSplit', {
+      x: cx, y: cy,
+      count: 5,
+      centerDirection: -Math.PI / 2,        // straight up
+      angle: Math.PI * 0.7,                 // ~126° fan — wide popcorn spread
+      force: 520,                           // lobe launch speed
+      spawnType: 'molotov',
+      molotov: { arc: 800, bounce: false, ttl: 1.2, fireWidth: 96, team: 'neutral' },
+      groundY: floorY,
+    }, barrel);
+    Effects.fireParticleBurst(cx, cy, 8);   // regular barrel-break particles
+    Effects.triggerShake(8);                // smaller kick than a real blast
+    // SFX: propane pop
+  } else if (barrel.type === TOXIC_BARREL_DEF.id) {
+    // Toxic barrel: huge dust cloud (7×5 units) centered on the barrel. The
+    // cloud ticks damage to everyone inside (neutral team). No instant AoE —
+    // the zone IS the damage.
+    const W = 7 * UNIT_PX_X;  // 336px wide
+    const H = 5 * UNIT_PX_Y;  // 240px tall
+    spawnToxicDustZone({
+      x: cx, y: cy,
+      width: W, height: H,
+      duration: 3, tickRate: 5, damage: 6,
+      team: 'neutral', palette: 'hazard',
+    }, barrel);
+    Effects.fireParticleBurst(cx, cy, 10);  // initial puff burst
+    Effects.triggerShake(6);
+    // SFX: toxic hiss
   } else if (barrel.coinDrop) {
     // Coin barrel (or any object with a coinDrop config): spawn the burst.
     coins.dropCoins(barrel.coinDrop, cx, cy);

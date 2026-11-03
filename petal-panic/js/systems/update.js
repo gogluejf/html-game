@@ -745,6 +745,9 @@ export const bombAttacks = new BombAttackHost(() => {
   };
 });
 ctx.bombAttacks = bombAttacks;
+// Expose the host to barrel payloads (propane fan) via a lazy getter — avoids
+// an import cycle (this module imports barrelSync.js).
+setBombHostGetter(() => bombAttacks);
 // Gameplay callers use this entry point, not a discarded invoke() result.
 export function spawnBombAttack(id, params, attacker = hero) {
   return bombAttacks.spawn(id, params, attacker);
@@ -1021,6 +1024,18 @@ export function update(dt) {
     if (s._attackId === 'ballistic') engineCarriers.push(s);
   }
   cullOffScreen(engineCarriers);
+  // Detonate engine carriers that died this frame (terrain impact, contact,
+  // TTL). stepBomb() emits the 'detonate' event the composing macro listens
+  // for — WITHOUT this, a carrier nested inside another macro (e.g. molotov
+  // children of a barrel's spawnSplit fan) never detonates: the parent's
+  // h.step already ran before terrain killed the child, and no one else
+  // calls stepBomb on it. Carriers stepped by their own host root (bombAttacks)
+  // are safe here too: _attackDone latches after the first fire, so a
+  // second call is a no-op.
+  for (const s of specialPool.items) {
+    if (!s._attackId || s._attackDone || !s._attackHandle) continue;
+    stepBomb(s, s._attackHandle._params ?? {}, ctx, s._attackHandle);
+  }
   // Bomb terrain: the engine owns bounce (stepBombTerrain) — same rules
   // for gameplay and the sandbox. Reflect bombs rest on the ground (vy=0)
   // but stay alive; the fuse keeps running until TTL → explodeSpecial().
@@ -1068,12 +1083,11 @@ export function update(dt) {
   }
   collisionWorld.update();
   bombAttacks.step(dt);
+  stepToxicZones(dt); // toxic barrel dust clouds tick damage + expire
   // Compatibility for directly invoked primitives/macros without a host root.
-  for (const s of specialPool.items) {
-    if (s._attackId === 'ballistic' && !s._attackDone && s._attackHandle) {
-      stepBomb(s, s._attackHandle._params ?? {}, ctx, s._attackHandle);
-    }
-  }
+  // (Engine-carrier detonation for pool-resident carriers runs right after
+  // cullOffScreen above — one stepBomb pass covers host roots AND nested
+  // children, latched by _attackDone.)
 
   // Grounded: derive from the last resolved axis + a surface-contact probe so
   // the hero can jump again immediately after landing. While dropping through
@@ -1144,4 +1158,4 @@ import { processAllHitboxes } from '../combat/hitboxes.js';
 import { registerCollisionHandlers } from '../combat/collisionHandlers.js';
 import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFlow, updateBoss } from '../boss/bossFlow.js';
 import { updateRealEnemies } from '../enemies/enemyUpdate.js';
-import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
+import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, stepToxicZones, setBombHostGetter, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';

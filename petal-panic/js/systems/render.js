@@ -24,6 +24,7 @@ import { collectTileEntities, drawTileSprites } from '../world/tileSprite.js';
 import { getLastWorldSeed } from '../world/build.js';
 import { drawParallaxBg } from '../world/parallax.js';
 import { bombAttacks, getActiveZone } from './update.js';
+import { drawToxicZones } from '../objects/barrelSync.js';
 import { PLATFORM_DRAW_H } from '../world/macros.js';
 
 // I-frame blink tuning (design §27): the flicker phase is derived from the
@@ -143,6 +144,7 @@ export function render(ctx) {
   };
   if (showSprites) {
     bombAttacks.draw(ctx);
+    drawToxicZones(ctx); // toxic barrel dust clouds (world space)
     // destructible barrels (drawn via Entity.draw; white flash on hit).
     for (const b of getBarrels()) {
       if (!b.alive) continue;
