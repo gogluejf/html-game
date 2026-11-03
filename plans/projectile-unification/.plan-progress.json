@@ -92,10 +92,18 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Define ATTACK_IDS + invokeChild helper",
       "milestone": "Unified Attack Invoke List",
-      "milestone_number": 3
+      "milestone_number": 3,
+      "summary": {
+        "failures": "None",
+        "lessons_learned": "The plan's stale snippet listed 'ballistic' in ATTACK_IDS \u2014 it was already deleted in task 1.4; user-confirmed 8-value list overrides the plan. Frozen plain object has no .keys(); use Object.keys (caught by the new test, iteration 1).",
+        "confidence": "high",
+        "tradeoffs": "Helper is id-mapping only; each macro keeps shaping its own per-target param objects until 3.2/3.3 swap the if/else chains for invokeChild calls.",
+        "done": "Created petal-panic/js/combat/attack/attackIds.js: frozen ATTACK_IDS (exactly 8 values: projectile, bomb, mine, molotov, enemy, explosion, shockwave, napalm \u2014 no 'ballistic', no 'plain') + exported CHILD_TARGETS map + invokeChild(child, params, ctx) helper that maps each value to the concrete invoke target the code already uses and delegates to engine.invoke. Added petal-panic/js/test/attack/attackIds.test.js (8 tests): exact list, frozenness, mapping pinned, all targets registered in registry, unknown-child throws with valid list in message, live delegation for projectile and explosiveProjectile via stub pool. node --check passes; new test suite 8/8; existing spawnSplit/skyMissile/reticleShot/clusterBomb/missileRain/engine suites still pass. Additive only \u2014 no macro modified.",
+        "decisions": "Followed user-confirmed override: file at combat/attack/attackIds.js (not engine.js/attacks-registry.js); 'ballistic' excluded (deleted in 1.4); reticleShot's 'plain' absorbed into 'projectile' (not a 9th value); unknown child values throw with the full valid list (no silent fallback to projectile); CHILD_TARGETS exported so 3.2 theater TWEAKABLE lists can derive from the same source of truth; explosion/shockwave/napalm map to the CARRIER macros (explosiveProjectile/shockwaveProjectile/napalm), not the zone primitives."
+      }
     },
     "3.2": {
       "number": "3.2",
