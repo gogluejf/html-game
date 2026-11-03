@@ -28,7 +28,7 @@ import { spikeDrawer, boomerangDrawer, mineDrawer } from '../combat/attack/drawe
 import { Pool, Projectile, Special } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
 import { LAYER } from '../consts.js';
-import { ENEMY_TYPES } from '../world/build.js';
+import { ENEMY_TYPE_IDS } from '../world/build.js';
 import { ZONE_GROUND_Y } from '../world/level.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { fillHubBackground } from '../core/layout.js';
@@ -169,7 +169,7 @@ export const TWEAKABLE = {
   spike: [['x', 'num', 16], ['width', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['minRadius', 'num', 10], ['maxRadius', 'num', 10], ['pulseSpeed', 'num', 0.25], ['speed', 'num', 0.25]],
   boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
-  spawnSplit: [['spawnType', 'enum', ['projectile', 'bomb', 'mine', 'enemy']], ['mineType', 'enum', ['explosion', 'shockwave']], ['enemyType', 'enum', ENEMY_TYPES], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['enemy.mineType', 'enum', ['explosion', 'shockwave']], ['enemy.ttl', 'enum', [null, 1, 2, 4, 8]]],
+  spawnSplit: [['spawnType', 'enum', ['projectile', 'bomb', 'mine', 'enemy']], ['mineType', 'enum', ['explosion', 'shockwave']], ['enemyType', 'enum', ENEMY_TYPE_IDS], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['enemy.mineType', 'enum', ['explosion', 'shockwave']], ['enemy.ttl', 'enum', [null, 1, 2, 4, 8]]],
   bodyExplosion: [['payloadDelay', 'num', 0.05]],
   bombSpread: [['count', 'int', 1], ['direction', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   molotov: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['fireWidth', 'num', 16], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
@@ -187,7 +187,7 @@ export const TWEAKABLE = {
   shockwave: [['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1], ['easing', 'enum', ['linear', 'easeIn', 'easeInCubic']], ['knockbackIntensity', 'num', 1]],
   mine: [['mineType', 'enum', ['explosion', 'shockwave']], ['ttl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['team', 'enum', ['ally', 'foe', 'neutral']], ['radius', 'num', 10], ['damage', 'num', 5]],
   throwMine: [['mineType', 'enum', ['explosion', 'shockwave']], ['speed', 'num', 50], ['direction', 'angle', 15 * DEG], ['arc', 'num', 100], ['bounce', 'enum', [true, false]], ['ttl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['team', 'enum', ['ally', 'foe', 'neutral']]],
-  throwEnemy: [['enemyType', 'enum', ENEMY_TYPES], ['mineType', 'enum', ['explosion', 'shockwave']], ['speed', 'num', 50], ['direction', 'angle', 15 * DEG], ['arc', 'num', 100], ['bounce', 'enum', [true, false]], ['ttl', 'enum', [null, 1, 2, 4, 8]], ['settleDelay', 'num', 0.1], ['explodeOnContact', 'enum', [true, false]], ['team', 'enum', ['ally', 'foe', 'neutral']], ['damage', 'num', 5], ['radius', 'num', 10]],
+  throwEnemy: [['enemyType', 'enum', ENEMY_TYPE_IDS], ['mineType', 'enum', ['explosion', 'shockwave']], ['speed', 'num', 50], ['direction', 'angle', 15 * DEG], ['arc', 'num', 100], ['bounce', 'enum', [true, false]], ['ttl', 'enum', [null, 1, 2, 4, 8]], ['settleDelay', 'num', 0.1], ['explodeOnContact', 'enum', [true, false]], ['team', 'enum', ['ally', 'foe', 'neutral']], ['damage', 'num', 5], ['radius', 'num', 10]],
   shockwaveBomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1]],
   shockwaveProjectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.2], ['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1]],
 };

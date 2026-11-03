@@ -41,7 +41,7 @@ function setup(targets = [target()]) {
 }
 
 ok('explosive_monkey is registered in ENEMY_FACTORIES / ENEMY_TYPES', () => {
-  assert.ok(ENEMY_TYPES.includes('explosive_monkey'), `types: ${ENEMY_TYPES.join(',')}`);
+  assert.ok(ENEMY_TYPES.some((t) => t.id === 'explosive_monkey'), `types: ${ENEMY_TYPES.map((t) => t.id).join(',')}`);
   const e = makeEnemy('explosive_monkey', 0, 0);
   assert.ok(e instanceof ExplosiveMonkey);
   assert.equal(e.type, 'explosive_monkey');

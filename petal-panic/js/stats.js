@@ -1,4 +1,5 @@
 // Petal Panic — Trace Stats (telemetry / black-box recorder).
+
 //
 // TWO SEPARATE OBJECTS ON THE HERO (they never touch each other):
 //   - hero.currentStats : "what do I have RIGHT NOW" (wallet: coins, lives,

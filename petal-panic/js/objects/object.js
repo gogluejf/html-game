@@ -62,6 +62,25 @@ export const COIN_BARREL_DEF = {
   spriteAnim: 'coin',
 };
 
+// --- Barrel type registry (typed spawn) --------------------------------------
+// Ordered list of all barrel types — the single source of truth for "which
+// barrel types exist". The macro editor cycles these; the composer resolves
+// placeholder `value` fields against them. Ids match BARREL_FACTORIES keys in
+// world/build.js (NOT the def ids, which carry a Barrel suffix).
+export const BARREL_TYPES = [
+  { id: 'wood', label: 'Wood' },
+  { id: 'explosive', label: 'Explosive' },
+  { id: 'coin', label: 'Coin' },
+];
+
+/** Lookup map: id → barrel meta. O(1) access. */
+export const barrelById = Object.fromEntries(BARREL_TYPES.map((t) => [t.id, t]));
+
+/** True when `id` is a known barrel type. */
+export function isBarrelType(id) {
+  return id != null && barrelById[id] != null;
+}
+
 // --- Sprite data (sprites.md runtime wiring, v1) ------------------------------
 // Barrel art: three single-frame sheets share one frames_dir. The frame's natural size is
 // the scaling reference (§4 v1) — setAnim() fits it onto the 48px box height.

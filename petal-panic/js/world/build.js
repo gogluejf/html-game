@@ -12,11 +12,11 @@ import { VineHound } from '../enemies/vine_hound.js';
 import { Violetta } from '../enemies/violetta.js';
 import { JackOLantern } from '../enemies/jackolantern.js';
 import {makeBoris, makeBorisBaby} from '../enemies/boris_loon.js';
+import { ENEMY_TYPES as _ENEMY_TYPES, ENEMY_TYPE_IDS as _ENEMY_TYPE_IDS, enemyById as _enemyById, isEnemyType as _isEnemyType } from './enemyTypes.js';
 import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeCheckpoint } from '../objects/object.js';
 import { Powerup } from '../objects/powerup.js';
 import { recordAreaMap } from '../stats.js';
 import { formatAreaId } from '../systems/lifecycle.js';
-import {getStageBudget} from './levelConfigs.js';
 import { createRng } from './terrain.js';
 
 // --- Terrain → pixel AABB (unit space from the composer → world pixels) ------
@@ -77,15 +77,43 @@ function slotCenterX(zone, unitX, itemW) {
 }
 
 // --- Entity instantiation from population items (plain {x,y,type} slots) -----
+// Central enemy factory — the ONE place "type id → live Enemy" is answered.
+// Level building and attack macros (spawnSplit) both use this so enemy spawning
+// stays declarative with no duplicated factory map. Returns null for unknown
+// types so callers can guard. The `label` fields are the display names used by
+// the macro editor tooltip / type cycle (typed spawn).
 const ENEMY_FACTORIES = {
-  jester: (x, y) => new Jester(x, y),
-  explosive_monkey: (x, y) => new ExplosiveMonkey(x, y),
-  vine_hound: (x, y) => new VineHound(x, y),
-  violetta_marionetta: (x, y) => new Violetta(x, y),
-  jackolantern: (x, y) => new JackOLantern(x, y),
-  boris_loon: (x, y) => makeBoris(x, y),
-  boris_loon_baby: (x, y) => makeBorisBaby(x, y),
+  jester:              { label: 'Jester',            make: (x, y) => new Jester(x, y) },
+  explosive_monkey:    { label: 'Explosive Monkey',  make: (x, y) => new ExplosiveMonkey(x, y) },
+  vine_hound:          { label: 'Vine Hound',        make: (x, y) => new VineHound(x, y) },
+  violetta_marionetta: { label: 'Violetta Marionetta', make: (x, y) => new Violetta(x, y) },
+  jackolantern:        { label: 'Jack-O-Lantern',    make: (x, y) => new JackOLantern(x, y) },
+  boris_loon:          { label: 'Boris Loon',        make: (x, y) => makeBoris(x, y) },
+  boris_loon_baby:     { label: 'Boris Loon Baby',   make: (x, y) => makeBorisBaby(x, y) },
 };
+
+/** Factory key → {label} (no live classes). Exported for the registry
+ * cross-check test (test/enemyRegistry.test.js): ENEMY_TYPES ids in the leaf
+ * registry must match these keys exactly so typed spawn can never resolve an
+ * id with no factory. */
+export const ENEMY_FACTORIES_KEYS = Object.fromEntries(
+  Object.entries(ENEMY_FACTORIES).map(([id, f]) => [id, { label: f.label }]),
+);
+
+/** Ordered list of all spawnable enemy types — {id, label}. Re-exported from
+ * the leaf registry (enemyTypes.js) so existing import sites keep working. */
+export const ENEMY_TYPES = _ENEMY_TYPES;
+
+/** Enemy type ids only (stable order) — for enum option lists. */
+export const ENEMY_TYPE_IDS = _ENEMY_TYPE_IDS;
+
+/** Lookup map: id → enemy meta. O(1) access. */
+export const enemyById = _enemyById;
+
+/** True when `id` is a known enemy type. */
+export function isEnemyType(id) {
+  return _isEnemyType(id);
+}
 const BARREL_FACTORIES = {
   explosive: (x, y) => makeBarrel(x, y),
   wood: (x, y) => makeWoodBarrel(x, y),
@@ -104,11 +132,8 @@ const BARREL_FACTORIES = {
  */
 export function makeEnemy(type, x, y) {
   const f = ENEMY_FACTORIES[type];
-  return f ? f(x, y) : null;
+  return f ? f.make(x, y) : null;
 }
-
-/** All spawnable enemy type ids (ENEMY_FACTORIES keys), stable order. */
-export const ENEMY_TYPES = Object.keys(ENEMY_FACTORIES);
 
 /**
  * Instantiate one zone's playable world from its composed terrain + population
@@ -167,11 +192,11 @@ export function instantiateZone(zone, layout, population, allZones = null) {
   const enemies = (population?.enemies ?? []).map((it) => {
     const f = ENEMY_FACTORIES[it.type];
     if (!f) return null; // unknown type — skip (soft) rather than crash
-    const probe = f(0, 0);
+    const probe = f.make(0, 0);
     const x = slotCenterX(zone, it.x, probe.w);
     const feet = snapFeetToSurface(surfaceY(zone, it.y ?? 0), x, x + probe.w);
     const y = feet - probe.h; // feet on the surface
-    return f(x, y);
+    return f.make(x, y);
   }).filter(Boolean);
 
   const barrels = (population?.barrels ?? []).map((it) => {
@@ -256,13 +281,9 @@ export function buildWorld(levelDef, config, seed) {
   for (const zone of zones) {
     if (zone.kind !== 'area') continue;
     const layout = terrain.get(zone.areaIdx);
-    const stageBudget = getStageBudget(config, zone.areaIdx) ?? { enemies: {}, powerups: {}, barrels: {} };
-    const pop = populateArea(rng, layout, {
-      enemies: stageBudget.enemies ?? {},
-      powerups: stageBudget.powerups ?? {},
-      powerupWeights: config.powerupWeights,
-      barrels: stageBudget.barrels ?? {},
-    });
+    // Typed spawn: the macro placements ARE the population spec — no per-stage
+    // quantity budgets (placeholder-typed-spawn plan, task 2.2).
+    const pop = populateArea(rng, layout);
     population.set(zone.areaIdx, populationSnapshot(pop));
     world.set(zone.areaIdx, instantiateZone(zone, layout, pop, zones));
   }
