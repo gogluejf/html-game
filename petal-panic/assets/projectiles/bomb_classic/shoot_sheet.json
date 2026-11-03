@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/projectiles/bomb_classic/shoot_sheet.png",
+ "size": "1729x662",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "bomb_classic shoot (4 frames)",
+ "entities": [
+  {
+   "name": "bomb_classic",
+   "anim": "shoot",
+   "frames_dir": "petal-panic/assets/projectiles/bomb_classic",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      152,
+      277,
+      358
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      277,
+      91,
+      388,
+      479
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      665,
+      47,
+      480,
+      568
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1145,
+      0,
+      584,
+      662
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-03"
+}

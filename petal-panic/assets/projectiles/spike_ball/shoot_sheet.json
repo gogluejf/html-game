@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/projectiles/spike_ball/shoot_sheet.png",
+ "size": "2007x496",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "spike_ball shoot (6 frames)",
+ "entities": [
+  {
+   "name": "spike_ball",
+   "anim": "shoot",
+   "frames_dir": "petal-panic/assets/projectiles/spike_ball",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      23,
+      341,
+      450
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      341,
+      10,
+      316,
+      476
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      657,
+      6,
+      335,
+      483
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      992,
+      6,
+      333,
+      483
+     ]
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1325,
+      0,
+      337,
+      496
+     ]
+    },
+    {
+     "file": "shoot_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1662,
+      21,
+      345,
+      454
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-03"
+}

@@ -1,0 +1,28 @@
+{
+  "file": "petal-panic/assets/objects/cart/destroy_sheet.png",
+  "size": "1774x887",
+  "rows": 2,
+  "cols": 4,
+  "kind": "animation",
+  "description": "Clown car destruction sequence (8 frames)",
+  "entities": [{
+    "name": "cart",
+    "anim": "destroy",
+    "frames_dir": "petal-panic/assets/objects/cart",
+    "frames": [
+      {"file": "destroy_f1.png", "row": 0, "col": 0, "bbox": [6, 9, 430, 456]},
+      {"file": "destroy_f2.png", "row": 0, "col": 1, "bbox": [456, 9, 430, 458]},
+      {"file": "destroy_f3.png", "row": 0, "col": 2, "bbox": [901, 9, 432, 460]},
+      {"file": "destroy_f4.png", "row": 0, "col": 3, "bbox": [1352, 29, 418, 443]},
+      {"file": "destroy_f5.png", "row": 1, "col": 0, "bbox": [10, 491, 432, 371]},
+      {"file": "destroy_f6.png", "row": 1, "col": 1, "bbox": [461, 529, 426, 341]},
+      {"file": "destroy_f7.png", "row": 1, "col": 2, "bbox": [902, 582, 429, 289]},
+      {"file": "destroy_f8.png", "row": 1, "col": 3, "bbox": [1355, 728, 410, 141]}
+    ]
+  }],
+  "updated": "2026-11-03T03:04:43",
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects/cart",
+    "pass": "/tmp/clowncart-destroy-v1"
+  }
+}
