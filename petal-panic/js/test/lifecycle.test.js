@@ -523,6 +523,93 @@ test('integration: continue from 2-3 lands the hero at the level entry (area -1)
   assert.ok(Math.abs(hero.x - ZONE_ENTRY_X) < 1, `hero at level entry x=${hero.x} (not 6000)`);
 });
 
+// --- Paid manual retry (state-persistence.md §2.1, task 2.1) ------------------
+//
+// retryFromGameOver (zoneLifecycle.js) costs exactly 1 life — identical to a
+// death — and applies the SAME resets as the death-restart path. Rejected at
+// 0 lives (no free restarts). These run against the live world booted by
+// update.js (same harness as the integration tests above).
+
+test('retryFromGameOver: with lives>0 decrements exactly 1 life and starts the entry sequence', () => {
+  const hero = U.getHero();
+  setState(S.OVER);
+  hero.lives = 3;
+  hero.energy = 0; // stale state from the failed attempt
+  const applied = U.retryFromGameOver();
+  assert.equal(applied, true, 'retry applies when lives remain');
+  assert.equal(hero.lives, 2, 'exactly one life consumed (3→2)');
+  assert.equal(getState(), S.AREA_ENTRY, 'entry sequence started (shared area-entry screen)');
+  // Energy/weapon/inventory resets are applied by startLife when the entry
+  // screen is confirmed (the attempt begins then — identical to the death path).
+  assert.equal(L.areaEntryOnAction('confirm', hero), true, 'confirm starts the attempt');
+  assert.equal(getState(), S.PLAY);
+  assert.ok(hero.energy === hero.maxEnergy, 'full energy restored at attempt start');
+});
+
+test('retryFromGameOver: at 0 lives returns false and changes nothing', () => {
+  const hero = U.getHero();
+  setState(S.OVER);
+  hero.lives = 0;
+  const coinsBefore = hero.coins;
+  const applied = U.retryFromGameOver();
+  assert.equal(applied, false, 'rejected — no free restarts');
+  assert.equal(getState(), S.OVER, 'still in OVER');
+  assert.equal(hero.lives, 0, 'lives unchanged');
+  assert.equal(hero.coins, coinsBefore, 'wallet untouched');
+});
+
+test('retryFromGameOver: reset sequence matches death (coins rolled back, energy full, weapon default, specials/shield/super cleared)', () => {
+  const hero = U.getHero();
+  const checkpoints = U.getCheckpoints();
+  // Baseline: clean PLAY state with a fresh zone snapshot recorded.
+  setState(S.PLAY);
+  hero.dying = false;
+  hero.deathTimer = 0;
+  hero.alive = true;
+  hero.energy = hero.maxEnergy;
+  hero.lives = 3;
+  hero.x = 80; hero.y = 500; hero.vx = 0; hero.vy = 0;
+  hero.checkpoint = { x: 80, y: 500 };
+  for (const c of checkpoints) c.triggered = false;
+  L.recordZoneSnapshot(hero); // entry totals for the current zone
+
+  // Simulate a failed attempt: wallet accumulated, inventory loaded up.
+  hero.wallet.current.coins += 7;
+  hero.wallet.current.kills += 2;
+  hero.selectedWeapon = 'spread';
+  if (Array.isArray(hero.specialSlots)) hero.specialSlots.fill(42);
+  hero.shield = 5;
+  hero.supermoveMeter = 80;
+  hero.energy = 1;
+
+  // The paid retry.
+  setState(S.OVER);
+  const applied = U.retryFromGameOver();
+  assert.equal(applied, true);
+  assert.equal(hero.lives, 2, 'one life consumed');
+  assert.equal(getState(), S.AREA_ENTRY, 'entry sequence started');
+
+  // Confirming the entry screen starts the attempt (identical to the death
+  // path): startLife rolls the wallet back to the zone's entry snapshot and
+  // applies the inventory resets (energy full, weapon default,
+  // specials/shield/super cleared), then places the hero at the checkpoint
+  // with i-frames — lives untouched (the retry already consumed one).
+  assert.equal(L.areaEntryOnAction('confirm', hero), true, 'confirm starts the attempt');
+  assert.equal(getState(), S.PLAY, 'back in PLAY after confirming');
+  assert.equal(hero.lives, 2, 'startLife does not touch lives');
+  assert.equal(hero.wallet.current.coins, 0, 'coins rolled back to zone snapshot');
+  assert.equal(hero.wallet.current.kills, 0, 'kills rolled back to zone snapshot');
+  assert.equal(hero.energy, hero.maxEnergy, 'energy full');
+  assert.equal(hero.selectedWeapon, 'thorn', 'weapon back to hero default');
+  if (Array.isArray(hero.specialSlots)) {
+    assert.ok(hero.specialSlots.every(s => s === null), 'special slots cleared');
+  }
+  assert.equal(hero.shield, 0, 'shield cleared');
+  assert.equal(hero.supermoveMeter, 0, 'super meter cleared');
+  assert.ok(hero.intangible, 'respawn i-frames active');
+  assert.ok(Math.abs(hero.x - hero.checkpoint.x) < 1, 'placed at checkpoint');
+});
+
 // --- Zone-snapshot chain (state-persistence.md §1, task 1.1) -----------------
 
 test('recordZoneSnapshot: appends one entry per genuine zone entry; death-restart never re-records', () => {

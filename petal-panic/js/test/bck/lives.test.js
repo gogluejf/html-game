@@ -149,20 +149,30 @@ ok('no input processed while dying (position frozen by gravity only)', () => {
 });
 
 console.log('Game Over options (acceptance #3/#4)');
-ok('Retry (R): restart at first checkpoint, lives=3, continues reset', () => {
+ok('Retry (R): costs 1 life, restarts at first checkpoint', () => {
   resetToPlay();
-  hero.lives = 0;
-  hero.continuesUsed = 2;
+  hero.lives = 2; // one life already spent — retry is AFFORDABLE
   setState(S.OVER);
-  U.retryFromGameOver();
-  assert.equal(getState(), S.PLAY, 'back in PLAY');
-  assert.equal(hero.lives, 3, 'lives reset to 3');
-  assert.equal(hero.continuesUsed, 0, 'continues reset');
+  const applied = U.retryFromGameOver();
+  assert.equal(applied, true, 'retry applies when lives remain');
+  assert.equal(hero.lives, 1, 'exactly one life consumed');
+  assert.equal(getState(), S.AREA_ENTRY, 'entry sequence started');
   assert.ok(approx(hero.energy, hero.maxEnergy), 'full energy');
   // First checkpoint is '1-1' at x=1500.
   assert.ok(approx(hero.x, checkpoints[0].x), `retry at cp1 x=${hero.x}`);
   // Checkpoint flags cleared so they can re-trigger.
   for (const c of checkpoints) assert.equal(c.triggered, false);
+});
+ok('Retry (R) from 0 lives is REJECTED (state-persistence.md §2.1)', () => {
+  resetToPlay();
+  hero.lives = 0;
+  hero.continuesUsed = 2;
+  setState(S.OVER);
+  const applied = U.retryFromGameOver();
+  assert.equal(applied, false, 'no free restarts at 0 lives');
+  assert.equal(getState(), S.OVER, 'still in OVER');
+  assert.equal(hero.lives, 0, 'lives unchanged');
+  assert.equal(hero.continuesUsed, 2, 'continues untouched');
 });
 ok('Continue (C): deducts 1000 coins, restores at last checkpoint', () => {
   resetToPlay();

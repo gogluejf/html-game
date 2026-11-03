@@ -15,7 +15,6 @@ import { makeCheckpoint } from '../objects/object.js';
 import { showAreaEntry, formatAreaId, recordZoneSnapshot, setAreaEntryFadeOutCallback, startLife, continueRun, saveCurrentRun } from '../systems/lifecycle.js';
 import { instantiateZone } from './build.js';
 import { restoreBossRunFloor } from '../boss/bossFlow.js';
-
 // --- Area-clear sequence (checkpoints.md §2) -----------------------------------
 // When the hero reaches an area's EXIT flag the area is cleared and the next
 // zone is generated. The sequence (checkpoints.md §2, structure.md §2):
@@ -460,17 +459,33 @@ export function resetActiveZoneContent() {
   }
 }
 
+/**
+ * Manual retry (state-persistence.md §2.1). Costs exactly
+ * 1 life and applies the SAME resets as a death-restart: zone-snapshot rollback
+ * for coins+score, full energy, weapon/specials/shield/super cleared, world
+ * unchanged. Rejected when no usable lives remain (no free restarts).
+ *
+ * Serves BOTH manual-retry callers: the pause menu's Retry option and the
+ * Game Over (S.OVER) screen input — both route through update.js's
+ * dispatchScreenInput `retry` action.
+ *
+ * Returns true when the retry was applied (life consumed + entry screen shown),
+ * false when rejected (0 lives — caller should route to Game Over instead).
+ */
 export function retryFromGameOver() {
   const hero = ctx.hero;
-  // Retry takes the SAME restart path as losing a life — except it does NOT
-  // consume one. It resets the active zone to a fresh arrangement (enemies,
-  // barrels, powerups, coins all restored exactly like a death-restart) and
-  // opens the shared level-start / area-entry view. The timed entry sequence
+  if (hero.lives <= 0) return false;
+  // Cost: exactly 1 life (identical to dying).
+  hero.lives -= 1;
+  // Reset the active zone to a fresh arrangement (enemies, barrels, powerups,
+  // coins all restored exactly like a death-restart). The timed entry sequence
   // then fades in, holds, and auto-starts play via startLife (which also
-  // restores the preserved arrangement + hero placement).
+  // restores the preserved arrangement + hero placement + wallet rollback +
+  // inventory reset — identical to the death path).
   resetActiveZoneContent();
   showAreaEntry(hero, ctx.areaContext);
-  console.log('[lifecycle] PAUSE/OVER → AREA_ENTRY (retry)');
+  console.log(`[lifecycle] PAUSE → AREA_ENTRY (manual retry, lives: ${hero.lives})`);
+  return true;
 }
 
 /**

@@ -178,14 +178,22 @@ ok('canContinue() gates on continues left AND coins', () => {
   assert.equal(SC.canContinue(null), false, 'null hero safe');
 });
 
-ok('GameOver.onAction(KeyR) retries (OVER→PLAY)', () => {
+ok('GameOver.onAction(KeyR) retries (OVER→AREA_ENTRY, costs 1 life)', () => {
   enterOver();
   const before = hero.x;
+  hero.lives = 2; // affordable retry — the old free-retry contract is gone
   SC.screenOnAction('retry', hero, actions());
-  assert.equal(getState(), S.PLAY, 'back in PLAY after retry');
-  assert.equal(hero.lives, 3, 'lives reset to 3');
-  assert.equal(hero.continuesUsed, 0, 'continues reset');
+  assert.equal(getState(), S.AREA_ENTRY, 'entry sequence started after retry');
+  assert.equal(hero.lives, 1, 'exactly one life consumed');
   void before;
+});
+
+ok('GameOver.onAction(KeyR) is rejected at 0 lives (stays OVER, state-persistence.md §2.1)', () => {
+  enterOver();
+  hero.lives = 0;
+  SC.screenOnAction('retry', hero, actions());
+  assert.equal(getState(), S.OVER, 'still in OVER after rejected retry');
+  assert.equal(hero.lives, 0, 'lives unchanged');
 });
 
 ok('GameOver.onAction(KeyC) spends coins and respawns when affordable', () => {

@@ -455,7 +455,9 @@ export function processInput() {
     return;
   }
   dispatchScreenInput(input, hero, {
-    retry: retryFromGameOver,
+    // On rejection (0 lives) tryTransition(S.OVER) is an intentional no-op when
+    // we are already in S.OVER — it just keeps us on the Game Over screen.
+    retry: () => { if (!retryFromGameOver()) tryTransition(S.OVER); },
     cont: continueFromGameOver,
     playAgain: () => tryTransition(S.SELECT),
     quit: () => tryTransition(S.HOME),
