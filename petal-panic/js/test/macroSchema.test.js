@@ -71,6 +71,52 @@ test('schema rejects malformed dimensions, kinds, placement types, and filename 
   assert.throws(() => assertMacroSchema(good, { expectedId: 'differentFile' }), /match filename/);
 });
 
+test('placement value: backwards compat, random, valid ids, bogus and wrong-family ids', () => {
+  const base = structuredClone(canonical[0].data);
+  const placement = (type) => ({ slot: 's1', type, x: 1, y: 1 });
+
+  // Backwards compatibility: a placement with no value still validates.
+  const noValue = structuredClone(base);
+  noValue.placements = [placement('barrel')];
+  assert.deepEqual(macroSchemaErrors(noValue, { expectedId: base.id }), [], 'no value');
+
+  // "random" is valid for all three families.
+  for (const type of ['barrel', 'enemy', 'powerup']) {
+    const m = structuredClone(base);
+    m.placements = [{ ...placement(type), value: 'random' }];
+    assert.deepEqual(macroSchemaErrors(m, { expectedId: base.id }), [], `value=random (${type})`);
+  }
+
+  // A valid specific id per family passes.
+  const validIds = { barrel: 'wood', enemy: 'jester', powerup: 'rapid' };
+  for (const [type, value] of Object.entries(validIds)) {
+    const m = structuredClone(base);
+    m.placements = [{ ...placement(type), value }];
+    assert.deepEqual(macroSchemaErrors(m, { expectedId: base.id }), [], `value=${value} (${type})`);
+  }
+
+  // A bogus id fails with an error naming the bad value and the family.
+  const bogus = structuredClone(base);
+  bogus.placements = [{ ...placement('barrel'), value: 'not-a-barrel' }];
+  const bogusErrors = macroSchemaErrors(bogus, { expectedId: base.id });
+  assert.equal(bogusErrors.length, 1, JSON.stringify(bogusErrors));
+  assert.match(bogusErrors[0], /barrel/);
+  assert.match(bogusErrors[0], /"not-a-barrel"/);
+
+  // A wrong-family id (barrel carrying an enemy id) fails.
+  const crossFamily = structuredClone(base);
+  crossFamily.placements = [{ ...placement('barrel'), value: 'jester' }];
+  const crossErrors = macroSchemaErrors(crossFamily, { expectedId: base.id });
+  assert.equal(crossErrors.length, 1, JSON.stringify(crossErrors));
+  assert.match(crossErrors[0], /barrel/);
+  assert.match(crossErrors[0], /"jester"/);
+
+  // Non-string values fail.
+  const notString = structuredClone(base);
+  notString.placements = [{ ...placement('barrel'), value: 42 }];
+  assert.throws(() => assertMacroSchema(notString, { expectedId: base.id }), /non-empty string/);
+});
+
 test('schema rejects editor/runtime metadata and platform row zero', () => {
   const extra = structuredClone(canonical[0].data);
   extra._el = {};

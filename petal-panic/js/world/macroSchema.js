@@ -8,6 +8,20 @@
 const ID_RE = /^[A-Za-z0-9_]+$/;
 const OWN = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 import { unitGridError } from './squareGrid.js';
+// Family type registries for placement `value` validation. macroSchema.js is a
+// leaf in the module graph (only imported by macroLoader/editor/tests), so these
+// imports add no cycle: object.js / powerup.js / build.js never import back.
+import { isBarrelType } from '../objects/object.js';
+import { isEnemyType } from './build.js';
+import { POWERUP_ROLL_TYPES } from '../objects/powerup.js';
+
+/** True when `value` is a legal typed-spawn value for the given family. */
+function isValidPlacementValue(type, value) {
+  if (type === 'barrel') return isBarrelType(value);
+  if (type === 'enemy') return isEnemyType(value);
+  if (type === 'powerup') return POWERUP_ROLL_TYPES.includes(value);
+  return false;
+}
 
 // Current macro data format version (square-grid cutover). Single owner for the
 // marker value so the JSON schema, this validator, and the offline migrator all
@@ -106,13 +120,25 @@ function validateUnit(unit, path, err) {
 
 function validatePlacement(slot, path, err) {
   if (!object(slot)) { err(path, 'must be an object'); return; }
-  const allowed = new Set(['slot','type','x','y']);
+  const allowed = new Set(['slot','type','x','y','value']);
   for (const key of extraKeys(slot, allowed)) err(`${path}.${key}`, 'unknown property');
-  for (const key of allowed) if (!OWN(slot, key)) err(path, `missing required property "${key}"`);
+  for (const key of ['slot','type','x','y']) if (!OWN(slot, key)) err(path, `missing required property "${key}"`);
   if (typeof slot.slot !== 'string' || slot.slot.length < 1) err(`${path}.slot`, 'must be a non-empty string');
   if (!['enemy','barrel','powerup'].includes(slot.type)) err(`${path}.type`, 'must be enemy, barrel, or powerup');
   if (!intAtLeast(slot.x, 0)) err(`${path}.x`, 'must be a non-negative integer');
   if (!intAtLeast(slot.y, 0)) err(`${path}.y`, 'must be a non-negative integer');
+  // Optional typed-spawn value: "random" or a specific type id of the family.
+  // No defaults — an unknown value is a validation error, never silently fixed.
+  if (OWN(slot, 'value')) {
+    if (typeof slot.value !== 'string' || slot.value.length < 1) {
+      err(`${path}.value`, 'must be a non-empty string ("random" or a type id)');
+    } else if (slot.value !== 'random') {
+      const family = typeof slot.type === 'string' ? slot.type : 'unknown';
+      if (!isValidPlacementValue(family, slot.value)) {
+        err(`${path}.value`, `must be "random" or a ${family} type id, got ${JSON.stringify(slot.value)}`);
+      }
+    }
+  }
 }
 
 /** Throw one concise error when a macro violates the schema. */

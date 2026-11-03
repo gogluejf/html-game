@@ -143,7 +143,12 @@
           "enum": ["enemy", "barrel", "powerup"]
         },
         "x": { "$ref": "#/$defs/gridCoordinate" },
-        "y": { "$ref": "#/$defs/gridCoordinate" }
+        "y": { "$ref": "#/$defs/gridCoordinate" },
+        "value": {
+          "description": "Optional typed-spawn value: \"random\" (composer rolls from the family registry) or a specific type id of the placement's family (barrel/enemy/powerup). Absent on legacy placements; validated against the family registries by validatePlacement().",
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   }
