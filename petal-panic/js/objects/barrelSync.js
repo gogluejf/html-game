@@ -11,6 +11,7 @@ import { BARREL_DAMAGE, SUPERCOIN_BARREL_DEF } from './object.js';
 import { invoke } from '../combat/attack/engine.js';
 import '../combat/attack/primitives/explosion.js'; // registers the 'explosion' primitive
 import { isSpecialType } from '../objects/specialWeapons.js';
+import { getDamageables } from '../world/accessors.js';
 import { record } from '../stats.js';
 import { Debug } from '../debug/debug.js';
 
@@ -37,7 +38,9 @@ export function handleBarrelDestroyed(barrel) {
     // Engine-owned blast: the explosion primitive resolves damage AND owns all
     // VFX (particle burst, explode sheet art, screen flash, camera shake) —
     // same path as the bomb macro. A barrel is a NEUTRAL blast: it hurts whoever
-    // stands in range (hero AND enemies) and shoves everyone radially.
+    // stands in range (hero AND enemies) and shoves everyone radially. The full
+    // damageable set is passed; the team flag does the filtering.
+    const targets = getDamageables();
     const h = invoke('explosion', {
       x: cx, y: cy,
       radius: barrel.explosion.radius,
@@ -45,8 +48,8 @@ export function handleBarrelDestroyed(barrel) {
       team: barrel.explosion.team ?? 'neutral',
       knockback: barrel.explosion.knockback,
       self: barrel,
-      targets: [hero, ...ctx.realEnemies],
-    }, { attacker: barrel, world: { hero, targets: [hero, ...ctx.realEnemies] } });
+      targets,
+    }, { attacker: barrel, world: { hero, targets } });
     // Real enemies killed by the blast already ran their internal death pipeline
     // via takeDamage() inside the primitive — no manual die() needed here.
     // track if the hero was hit by the explosion (design §4.1).

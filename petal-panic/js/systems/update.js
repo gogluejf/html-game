@@ -741,7 +741,7 @@ export const bombAttacks = new BombAttackHost(() => {
     groundY: roomFloorTop(az.rooms[0], az.orientation),
     platforms: [...SOLIDS.slice(1), ...barrelSolidBoxes],
     camera: ctx.camera,
-    world: { targets: [hero, ...realEnemies, ...(bossZone.bossCanTakeDamage() ? [boss] : [])] },
+    world: { targets: getDamageables() },
   };
 });
 ctx.bombAttacks = bombAttacks;
@@ -765,8 +765,8 @@ setHeroRefSetter(setHeroRef);
 // render.js reads getShakeOffset(), which now returns the tracked instance's
 // current offset ({0,0} when idle/done). World accessors are extracted into
 // world/accessors.js; re-exported here so existing importers keep working.
-export { getShakeOffset, getHero, getSolids, getCollisionWorld, getEnemies, getLiveEnemies, getProjectiles, getSpecials, getPickups, getCamera, getRealEnemies, getBoss, getActiveZoneKind, getParticles, getCoins, getBarrels, getCoinBarrels, getPowerups, getCheckpoints, getFloatTexts } from '../world/accessors.js';
-import { getCheckpoints, getHero } from '../world/accessors.js';
+export { getShakeOffset, getHero, getSolids, getCollisionWorld, getEnemies, getLiveEnemies, getProjectiles, getSpecials, getPickups, getCamera, getRealEnemies, getBoss, getActiveZoneKind, getParticles, getCoins, getBarrels, getDamageables, getCoinBarrels, getPowerups, getCheckpoints, getFloatTexts } from '../world/accessors.js';
+import { getCheckpoints, getHero, getDamageables } from '../world/accessors.js';
 
 // --- Per-frame step ------------------------------------------------------------
 export function update(dt) {

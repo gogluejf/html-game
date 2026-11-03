@@ -48,6 +48,19 @@ export function getParticles() { return particles; }
 export function getCoins() { return coins; }
 // barrels (explosive + coin) + explosion screen shake for render.
 export function getBarrels() { return [...ctx.barrels, ...ctx.woodBarrels, ...ctx.coinBarrels]; }
+/**
+ * Every damageable entity in the active zone — the single candidate set for
+ * blast/explosion resolution. The blast's `team` flag does the filtering
+ * (ally/foe/neutral); callers must NOT pre-filter this list by hand.
+ */
+export function getDamageables() {
+  const out = [];
+  if (ctx.hero?.alive) out.push(ctx.hero);
+  for (const e of ctx.realEnemies) if (e.alive) out.push(e);
+  if (ctx.boss?.alive) out.push(ctx.boss);
+  for (const b of getBarrels()) if (b.alive) out.push(b);
+  return out;
+}
 export function getCoinBarrels() { return ctx.coinBarrels; }
 // powerups, checkpoints, floating text for render + debug.
 export function getPowerups() { return ctx.powerups; }

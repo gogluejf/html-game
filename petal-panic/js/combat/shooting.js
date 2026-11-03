@@ -12,6 +12,7 @@ import { record } from '../stats.js';
 import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
 import { invoke } from './attack/engine.js';
+import { getDamageables } from '../world/accessors.js';
 import '../combat/attack/primitives/projectile.js'; // registers the 'projectile' primitive
 
 import { ctx } from '../world/context.js';
@@ -80,7 +81,9 @@ function makeHeroContext(h) {
     attacker: h,
     pools: { projectilePool, specialPool },
     collisionWorld: ctx.collisionWorld,
-    world: { targets: [...(ctx.realEnemies ?? []), ...(ctx.boss && ctx.boss.alive ? [ctx.boss] : [])] },
+    // Full damageable set — blast macros pass this straight to the explosion
+    // primitive and the team flag does the filtering. No hand-rolled lists.
+    world: { targets: getDamageables() },
   };
 }
 
