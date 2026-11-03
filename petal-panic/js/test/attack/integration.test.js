@@ -43,6 +43,7 @@ const ALL_PRIMITIVES = [
 
 const ALL_MACROS = [
   'reticleShot', 'spawnSplit', 'homingMissile', 'predictiveShot', 'spreadShot', 'bodyExplosion', 'explosiveBomb', 'explosiveProjectile',
+  'rock',
 ];
 
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });

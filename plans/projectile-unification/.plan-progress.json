@@ -62,10 +62,18 @@
     },
     "1.5": {
       "number": "1.5",
-      "status": "not_started",
+      "status": "done",
       "name": "Make rock the default arcing projectile",
       "milestone": "Merge Special into Projectile",
-      "milestone_number": 1
+      "milestone_number": 1,
+      "summary": {
+        "done": "REVISED SCOPE (user correction 2026-11-03): the plan's 'rock as default arcing look' was misinterpreted by the executor \u2014 the user wants the rock as a NEW OPT-IN macro, with the default typeless arcing carrier KEEPING the thorn look. Delivered: (1) revert \u2014 spawnArcing only applies the rock look when the caller passes rock: true (new projectile primitive param, DEFAULTS rock:false, documented in meta.params); (2) new `rock` macro (macros/rock.js): composes the projectile arcing recipe (arc 800, speed 500, direction -0.5, bounce:true classic decay) with rock: true \u2014 bounces bomb-style, NO explosion, contact damage like a projectile (damage 40), expires on ttl (2s) if it never hits; registered in the macro barrel + integration ALL_MACROS; doc section added to docs/architecture/attack-macros.md; theater sandbox row added (arc/ttl tweaks); (3) tests: e2e split \u2014 default arcing carrier keeps thorn look (_rockLook undefined), rock:true \u2192 rock look (18px box, no outline); the 8 earlier look tests stand (applyRockLook mechanics unchanged).",
+        "decisions": "Rock look stays a Projectile capability (applyRockLook) but is strictly opt-in via the rock param \u2014 'default = thorn' is the user's explicit contract. The rock macro is thin (one projectile invoke), per the macro contract: no explosion composition, no VFX of its own (inherits projectile's hit-sparkle/debris). No visual delta for existing macros: circusBall/molotov keep their drawers; spawnSplit/clusterBomb/shockwaveBomb bomb children and all typeless arcing carriers are back to thorn+outline.",
+        "tradeoffs": "The theater's bomb-family lanes no longer show rock art (back to thorn) \u2014 the rock is visible ONLY in the new `rock` lane. Old 'ballistic' alias defaults (500/-0.5/800/40/2) became the rock macro defaults \u2014 continuity for the tuned throw feel.",
+        "failures": "None new: matrix = exactly the 9 known baseline failures. projectile.test.js 44/44; integration.test.js 14/14 (rock in ALL_MACROS).",
+        "confidence": "high",
+        "lessons_learned": "The plan's wording 'default for arcing typeless shots' was ambiguous and the executor took the literal-UI reading (rock replaces thorn everywhere). When a task says 'make X the default', confirm the visual blast radius (which lanes/changes for existing macros?) BEFORE implementing \u2014 the user wanted X as a separate weapon, not a re-skin of every gravity shot."
+      }
     },
     "2.1": {
       "number": "2.1",

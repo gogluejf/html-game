@@ -6,7 +6,9 @@ import { strict as assert } from 'node:assert';
 import {
   Projectile, Pool, projectilePool, MAX_PROJECTILES,
   dirAngle, aimFromInput, PROJECTILE_TARGET_H,
+  initProjectileSprites, getProjectileSpriteData,
 } from '../objects/projectile.js';
+import { spawnProjectile } from '../combat/attack/primitives/projectile.js';
 import { LAYER } from '../consts.js';
 
 let passed = 0;
@@ -193,5 +195,122 @@ ok('saw data declares stop; bomb vertical reflection works', () => {
   const box = { x: -50, y: 80, w: 200, h: 40 };
   b.reflectVelocity(box);
   assert.ok(b.vy < 0, `vy flipped upward (${b.vy.toFixed(1)})`);
+});
+
+// --- Task 1.5: rock look for typeless arcing carriers -------------------------
+// Sheets load through the file: URL path (node fs) — the same code the
+// browser takes over fetch. Without them applyRockLook() must still set the
+// flag + clear the outline (pre-boot contract).
+ok('applyRockLook (pre-boot): flag set, outline cleared, no crash', () => {
+  const p = new Projectile(0, 0, 0, true);
+  p.w = 18; p.h = 18; p.vx = 300; p.vy = -400;
+  p.applyRockLook();
+  assert.equal(p._rockLook, true, 'look flag set even pre-boot');
+  assert.equal(p._outline, null, 'rock never gets the thorn outline');
+  assert.equal(p.w, 18);
+  assert.equal(p.h, 18);
+});
+
+await initProjectileSprites();
+ok('applyRockLook (sheet loaded): sprite is the rock_medium anim', () => {
+  const p = new Projectile(0, 0, 0, true);
+  p.w = 18; p.h = 18; p.vx = 300; p.vy = -400;
+  p.applyRockLook();
+  assert.equal(p._rockLook, true);
+  assert.equal(p._outline, null, 'no outline on rock');
+  const rockData = getProjectileSpriteData('rock_medium');
+  assert.ok(rockData?.anims?.shoot, 'rock_medium sheet loaded');
+  assert.equal(p.sprite?.anims?.shoot, rockData.anims.shoot, 'sprite switched to rock_medium');
+});
+ok('applyRockLook: 18px physics box survives setAnim re-derivation', () => {
+  const p = new Projectile(0, 0, 0, true);
+  p.w = 18; p.h = 18;
+  p.applyRockLook();
+  assert.equal(p.w, 18, `w=${p.w} — box must stay the 18px carrier square`);
+  assert.equal(p.h, 18, `h=${p.h}`);
+});
+ok('straight typeless shot: no rock look (thorn path untouched)', () => {
+  const p = new Projectile(0, 0, 0, true);
+  assert.equal(p._rockLook, undefined, 'initialize never sets the flag');
+  assert.equal(p.gravityValue, 0);
+});
+
+// --- Task 1.5 (reviewer B2 follow-ups): draw routing, box re-pin, pool reuse, e2e
+
+// Minimal 2d-canvas recorder: drawSprite()/drawers only call standard
+// methods, and each identity has a distinct fillStyle to spy on.
+function recordingCtx() {
+  const rec = { fillStyles: [], calls: [] };
+  const target = {
+    save() {}, restore() {}, translate() {}, rotate() {}, scale() {},
+    beginPath() {}, moveTo() {}, lineTo() {}, closePath() {},
+    fill() {},
+    fillRect() { rec.calls.push('fillRect'); },
+    drawImage() { rec.calls.push('drawImage'); },
+  };
+  return {
+    rec,
+    ctx: new Proxy(target, {
+      get(t, k) { return k in t ? t[k] : (...a) => { rec.calls.push(k); }; },
+      set(t, k, v) { if (k === 'fillStyle') rec.fillStyles.push(String(v)); t[k] = v; return true; },
+    }),
+  };
+}
+
+ok('draw routing: rock carrier draws rockDrawer art, never the thorn debug fill', () => {
+  const p = new Projectile(0, 0, 0, true);
+  p.w = 18; p.h = 18; p.vx = 300; p.vy = -400;
+  p.applyRockLook();
+  const { rec, ctx } = recordingCtx();
+  p.draw(ctx);
+  assert.ok(rec.fillStyles.includes('#8d7b6b'), `rock body color in ${rec.fillStyles}`);
+  assert.ok(!rec.fillStyles.includes('#ff6ec7'), 'thorn debug fill absent');
+  assert.ok(!rec.calls.includes('drawImage'), 'no sheet frame without loaded images');
+});
+ok('draw routing: straight thorn keeps its debug-fill path (no rock drawer)', () => {
+  const p = new Projectile(0, 0, 0, true);
+  const { rec, ctx } = recordingCtx();
+  p.draw(ctx);
+  assert.ok(rec.fillStyles.includes('#ff6ec7'), 'thorn debug fill present');
+  assert.ok(!rec.fillStyles.includes('#8d7b6b'), 'rock drawer absent');
+});
+ok('box re-pin: a non-18 explicit carrier box survives applyRockLook', () => {
+  const p = new Projectile(0, 0, 0, true);
+  p.w = 24; p.h = 8; // throwMine-style non-square box
+  p.applyRockLook();
+  assert.equal(p.w, 24, `w=${p.w}`);
+  assert.equal(p.h, 8, `h=${p.h}`);
+});
+ok('pool reuse: rock flag does not leak into the next (thorn) life', () => {
+  const pool = new Pool(Projectile, 4);
+  const rock = pool.spawn(10, 10, 0, true);
+  rock.w = 18; rock.h = 18; rock.applyRockLook();
+  assert.equal(rock._rockLook, true);
+  rock.alive = false;
+  const thorn = pool.spawn(20, 20, 4, true);
+  assert.equal(thorn, rock, 'same slot reused (no allocation)');
+  assert.equal(thorn._rockLook, undefined, 'flag wiped by Pool.spawn key-delete');
+});
+ok('spawnArcing e2e: default typeless arcing carrier keeps the THORN look', () => {
+  const pool = new Pool(Projectile, 4);
+  const ctx = { pools: { projectilePool: pool }, attacker: { x: 100, y: 100, w: 32, h: 32 } };
+  const ent = spawnProjectile({ speed: 500, direction: -0.6, arc: 800, ttl: 2, damage: 40, team: 'ally' }, ctx, null);
+  assert.ok(ent, 'carrier spawned');
+  assert.equal(ent._rockLook, undefined, 'default arcing carrier is NOT a rock (1.5 revised)');
+  assert.equal(ent.w, 18, `w=${ent.w}`);
+  assert.equal(ent.h, 18, `h=${ent.h}`);
+  assert.equal(ent._attackId, 'projectile');
+  assert.equal(ent._arcRecipe, true);
+});
+ok('spawnArcing e2e: rock:true gives a real rock-look Projectile', () => {
+  const pool = new Pool(Projectile, 4);
+  const ctx = { pools: { projectilePool: pool }, attacker: { x: 100, y: 100, w: 32, h: 32 } };
+  const ent = spawnProjectile({ speed: 500, direction: -0.6, arc: 800, ttl: 2, damage: 40, team: 'ally', rock: true }, ctx, null);
+  assert.ok(ent, 'carrier spawned');
+  assert.ok(ent instanceof Projectile, 'real Projectile from the real pool');
+  assert.equal(ent._rockLook, true, 'rock param applied the rock look');
+  assert.equal(ent._outline, null, 'no outline');
+  assert.equal(ent.w, 18, `w=${ent.w}`);
+  assert.equal(ent.h, 18, `h=${ent.h}`);
 });
 console.log(`\n${passed} assertions passed.`);

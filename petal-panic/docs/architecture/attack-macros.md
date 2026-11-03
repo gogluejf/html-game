@@ -1208,6 +1208,32 @@ Legacy carriers without `bounceHeight` keep the classic decay (0.5 restitution
 **Feel tuning:** heavy ball = low `speed` + low `bounceHeight` (thumpy, fast
 drop); light ball = high `speed` + high `bounceHeight` (floaty big hops).
 
+## Rock (macro id: `rock`)
+
+`invoke('rock', { speed: 500, direction: -0.5, arc: 800, damage: 40, ttl: 2,
+  origin: null, team: 'ally' }, ctx)`
+
+A rock is a basic arcing projectile: gravity arc + **classic decay bounce**
+(bomb-style 0.5 restitution) — but unlike a bomb it does **NOT explode**. If
+it never hits anyone it expires on `ttl` and disappears. If it hits, it is
+exactly a normal projectile: contact damage, nothing more.
+
+It composes the `projectile` primitive's arcing recipe (`arc != null`) with
+`rock: true`, which gives the carrier the rock look — rock_medium sheet in
+high-res, `rockDrawer` in primitive mode, NO outline. The rock look is
+opt-in: the DEFAULT typeless arcing carrier keeps the thorn look (task 1.5
+revised).
+
+| Param | Default | Meaning |
+|---|---|---|
+| `speed` | `500` | launch force (px/s) |
+| `direction` | `-0.5` | throw direction (radians, up-right) |
+| `arc` | `800` | gravity px/s² (throw height) |
+| `damage` | `40` | contact damage per enemy hit |
+| `ttl` | `2` | fuse seconds — the only thing that kills it if it never hits |
+| `origin` | `null` | marker label \| {x,y} \| null → attacker center |
+| `team` | `'ally'` | who the rock hurts |
+
 ## AI usage examples
 
 Attack Macros do not contain enemy decision-making.

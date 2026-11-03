@@ -34,3 +34,4 @@ import './mine.js';
 import './throwMine.js';
 import './throwEnemy.js';
 import './circusBall.js';
+import './rock.js';

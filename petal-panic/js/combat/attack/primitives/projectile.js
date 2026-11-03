@@ -68,6 +68,8 @@ const DEFAULTS = Object.freeze({
   retainOnContact: false, // arcing: emit contact without damage/consumption (composed payloads)
   retainOnSettle: false,  // arcing: keep the carrier alive and expose settled state
   radius: null,          // reference size for host-side effects (macro-owned)
+  rock: false,           // arcing: render as rock (rock_medium / rockDrawer, no outline) —
+                         // the rock macro sets this; default typeless arcing keeps the thorn look
 });
 
 /**
@@ -115,6 +117,11 @@ function spawnArcing(p, ctx, h) {
   if (!type) {
     ent.w = size;
     ent.h = size;
+    // Rock look is OPT-IN (the rock macro passes rock: true): the DEFAULT
+    // typeless arcing carrier keeps the thorn look. applyRockLook() switches
+    // to rock_medium / rockDrawer (no outline) and re-asserts the 18px box
+    // after setAnim (which would hand width ownership to the rock sheet).
+    if (p.rock) ent.applyRockLook();
   }
   ent.vx = Math.cos(p.direction) * p.speed;
   ent.vy = Math.sin(p.direction) * p.speed;
@@ -523,6 +530,7 @@ registerPrimitive('projectile', {
       { key: 'retainOnContact', desc: 'arc recipe: emit contact without damage/consumption (composed payloads)' },
       { key: 'retainOnSettle', desc: 'arc recipe: keep the carrier alive and expose settled state' },
       { key: 'radius', desc: 'reference size for host-side effects (macro-owned)' },
+      { key: 'rock', desc: 'arcing recipe: render as rock (rock_medium/rockDrawer, no outline) — rock macro; default keeps the thorn look' },
     ],
   },
   impl: makeImpl('projectile'),

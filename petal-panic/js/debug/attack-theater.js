@@ -148,6 +148,7 @@ const SANDBOX_PRESETS = {
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
 export const TWEAKABLE = {
   projectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['bounce', 'enum', [false, true]], ['ttl', 'num', 0.25], ['damage', 'num', 2]],
+  rock: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 1], ['damage', 'num', 5]],
   spreadShot: [['count', 'int', 1], ['angle', 'angle', 15 * DEG], ['sequenceInterval', 'num', 0.05]],
   radialShot: [['count', 'int', 1], ['startAngle', 'angle', 15 * DEG], ['speed', 'num', 50], ['sequenceInterval', 'num', 0.05]],
   burstShot: [['count', 'int', 1], ['interval', 'num', 0.02], ['direction', 'angle', 15 * DEG], ['speed', 'num', 50]],

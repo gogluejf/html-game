@@ -215,8 +215,10 @@ export class Projectile extends Entity {
     // Sprite (SOTA): per-type sheet via the standard pipeline. `frames` is a
     // LIVE accessor so boot-time image loading is picked up without rebuilds.
     // Node / pre-boot: sprite data null → primitive rect fallback (unchanged).
-    // Typeless ballistic: use the thorn sheet + thorn outline (byte-identical
-    // to a plain thorn); the rock_medium default arrives with task 1.5.
+    // Typeless default: thorn sheet + thorn outline (byte-identical to a plain
+    // thorn) — including arcing typeless carriers. Only the rock macro's
+    // carriers (rock: true) get the rock look POST-SPAWN via applyRockLook():
+    // gravity/rock arrive after initialize(), so no look selection here.
     const spriteType = type ?? 'thorn';
     const animName = SPRITE_TARGETS[spriteType]?.anim ?? 'shoot';
     // Outline: every shot (thorn, typeless, and special weapons) gets the
@@ -250,6 +252,41 @@ export class Projectile extends Entity {
   }
 
   /**
+   * Task 1.5 (revised) — the ROCK look for a typeless arcing carrier,
+   * OPT-IN via the `rock: true` primitive param (the rock macro passes it).
+   * Rock_medium sheet (high-res) / rockDrawer (low-res), and NO outline —
+   * the rock reads on its own (the sheet declares outline: 0). The DEFAULT
+   * typeless arcing carrier keeps the thorn look.
+   *
+   * Called post-spawn by the arcing recipe (primitives/projectile.js) when
+   * the caller passed rock: true — gravity/rock arrive after initialize(),
+   * which gives every typeless slot the thorn default. Re-asserts the carrier box after setAnim (which hands
+   * width ownership to the sheet) — the physics box must not change, only
+   * the look. Pre-boot (rock sheet not loaded yet) the thorn sprite stays
+   * as a placeholder: primitive mode draws rockDrawer; high-res draws the
+   * thorn placeholder until the rock sheet lands (and, if the rock fetch
+   * failed permanently, stays thorn-shaped) — no outline in any case.
+   */
+  applyRockLook() {
+    this._rockLook = true;
+    this._outline = null; // rock: no outline (sheet declares outline: 0)
+    const data = spriteData.get('rock_medium');
+    const animName = SPRITE_TARGETS.rock_medium.anim;
+    if (!data?.anims[animName]) return; // pre-boot → rockDrawer in draw()
+    const w = this.w, h = this.h; // carrier physics box (square, 18px)
+    this.sprite = { anchor: 'center', anims: data.anims };
+    Object.defineProperty(this.sprite, 'frames', { get: () => spriteFrames.get('rock_medium') });
+    try {
+      this.setAnim(animName);
+      this.w = w; // re-pin: setAnim made width sheet-owned (look only)
+      this.h = h;
+      // Re-aim AFTER setAnim: pivot shift + pooled slots may carry stale
+      // orientation (same contract as initialize).
+      this.orientSprite(this.vx, this.vy);
+    } catch { /* legacy rect path stays active */ }
+  }
+
+  /**
    * Draw this projectile. Delegates to `this.drawer` if set; otherwise falls
    * back to the high-graphic sheet sprite (+ white outline) in high-res mode,
    * then to a per-type primitive drawer (visual-identity contract: one drawer
@@ -264,9 +301,17 @@ export class Projectile extends Entity {
       this.drawer(ctx, this);
       return;
     }
-    // Thorn (typeless): original path — Entity default (sheet sprite or debug
-    // rect) plus the white outline on top in high-graphic mode.
+    // Typeless: straight shots keep the thorn path — Entity default (sheet
+    // sprite or debug rect) plus the white outline on top in high-graphic
+    // mode. Task 1.5: arcing typeless shots (applyRockLook) are rocks —
+    // rock_medium sheet in high-res, rockDrawer in primitive mode / pre-boot,
+    // and never an outline.
     if (this.type == null) {
+      if (this._rockLook) {
+        if (isHighGraphic() && this.drawSprite(ctx)) return;
+        rockDrawer(ctx, this);
+        return;
+      }
       super.draw(ctx);
       if (isHighGraphic() && this._outline && !this._outline.done) this._outline.render(ctx);
       return;
