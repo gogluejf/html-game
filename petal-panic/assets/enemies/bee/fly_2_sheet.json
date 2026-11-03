@@ -1,0 +1,141 @@
+{
+ "file": "petal-panic/assets/enemies/bee/fly_2_sheet.png",
+ "entities": [
+  {
+   "name": "bee",
+   "anim": "fly_2",
+   "frames": [
+    {
+     "file": "fly_2_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      5,
+      195,
+      165
+     ],
+     "offset": {
+      "x": -97.5,
+      "y": -82.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_2_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      195,
+      12,
+      201,
+      151
+     ],
+     "offset": {
+      "x": -100.5,
+      "y": -75.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_2_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      396,
+      8,
+      233,
+      159
+     ],
+     "offset": {
+      "x": -116.5,
+      "y": -79.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_2_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      629,
+      0,
+      225,
+      175
+     ],
+     "offset": {
+      "x": -112.5,
+      "y": -87.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_2_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      854,
+      12,
+      223,
+      151
+     ],
+     "offset": {
+      "x": -111.5,
+      "y": -75.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/bee",
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -93.5,
+    "y": -78.5,
+    "w": 187,
+    "h": 157
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
+  }
+ ],
+ "crop": {
+  "frames_dir": "petal-panic/assets/enemies/bee",
+  "pass": "/tmp/bee-fly_2"
+ },
+ "updated": "2026-11-03T10:08:52",
+ "size": "1077x175",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "bee fly_2 (5 frames)"
+}

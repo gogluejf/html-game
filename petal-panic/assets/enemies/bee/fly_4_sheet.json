@@ -1,0 +1,137 @@
+{
+ "file": "petal-panic/assets/enemies/bee/fly_4_sheet.png",
+ "size": "985x157",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "bee fly_4 (5 frames)",
+ "entities": [
+  {
+   "name": "bee",
+   "anim": "fly_4",
+   "frames_dir": "petal-panic/assets/enemies/bee",
+   "frames": [
+    {
+     "file": "fly_4_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      184,
+      157
+     ],
+     "offset": {
+      "x": -92,
+      "y": -78.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_4_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      184,
+      4,
+      183,
+      149
+     ],
+     "offset": {
+      "x": -91.5,
+      "y": -74.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_4_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      367,
+      3,
+      215,
+      150
+     ],
+     "offset": {
+      "x": -126,
+      "y": -76
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_4_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      582,
+      0,
+      184,
+      157
+     ],
+     "offset": {
+      "x": -92.5,
+      "y": -75
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fly_4_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      766,
+      1,
+      219,
+      154
+     ],
+     "offset": {
+      "x": -122,
+      "y": -77
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -88,
+    "y": -74.5,
+    "w": 176,
+    "h": 149
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-03"
+}
