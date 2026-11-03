@@ -101,6 +101,22 @@ Saving costs nothing and changes nothing. The save stores:
    entered area only) — become an append-only chain keyed by zone id.
 6. **Level clear currently keeps energy** — becomes energy full.
 
+## 4b. Implementation note — the two attempt flavors
+
+A zone entry starts an "attempt" via `startLife`, which has two flavors:
+
+- **Failure restart** (die / manual retry / continue): wallet rollback to the
+  zone snapshot, full energy, weapon/specials/shield/super cleared, respawn
+  i-frames. (`startLife(h, ctx)`)
+- **Advance arrival** (passing into a new zone): keeps EVERYTHING — it only
+  places the hero at the new zone's entry with brief entry i-frames. No
+  rollback, no refill, no inventory reset. (`startLife(h, ctx, {advance:true})`)
+
+The area-entry presentation carries the flavor (`beginAreaEntryPresentation(advance)`);
+the clear-sequence advance and debug wrap mark it as an advance, while death
+restart / retry / continue use the failure flavor. This is what makes §2.3
+"keep everything" hold across zone passes in actual play, not just in unit calls.
+
 ## 5. Open questions (parked)
 
 - Boss-reward coin accounting (delta since level start) — unchanged by this doc.

@@ -425,11 +425,9 @@ export function startGame(ctx, heroDef) {
 export function startArea(h, level, areaIdx) {
   h.currentLevel = level;
   h.currentArea = areaIdx;
-  // Special slots do NOT persist across area advance (game-rules.md §5,
-  // TUNING_INVENTORY.specialSlots = 'reset') — clear held specials + selection
-  // on every genuine area entry.
-  if (Array.isArray(h.specialSlots)) h.specialSlots.fill(null);
-  if (h.selectedWeapon !== undefined) h.selectedWeapon = WEAPON_THORN;
+  // state-persistence.md §2.3: a zone pass keeps EVERYTHING — weapon and
+  // specials carry over (the older game-rules.md §5 area-advance reset is
+  // superseded). Only the failure transitions (die/retry/continue) clear them.
   // Accounting snapshot (game-rules.md §4): record the entry totals for this
   // genuine area entry so a later death restart of the same area can roll the
   // run stats back to them (the 'rollback' policy).
@@ -440,15 +438,45 @@ export function startArea(h, level, areaIdx) {
 }
 
 /**
- * §3 Life start — an attempt in the current area. Restore the preserved
- * arrangement, place the hero at its entry with i-frames. Lives are UNTOUCHED:
- * the caller has already consumed one (ordinary death) or a continue restored
- * them. Does not reroll generation.
+ * §3 Life start — an attempt in the current area. Two flavors (state-
+ * persistence.md §2.1–2.3):
+ *
+ *   FAILURE restart (default): die/retry/continue. Rolls the wallet back to
+ *   the zone-entry snapshot, restores the zone arrangement, refills energy,
+ *   clears weapon/specials/shield/super, and places the hero at its entry
+ *   with respawn i-frames.
+ *
+ *   ADVANCE arrival ({advance: true}): passing into a NEW zone. Keeps EVERY-
+ *   THING (coins, score, energy, weapon, specials, lives, continues — doc
+ *   §2.3 "keep everything"); it only places the hero at the new zone's entry
+ *   and grants brief entry i-frames. No rollback, no inventory reset, no
+ *   life-bucket push (the attempt continues the run's existing bucket).
+ *
+ * Lives are UNTOUCHED in both flavors: the caller already consumed one
+ * (ordinary death) or a continue restored them. Does not reroll generation.
  *
  * @param {Hero} h
+ * @param {object} [ctx]
+ * @param {{advance?: boolean}} [opts] advance=true → genuine zone arrival
  */
-export function startLife(h, ctx) {
+export function startLife(h, ctx, opts = {}) {
   const c = ctx ?? ctxOf(h);
+  if (opts.advance) {
+    // Genuine zone arrival (doc §2.3): keep every column — no snapshot
+    // rollback, no inventory reset, no energy refill, no life-bucket push.
+    // Place the hero at the new zone's entry (checkpoint was set by the
+    // advance path) with brief entry i-frames so the fade-in isn't lethal.
+    h.x = h.checkpoint?.x ?? h.x;
+    h.y = h.checkpoint?.y ?? h.y;
+    h.vx = 0; h.vy = 0;
+    h.dying = false;
+    h.deathTimer = 0;
+    h.alive = true;
+    h.intangible = true;
+    h.timers.set('intangible', h.RESPAWN_IFRAMES ?? 2);
+    return;
+  }
+  // --- Failure restart (die / manual retry / continue) ---------------------
   // Entry/retry is not completion. Only exit flags and boss defeat unlock progress.
   // Trace: open a fresh life bucket for each NEW attempt. The very first
   // attempt after startGame/continueRun reuses the already-present bucket
@@ -458,11 +486,9 @@ export function startLife(h, ctx) {
   } else {
     beginLife(h);
   }
-  // Accounting rollback (game-rules.md §4, TUNING_COINS.accountingOnFailure):
-  // restore the run stats to the area's entry snapshot so a failed attempt's
-  // kills/coins/score do NOT accumulate into the fresh attempt. This is the
-  // enforcement of the declared 'rollback' policy — without it, repeatable
-  // pickups (extra lives, coins) could be farmed across attempts.
+  // Accounting rollback (state-persistence.md §2.1/§2.2): restore the wallet
+  // to the zone's entry snapshot so a failed attempt's kills/coins do NOT
+  // accumulate into the fresh attempt (anti-farming).
   restoreAreaEntryStats(h);
   restoreArea(c);
   // Reset transient attempt state (death flags, energy, i-frames) so the new
@@ -471,11 +497,9 @@ export function startLife(h, ctx) {
   // i-frames. Lives are untouched — the caller already consumed one (death)
   // or a continue restored them.
   resetHeroTransient(h);
-  // Inventory persistence (game-rules.md §5): temporary powerups and a charged
-  // super meter do NOT persist into the fresh attempt — the hero is restored
-  // to baseline (energy is restored to full by resetHeroTransient). The policy
-  // is the concrete design-plan decision owned by GAME_RULES.inventory (the
-  // TUNING block).
+  // Inventory persistence (state-persistence.md §2.1): temporary powerups and
+  // a charged super meter do NOT persist into the fresh attempt — full energy,
+  // weapon gone, specials/shield/super cleared.
   resetHeroInventory(h);
   h.respawn();
   // Entry flags are PURE VISUAL (checkpoints.md §1): no trigger, no latch, no

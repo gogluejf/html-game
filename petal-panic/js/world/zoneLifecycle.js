@@ -153,7 +153,7 @@ export function debugWrapToNextArea() {
     recordZoneSnapshot(hero);
     ctx.camera.setZoneBounds(z1);
     showAreaEntry(hero, ctx.areaContext);
-    beginAreaEntryPresentation(); // reset the timer (transition may not fire if already in AREA_ENTRY)
+    beginAreaEntryPresentation(true); // genuine zone arrival (reset the timer too)
     return;
   }
   if (zone.kind !== 'area') return;
@@ -193,7 +193,7 @@ export function debugWrapToNextArea() {
   recordZoneSnapshot(hero);
   ctx.camera.setZoneBounds(nextZone);
   showAreaEntry(hero, ctx.areaContext);
-  beginAreaEntryPresentation(); // reset the timer (transition may not fire if already in AREA_ENTRY)
+  beginAreaEntryPresentation(true); // genuine zone arrival (reset the timer too)
 }
 
 /**
@@ -222,8 +222,11 @@ export function stepClearSequence(dt) {
       clearSeq.timer = 0;
       clearSeq.bannerText = null;
       clearSeq.pendingArea = null;
-      // Mark that the next AREA_ENTRY→PLAY should start the fade-in.
+      // Mark that the next AREA_ENTRY→PLAY should start the fade-in. This is
+      // a GENUINE ZONE ARRIVAL: the entry presentation must start the attempt
+      // in ADVANCE mode (keep everything — state-persistence.md §2.3).
       clearSeq.pendingFadeIn = true;
+      areaEntrySeq.advance = true;
       // Advance the hero's area to the next zone-model area (BLOCKER 1/2).
       // The zone model uses areas 1, 2, 3, 4, boss; pendingArea is now
       // in the zone-model convention (e.g. 2 for the second area).
@@ -375,7 +378,7 @@ export function stepAreaEntrySequence(dt) {
     // gets revealed as the overlay ramps down over it.
     if (!areaEntrySeq.startedAttempt) {
       areaEntrySeq.startedAttempt = true;
-      startLife(hero, ctx.areaContext);
+      startLife(hero, ctx.areaContext, { advance: areaEntrySeq.advance });
       if (getState() !== S.PLAY) {
         if (!tryTransition(S.PLAY)) setState(S.PLAY);
       }

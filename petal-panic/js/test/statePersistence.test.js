@@ -165,24 +165,38 @@ test('row [Continue]: defeat in 1-3 → 1-1 entry state, full energy, weapon gon
 // Row: Next zone — keep everything (no resets), new snapshot recorded
 // ===========================================================================
 
-test('row [Next zone]: startArea keeps the money columns and records a fresh snapshot', () => {
+test('row [Next zone]: zone arrival keeps EVERY column (doc §2.3)', () => {
   const h = makeHero(70, 7);
   armHero(h);
   const before = capture(h);
   L.startArea(h, 1, 2);
-  // Doc §2.3 "keep everything": the money/energy/life columns must survive a
-  // zone pass untouched. KNOWN GAP (follow-up): startArea still clears
-  // specials + weapon (the older game-rules.md §5 area-advance policy), which
-  // conflicts with doc §2.3 "keep everything" across zone passes. Once
-  // startArea stops clearing them, re-enable weapon/specials assertions here
-  // (they are in `before` via capture()).
-  assert.equal(h.wallet.current.coins, before.coins, 'coins kept');
-  assert.equal(h.wallet.current.kills, before.kills, 'kills kept');
-  assert.equal(h.energy, before.energy, 'energy kept');
-  assert.equal(h.lives, before.lives, 'lives kept');
-  assert.equal(h.continues.remaining, before.continues, 'continues kept');
+  // The full §2.3 row: a zone pass resets NOTHING — money, energy, weapon,
+  // specials, lives, continues all carry over.
+  assertKept(h, before, 'zone advance');
   assert.ok(h.wallet.snapshots['1:2'], 'new zone snapshot recorded at entry');
   assert.deepEqual(h.wallet.snapshots['1:2'], h.wallet.current, 'snapshot equals entry state');
+});
+
+test('row [Next zone]: ADVANCE attempt-start keeps energy/weapon (no failure reset)', () => {
+  // Flow-level guard for the regression that refilled energy on zone pass:
+  // startLife({advance:true}) must NOT roll back, refill energy, or clear the
+  // weapon — it only places the hero at the new zone's entry.
+  const h = makeHero(70, 7);
+  armHero(h);
+  L.recordZoneSnapshot(h);
+  h.wallet.current.coins += 25; // earnings inside the zone so far
+  h.checkpoint = { x: 500, y: 300 };
+  const before = capture(h);
+  L.startLife(h, emptyCtx(), { advance: true });
+  assertKept(h, before, 'advance arrival');
+  assert.equal(h.x, 500, 'hero placed at the new zone entry');
+  assert.equal(h.y, 300, 'hero placed at the new zone entry');
+  // And the FAILURE flavor still does the full reset (regression both ways).
+  h.wallet.current.coins += 40;
+  L.startLife(h, emptyCtx());
+  assert.equal(h.wallet.current.coins, 70, 'failure restart rolls to the zone snapshot (entry value)');
+  assert.equal(h.energy, h.maxEnergy, 'failure restart refills energy');
+  assert.equal(h.selectedWeapon, WEAPON_THORN, 'failure restart clears the weapon');
 });
 
 // ===========================================================================
