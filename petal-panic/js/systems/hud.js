@@ -13,6 +13,7 @@ import { VIEW_W, VIEW_H } from '../core/view.js';
 import { FONT_UI, GOLD } from '../ui/fonts.js';
 import { specialById } from '../objects/specialWeapons.js';
 import { getProjectileSpriteData, getProjectileFrames, getSpecialSpriteData } from '../objects/projectile.js';
+import { SpritePlayer } from '../core/spritePlayer.js';
 
 const PAD = 12;
 const ROW_GAP = 6;   // vertical gap between HUD rows (cursor stack)
@@ -379,33 +380,75 @@ function drawCoinBadge(ctx, hero, x, y, now) {
   ctx.restore();
 }
 
-/** Lives badge: hero life avatar in a glass tile; fx plays the FULL
- *  expression sequence (f1→f4) once at 8fps, then settles back on f1. */
+/** Lives badge: hero life avatar in a glass tile. Playback driven by
+ *  SpritePlayer (fps, mode, direction all from life_sheet.json). */
+const _livesPlayers = new Map(); // heroId → { player, frames: [file,...] }
+let _lastLivesNow = 0;
+async function loadLivesPlayer(heroId) {
+  if (_livesPlayers.has(heroId)) return;
+  try {
+    const url = new URL(`../../assets/hud/${heroId}/life_sheet.json`, import.meta.url);
+    let json;
+    if (url.protocol === 'file:') {
+      const { readFile } = await import('node:fs/promises');
+      const { fileURLToPath } = await import('node:url');
+      json = JSON.parse(await readFile(fileURLToPath(url), 'utf8'));
+    } else {
+      json = await (await fetch(url)).json();
+    }
+    const ent = json.entities?.[0] ?? {};
+    const animData = {
+      fps: ent.fps ?? 8,
+      mode: ent.playback ?? 'once',
+      direction: ent.direction ?? 'forward',
+      timing: 'fps',
+      frames: (ent.frames ?? []).map(f => f.file),
+    };
+    const player = new SpritePlayer(animData);
+    _livesPlayers.set(heroId, { player, frames: animData.frames });
+  } catch { /* fallback: no player, draw static f1 */ }
+}
+
 function drawLivesBadge(ctx, hero, x, y, now) {
   ctx.save();
   drawGlassTile(ctx, x, y, BADGE, false);
 
   const heroId = hero.heroDef?.id === 'balthazar' ? 'balthazar' : 'scarlet';
   const base = `../../assets/hud/${heroId}/life_f`;
-  // Full expression sequence from the real life sheet.
-  const seq = [];
-  for (let i = 1; i <= 4; i++) {
-    const img = loadHudImg(`life_${heroId}_${i}`, `${base}${i}.png`);
-    if (img && img.complete && img.naturalWidth > 0) seq.push(img);
+  // Kick off async load on first call.
+  if (!_livesPlayers.has(heroId)) loadLivesPlayer(heroId);
+  const entry = _livesPlayers.get(heroId);
+
+  // Fallback: static f1 if player not ready yet.
+  if (!entry) {
+    const img = loadHudImg(`life_${heroId}_1`, `${base}1.png`);
+    if (img) drawIconCentered(ctx, img, x, y, BADGE, BADGE_ICON_FRAC);
+    drawCountBadge(ctx, x, y, hero.lives ?? 0, '#ff5b5b');
+    ctx.restore();
+    return;
   }
-  const rest = seq[0] || null; // f1 = resting frame
-  const fps = 8;
-  const fx = maybeStartFx(_badgeFx, 'lives', now, (seq.length / fps) * 1000 || 1200);
-  let img = rest, pulse = 1;
-  if (fx && seq.length > 0) {
+
+  const { player, frames } = entry;
+  // Compute dt from frame-to-frame timestamp.
+  const dt = _lastLivesNow > 0 ? Math.min((now - _lastLivesNow) / 1000, 0.1) : 0;
+  _lastLivesNow = now;
+  // Random trigger via maybeStartFx (~once per 15s avg).
+  const fps = player._fps || 8;
+  const durMs = (player._order.length / fps) * 1000;
+  const fx = maybeStartFx(_badgeFx, 'lives', now, durMs);
+  if (fx) {
     const t = (now - fx.start) / fx.dur;
-    if (t >= 1) { _badgeFx.delete('lives'); }
-    else {
-      img = seq[Math.min(seq.length - 1, Math.floor(t * seq.length))];
-      pulse = 1 + 0.06 * Math.sin(Math.PI * t);
+    if (t < 1) {
+      if (dt > 0) player.tick(dt);
+    } else {
+      _badgeFx.delete('lives');
+      player.reset();
     }
   }
-  if (img) drawIconCentered(ctx, img, x, y, BADGE, BADGE_ICON_FRAC, pulse);
+  // Draw current frame.
+  const idx = Math.min(player.frameIndex, frames.length - 1);
+  const img = loadHudImg(`life_${heroId}_${idx + 1}`, `${base}${idx + 1}.png`);
+  if (img) drawIconCentered(ctx, img, x, y, BADGE, BADGE_ICON_FRAC);
   drawCountBadge(ctx, x, y, hero.lives ?? 0, '#ff5b5b');
   ctx.restore();
 }
