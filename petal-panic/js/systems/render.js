@@ -1249,7 +1249,7 @@ function drawEventLog(ctx) {
  */
 function drawHarnessHint(ctx) {
   const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | U input | Y hero | L log | E trace | ⇧E collision';
-  const line2 = 'F2 effect theater | F4 attack theater | F3 view | G drops | W wrap area | F1 exit';
+  const line2 = 'F2 effect theater | F4 attack theater | F3 view | G drops | B barrels | W wrap area | F1 exit';
   ctx.save();
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';

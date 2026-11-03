@@ -16,12 +16,14 @@ import { VineHound } from '../enemies/vine_hound.js';
 import { Violetta } from '../enemies/violetta.js';
 import { JackOLantern } from '../enemies/jackolantern.js';
 import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../enemies/boris_loon.js';
-import { makeBarrel, makeCoinBarrel, GameObj } from '../objects/object.js';
+import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeSuperCoinBarrel, GameObj } from '../objects/object.js';
 import { Powerup, POWERUP_TYPES, POWERUP_ROLL_TYPES } from '../objects/powerup.js';
-import { ZONE_GROUND_Y } from '../world/level.js';
+import { ZONE_GROUND_Y, roomFloorTop } from '../world/level.js';
+import { UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
 import { clearSeq } from '../world/zoneLifecycle.js';
 import { Effects } from '../effects.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from './debug.js';
+import { rememberInitial } from '../systems/lifecycle.js';
 // TEMP (special-weapons testing): flood special drops for slot-model QA.
 import { makePowerup } from '../objects/powerup.js';
 import { Theater } from './effect-theater.js';
@@ -144,6 +146,64 @@ function debugSpawn(type, x, y, state) {
 }
 
 /**
+ * B key — drop one barrel of EACH kind from the top of the screen.
+ * The first appears 2 units in front of the hero (in facing direction), each
+ * subsequent one 1 unit further, all at the top of the view; they appear with
+ * a 0.5s delay between each and fall with gravity (barrel.gravity = 1).
+ */
+let _debugBarrelDrops = []; // { timer, type } pending spawns
+const BARREL_DROP_ORDER = ['explosive', 'wood', 'coin', 'supercoin'];
+const BARREL_DROP_FACTORIES = {
+  explosive: makeBarrel,
+  wood: makeWoodBarrel,
+  coin: makeCoinBarrel,
+  supercoin: makeSuperCoinBarrel,
+};
+
+function debugDropBarrels() {
+  const h = ctx.hero;
+  if (!h) return;
+  const zone = ctx.getActiveZone?.(h);
+  const room = zone?.rooms.find((r) => r.id === zone.activeRoom) ?? zone?.rooms[0];
+  const floorTop = room ? roomFloorTop(room, zone.orientation) : ZONE_GROUND_Y;
+  const spawnY = Math.max(0, floorTop - VIEW_H) - 48; // top of the visible view, above the barrel box
+  const dir = h.facing ?? 1;
+  const startX = h.x + h.w / 2 + dir * 2 * UNIT_PX_X; // first barrel: 2 units ahead
+  const count = BARREL_DROP_ORDER.length;
+
+  // Cancel any previous unfinished drop sequence (re-press restarts clean).
+  for (const d of _debugBarrelDrops) d.cancelled = true;
+  _debugBarrelDrops.length = 0;
+
+  for (let i = 0; i < count; i++) {
+    const type = BARREL_DROP_ORDER[i];
+    const x = startX + dir * i * UNIT_PX_X; // 1 unit apart along facing
+    _debugBarrelDrops.push({ timer: i * 0.5, type, x, y: spawnY, cancelled: false });
+  }
+  Debug.logEvent(`DEBUG: dropping ${count} barrels (${BARREL_DROP_ORDER.join(', ')})`);
+}
+
+/** Per-frame tick for pending barrel drops. Called from update while debug is on. */
+export function tickDebugBarrelDrops(dt) {
+  if (_debugBarrelDrops.length === 0) return;
+  for (const d of _debugBarrelDrops) {
+    if (d.cancelled) continue;
+    d.timer -= dt;
+    if (d.timer <= 0) {
+      d.cancelled = true; // spawn once
+      const b = BARREL_DROP_FACTORIES[d.type](d.x, d.y);
+      b.gravity = 1; // fall with real gravity (GameObj default is 0 = static)
+      b.vy = 0;
+      ctx.barrels.push(b);
+      ctx.collisionWorld.add(b);
+      rememberInitial(b); // death-restart restores it to its spawn spot
+      Debug.logEvent(`DEBUG: dropped ${d.type} barrel @(${Math.round(d.x)},${Math.round(d.y)})`);
+    }
+  }
+  _debugBarrelDrops = _debugBarrelDrops.filter((d) => !d.cancelled);
+}
+
+/**
  * TEMP (special-weapons testing): spawn a ring of 10 specialDrop powerups
  * around the hero and register them with the live zone + collision world so
  * they bob, render, and collect normally. Each drop pre-rolls bomb/saw and its
@@ -231,6 +291,9 @@ function handleDebugKeys(e) {
       break;
     case 'KeyG': // TEMP: inject a ring of 10 special drops around the hero
       debugInjectPowerups();
+      break;
+    case 'KeyB': // Drop one barrel of each kind from the top of the screen
+      debugDropBarrels();
       break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
       // Effect Theater stepping is owned by updateControls (keyboard + gamepad).

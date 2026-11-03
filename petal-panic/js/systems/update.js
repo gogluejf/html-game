@@ -26,7 +26,7 @@ import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER } f
 import { particles, coins } from '../effects/particles.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
-import { applyGodMode, setHeroRefSetter } from '../debug/debugHarness.js';
+import { applyGodMode, setHeroRefSetter, tickDebugBarrelDrops } from '../debug/debugHarness.js';
 import { buildWorld, captureAreaMap, newGameSeed, getLastWorldSeed } from '../world/build.js';
 import { CLEAR_SEQ, clearSeq, areaEntrySeq, setMenuEntryPending, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver };
@@ -730,6 +730,7 @@ ctx.areaContext = areaContext;
 ctx.barrelSolidBoxes = barrelSolidBoxes;
 ctx.bossZone = bossZone;
 ctx.handleBarrelDestroyed = handleBarrelDestroyed;
+ctx.popSuperCoinHit = popSuperCoinHit;
 ctx.coins = coins;
 ctx.projectilePool = projectilePool;
 ctx.specialPool = specialPool;
@@ -837,6 +838,7 @@ export function update(dt) {
     applyGodMode(dt);
     dt *= Debug.timeScale; // slow-mo / freeze-frame (0 = physics paused, render continues)
     if (dt <= 0) { Effects.update(0); return; } // frozen: skip all physics this step
+    tickDebugBarrelDrops(dt); // B-key barrel rain: spawn pending drops on their timers
   }
 
   // During the intro PRESENTATION (LOCKED → INTRO_SWEEP → BAR_FILL →
@@ -1142,4 +1144,4 @@ import { processAllHitboxes } from '../combat/hitboxes.js';
 import { registerCollisionHandlers } from '../combat/collisionHandlers.js';
 import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFlow, updateBoss } from '../boss/bossFlow.js';
 import { updateRealEnemies } from '../enemies/enemyUpdate.js';
-import { refreshBarrelSolidBoxes, handleBarrelDestroyed, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
+import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
