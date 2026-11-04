@@ -28,6 +28,7 @@ import { AttackHandle } from '../engine.js';
 import { invokeChild } from '../attackIds.js';
 import { targetCenter } from '../context.js';
 import { fireDeclared } from '../../../effects/index.js';
+import { ballisticAt } from '../../targeting.js';
 // Ensure payload macros are registered (otherwise only pulled in by the theater).
 import './explosiveProjectile.js';
 import './shockwaveProjectile.js';
@@ -35,7 +36,8 @@ import './napalm.js';
 import './explosiveBomb.js';
 import './throwMine.js';
 import './molotov.js';
-import './throwEnemy.js';
+import { MINE_DEFAULTS } from './mine.js';
+import { THROW_ENEMY_DEFAULTS } from './throwEnemy.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -178,11 +180,26 @@ defineMacro('reticleShot', {
         fired = true; // exactly ONE shot, at the end of the warning window
         const pt = s.locked ?? s.pt;
         const o = targetCenter(ctx.attacker) ?? { x: 0, y: 0 };
-        const dir = Math.atan2(pt.y - o.y, pt.x - o.x);
         const child = params.child ?? 'projectile';
         const blast = params.blast ?? {};
         const pl = params.payload ?? {};
         const sub = pl[child] ?? {};
+        const isArcChild = child === 'bomb' || child === 'mine' || child === 'molotov' || child === 'enemy';
+        // Fallback chain that HONORS null (sub.ttl null = "contact only" for
+        // mine/molotov — a ?? chain would swallow it and arm the default fuse).
+        const pick = (...vals) => vals.find((v) => v != null);
+        // Direction: straight-line aim for flat children. Arc children use
+        // the shared ballistic solve (targeting.js) so the parabola LANDS
+        // ON the locked reticle point instead of flying straight at it and
+        // dropping short under gravity (the "aiming at the moving target"
+        // bug — straight-line dir never accounts for the arc budget).
+        const arcGravity = sub.arc ?? 800;
+        let dir = Math.atan2(pt.y - o.y, pt.x - o.x);
+        if (isArcChild) {
+          dir = ballisticAt(o, { x: pt.x, y: pt.y, w: 0, h: 0 }, {
+            speed: params.speed, gravity: arcGravity, style: params.aimStyle ?? 'flat',
+          }).direction;
+        }
         // 'projectile' is the primitive itself; the other straight values are
         // payload macros that compose the projectile carrier with their
         // detonation — invokeChild (attackIds.js) resolves child to the
@@ -199,7 +216,6 @@ defineMacro('reticleShot', {
         //   mine    → throwMine: arcs, settles, arms (payload.mine.ttl null = contact)
         //   molotov → molotov: arcs, shatters into a burn area at death point
         //   enemy   → throwEnemy: arcs, lands as a real enemy
-        const isArcChild = child === 'bomb' || child === 'mine' || child === 'molotov' || child === 'enemy';
         const payloadSize = child === 'shockwave'
           ? { radius: sub.radius ?? blast.shockRadius }
           : child === 'napalm'
@@ -219,25 +235,27 @@ defineMacro('reticleShot', {
             arc: sub.arc ?? 800,
             bounce: false,
             // Arc children own their fuse/flight config (payload first,
-            // legacy flat keys as fallback):
+            // legacy flat keys as fallback, then the child macro's OWN
+            // defaults). Never pass explicit undefined — `invoke` spreads
+            // caller params over the macro defaults, so an undefined key
+            // CLOBBERS the default (this is why reticle mines never
+            // detonated: ttl undefined broke the mine fuse clock).
             ...(child === 'bomb' ? { explodeOnContact: true } : {}),
             ...(child === 'mine' ? {
-              // throwMine owns ALL mine defaults (single source); payload
-              // wins, flat legacy keys fill only absent payload keys.
-              ttl: sub.ttl ?? params.mineTtl,
-              blinkDuration: sub.blinkDuration ?? params.blinkDuration,
-              mineType: sub.mineType ?? params.mineType,
-              team: params.blastTeam,
-              radius: sub.radius,
+              // ttl null is MEANINGFUL (contact-only) — honor explicit null,
+              // fall through only on undefined:
+              ttl: sub.ttl !== undefined ? sub.ttl : pick(params.mineTtl, MINE_DEFAULTS.ttl),
+              blinkDuration: pick(sub.blinkDuration, params.blinkDuration, MINE_DEFAULTS.blinkDuration),
+              mineType: pick(sub.mineType, params.mineType, MINE_DEFAULTS.mineType),
+              team: pick(params.blastTeam, MINE_DEFAULTS.team),
+              radius: pick(sub.radius, MINE_DEFAULTS.radius),
             } : {}),
             ...(child === 'molotov' ? {
               fireWidth: sub.fireWidth ?? blast.fireWidth,
               team: params.blastTeam,
             } : {}),
             ...(child === 'enemy' ? {
-              // throwEnemy owns its defaults (single source).
-              enemyType: sub.enemyType ?? params.enemyType,
-              mineType: sub.mineType ?? params.mineType,
+              enemyType: sub.enemyType ?? params.enemyType ?? THROW_ENEMY_DEFAULTS.enemyType,
             } : {}),
           } : {}),
         }, ctx);

@@ -143,4 +143,27 @@ ok('child=enemy: thrown enemy lands via the land relay', () => {
   assert.ok(landed, 'landed enemy surfaced on h.enemies');
 });
 
+// Regression: verify actual pooled carrier motion, not just the returned angle.
+for (const child of ['bomb', 'mine', 'molotov', 'enemy']) {
+  for (const [dx, dy] of [[144, 88], [-144, 88], [160, -40], [200, 0], [350, 100]]) {
+    ok(`${child}: real carrier crosses locked point (${dx}, ${dy})`, () => {
+      const t = { x: 116 + dx - 16, y: 116 + dy - 16, w: 32, h: 32, alive: true };
+      const ctx = makeContext(attacker(), { pools: pools(), target: t });
+      const h = invoke('reticleShot', { child, duration: 0.2, lockTime: 0.1, speed: 500, ttl: 5 }, ctx);
+      h.step(0.1);
+      const locked = { ...h.state.locked };
+      t.x += 300; // target moves AFTER lock: the shot must ignore this.
+      h.step(0.1);
+      const e = h.shot.entity;
+      let closest = Infinity;
+      for (let i = 0; i < 720 && e.alive; i++) {
+        closest = Math.min(closest, Math.hypot(e.x + e.w / 2 - locked.x, e.y + e.h / 2 - locked.y));
+        ctx.pools.projectilePool.updateAll(1 / 240);
+      }
+      assert.ok(closest < 5, `missed locked point by ${closest.toFixed(2)}px`);
+      h.cancel();
+    });
+  }
+}
+
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

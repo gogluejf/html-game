@@ -73,26 +73,34 @@ export function leadAt(target, origin, speed) {
  * Ballistic aim: the launch ANGLE that lands a gravity-affected throw on the
  * target's current position, given fixed launch speed and gravity.
  *
- * Physics: for horizontal distance d and height difference h (positive when
- * the target is BELOW the origin — screen coords), the two valid launch
- * angles share the same speed and both land on the point:
+ * Physics (screen coords, +y DOWN, gravity pulls down): with d = |dx| and
+ * h = dy (positive when the target is BELOW the origin), the trajectory
+ * through the point satisfies
  *
- *   θ = atan( (v² ± √(v⁴ − g·(g·d² + 2·h·v²))) / (g·d) )
+ *   h = −d·tanθ + (g·d² / 2v²)·(1 + tan²θ)
  *
+ * where θ is the angle ABOVE horizontal (positive = upward), NOT the
+ * screen-space direction. Negate it when converting to launch velocity. Rearranged as a quadratic in u = tanθ:
+ *
+ *   A·u² − d·u + (A − h) = 0,   A = g·d² / 2v²
+ *
+ * Two valid roots exist whenever disc ≥ 0:
  *   style 'flat' → the LOW arc (fast, direct, dangerous-looking)
  *   style 'high' → the HIGH arc (big lob, slow to arrive, readable)
  *
  * Both are real gameplay choices, not cosmetic: flat arrives fast and
  * telegraphs little; high gives the player time to move out from under it.
+ * Note: for a target well BELOW the origin, the "flat" root can be a slight
+ * DOWNWARD shot (screen direction > 0) — that IS the fastest path to a low point.
  *
  * Out of range: when even the 45°-ish maximum can't reach the point at this
  * speed, the discriminant goes negative — we return the max-range angle
  * (π/4 toward the target) so the bomb falls SHORT predictably instead of
- * NaN. Callers who need a guaranteed hit should raise speed or gravity
+ * NaN. Callers who need a guaranteed hit should raise speed or reduce gravity
  * accordingly (that's a weapon-tuning decision, not aiming).
  *
  * @param {{x:number,y:number}} origin launch point (world)
- * @param {{x:number,y:number,w:number,h:number}} target landing point entity
+ * @param {{x:number,y:number,w?:number,h?:number}} target landing point entity
  * @param {{speed?:number, gravity?:number, style?:'flat'|'high'}} opts
  * @returns {{direction:number, reached:boolean}} direction in radians
  *   (screen-y-down); `reached` false when the point was out of range and the
@@ -110,29 +118,33 @@ export function ballisticAt(origin, target, opts = {}) {
   const h = dy;                       // target below origin → h > 0
   const sign = dx >= 0 ? 1 : -1;      // left/right of the launcher
 
-  // Maximum reachable range at this speed/gravity (h = 0 case): v²/g.
-  // Beyond it, no angle lands on the point — fall back to 45° toward target.
-  const maxRange = (v * v) / g;
-  if (d > maxRange || d < 1e-6) {
-    // Max-range lobe is 45° UP (screen: negative y).
-    return { direction: sign > 0 ? -Math.PI / 4 : Math.PI + Math.PI / 4, reached: false };
+  if (g === 0) return { direction: Math.atan2(dy, dx), reached: v > 0 };
+  if (d < 1e-6) {
+    const reached = dy >= 0 || v * v >= -2 * g * dy;
+    return { direction: dy > 0 && style === 'flat' ? Math.PI / 2 : -Math.PI / 2, reached };
   }
+  // Reachability depends on height too: a lower target can be farther
+  // than the same-height maximum v²/g. Let the discriminant decide.
 
-  const v2 = v * v;
-  const inner = v2 * v2 - g * (g * d * d + 2 * h * v2);
-  if (inner < 0) {
+  // Quadratic in u = tanθ:  A·u² − d·u + (A − h) = 0
+  const A = (g * d * d) / (2 * v * v);
+  const disc = d * d - 4 * A * (A - h);
+  if (disc < 0) {
     // Height offset ate the range budget — same graceful short-fall.
     return { direction: sign > 0 ? -Math.PI / 4 : Math.PI + Math.PI / 4, reached: false };
   }
 
-  const sq = Math.sqrt(inner);
-  // Magnitude of the launch angle ABOVE horizontal. High arc uses the '+'
-  // branch (steeper); flat arc uses '−'. Screen coords have +y DOWN, so an
-  // upward launch means NEGATIVE vy → direction is −θ for rightward throws.
-  const theta = style === 'high'
-    ? Math.atan((v2 + sq) / (g * d))
-    : Math.atan((v2 - sq) / (g * d));
+  const sq = Math.sqrt(disc);
+  // Roots: u = (d ∓ √disc) / 2A. The MINIMUM-magnitude root is the flatter
+  // trajectory (closest to straight-line flight); the other is the steep lob.
+  const u1 = (d - sq) / (2 * A);
+  const u2 = (d + sq) / (2 * A);
+  const flatU = Math.abs(u1) <= Math.abs(u2) ? u1 : u2;
+  const highU = Math.abs(u1) > Math.abs(u2) ? u1 : u2;
+  const theta = -Math.atan(flatU);
+  const steep = -Math.atan(highU);
 
-  // Mirror for targets left of the launcher (up-left = π + θ).
-  return { direction: sign > 0 ? -theta : Math.PI + theta, reached: true };
+  // Mirror for targets left of the launcher.
+  const dir = (a) => sign > 0 ? a : Math.PI - a;
+  return { direction: style === 'high' ? dir(steep) : dir(theta), reached: true };
 }

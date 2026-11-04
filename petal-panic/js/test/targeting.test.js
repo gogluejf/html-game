@@ -93,10 +93,9 @@ ok('ballisticAt: high lob also lands on the same point, with a steeper angle', (
   const flat = ballisticAt(origin, target, { speed, gravity, style: 'flat' });
   const high = ballisticAt(origin, target, { speed, gravity, style: 'high' });
   assert.ok(flat.reached && high.reached);
-  // Both aim up-right (negative y on screen); the high arc is STEEPER —
-  // farther from horizontal, i.e. more negative.
+  // Same-height shots launch upward; high is more negative.
   assert.ok(high.direction < flat.direction,
-    `high ${high.direction.toFixed(3)} should be < flat ${flat.direction.toFixed(3)}`);
+    `high ${high.direction.toFixed(3)} should be steeper than flat ${flat.direction.toFixed(3)}`);
   // And the high arc actually flies HIGHER (reaches a lower y = higher on screen).
   const apex = (dir) => {
     let y = origin.y, vy = Math.sin(dir) * speed;
@@ -105,6 +104,20 @@ ok('ballisticAt: high lob also lands on the same point, with a steeper angle', (
     return minY;
   };
   assert.ok(apex(high.direction) < apex(flat.direction), 'high arc reaches higher');
+});
+
+ok('ballisticAt: target BELOW origin → flat shot dips slightly down', () => {
+  // Target center (260, 204): dx=160, dy=+104 (well below origin).
+  const target = { x: 244, y: 188, w: 32, h: 32 };
+  const r = ballisticAt(origin, target, { speed: 500, gravity: 800, style: 'flat' });
+  assert.ok(r.reached, 'in range');
+  // Positive screen-y launch: gravity supplies the remaining downward travel.
+  assert.ok(r.direction > 0, 'low target requires a downward flat launch');
+  // Round-trip with the game's semi-implicit Euler (vy += g·dt THEN position):
+  let x = origin.x, y = origin.y, vx = Math.cos(r.direction)*500, vy = Math.sin(r.direction)*500;
+  const DT = 1/240; let hit = false;
+  for (let f = 0; f < 9600; f++) { vy += 800*DT; x += vx*DT; y += vy*DT; if (Math.hypot(x-260,y-204)<8){hit=true;break;} if(y>1200)break; }
+  assert.ok(hit, `below-origin arc missed (dir=${r.direction.toFixed(3)})`);
 });
 
 ok('ballisticAt: target left of launcher mirrors the angle', () => {
