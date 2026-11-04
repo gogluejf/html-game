@@ -13,7 +13,7 @@ export const MINE_DEFAULTS = Object.freeze({
 });
 export const MINE_PARAMS = [
   { key: 'mineType', desc: 'explosion | shockwave' },
-  { key: 'ttl', desc: 'seconds after settling; null = contact only' },
+  { key: 'ttl', desc: 'seconds after settling; null = contact only', nullMeans: 'contact' },
   { key: 'blinkDuration', desc: 'warning seconds before detonation' },
   { key: 'team', desc: 'ally targets enemies; foe targets hero; neutral targets both' },
   { key: 'damage', desc: 'payload damage' },

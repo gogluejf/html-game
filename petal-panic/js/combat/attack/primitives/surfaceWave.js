@@ -200,7 +200,7 @@ registerPrimitive('surfaceWave', {
       { key: 'height', desc: 'dangerous area height above surface (px)' },
       { key: 'width', desc: 'leading-edge length (px)' },
       { key: 'damage', desc: 'per target (hit once per wave)' },
-      { key: 'ttl', desc: 'lifetime cap (s); null = until surface ends/blocked' },
+      { key: 'ttl', desc: 'lifetime cap (s); null = until surface ends/blocked', nullMeans: '∞' },
       { key: 'team', desc: "who the wave hurts" },
     ],
   },

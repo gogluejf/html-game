@@ -92,7 +92,7 @@ registerPrimitive('orbit', {
       { key: 'maxRadius', desc: 'pulse outer bound (px)' },
       { key: 'pulseSpeed', desc: 'pulse frequency Hz (0 = static at max)' },
       { key: 'speed', desc: 'rotation speed (rad/s)' },
-      { key: 'ttl', desc: 'lifetime (s), null = ∞' },
+      { key: 'ttl', desc: 'lifetime (s), null = ∞', nullMeans: '∞' },
       { key: 'damage', desc: 'contact damage (host applies)' },
       { key: 'ejectable', desc: 'allow eject()' },
       { key: 'ejectTtl', desc: 'ejected projectile lifetime (s)' },

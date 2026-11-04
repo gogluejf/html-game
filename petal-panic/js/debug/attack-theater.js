@@ -29,6 +29,8 @@ import { Pool, Projectile } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
 import { LAYER } from '../consts.js';
 import { ENEMY_TYPE_IDS } from '../world/build.js';
+import { ATTACK_IDS, CHILD_PARAM_SPECS, CHILD_TARGETS } from '../combat/attack/attackIds.js';
+import { formatParamValue } from './theater-engine.js';
 import { ZONE_GROUND_Y } from '../world/level.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { fillHubBackground } from '../core/layout.js';
@@ -80,6 +82,16 @@ const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
 // payload promotion (carrier → fireArea / split bombs). Everything else stays
 // on the theater's direct handle path.
 const BOMB_FAMILY = new Set(['explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit', 'throwMine', 'throwEnemy']);
+
+// Macros with the unified `child` + `payload` sub-payload contract
+// (M3 completion). Their theater panel derives the payload rows from
+// CHILD_PARAM_SPECS[current child] instead of the static TWEAKABLE list.
+const CHILD_MACROS = new Set(['spawnSplit', 'clusterBomb', 'skyMissile', 'missileRain', 'reticleShot']);
+// Legacy flat child-payload param names superseded by the `payload` object —
+// dropped from the panel (the macros still honor them as a code fallback).
+const LEGACY_PAYLOAD_KEYS = new Set([
+  'mineType', 'enemyType', 'mineTtl', 'blinkDuration', 'blastTeam',
+]);
 
 /** Angle display helper: radians → "−45° ↗" style string. */
 function angleLabel(rad) {
@@ -160,7 +172,7 @@ export const TWEAKABLE = {
   charge: [['speed', 'num', 100], ['distanceType', 'enum', ['fixed', 'infinit']], ['distance', 'num', 50], ['acceleration', 'num', 500], ['direction', 'angle', 15 * DEG], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
   bodyContact: [['damage', 'num', 5]],
   // --- Wave 2 -----------------------------------------------------------------
-  reticleShot: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['speed', 'num', 50], ['child', 'enum', ['projectile', 'explosion', 'shockwave', 'napalm']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
+  reticleShot: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['speed', 'num', 50], ['child', 'enum', ['projectile', 'bomb', 'mine', 'molotov', 'enemy', 'explosion', 'shockwave', 'napalm']], ['mineType', 'enum', ['explosion', 'shockwave']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   homingMissile: [['turnRate', 'num', 0.5], ['direction', 'angle', 15 * DEG], ['ttl', 'num', 0.25]],
   predictiveShot: [['speed', 'num', 50]],
   beam: [['direction', 'angle', 15 * DEG], ['length', 'num', 20], ['width', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
@@ -169,20 +181,20 @@ export const TWEAKABLE = {
   spike: [['x', 'num', 16], ['width', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['minRadius', 'num', 10], ['maxRadius', 'num', 10], ['pulseSpeed', 'num', 0.25], ['speed', 'num', 0.25]],
   boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
-  spawnSplit: [['child', 'enum', ['projectile', 'bomb', 'mine', 'molotov', 'enemy']], ['mineType', 'enum', ['explosion', 'shockwave']], ['enemyType', 'enum', ENEMY_TYPE_IDS], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['enemy.mineType', 'enum', ['explosion', 'shockwave']], ['enemy.ttl', 'enum', [null, 1, 2, 4, 8]]],
+  spawnSplit: [['child', 'enum', ['projectile', 'bomb', 'mine', 'molotov', 'enemy', 'explosion', 'shockwave', 'napalm']], ['mineType', 'enum', ['explosion', 'shockwave']], ['enemyType', 'enum', ENEMY_TYPE_IDS], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['enemy.mineType', 'enum', ['explosion', 'shockwave']], ['enemy.ttl', 'enum', [null, 1, 2, 4, 8]], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   bodyExplosion: [['payloadDelay', 'num', 0.05]],
   bombSpread: [['count', 'int', 1], ['direction', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   molotov: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['fireWidth', 'num', 16], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
-  clusterBomb: [['child', 'enum', ['bomb', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
+  clusterBomb: [['child', 'enum', ['projectile', 'bomb', 'mine', 'molotov', 'enemy', 'explosion', 'shockwave', 'napalm']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
   targetedBeam: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['beamDuration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   sweepingBeam: [['direction', 'angle', 15 * DEG], ['sweepAngle', 'angle', 10 * DEG], ['speed', 'num', 20], ['holdDuration', 'num', 0.1], ['sweepDuration', 'num', 0.1], ['endHoldDuration', 'num', 0.05], ['fadeOut', 'num', 0.05], ['damage', 'num', 2], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
   laneSequence: [['mode', 'enum', ['charge', 'beam']], ['laneCount', 'int', 1], ['laneSpacing', 'num', 20], ['laneOffset', 'num', 10], ['laneOrder', 'enum', ['bottom_to_top', 'top_to_bottom', 'random']], ['sideMode', 'enum', ['same_side', 'zigzag', 'sweep', 'random']], ['startSide', 'enum', ['left', 'right', 'random']], ['repeat', 'int', 1], ['announceDelay', 'num', 0.1], ['dashSpeed', 'num', 100], ['beamDuration', 'num', 0.1], ['damage', 'num', 5], ['tickRate', 'int', 1], ['interval', 'num', 0.05]],
   surfaceWave: [['speed', 'num', 50], ['height', 'num', 4], ['width', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5]],
   surfaceStrike: [['x', 'num', 20], ['width', 'num', 20], ['height', 'num', 4], ['reach', 'num', 20], ['duration', 'num', 0.1], ['damage', 'num', 5]],
   stomp: [['impact', 'enum', ['strike', 'radius', 'wave']], ['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['damage', 'num', 5], ['shakeStrength', 'num', 1], ['radius', 'num', 10], ['strike.width', 'num', 20], ['strike.height', 'num', 4], ['strike.duration', 'num', 0.1], ['wave.sides', 'enum', ['left', 'right', 'both']], ['wave.speed', 'num', 50], ['wave.height', 'num', 4], ['wave.ttl', 'num', 0.25]],
-  skyMissile: [['child', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
+  skyMissile: [['child', 'enum', ['projectile', 'bomb', 'mine', 'molotov', 'enemy', 'explosion', 'shockwave', 'napalm']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   skyDiveStomp: [['impact', 'enum', ['wave', 'strike']], ['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['stomp.sides', 'enum', ['left', 'right', 'both']], ['stomp.hopHeight', 'num', 4], ['stomp.waveSpeed', 'num', 50], ['stomp.waveHeight', 'num', 4], ['stomp.ttl', 'num', 0.25], ['stomp.damage', 'num', 5], ['stomp.shakeStrength', 'num', 1], ['vanish', 'enum', [true, false]], ['lingerOnGround', 'num', 0.1], ['vanishTime', 'num', 0.05]],
-  missileRain: [['child', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['fallDelay', 'num', 0.05], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
+  missileRain: [['child', 'enum', ['projectile', 'bomb', 'mine', 'molotov', 'enemy', 'explosion', 'shockwave', 'napalm']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['fallDelay', 'num', 0.05], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   dashCombo: [['direction', 'angle', 15 * DEG], ['startup', 'num', 0.05], ['recovery', 'num', 0.05], ['seg0.speed', 'num', 20], ['seg1.speed', 'num', 20], ['seg2.speed', 'num', 20], ['seg0.damage', 'num', 2], ['seg1.damage', 'num', 2], ['seg2.damage', 'num', 2]],
   shockwave: [['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1], ['easing', 'enum', ['linear', 'easeIn', 'easeInCubic']], ['knockbackIntensity', 'num', 1]],
   mine: [['mineType', 'enum', ['explosion', 'shockwave']], ['ttl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['team', 'enum', ['ally', 'foe', 'neutral']], ['radius', 'num', 10], ['damage', 'num', 5]],
@@ -215,7 +227,41 @@ export const AttackTheater = {
   get entries() { return [...listPrimitives(), ...listMacros()]; },
   currentId() { return this.entries[this.index] ?? null; },
 
-  _tweakList() { return TWEAKABLE[this.currentId()] ?? []; },
+  _tweakList() {
+    const id = this.currentId();
+    let list = TWEAKABLE[id] ?? [];
+    // Child macros: the `child` row selects a sub-payload; the payload's own
+    // param surface comes from CHILD_PARAM_SPECS (attackIds.js) as adaptive
+    // `payload.*` rows — one set per selected child, no cross-child key
+    // collisions, no dead rows. Legacy flat child-payload rows (mineType,
+    // mine.*, enemy.*, mineTtl, blinkDuration, blast.*) are dropped here:
+    // the `payload` object supersedes them (the macros still honor them as a
+    // fallback, but the panel configures via `payload` only).
+    if (CHILD_MACROS.has(id)) {
+      list = list.filter((r) => {
+        const k = r[0];
+        if (LEGACY_PAYLOAD_KEYS.has(k)) return false;
+        if (k.startsWith('mine.') || k.startsWith('enemy.') || k.startsWith('blast.')) return false;
+        return true;
+      });
+      const childVal = this._params?.child ?? 'projectile';
+      const spec = CHILD_PARAM_SPECS[childVal];
+      if (spec) {
+        const childIdx = list.findIndex((r) => r[0] === 'child');
+        const payloadRows = spec.map((e) => {
+          if (e.kind === 'enemy') return [`payload.${e.key}`, 'enum', ENEMY_TYPE_IDS];
+          if (e.kind === 'enum') return [`payload.${e.key}`, 'enum', e.values];
+          return [`payload.${e.key}`, 'num', e.step, e.null];
+        });
+        list = childIdx >= 0
+          ? [...list.slice(0, childIdx + 1), ...payloadRows, ...list.slice(childIdx + 1)]
+          : [...list, ...payloadRows];
+        // Keep the selection in-bounds when the adaptive list reshapes.
+        if (this.paramIndex >= list.length) this.paramIndex = childIdx + 1;
+      }
+    }
+    return list;
+  },
 
   open() {
     this.active = true;
@@ -258,7 +304,7 @@ export const AttackTheater = {
   adjustParam(deltaSign) {
     const list = this._tweakList();
     if (!list.length) return;
-    const [key, kind, stepSize] = list[this.paramIndex];
+    const [key, kind, stepSize, nullable] = list[this.paramIndex];
     // Record the tweak per-id so it survives the per-replay param rebuild.
     const id = this.currentId();
     if (!this._tweaks[id]) this._tweaks[id] = {};
@@ -284,6 +330,26 @@ export const AttackTheater = {
       const cur = getVal();
       const idx = stepSize.indexOf(cur);
       const next = stepSize[(idx + deltaSign + stepSize.length) % stepSize.length];
+      setVal(next);
+      return;
+    }
+    // Unified sub-payload rows (payload.<key>): the panel reflects the
+    // setting the attack ACTUALLY uses — an unset value seeds from the
+    // TARGET MACRO's own default (single owner, never a hardcoded 0).
+    // Null-aware rows (fuse/ttl): stepping below 0 wraps to null
+    // (contact-only); stepping up from null returns to the default.
+    if (isDotted && key.startsWith('payload.') && kind !== 'enum') {
+      const pKey = key.slice('payload.'.length);
+      const target = CHILD_TARGETS[this._params?.child] ?? this._params?.child;
+      const d = (getMacro(target) ?? getPrimitive(target))?.params?.[pKey];
+      const cur = getVal();
+      if (cur === undefined) { setVal(d !== undefined ? d : 0); return; }
+      let next;
+      if (cur === null) next = deltaSign > 0 ? round2(typeof d === 'number' ? d : stepSize) : null;
+      else {
+        next = round2(cur + deltaSign * stepSize);
+        if (next < 0) next = nullable && deltaSign < 0 ? null : 0;
+      }
       setVal(next);
       return;
     }
@@ -495,6 +561,7 @@ export const AttackTheater = {
     this._bombHost = null;
     for (const e of this._thrownEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
     this._thrownEnemies = [];
+    this._landSeen = new Set();
     if (this._pools) {
       for (const p of this._pools.projectilePool.activeItems) p.alive = false;
       this._pools.projectilePool.active.length = 0;
@@ -531,6 +598,38 @@ export const AttackTheater = {
         this._params[key] = val;
       }
     }
+  },
+
+  /**
+   * Landed-enemy registration for ANY bomb-family root: the throwEnemy
+   * handle may sit at the root (throwEnemy), in a fan (spawnSplit), or
+   * nested under a payload (clusterBomb/missileRain/skyMissile/reticleShot
+   * with child=enemy). The macro emits 'land' when its carrier settles and
+   * a real Enemy exists; register it in _thrownEnemies so _stepOnce runs
+   * its update()/hostStep and teardown removes it from the world. Without
+   * this the landed enemy is never stepped (no AI, no fuse, no detonation)
+   * — it reads as a projectile that bounced and vanished.
+   */
+  _registerThrownEnemies(root) {
+    // Persistent per-theater set: handles materialize over time (cluster fan
+    // at detonate, missiles at launch) so this is re-called every frame; the
+    // set makes late-arriving handles subscribe exactly ONCE.
+    this._landSeen ??= new Set();
+    const seen = this._landSeen;
+    const visit = (h) => {
+      if (!h || seen.has(h)) return;
+      seen.add(h);
+      if (h.id === 'throwEnemy') {
+        h.on('land', ({ enemy }) => {
+          if (!enemy || !enemy.alive) return;
+          this._thrownEnemies.push(enemy);
+          this._world.add(enemy);
+        });
+      }
+      for (const ch of h.handles ?? []) visit(ch);
+      if (h.inner && h.inner !== h) visit(h.inner);
+    };
+    visit(root);
   },
 
   // Sandbox context — same shape as gameplay's bombAttacks context
@@ -616,6 +715,7 @@ export const AttackTheater = {
       this._spawnedEnemies = [];
       for (const e of this._thrownEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
       this._thrownEnemies = [];
+      this._landSeen = new Set();
     }
     this._log = [];
     this._choreo = null;
@@ -655,6 +755,13 @@ export const AttackTheater = {
         h = BOMB_FAMILY.has(id)
           ? this._bombHost.spawn(id, { ...this._params, target: this._target }, this._attacker)
           : invoke(id, { ...this._params, target: this._target }, this._ctx());
+        // Enemy children materialize ASYNCHRONOUSLY on carrier settle (the
+        // fan/payload fans spawn the throwEnemy handles at detonate time,
+        // after this line). Polling is handled by the macro 'land' events;
+        // the recursive register below also picks up handles that already
+        // exist (immediate-settle replays). Re-called each replay is safe
+        // (seen-set guards against double-subscription).
+        if (BOMB_FAMILY.has(id)) this._registerThrownEnemies(h);
         if (id === 'spawnSplit') {
           // Dumb host follow-up: the spawnSplit MACRO owns all materialization
           // (fan → live projectiles/bombs/thrown enemies). The theater only
@@ -668,28 +775,15 @@ export const AttackTheater = {
           }
           const st = this._params.child;
           this._log.unshift(`split → ${h.children?.length ?? 0} ${st === 'bomb' ? 'bombs' : st === 'enemy' ? 'enemies' : 'shots'}`);
-          if (st === 'enemy') {
-            // Thrown children land asynchronously: register each as it does so
-            // the _stepOnce host loop runs its update/hostStep.
-            for (const ch of h.handles) {
-              if (ch.id !== 'throwEnemy') continue;
-              ch.on('land', ({ enemy }) => {
-                if (!enemy) return;
-                this._thrownEnemies.push(enemy);
-                this._world.add(enemy);
-              });
-            }
-          }
+          // Thrown children land asynchronously: register each as it does
+          // so the _stepOnce host loop runs its update/hostStep.
+          this._registerThrownEnemies(h);
         } else if (id === 'throwEnemy') {
           // Landed enemy registration: the macro emits 'land' when the carrier
           // settles and a real Enemy entity exists. Track it so _stepOnce runs
           // its update/hostStep and teardown removes it from the world.
-          h.on('land', ({ enemy }) => {
-            if (!enemy) return;
-            this._thrownEnemies.push(enemy);
-            this._world.add(enemy);
-            this._log.unshift('LANDED');
-          });
+          this._registerThrownEnemies(h);
+          h.on('land', () => this._log.unshift('LANDED'));
         } else if (id === 'predictiveShot') {
           this._log.unshift(`intercept → flight ${h.flightTime != null ? Math.round(h.flightTime * 1000) + 'ms' : '∅'}`);
         }
@@ -817,14 +911,17 @@ export const AttackTheater = {
     // at the impact point via the explosion primitive — same as gameplay.
 
     // Bomb terrain: the ENGINE owns bounce/settle/detonate (stepBombTerrain) —
-    // same rules + numbers as gameplay. The sandbox just supplies the flat
-    // ground line; the host's step() below detonates settled bombs and promotes
-    // child payloads. This IS the gameplay external-stepping pattern
-    // (systems/update.js): pool.updateAll → stepBombTerrain per entity →
-    // bombAttacks.step(dt).
+    // same rules + numbers as gameplay. The sandbox supplies the flat ground
+    // line AND the stomp platforms (tops): arc-recipe carriers (throwMine,
+    // throwEnemy, bomb children) settle on them — without the platform tops a
+    // vertical arc carrier (skyMissile child='mine') falls through the staged
+    // platform and lands on the floor below. The host's step() below detonates
+    // settled bombs and promotes child payloads. This IS the gameplay
+    // external-stepping pattern (systems/update.js): pool.updateAll →
+    // stepBombTerrain per entity → bombAttacks.step(dt).
     for (const s of projectilePool.items) {
       if (!s._arcRecipe || s._attackDone) continue;
-      stepBombTerrain(s, DT, GROUND_Y);
+      stepBombTerrain(s, DT, GROUND_Y, this._stompPlatforms ?? []);
     }
 
     // Dispatch after integration and terrain correction, before death payloads.
@@ -835,6 +932,13 @@ export const AttackTheater = {
     // The host steps root lifecycle + deferred children (fireArea zones, split
     // bombs) and drops completed roots from its own set — no theater branches.
     this._bombHost?.step(DT);
+    // Landed-enemy registration is async: payload macros (clusterBomb fan,
+    // missileRain/skyMissile payloads, reticleShot shot) spawn their
+    // throwEnemy handles AFTER the spawn-time call. Re-walk each frame — the
+    // _landSeen set makes late handles subscribe exactly once.
+    for (const h of this._handles) {
+      if (BOMB_FAMILY.has(h.id)) this._registerThrownEnemies(h);
+    }
 
     // Step each live handle's entity.
     for (let i = this._handles.length - 1; i >= 0; i--) {
@@ -1368,6 +1472,18 @@ export const AttackTheater = {
     const shown = new Set();
     const rows = [];
     for (const [key] of tweakList) { rows.push({ key, tweak: true }); shown.add(key); }
+    // Value-label semantics per key (nullMeans/zeroMeans/negativeMeans): the
+    // macro's own meta.params is the source; adaptive payload.* rows read the
+    // CHILD_PARAM_SPECS entry of the currently selected child.
+    const metaSpecs = new Map((getMacro(this.currentId())?.meta?.params ?? []).map((m) => [m.key, m]));
+    const childVal = this._params?.child;
+    const specFor = (key) => {
+      if (key.startsWith('payload.') && childVal) {
+        const e = (CHILD_PARAM_SPECS[childVal] ?? []).find((x) => x.key === key.slice('payload.'.length));
+        if (e) return e;
+      }
+      return metaSpecs.get(key);
+    };
     // Collect the top-level parents of any dotted tweak keys (e.g. 'blast'
     // from 'blast.explosionRadius') so we don't ALSO render the whole object
     // as a redundant read-only row.
@@ -1375,7 +1491,8 @@ export const AttackTheater = {
       tweakList.map(([k]) => k.split('.')[0]).filter((p) => p !== undefined),
     );
     for (const key of Object.keys(this._params ?? {})) {
-      if (!shown.has(key) && !dottedParents.has(key)) rows.push({ key, tweak: false });
+      if (!shown.has(key) && !dottedParents.has(key) &&
+          !(key === 'payload' && this._params?.[key] == null)) rows.push({ key, tweak: false });
     }
     for (const { key, tweak } of rows) {
       if (py > bottomLimit()) break;
@@ -1388,9 +1505,7 @@ export const AttackTheater = {
       const val = key.includes('.')
         ? key.split('.').reduce((o, k) => o?.[k], this._params)
         : this._params[key];
-      const valStr = typeof val === 'number'
-        ? ((key.includes('direction') || key.includes('angle')) ? angleLabel(val) : String(round2(val)))
-        : (val && typeof val === 'object' ? JSON.stringify(val) : String(val));
+      const valStr = formatParamValue(val, specFor(key), key);
       ctx.fillText(`${selected ? '▶' : '·'} ${key} = ${valStr}${tweak ? '' : '  (fixed)'}`, panelX + 12, py);
       py += 15;
     }

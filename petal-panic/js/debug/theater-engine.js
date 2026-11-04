@@ -77,6 +77,33 @@ function mappingAdjust() {
  * @param {number} opts.paramIndex - selected param index (into config params)
  * @param {Array<string>} [opts.extraSections] - additional section headers to render below params
  */
+/**
+ * Shared param-value display (both theaters). Value → label semantics:
+ *   nullMeans    — val === null → the label (e.g. '∞', 'contact')
+ *   zeroMeans    — int kind + val === 0 → the label
+ *   negativeMeans— int kind + val < 0 → the label
+ *   kind 'angle' or a direction/angle key → degrees with an 8-way arrow.
+ */
+export function formatParamValue(val, p = {}, key = '') {
+  if (val === null) return p.nullMeans ?? 'null';
+  if (typeof val === 'number') {
+    const isAngle = p.kind === 'angle' || /direction|angle/i.test(key);
+    if (isAngle) {
+      const oct = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+      const idx = (Math.round(-val * 4 / Math.PI) % 8 + 8) % 8;
+      return `${Math.round(val * 180 / Math.PI)}° ${oct[idx]}`;
+    }
+    if (p.kind === 'int') {
+      const iv = Math.round(val);
+      if (p.zeroMeans && iv === 0) return p.zeroMeans;
+      if (p.negativeMeans && val < 0) return p.negativeMeans;
+      return String(iv);
+    }
+    return String(Math.round(val * 1000) / 1000);
+  }
+  return val && typeof val === 'object' ? JSON.stringify(val) : String(val);
+}
+
 export function drawPanel(ctx, panelX, w, h, { panelW, desc, params, getValue, paramIndex }) {
   ctx.save();
   ctx.fillStyle = 'rgba(255,255,255,0.04)';
@@ -122,24 +149,11 @@ export function drawPanel(ctx, panelX, w, h, { panelW, desc, params, getValue, p
   for (const p of rows) {
     if (py > h - 60) break;
     const val = getValue(p.key);
-    if (val === undefined) continue;
+    if (val === undefined) continue; // unset fixed params stay hidden
     const tIdx = p.tweak ? cps.findIndex(cp => cp.key === p.key) : -1;
     const selected = tIdx === paramIndex % Math.max(1, cps.length) && p.tweak;
     ctx.fillStyle = selected ? '#fd6' : (p.tweak ? '#ccc' : '#666');
-    let valStr;
-    if (typeof val === 'number') {
-      if (p.kind === 'angle') {
-        valStr = `${Math.round(val * 180 / Math.PI)}°`;
-      } else if (p.kind === 'int') {
-        if (p.zeroMeans && val === 0) valStr = p.zeroMeans;
-        else if (p.negativeMeans && val < 0) valStr = p.negativeMeans;
-        else valStr = String(Math.round(val));
-      } else {
-        valStr = String(Math.round(val * 1000) / 1000);
-      }
-    } else {
-      valStr = String(val);
-    }
+    const valStr = formatParamValue(val, p, p.key);
     const marker = selected ? '▶' : '·';
     const suffix = p.tweak ? '' : '  (fixed)';
     ctx.fillText(`${marker} ${p.key} = ${valStr}${suffix}`, panelX + 12, py);

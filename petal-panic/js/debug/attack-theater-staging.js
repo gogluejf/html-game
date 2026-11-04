@@ -19,6 +19,7 @@
 // preserved verbatim.
 
 import { invoke } from '../combat/attack/engine.js';
+import { ATTACK_IDS } from '../combat/attack/attackIds.js';
 import { makeContext } from '../combat/attack/context.js';
 import { Enemy } from '../enemies/enemy.js';
 import { Effects } from '../effects.js';
@@ -386,11 +387,12 @@ export const STAGING = {
 
   spawnSplit: {
     setup(t) {
-      // Split demo: default to bomb children that arc down, bounce off the
-      // ground, and detonate. But if the user explicitly retuned child
-      // (projectile/enemy) via the param list, honor that — don't clobber it.
+      // Split demo: any valid ATTACK_IDS child is a user choice — honor it.
+      // Only an absent or invalid child falls back to the demo default (arc
+      // bombs). (M3 added molotov/explosion/shockwave/napalm children; the old
+      // 3-value whitelist silently re-bombed them on every replay.)
       const chosen = t._params.child;
-      if (chosen !== 'enemy' && chosen !== 'projectile' && chosen !== 'mine') {
+      if (!ATTACK_IDS.includes(chosen)) {
         t._params.child = 'bomb';
         t._params.ballistic = { arc: 700, bounce: true, ttl: 1.5, damage: 25, radius: 60, explodeOnContact: true };
       }

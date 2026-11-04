@@ -52,7 +52,7 @@ defineMacro('throwEnemy', {
       { key: 'speed', desc: 'launch speed px/s' }, { key: 'direction', desc: 'launch radians' },
       { key: 'arc', desc: 'gravity px/s²' }, { key: 'bounce', desc: 'bounce before settling' },
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
-      { key: 'ttl', desc: 'fuse seconds from enemy spawn; null = contact only' },
+      { key: 'ttl', desc: 'fuse seconds from enemy spawn; null = contact only', nullMeans: 'contact' },
       { key: 'settleDelay', desc: 'legacy option; does not delay the spawn-based fuse' },
       { key: 'explodeOnContact', desc: 'detonate on first valid body contact' },
       { key: 'team', desc: 'ally targets enemies; foe targets hero; neutral targets both' },

@@ -119,10 +119,10 @@ registerPrimitive('spike', {
       { key: 'warningTime', desc: 'pre-appear warning (s)' },
       { key: 'visibleTTL', desc: 'active window (s)' },
       { key: 'hiddenTTL', desc: 'dormant window (s)' },
-      { key: 'repeatCount', desc: 'cycles (-1 = ∞)' },
+      { key: 'repeatCount', desc: 'cycles (-1 = ∞)', negativeMeans: '∞' },
       { key: 'damage', desc: 'damage per tick' },
       { key: 'tickRate', desc: 'ticks per second while visible' },
-      { key: 'ttl', desc: 'hard lifetime cap (s), null = ∞' },
+      { key: 'ttl', desc: 'hard lifetime cap (s), null = ∞', nullMeans: '∞' },
     ],
   },
   impl(params, ctx) {
