@@ -12,7 +12,7 @@ import { S, getState, setState, tryTransition } from '../core/state.js';
 import { fireManual } from '../effects/index.js';
 import { Debug } from '../debug/debug.js';
 import { makeCheckpoint } from '../objects/object.js';
-import { showAreaEntry, formatAreaId, recordZoneSnapshot, setAreaEntryFadeOutCallback, setAreaEntryAdvanceFlag, setMenuEntryFlag, restartAttempt, arriveAtZone, continueRun, saveCurrentRun } from '../systems/lifecycle.js';
+import { showAreaEntry, formatAreaId, recordZoneSnapshot, setAreaEntryFadeOutCallback, setAreaEntryAdvanceFlag, setAreaEntryAdvanceConsume, setMenuEntryFlag, restartAttempt, arriveAtZone, continueRun, saveCurrentRun } from '../systems/lifecycle.js';
 import { instantiateZone } from './build.js';
 import { restoreBossRunFloor } from '../boss/bossFlow.js';
 // --- Area-clear sequence (checkpoints.md §2) -----------------------------------
@@ -339,6 +339,14 @@ export function beginAreaEntryPresentation(advance = false) {
 // the black overlay down over the live world instead of leaving it pinned.
 setAreaEntryAdvanceFlag(() => areaEntrySeq.advance);
 setMenuEntryFlag(() => _menuEntryPending);
+// One-shot consume for the manual-confirm path (lifecycle.js
+// areaEntryOnAction): after it reads the flavor, clear both flags so a stale
+// advance/menu-entry can never leak into the NEXT entry presentation. The
+// timed path (stepAreaEntrySequence) consumes the same flags inline.
+setAreaEntryAdvanceConsume(() => {
+  areaEntrySeq.advance = false;
+  _menuEntryPending = false;
+});
 
 setAreaEntryFadeOutCallback(() => {
   // The attempt is already started by areaEntryOnAction; just arm the fade-out
@@ -401,7 +409,17 @@ export function stepAreaEntrySequence(dt) {
       // installed from the menu (reload-Continue / select screens) is ALWAYS
       // the failure flavor (§2.6: free failure-style reset at the saved zone),
       // regardless of any stale advance flag.
+      // The advance flag is ONE-SHOT (state-persistence.md §2.3 "Pass zone →
+      // next zone" is a single keep-everything transition, never a standing
+      // property of the hero/zone). It is CONSUMED the moment the attempt
+      // starts — a stale true leaking into a LATER presentation (the next
+      // death-restart/continue opens the entry screen again) would downgrade
+      // that failure reset to an advance: no wallet rollback, NO energy
+      // refill → the hero respawns at the 0 energy it died with and dies
+      // instantly. Consume it here (and again on the manual-confirm path in
+      // lifecycle.js areaEntryOnAction, which shares this one-shot semantics).
       const advance = areaEntrySeq.advance && !_menuEntryPending;
+      areaEntrySeq.advance = false; // consume: never re-read by a later entry
       _menuEntryPending = false;
       if (advance) arriveAtZone(hero);
       else restartAttempt(hero, ctx.areaContext);

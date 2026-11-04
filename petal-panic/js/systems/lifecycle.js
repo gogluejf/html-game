@@ -863,6 +863,24 @@ export function setAreaEntryFadeOutCallback(fn) { _onAreaEntryFadeOut = fn; }
  */
 export function setAreaEntryAdvanceFlag(fn) { _advanceFlag = fn ?? (() => false); }
 
+/** Callback registered by zoneLifecycle.js to CLEAR the one-shot attempt
+ *  flavor flags (advance + menu-entry) after the manual-confirm path has
+ *  consumed them. The advance flag is ONE-SHOT (state-persistence.md §2.3 —
+ *  "Pass zone → next zone" is a single keep-everything transition, never a
+ *  standing property): if the manual-confirm path read it but did not clear
+ *  it, the next death-restart's entry presentation (update.js re-arms with
+ *  `beginAreaEntryPresentation(areaEntrySeq.advance)`) would re-read the
+ *  stale true and downgrade the failure reset to an advance — no energy
+ *  refill, instant re-death. Called after the flags are read. */
+let _consumeAdvanceFlags = null;
+
+/**
+ * Register the one-shot flag-consumer for the manual-confirm path.
+ * Called by zoneLifecycle.js at module evaluation time.
+ * @param {() => void} fn
+ */
+export function setAreaEntryAdvanceConsume(fn) { _consumeAdvanceFlags = fn; }
+
 /**
  * Register the menu-entry flag reader used by the manual-confirm path.
  * Called by zoneLifecycle.js at module evaluation time.
@@ -945,8 +963,14 @@ export function areaEntryOnAction(action, h, ctx) {
     // The flavor must match the timed path (state-persistence.md §2.3/§2.6):
     // a genuine zone arrival keeps everything; anything else — including a
     // zone installed from the menu (reload-Continue) — is a failure-style
-    // reset (snapshot rollback, full energy, weapon cleared).
-    if (_advanceFlag() && !_menuEntryFlag()) arriveAtZone(h);
+    // reset (snapshot rollback, full energy, weapon cleared). The flags are
+    // ONE-SHOT: read them, then consume via the registered callback so a
+    // stale advance can never leak into a LATER entry presentation (the
+    // next death-restart re-arms with beginAreaEntryPresentation and would
+    // otherwise re-read a stale true → advance flavor → no energy refill).
+    const advance = _advanceFlag() && !_menuEntryFlag();
+    if (_consumeAdvanceFlags) _consumeAdvanceFlags();
+    if (advance) arriveAtZone(h);
     else restartAttempt(h, ctx);
     if (getState() !== S.PLAY) {
       tryTransition(S.PLAY);

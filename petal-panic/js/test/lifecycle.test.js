@@ -681,6 +681,101 @@ test('retryFromGameOver: reset sequence matches death (coins rolled back, energy
   assert.ok(Math.abs(hero.x - hero.checkpoint.x) < 1, 'placed at checkpoint');
 });
 
+// --- REGRESSION: the advance flag is ONE-SHOT (state-persistence.md §2.3/§4b) ---
+//
+// A genuine zone arrival (1-1 → 1-2) arms the entry presentation's advance
+// flag (keep everything, §2.3). That flag is a ONE-SHOT transition property —
+// it must be consumed when the arrival attempt starts. If the stale `true`
+// leaks into a LATER entry presentation (the post-death restart re-opens the
+// shared area-entry screen and update.js re-arms with
+// beginAreaEntryPresentation(areaEntrySeq.advance)), the death-restart runs in
+// ADVANCE flavor: no wallet rollback and NO energy refill → the hero respawns
+// at the 0 energy it died with and dies instantly.
+//
+// User-reported repro: "die in 1-1 → restart with full energy (works); die in
+// 1-2 → restart at 0 energy and die right away". In 1-1 the previous
+// presentation (new game) had advance=false; in 1-2 the previous presentation
+// was the genuine arrival (advance=true, unconsumed).
+
+/** Drive the LIVE hero through the exact repro: clean 1-1 → genuine
+ *  clear-sequence advance to 1-2 → death at 0 energy in 1-2. Returns once the
+ *  post-death AREA_ENTRY screen is up (lives 3→2, energy 0). */
+async function advanceThenDieInArea2() {
+  const hero = U.getHero();
+  const { ctx } = await import('../world/context.js');
+
+  // Deterministic start: area 1 installed, fresh snapshot chain, drained energy.
+  // (clearSeq is a `let` export — mutate the object in place, not the binding.)
+  U.clearSeq.state = 'idle';
+  U.clearSeq.timer = 0;
+  U.clearSeq.bannerText = null;
+  U.clearSeq.pendingArea = null;
+  U.clearSeq.pendingFadeIn = false;
+  setState(S.PLAY);
+  hero.currentArea = 1;
+  const z1 = U.getActiveZone(hero);
+  if (ctx.world.world.has(z1.areaIdx)) ctx.loadActiveZone(z1, ctx.world.world.get(z1.areaIdx));
+  const sp1 = z1.spawn ?? { x: 0, y: 0 };
+  hero.x = sp1.x; hero.y = sp1.y - hero.h;
+  hero.checkpoint = { x: hero.x, y: hero.y };
+  hero.dying = false; hero.deathTimer = 0; hero.alive = true;
+  hero.lives = 3;
+  hero.intangible = true; hero.timers.set('intangible', 60); // keep the scripted run clean
+  hero.energy = 40; // drained while playing 1-1
+  hero.wallet.current.coins = 0;
+  hero.wallet.current.kills = 0;
+  hero.wallet.snapshots = {};
+  L.recordZoneSnapshot(hero); // 1:1 entry
+
+  // Genuine advance 1-1 → 1-2: exit flag → banner → fade → entry screen →
+  // auto-started arrival attempt (keep everything, §2.3).
+  U.onExitFlagReached('1-1', 2);
+  let steps = 0;
+  while (!(getState() === S.PLAY && hero.currentArea === 2) && steps < 800) {
+    U.update(1 / 60); steps++;
+  }
+  assert.equal(hero.currentArea, 2, 'advanced into 1-2');
+  assert.equal(getState(), S.PLAY, 'play resumed in 1-2');
+  assert.equal(hero.energy, 40, '§2.3 zone arrival KEEPS energy (no refill on advance)');
+
+  // Die in 1-2 at 0 energy (after farming a few coins that must roll back).
+  hero.wallet.current.coins += 5;
+  hero.energy = 0;
+  steps = 0;
+  while (getState() !== S.AREA_ENTRY && steps < 800) {
+    U.update(1 / 60); steps++;
+  }
+  assert.equal(getState(), S.AREA_ENTRY, 'death opened the shared area-entry screen');
+  assert.equal(hero.lives, 2, 'one life consumed by the death');
+  assert.equal(hero.energy, 0, 'died at 0 energy');
+  return hero;
+}
+
+test('REGRESSION: death in 1-2 after a genuine advance restarts with FULL energy (timed entry path)', async () => {
+  const hero = await advanceThenDieInArea2();
+
+  // Let the timed entry sequence (fade-in → hold → fade-out) start the attempt.
+  let steps = 0;
+  while (getState() !== S.PLAY && steps < 800) { U.update(1 / 60); steps++; }
+
+  assert.equal(getState(), S.PLAY, 'entry sequence auto-started the fresh attempt');
+  assert.equal(hero.energy, hero.maxEnergy, 'FULL energy on the death-restart (not the 0 died with)');
+  assert.equal(hero.wallet.current.coins, 0, 'coins rolled back to the 1:2 entry snapshot');
+  assert.ok(hero.intangible, 'respawn i-frames active');
+});
+
+test('REGRESSION: manual-confirm of the post-death entry after an advance is FAILURE flavor (full energy)', async () => {
+  const hero = await advanceThenDieInArea2();
+
+  // Manual fast-forward instead of the timed hold (the second consumer of the
+  // one-shot flags — same stale-advance hole).
+  assert.equal(L.areaEntryOnAction('confirm', hero), true, 'confirm starts the attempt');
+  assert.equal(getState(), S.PLAY, 'back in PLAY');
+  assert.equal(hero.energy, hero.maxEnergy, 'full energy — the stale advance flag must not downgrade the failure reset');
+  assert.equal(hero.wallet.current.coins, 0, 'coins rolled back to the 1:2 entry snapshot');
+  assert.equal(hero.lives, 2, 'lives untouched by the attempt start');
+});
+
 // --- Zone-snapshot chain (state-persistence.md §1, task 1.1) -----------------
 
 test('recordZoneSnapshot: appends one entry per genuine zone entry; death-restart never re-records', () => {
