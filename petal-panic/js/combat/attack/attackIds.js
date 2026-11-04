@@ -37,6 +37,7 @@ export const ATTACK_IDS = Object.freeze([
   'enemy',
   'expl_proj',
   'shock_proj',
+  'shock_bomb',
   'napalm',
 ]);
 
@@ -49,6 +50,7 @@ export const CHILD_TARGETS = Object.freeze({
   enemy: 'throwEnemy',
   expl_proj: 'explosiveProjectile',
   shock_proj: 'shockwaveProjectile',
+  shock_bomb: 'shockwaveBomb',
   napalm: 'napalm',
 });
 
@@ -134,6 +136,14 @@ export const CHILD_PARAM_SPECS = Object.freeze({
   shock_proj: Object.freeze([
     { key: 'damage', kind: 'num', step: 5, desc: 'ring damage' },
     { key: 'radius', kind: 'num', step: 10, desc: 'ring max radius (px)' },
+  ]),
+  shock_bomb: Object.freeze([
+    { key: 'arc', kind: 'num', step: 100, desc: 'gravity px/s2' },
+    { key: 'bounce', kind: 'enum', values: [false, true], desc: 'reflect off surfaces' },
+    { key: 'ttl', kind: 'num', step: 0.5, desc: 'fuse seconds' },
+    { key: 'damage', kind: 'num', step: 5, desc: 'ring-pass damage' },
+    { key: 'radius', kind: 'num', step: 10, desc: 'shockwave max radius (px)' },
+    { key: 'duration', kind: 'num', step: 0.1, desc: 'ring expansion time (s)' },
   ]),
   napalm: Object.freeze([
     { key: 'fireWidth', kind: 'num', step: 8, desc: 'burn area width (px)' },

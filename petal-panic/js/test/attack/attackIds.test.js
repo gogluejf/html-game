@@ -41,7 +41,7 @@ const ctx = () => makeContext(attacker(), { pools: { projectilePool: mkPool() } 
 
 ok('ATTACK_IDS is the exact 8-value flat list (no ballistic, no plain)', () => {
   assert.deepEqual(ATTACK_IDS, [
-    'projectile', 'bomb', 'mine', 'molotov', 'enemy', 'expl_proj', 'shock_proj', 'napalm',
+    'projectile', 'bomb', 'mine', 'molotov', 'enemy', 'expl_proj', 'shock_proj', 'shock_bomb', 'napalm',
   ]);
 });
 
@@ -65,6 +65,7 @@ ok('CHILD_TARGETS pins the user-confirmed mappings', () => {
     enemy: 'throwEnemy',
     expl_proj: 'explosiveProjectile',
     shock_proj: 'shockwaveProjectile',
+    shock_bomb: 'shockwaveBomb',
     napalm: 'napalm',
   });
 });

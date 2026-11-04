@@ -22,6 +22,8 @@
 // enemy in gameplay). Grounding is the caller's job (it owns the floor/world).
 
 import './throwMine.js';
+import './shockwaveBomb.js'; // ensure registered (spawnSplit child)
+import { SHOCK_BOMB_DEFAULTS } from './shockwaveBomb.js';
 import { defineMacro } from '../defineMacro.js';
 import { AttackHandle } from '../engine.js';
 import { invokeChild } from '../attackIds.js';
@@ -105,6 +107,7 @@ defineMacro('spawnSplit', {
   attacks: [
     { id: 'projectile', role: 'child' },
     { id: 'explosiveBomb', role: 'child' },
+    { id: 'shockwaveBomb', role: 'child' },
     { id: 'throwMine', role: 'child' },
     { id: 'throwEnemy', role: 'child' },
     { id: 'molotov', role: 'child' },
@@ -231,6 +234,25 @@ defineMacro('spawnSplit', {
           blastTeam: b.blastTeam ?? p.blastTeam,
           groundY: p.groundY, platforms: p.platforms,
           explodeOnContact: b.explodeOnContact,
+        }, ctx);
+        if (child?.entity) handles.push(child);
+      } else if (c.child === 'shock_bomb') {
+        // Shockwave bomb → the shockwaveBomb macro (composition:
+        // bomb flight + telegraph blink + shockwave ring payload).
+        // shockwaveBomb owns ALL defaults (single source).
+        const sb = cfg('shock_bomb', {
+          arc: p.shockBomb?.arc, bounce: p.shockBomb?.bounce, ttl: p.shockBomb?.ttl,
+          damage: p.shockBomb?.damage, radius: p.shockBomb?.radius,
+          duration: p.shockBomb?.duration,
+          blastTeam: p.shockBomb?.blastTeam, explodeOnContact: p.shockBomb?.explodeOnContact,
+        }, SHOCK_BOMB_DEFAULTS);
+        const child = invokeChild(c.child, {
+          origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
+          arc: sb.arc, bounce: sb.bounce, ttl: sb.ttl,
+          damage: sb.damage, radius: sb.radius, duration: sb.duration,
+          blastTeam: sb.blastTeam ?? p.blastTeam,
+          groundY: p.groundY, platforms: p.platforms,
+          explodeOnContact: sb.explodeOnContact,
         }, ctx);
         if (child?.entity) handles.push(child);
       } else if (c.child === 'molotov') {

@@ -34,6 +34,7 @@ import './explosiveProjectile.js';
 import './shockwaveProjectile.js';
 import './napalm.js';
 import './explosiveBomb.js';
+import './shockwaveBomb.js';
 import './throwMine.js';
 import './molotov.js';
 import { MINE_DEFAULTS } from './mine.js';
@@ -90,6 +91,7 @@ defineMacro('reticleShot', {
   attacks: [
     { id: 'projectile', role: 'payload' },
     { id: 'explosiveBomb', role: 'payload' },
+    { id: 'shockwaveBomb', role: 'payload' },
     { id: 'throwMine', role: 'payload' },
     { id: 'molotov', role: 'payload' },
     { id: 'throwEnemy', role: 'payload' },
@@ -105,7 +107,7 @@ defineMacro('reticleShot', {
     ],
     desc: 'Target-reticle effect tracks the target, locks at lockTime, then fires one projectile at the locked point when duration ends.',
     params: [
-      { key: 'child', desc: "any ATTACK_IDS child — projectile | expl_proj | shock_proj | napalm (straight) · bomb | mine | molotov | enemy (arc, host-settled)" },
+      { key: 'child', desc: "any ATTACK_IDS child — projectile | expl_proj | shock_proj | napalm (straight) · bomb | shock_bomb | mine | molotov | enemy (arc, host-settled)" },
       { key: 'target', desc: 'entity to track (default ctx.target)' },
       { key: 'duration', desc: 'warning window (s)' },
       { key: 'lockTime', desc: 's after start when the aim freezes' },
@@ -184,7 +186,7 @@ defineMacro('reticleShot', {
         const blast = params.blast ?? {};
         const pl = params.payload ?? {};
         const sub = pl[child] ?? {};
-        const isArcChild = child === 'bomb' || child === 'mine' || child === 'molotov' || child === 'enemy';
+        const isArcChild = child === 'bomb' || child === 'shock_bomb' || child === 'mine' || child === 'molotov' || child === 'enemy';
         // Fallback chain that HONORS null (sub.ttl null = "contact only" for
         // mine/molotov — a ?? chain would swallow it and arm the default fuse).
         const pick = (...vals) => vals.find((v) => v != null);
@@ -218,6 +220,7 @@ defineMacro('reticleShot', {
         // pass / update.js's global carrier pass) — same contract as
         // spawnSplit's arc children.
         //   bomb    → explosiveBomb: arcs, detonates at first contact/settle
+        //   shock_bomb → shockwaveBomb: arcs, telegraph blink, shockwave ring
         //   mine    → throwMine: arcs, settles, arms (payload.mine.ttl null = contact)
         //   molotov → molotov: arcs, shatters into a burn area at death point
         //   enemy   → throwEnemy: arcs, lands as a real enemy
@@ -259,6 +262,11 @@ defineMacro('reticleShot', {
             } : {}),
             ...(child === 'molotov' ? {
               fireWidth: sub.fireWidth ?? blast.fireWidth,
+              team: params.blastTeam,
+            } : {}),
+            ...(child === 'shock_bomb' ? {
+              radius: sub.radius ?? blast.shockRadius,
+              duration: sub.duration,
               team: params.blastTeam,
             } : {}),
             ...(child === 'enemy' ? {

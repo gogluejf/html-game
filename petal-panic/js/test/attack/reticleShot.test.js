@@ -167,7 +167,7 @@ for (const child of ['bomb', 'mine', 'molotov', 'enemy']) {
   }
 }
 
-for (const child of ['projectile', 'expl_proj', 'shock_proj', 'napalm', 'bomb', 'mine', 'molotov', 'enemy']) {
+for (const child of ['projectile', 'expl_proj', 'shock_proj', 'shock_bomb', 'napalm', 'bomb', 'mine', 'molotov', 'enemy']) {
   ok(`${child}: reticle preserves the child's default terrain policy`, () => {
     const ctx = makeContext(attacker(), { pools: pools(), target: target() });
     const direct = invokeChild(child, {}, ctx);

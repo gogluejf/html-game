@@ -34,6 +34,7 @@ import './shockwaveProjectile.js';
 import './napalm.js';
 import './throwMine.js';
 import './explosiveBomb.js';
+import './shockwaveBomb.js';
 import './molotov.js';
 
 // Declared effect types for THIS registration (single source of truth:
@@ -106,6 +107,7 @@ defineMacro('skyMissile', {
     { id: 'napalm', role: 'payload' },
     { id: 'throwMine', role: 'payload' },
     { id: 'explosiveBomb', role: 'payload' },
+    { id: 'shockwaveBomb', role: 'payload' },
     { id: 'molotov', role: 'payload' },
   ],
   params: { ...DEFAULTS },
@@ -116,7 +118,7 @@ defineMacro('skyMissile', {
       { type: 'surface-target-marker', desc: 'landing warning fixed at the impact point for the whole warning window' },
     ],
     params: [
-      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | enemy | expl_proj | shock_proj | napalm' },
+      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | enemy | expl_proj | shock_proj | shock_bomb | napalm' },
       { key: 'payload', desc: 'sub-payload config for the drop (keys per the child; see CHILD_PARAM_SPECS)' },
       { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'x', desc: 'impact x (world) — marker and drop share it' },
@@ -172,6 +174,8 @@ defineMacro('skyMissile', {
       //     host terrain step, then arms (mine-only overrides below).
       //   bomb — arc carrier (arc 0, no bounce): falls and detonates at the
       //     marked surface on first contact (stepBombTerrain 'stop' settle).
+      //   shock_bomb — arc carrier (arc 0, no bounce): falls, telegraph blink,
+      //     then shockwave ring at the marked surface.
       //   molotov — arc carrier (arc 0, no bounce): falls and shatters into a
       //     burning area at the marked surface.
       const blast = p.blast ?? {};
@@ -223,6 +227,14 @@ defineMacro('skyMissile', {
           ...(sub('bomb').ttl !== undefined ? { ttl: sub('bomb').ttl } : (p.mineTtl !== undefined ? { ttl: p.mineTtl } : {})),
           ...(sub('bomb').radius !== undefined ? { radius: sub('bomb').radius } : {}),
           ...(sub('bomb').explodeOnContact !== undefined ? { explodeOnContact: sub('bomb').explodeOnContact } : {}),
+        } : {}),
+        ...(p.child === 'shock_bomb' ? {
+          origin: { x: pt.x, y: spawnY },
+          // Absent payload keys inherit shockwaveBomb's own defaults.
+          ...(sub('shock_bomb').ttl !== undefined ? { ttl: sub('shock_bomb').ttl } : (p.mineTtl !== undefined ? { ttl: p.mineTtl } : {})),
+          ...(sub('shock_bomb').radius !== undefined ? { radius: sub('shock_bomb').radius } : {}),
+          ...(sub('shock_bomb').duration !== undefined ? { duration: sub('shock_bomb').duration } : {}),
+          ...(sub('shock_bomb').explodeOnContact !== undefined ? { explodeOnContact: sub('shock_bomb').explodeOnContact } : {}),
         } : {}),
         ...(p.child === 'molotov' ? {
           origin: { x: pt.x, y: spawnY },

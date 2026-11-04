@@ -24,7 +24,7 @@ import { fireDeclared } from '../../../effects/index.js';
 // by the theater). Without this, invoke('shockwave') throws in gameplay.
 import '../primitives/shockwave.js';
 
-const DEFAULTS = Object.freeze({
+export const SHOCK_BOMB_DEFAULTS = Object.freeze({
   speed: 500,
   direction: -0.5,
   arc: 800,
@@ -52,7 +52,7 @@ defineMacro('shockwaveBomb', {
     { id: 'projectile', role: 'carrier' },
     { id: 'shockwave', role: 'payload' },
   ],
-  params: { ...DEFAULTS },
+  params: { ...SHOCK_BOMB_DEFAULTS },
   meta: {
     name: 'Shockwave Bomb',
     desc: 'Ballistic bomb that detonates into an expanding shockwave ring at its landing point. Telegraph blink warns before the ring launches.',
