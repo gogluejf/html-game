@@ -92,12 +92,10 @@ defineMacro('clusterBomb', {
             ...(p.payload ? { payload: p.payload } : {}),
             mineType: p.mineType,
             mine: { ttl: p.mineTtl, blinkDuration: p.blinkDuration,
-              arc: p.childArc, bounce: true, damage: p.childDamage, radius: p.childRadius, team: p.blastTeam },
+              damage: p.childDamage, radius: p.childRadius, team: p.blastTeam },
             bomb: {
               speed: p.childForce,
               direction: p.childDirection,
-              arc: p.childArc,
-              bounce: false,
               ttl: p.childTtl,
               damage: p.childDamage,
               radius: p.childRadius,
