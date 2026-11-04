@@ -203,43 +203,41 @@ defineMacro('skyMissile', {
         team: p.team,
         blastTeam: p.blastTeam,
         size: p.size,
-        solidBehavior: 'stop',
+        // Collision policy belongs to the selected child, not the drop macro.
         ...(p.child === 'projectile' ? {} : payloadSize),
         // Do not pass an absent override: the named payload owns its default.
         ...(p.specialType !== undefined ? { specialType: p.specialType } : {}),
         ...(p.child === 'mine' ? {
-          origin: { x: pt.x, y: spawnY }, groundY: pt.y, arc: 0, bounce: false,
-          // throwMine owns ALL mine defaults (single source). Payload wins;
-          // flat legacy keys fill only absent payload keys. An explicit null
-          // fuse (contact-only) survives — never fall through to a default.
-          ttl: sub('mine').ttl ?? p.mineTtl,
-          blinkDuration: sub('mine').blinkDuration ?? p.blinkDuration,
-          mineType: sub('mine').mineType ?? p.mineType,
-          team: p.blastTeam,
-          radius: sub('mine').radius,
+          origin: { x: pt.x, y: spawnY }, groundY: pt.y,
+          // Absent payload keys inherit throwMine's own defaults. Explicit
+          // null remains authoritative for contact-only fuse.
+          ...(sub('mine').ttl !== undefined ? { ttl: sub('mine').ttl } : (p.mineTtl !== undefined ? { ttl: p.mineTtl } : {})),
+          ...(sub('mine').blinkDuration !== undefined ? { blinkDuration: sub('mine').blinkDuration } : (p.blinkDuration !== undefined ? { blinkDuration: p.blinkDuration } : {})),
+          ...(sub('mine').mineType !== undefined ? { mineType: sub('mine').mineType } : (p.mineType !== undefined ? { mineType: p.mineType } : {})),
+          ...(sub('mine').team !== undefined ? { team: sub('mine').team } : (p.blastTeam !== undefined ? { team: p.blastTeam } : {})),
+          ...(sub('mine').radius !== undefined ? { radius: sub('mine').radius } : {}),
         } : {}),
         ...(p.child === 'bomb' ? {
-          origin: { x: pt.x, y: spawnY }, arc: 0, bounce: false,
-          // explosiveBomb owns its fuse/radius defaults (single source).
-          ttl: sub('bomb').ttl ?? p.mineTtl,
-          radius: sub('bomb').radius,
-          explodeOnContact: true,
+          origin: { x: pt.x, y: spawnY },
+          // Absent payload keys inherit explosiveBomb's own defaults.
+          ...(sub('bomb').ttl !== undefined ? { ttl: sub('bomb').ttl } : (p.mineTtl !== undefined ? { ttl: p.mineTtl } : {})),
+          ...(sub('bomb').radius !== undefined ? { radius: sub('bomb').radius } : {}),
+          ...(sub('bomb').explodeOnContact !== undefined ? { explodeOnContact: sub('bomb').explodeOnContact } : {}),
         } : {}),
         ...(p.child === 'molotov' ? {
-          origin: { x: pt.x, y: spawnY }, arc: 0, bounce: false,
-          // molotov owns its defaults (single source).
-          ttl: sub('molotov').ttl ?? p.mineTtl,
-          fireWidth: sub('molotov').fireWidth,
-          team: p.blastTeam,
+          origin: { x: pt.x, y: spawnY },
+          // Absent payload keys inherit molotov's own defaults.
+          ...(sub('molotov').ttl !== undefined ? { ttl: sub('molotov').ttl } : (p.mineTtl !== undefined ? { ttl: p.mineTtl } : {})),
+          ...(sub('molotov').fireWidth !== undefined ? { fireWidth: sub('molotov').fireWidth } : {}),
+          ...(sub('molotov').team !== undefined ? { team: sub('molotov').team } : (p.blastTeam !== undefined ? { team: p.blastTeam } : {})),
         } : {}),
         ...(p.child === 'enemy' ? {
-          origin: { x: pt.x, y: spawnY }, arc: 0, bounce: false,
-          // throwEnemy owns its defaults (single source); the drop keeps the
-          // contact-only fuse (null) unless the payload sets one.
-          ttl: sub('enemy').ttl ?? null,
+          origin: { x: pt.x, y: spawnY },
+          // Absent payload keys inherit throwEnemy's own defaults.
+          ...(sub('enemy').ttl !== undefined ? { ttl: sub('enemy').ttl } : {}),
           ...(sub('enemy').enemyType !== undefined ? { enemyType: sub('enemy').enemyType } : {}),
-          mineType: sub('enemy').mineType ?? p.mineType,
-          team: p.blastTeam,
+          ...(sub('enemy').mineType !== undefined ? { mineType: sub('enemy').mineType } : (p.mineType !== undefined ? { mineType: p.mineType } : {})),
+          ...(sub('enemy').team !== undefined ? { team: sub('enemy').team } : (p.blastTeam !== undefined ? { team: p.blastTeam } : {})),
           target: ctx.world?.hero ?? null,
         } : {}),
       }, ctx);

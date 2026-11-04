@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import '../../effects/registry.js';
 import '../../combat/attack/macros/index.js';
 import { invoke } from '../../combat/attack/engine.js';
+import { invokeChild } from '../../combat/attack/attackIds.js';
 import { activeInstances, resetEffects } from '../../effects/index.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
@@ -119,6 +120,20 @@ test('mine payload configuration propagates through split, cluster, sky missile 
   run(rain, 2); check(rain.state.missiles[0].state.missile);
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 test('gameplay host owns mine stepping, drawing and cancellation', () => {
   const c = context(); const host = new BombAttackHost(() => c);
   const h = host.spawn('throwMine', { ttl: null }, c.attacker);
@@ -224,6 +239,20 @@ for (const id of ['throwMine', 'skyMissile', 'missileRain', 'spawnSplit', 'clust
   });
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 test('pool exhaustion finishes throwMine without leaving a root', () => {
   const c = context(); c.pools.projectilePool = new Pool(Projectile, 0);
   const host = new BombAttackHost(() => c);
@@ -293,3 +322,42 @@ test('child payload rows survive left/right navigation for every child macro', a
     t.close();
   }
 });
+
+test('child is the first tweakable row and payload follows immediately', async () => {
+  const { getMacro } = await import('../../combat/attack/registry.js');
+  for (const id of ['reticleShot', 'clusterBomb', 'spawnSplit', 'skyMissile', 'missileRain']) {
+    const keys = getMacro(id).meta.params.map(e => e.key);
+    assert.equal(keys[0], 'child', `${id}: child must be first`);
+    const t = AttackTheater;
+    t.open();
+    try {
+      t.index = t.entries.indexOf(id);
+      t._tweaks[id] = { child: 'mine' };
+      t._loadParams();
+      const rows = t._tweakList().map(r => r[0]);
+      assert.equal(rows[0], 'child');
+      assert.ok(rows.slice(1, 5).every(k => k.startsWith('payload.mine.')), `${id}: payload rows follow child`);
+      delete t._tweaks[id];
+    } finally { t.close(); }
+  }
+});
+
+for (const id of ['skyMissile', 'missileRain']) {
+  test(`${id}: preserves every child's native terrain behavior`, () => {
+    const c = context();
+    for (const child of ['projectile', 'explosion', 'shockwave', 'napalm', 'bomb', 'mine', 'molotov', 'enemy']) {
+      const h = invoke(id, { child, timeToTarget: 0, count: 1, pattern: 'simultaneous', interval: 0, launchInterval: 0, fallDelay: 0 }, c);
+      for (let i = 0; i < 120 && !(id === 'skyMissile' ? h.state.missile : h.state.missiles?.length); i++) h.step(dt, []);
+      const skyH = id === 'skyMissile' ? h : h.state.missiles[0];
+      const shot = skyH.state.missile;
+      assert.ok(shot, `${child}: carrier spawned`);
+      const direct = invokeChild(child, {}, c);
+      if (direct.entity) {
+        const live = shot.inner?.entity ?? shot.entity;
+        assert.equal(live.solidBehavior, direct.entity.solidBehavior, `${child}: collision inherited`);
+        assert.equal(live.gravityValue, direct.entity.gravityValue, `${child}: gravity inherited`);
+      }
+      h.cancel();
+    }
+  });
+}

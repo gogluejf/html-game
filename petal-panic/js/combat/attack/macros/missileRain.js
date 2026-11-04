@@ -149,7 +149,6 @@ defineMacro('missileRain', {
       { key: 'damage', desc: 'per-missile contact + blast damage' },
       { key: 'mineTtl', desc: 'resting mine seconds; null = contact only' },
       { key: 'blinkDuration', desc: 'mine warning seconds' },
-      { key: 'child', desc: "any ATTACK_IDS child — payload per missile (pass-through to skyMissile)" },
       { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
       { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
       { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },

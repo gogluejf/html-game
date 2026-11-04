@@ -175,7 +175,7 @@ export const TWEAKABLE = {
   charge: [['speed', 'num', 100], ['distanceType', 'enum', ['fixed', 'infinit']], ['distance', 'num', 50], ['acceleration', 'num', 500], ['direction', 'angle', 15 * DEG], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
   bodyContact: [['damage', 'num', 5]],
   // --- Wave 2 -----------------------------------------------------------------
-  reticleShot: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['speed', 'num', 50], ['child', 'enum', CHILD_ENUM], ['mineType', 'enum', ['explosion', 'shockwave']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
+  reticleShot: [['child', 'enum', CHILD_ENUM], ['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['speed', 'num', 50], ['mineType', 'enum', ['explosion', 'shockwave']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   homingMissile: [['turnRate', 'num', 0.5], ['direction', 'angle', 15 * DEG], ['ttl', 'num', 0.25]],
   predictiveShot: [['speed', 'num', 50]],
   beam: [['direction', 'angle', 15 * DEG], ['length', 'num', 20], ['width', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
