@@ -114,6 +114,9 @@ export const CHILD_PARAM_SPECS = Object.freeze({
     { key: 'radius', kind: 'num', step: 10, desc: 'payload radius (px)' },
   ]),
   molotov: Object.freeze([
+    { key: 'arc', kind: 'num', step: 100, desc: 'gravity px/s2 (lobe fall)' },
+    { key: 'bounce', kind: 'enum', values: [false, true], desc: 'reflect off surfaces before shattering' },
+    { key: 'ttl', kind: 'num', step: 0.5, null: true, desc: 'fuse seconds; null = shatter on first impact' },
     { key: 'damage', kind: 'num', step: 2, desc: 'carrier contact damage' },
     { key: 'fireWidth', kind: 'num', step: 8, desc: 'burn area width (px)' },
     { key: 'fireDuration', kind: 'num', step: 0.5, desc: 'how long the area burns (s)' },

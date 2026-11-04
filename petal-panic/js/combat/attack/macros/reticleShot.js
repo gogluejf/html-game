@@ -222,19 +222,22 @@ defineMacro('reticleShot', {
             // legacy flat keys as fallback):
             ...(child === 'bomb' ? { explodeOnContact: true } : {}),
             ...(child === 'mine' ? {
-              ttl: sub.ttl ?? params.mineTtl ?? 2,
-              blinkDuration: sub.blinkDuration ?? params.blinkDuration ?? 2,
-              mineType: sub.mineType ?? params.mineType ?? 'explosion',
+              // throwMine owns ALL mine defaults (single source); payload
+              // wins, flat legacy keys fill only absent payload keys.
+              ttl: sub.ttl ?? params.mineTtl,
+              blinkDuration: sub.blinkDuration ?? params.blinkDuration,
+              mineType: sub.mineType ?? params.mineType,
               team: params.blastTeam,
-              radius: sub.radius ?? blast.explosionRadius,
+              radius: sub.radius,
             } : {}),
             ...(child === 'molotov' ? {
               fireWidth: sub.fireWidth ?? blast.fireWidth,
               team: params.blastTeam,
             } : {}),
             ...(child === 'enemy' ? {
-              enemyType: sub.enemyType ?? params.enemyType ?? 'explosive_monkey',
-              mineType: sub.mineType ?? params.mineType ?? 'explosion',
+              // throwEnemy owns its defaults (single source).
+              enemyType: sub.enemyType ?? params.enemyType,
+              mineType: sub.mineType ?? params.mineType,
             } : {}),
           } : {}),
         }, ctx);

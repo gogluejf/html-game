@@ -77,6 +77,11 @@ defineMacro('clusterBomb', {
     const h = createCarrierHandle('clusterBomb', p, ctx, {
       onDetonate({ x, y }, macroH) {
         try {
+          // Unified contract: the nested `payload` object is the SINGLE
+          // config surface for the children (theater materializes it from
+          // each target macro's own defaults). The legacy flat keys below are
+          // FILL-ONLY in spawnSplit — they apply only to keys the payload
+          // does not set, so an explicit payload value always wins.
           const split = invoke('spawnSplit', {
             x, y, groundY: p.groundY, platforms: p.platforms,
             count: p.count,
@@ -84,8 +89,6 @@ defineMacro('clusterBomb', {
             angle: p.childAngle,
             force: p.childForce,
             child: p.child,
-            // Sub-payload config: the theater (or a composer) configures
-            // payload.<childKey>.* — forwarded verbatim to the fan.
             ...(p.payload ? { payload: p.payload } : {}),
             mineType: p.mineType,
             mine: { ttl: p.mineTtl, blinkDuration: p.blinkDuration,

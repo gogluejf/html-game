@@ -185,6 +185,10 @@ defineMacro('skyMissile', {
       //   explosiveProjectile reads `radius`
       //   shockwaveProjectile reads `radius`
       //   napalm reads `fireWidth`
+      // Unified contract: the nested payload value is authoritative; the
+      // legacy flat blast.* keys FILL ONLY what the payload leaves unset.
+      // The carrier macros own their size defaults (single source) — no
+      // macro-local private values here.
       const payloadSize = {
         explosionRadius: () => ({ radius: sub('explosion').radius ?? blast.explosionRadius }),
         shockwave: () => ({ radius: sub('shockwave').radius ?? blast.shockRadius }),
@@ -205,31 +209,35 @@ defineMacro('skyMissile', {
         ...(p.specialType !== undefined ? { specialType: p.specialType } : {}),
         ...(p.child === 'mine' ? {
           origin: { x: pt.x, y: spawnY }, groundY: pt.y, arc: 0, bounce: false,
-          // ?? (not ||): an explicit null fuse (contact-only) must survive.
-          // No `?? 2` fallback — an ABSENT fuse falls through to the mine
-          // macro's own default (2s); an explicit null stays null.
+          // throwMine owns ALL mine defaults (single source). Payload wins;
+          // flat legacy keys fill only absent payload keys. An explicit null
+          // fuse (contact-only) survives — never fall through to a default.
           ttl: sub('mine').ttl ?? p.mineTtl,
           blinkDuration: sub('mine').blinkDuration ?? p.blinkDuration,
           mineType: sub('mine').mineType ?? p.mineType,
           team: p.blastTeam,
-          radius: sub('mine').radius ?? (p.mineType === 'shockwave' ? blast.shockRadius : blast.explosionRadius),
+          radius: sub('mine').radius,
         } : {}),
         ...(p.child === 'bomb' ? {
           origin: { x: pt.x, y: spawnY }, arc: 0, bounce: false,
-          ttl: sub('bomb').ttl ?? p.mineTtl ?? 2,
-          radius: sub('bomb').radius ?? blast.explosionRadius,
+          // explosiveBomb owns its fuse/radius defaults (single source).
+          ttl: sub('bomb').ttl ?? p.mineTtl,
+          radius: sub('bomb').radius,
           explodeOnContact: true,
         } : {}),
         ...(p.child === 'molotov' ? {
           origin: { x: pt.x, y: spawnY }, arc: 0, bounce: false,
-          ttl: sub('molotov').ttl ?? p.mineTtl ?? 2,
-          fireWidth: sub('molotov').fireWidth ?? blast.fireWidth,
+          // molotov owns its defaults (single source).
+          ttl: sub('molotov').ttl ?? p.mineTtl,
+          fireWidth: sub('molotov').fireWidth,
           team: p.blastTeam,
         } : {}),
         ...(p.child === 'enemy' ? {
           origin: { x: pt.x, y: spawnY }, arc: 0, bounce: false,
-          ttl: null,
-          enemyType: sub('enemy').enemyType ?? 'explosive_monkey',
+          // throwEnemy owns its defaults (single source); the drop keeps the
+          // contact-only fuse (null) unless the payload sets one.
+          ttl: sub('enemy').ttl ?? null,
+          enemyType: sub('enemy').enemyType,
           mineType: sub('enemy').mineType ?? p.mineType,
           team: p.blastTeam,
           target: ctx.world?.hero ?? null,

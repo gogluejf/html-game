@@ -61,19 +61,12 @@ const DEFAULTS = Object.freeze({
   bomb: null,
   projectile: { ttl: 2, damage: 8 },
   blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 }, // legacy impact-child sizes
-  // Sub-payload contract (M3 completion): one nested object, keys per the
-  // child's CHILD_PARAM_SPECS (attackIds.js). Reads over the legacy flat
-  // keys/sub-objects, which keep working for existing callers.
-  payload: {
-    damage: null,                 // projectile thorn contact damage
-    bomb: { ttl: 1.5, arc: 700, bounce: true, damage: 25, radius: 60 },
-    mine: { ttl: 2, blinkDuration: 2, mineType: 'explosion', radius: 70 },
-    molotov: { damage: 12, fireWidth: 96, fireDuration: 3, fireTickRate: 5, fireDamage: 8 },
-    enemy: { enemyType: 'explosive_monkey', mineType: 'explosion' },
-    explosion: { radius: 60 },
-    shockwave: { radius: 150 },
-    napalm: { fireWidth: 96 },
-  },
+  // Sub-payload contract (unified): one nested object, keys per the child's
+  // CHILD_PARAM_SPECS (attackIds.js). NULL by default — a concrete default
+  // would clobber the caller's flat legacy keys (mine.*, blast.*, ...) at
+  // every read now that payload wins. With null, flat keys fall through and
+  // unconfigured children read their OWN target-macro defaults (single owner).
+  payload: null,
   blastTeam: 'neutral',
 });
 
@@ -154,22 +147,21 @@ defineMacro('spawnSplit', {
     const handles = [];
     const enemies = [];
 
-    // Sub-payload resolution: the nested `payload` object (keys per
-    // CHILD_PARAM_SPECS in attackIds.js) is the unified param surface — one
-    // sub-object per child, read ONLY by its child (no cross-child key
-    // collisions). Legacy flat keys/sub-objects (p.mine, p.enemy, p.bomb,
-    // p.blast.*, p.damage) still work and take precedence over `payload`,
-    // so existing callers keep byte-identical behavior.
+    // Sub-payload resolution (unified contract): the nested `payload` object
+    // (keys per CHILD_PARAM_SPECS in attackIds.js) is the SINGLE config
+    // surface — one sub-object per child, read ONLY by its child. The panel
+    // materializes it from the TARGET macro's own defaults, so display always
+    // equals behavior. Legacy flat keys/sub-objects (p.mine, p.enemy, p.bomb,
+    // p.blast.*, p.damage) are FILL-ONLY: they apply to keys the payload does
+    // not set (explicit nulls in the payload survive), never the reverse.
     const pl = p.payload ?? {};
-    // Only DEFINED legacy values may override: an absent legacy key is
-    // `undefined`, which must NOT clobber a payload-set value.
     const defined = (o) => Object.fromEntries(
       Object.entries(o ?? {}).filter(([, v]) => v !== undefined));
     const cfg = (child, legacy, defaults, { damageKey } = {}) => {
       const sub = pl[child] ?? {};
-      const merged = { ...defaults, ...sub, ...defined(legacy) };
-      if (damageKey) merged[damageKey] = defined(legacy)[damageKey]
-        ?? (damageKey in sub ? sub[damageKey] : undefined)
+      const merged = { ...defaults, ...defined(legacy), ...sub };
+      if (damageKey) merged[damageKey] = sub[damageKey]
+        ?? defined(legacy)[damageKey]
         ?? p.damage ?? defaults[damageKey];
       return merged;
     };
@@ -211,9 +203,11 @@ defineMacro('spawnSplit', {
           child.on('land', ({ enemy }) => { if (enemy) enemies.push(enemy); });
         }
       } else if (c.child === 'mine') {
+        // throwMine owns ALL mine defaults (single source). Legacy flat keys
+        // fill only what the payload leaves unset.
         const m = cfg('mine', {
           ttl: p.mine?.ttl, blinkDuration: p.mine?.blinkDuration, mineType: p.mineType,
-        }, { ttl: 2, blinkDuration: 2, mineType: 'explosion', radius: 70 });
+        }, {});
         const child = invokeChild(c.child, {
           ...m,
           origin: { x: c.x, y: c.y }, direction: Math.atan2(c.vy, c.vx), speed,
@@ -224,11 +218,12 @@ defineMacro('spawnSplit', {
         // Classic exploding bomb → the explosiveBomb macro (composition:
         // bomb flight + explosion payload). Primitives don't compose, so the
         // "it explodes" behavior is a macro concern.
+        // explosiveBomb owns ALL bomb defaults (single source).
         const b = cfg('bomb', {
           arc: p.bomb?.arc, bounce: p.bomb?.bounce, ttl: p.bomb?.ttl,
           damage: p.bomb?.damage, radius: p.bomb?.radius,
           blastTeam: p.bomb?.blastTeam, explodeOnContact: p.bomb?.explodeOnContact,
-        }, { arc: 700, bounce: true, ttl: 1.5, damage: 25, radius: 60, explodeOnContact: true });
+        }, {});
         const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           arc: b.arc, bounce: b.bounce, ttl: b.ttl,
@@ -241,13 +236,13 @@ defineMacro('spawnSplit', {
       } else if (c.child === 'molotov') {
         // Fire lobe → the molotov macro (ballistic carrier + fireArea payload
         // on impact). Same composition pattern as the bomb branch above.
+        // molotov owns ALL fire-lobe defaults (single source).
         const m = cfg('molotov', {
           arc: p.molotov?.arc, bounce: p.molotov?.bounce, ttl: p.molotov?.ttl,
           damage: p.molotov?.damage, fireWidth: p.molotov?.fireWidth,
           fireDuration: p.molotov?.fireDuration, fireTickRate: p.molotov?.fireTickRate,
           fireDamage: p.molotov?.fireDamage, team: p.molotov?.team,
-        }, { arc: 800, bounce: false, ttl: 2, damage: 12, fireWidth: 96,
-            fireDuration: 3, fireTickRate: 5, fireDamage: 8, team: 'neutral' });
+        }, {});
         const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           arc: m.arc, bounce: m.bounce, ttl: m.ttl,
@@ -263,13 +258,12 @@ defineMacro('spawnSplit', {
         // its death point (contact, surface, or ttl) — same composition as
         // skyMissile's payloads, no settle/rest phase. The macro's .step()
         // drives flight + payload; h.step above steps any handle that has one.
+        // The carrier macros own their size defaults (single source); legacy
+        // blast.* fills only what the payload leaves unset.
         const bl = cfg(c.child, {
           radius: c.child === 'shockwave' ? p.blast?.shockRadius : c.child === 'explosion' ? p.blast?.explosionRadius : undefined,
           fireWidth: c.child === 'napalm' ? p.blast?.fireWidth : undefined,
-        }, {
-          radius: c.child === 'shockwave' ? 150 : 60,
-          fireWidth: 96,
-        });
+        }, {});
         const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y }, direction: c.angle, speed,
           solidBehavior: 'stop',
@@ -283,8 +277,10 @@ defineMacro('spawnSplit', {
         }, ctx);
         if (child?.entity) handles.push(child);
       } else {
+        // The projectile primitive owns its default contact damage (single
+        // source); legacy p.projectile.damage / p.damage fill below it.
         const pr = cfg('projectile', { damage: p.projectile?.damage },
-          { damage: 8 }, { damageKey: 'damage' });
+          {}, { damageKey: 'damage' });
         const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           damage: pr.damage,
