@@ -53,13 +53,28 @@ const DEFAULTS = Object.freeze({
   parentVx: 0,
   parentVy: 0,
   delay: 0,
-  child: 'projectile',     // 'projectile' | 'bomb' | 'mine' | 'molotov' | 'enemy'
+  child: 'projectile',     // any ATTACK_IDS child — one fan, one child type
   mineType: 'explosion',
   mine: { ttl: 2, blinkDuration: 2 },
   enemyType: 'explosive_monkey',
   enemy: { mineType: 'explosion', ttl: null }, // nested throwEnemy config when child='enemy'
   bomb: null,
   projectile: { ttl: 2, damage: 8 },
+  blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 }, // legacy impact-child sizes
+  // Sub-payload contract (M3 completion): one nested object, keys per the
+  // child's CHILD_PARAM_SPECS (attackIds.js). Reads over the legacy flat
+  // keys/sub-objects, which keep working for existing callers.
+  payload: {
+    damage: null,                 // projectile thorn contact damage
+    bomb: { ttl: 1.5, arc: 700, bounce: true, damage: 25, radius: 60 },
+    mine: { ttl: 2, blinkDuration: 2, mineType: 'explosion', radius: 70 },
+    molotov: { damage: 12, fireWidth: 96, fireDuration: 3, fireTickRate: 5, fireDamage: 8 },
+    enemy: { enemyType: 'explosive_monkey', mineType: 'explosion' },
+    explosion: { radius: 60 },
+    shockwave: { radius: 150 },
+    napalm: { fireWidth: 96 },
+  },
+  blastTeam: 'neutral',
 });
 
 /**
@@ -99,6 +114,10 @@ defineMacro('spawnSplit', {
     { id: 'explosiveBomb', role: 'child' },
     { id: 'throwMine', role: 'child' },
     { id: 'throwEnemy', role: 'child' },
+    { id: 'molotov', role: 'child' },
+    { id: 'explosiveProjectile', role: 'child' },
+    { id: 'shockwaveProjectile', role: 'child' },
+    { id: 'napalm', role: 'child' },
   ],
   params: { ...DEFAULTS },
   meta: {
@@ -111,17 +130,18 @@ defineMacro('spawnSplit', {
     effects: [],
     desc: 'Fan out N children and materialize each into a live projectile/bomb or enemy. Declarative — one invoke, live results.',
     params: [
-      { key: 'child', desc: 'projectile | bomb | mine | molotov | enemy' },
-      { key: 'mineType', desc: 'explosion | shockwave' },
-      { key: 'enemyType', desc: 'enemy id when child=enemy' },
+      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | enemy | explosion | shockwave | napalm' },
+      { key: 'payload', desc: 'sub-payload config object — keys per the child (see CHILD_PARAM_SPECS); legacy flat keys below still work' },
       { key: 'count', desc: 'children created' },
       { key: 'centerDirection', desc: 'central direction (radians)' },
       { key: 'angle', desc: 'distribution width (radians)' },
       { key: 'force', desc: 'launch speed (px/s)' },
-      { key: 'mine', desc: 'throwMine params; ttl null = contact only' },
-      { key: 'enemy', desc: 'nested throwEnemy config when child=enemy (ttl, mineType, team, damage, radius, thrown…)' },
-      { key: 'ballistic', desc: 'ballistic params when child=bomb (children are exploding bombs)' },
-      { key: 'molotov', desc: 'molotov params when child=molotov (fire lobes; arc/fireWidth/team…)' },
+      { key: 'mine', desc: 'legacy: throwMine params (overrides payload.mine); ttl null = contact only' },
+      { key: 'enemy', desc: 'legacy: nested throwEnemy config (overrides payload.enemy); thrown:false = immediate spawn' },
+      { key: 'bomb', desc: 'legacy: exploding-bomb params (overrides payload.bomb)' },
+      { key: 'blast.explosionRadius', desc: 'legacy: blast radius when child=explosion (px)' },
+      { key: 'blast.shockRadius', desc: 'legacy: ring radius when child=shockwave (px)' },
+      { key: 'blast.fireWidth', desc: 'legacy: burn width when child=napalm (px)' },
     ],
   },
   impl(params, ctx) {
@@ -134,19 +154,40 @@ defineMacro('spawnSplit', {
     const handles = [];
     const enemies = [];
 
+    // Sub-payload resolution: the nested `payload` object (keys per
+    // CHILD_PARAM_SPECS in attackIds.js) is the unified param surface — one
+    // sub-object per child, read ONLY by its child (no cross-child key
+    // collisions). Legacy flat keys/sub-objects (p.mine, p.enemy, p.bomb,
+    // p.blast.*, p.damage) still work and take precedence over `payload`,
+    // so existing callers keep byte-identical behavior.
+    const pl = p.payload ?? {};
+    // Only DEFINED legacy values may override: an absent legacy key is
+    // `undefined`, which must NOT clobber a payload-set value.
+    const defined = (o) => Object.fromEntries(
+      Object.entries(o ?? {}).filter(([, v]) => v !== undefined));
+    const cfg = (child, legacy, defaults, { damageKey } = {}) => {
+      const sub = pl[child] ?? {};
+      const merged = { ...defaults, ...sub, ...defined(legacy) };
+      if (damageKey) merged[damageKey] = defined(legacy)[damageKey]
+        ?? (damageKey in sub ? sub[damageKey] : undefined)
+        ?? p.damage ?? defaults[damageKey];
+      return merged;
+    };
+
     // The child → invoke-target mapping is centralized in attackIds.js:
     // each branch below only shapes the params its target reads; invokeChild
     // resolves c.child to the concrete id (and fails loud on an unknown one).
     for (const c of children) {
       const speed = Math.hypot(c.vx, c.vy);
       if (c.child === 'enemy') {
-        const ec = p.enemy ?? {};
+        const ec = cfg('enemy', { thrown: p.enemy?.thrown },
+          { enemyType: p.enemyType ?? 'explosive_monkey', mineType: p.mineType ?? 'explosion', ttl: null });
         // Default: the child is THROWN (ballistic arc → real enemy on
         // landing) via throwEnemy — same bomb primitive + terrain path as
         // throwMine, no duplicated physics. The fan velocity becomes the
         // launch vector; inherited velocity already folded into c.vx/c.vy.
-        // `enemy.thrown: false` keeps the legacy immediate makeEnemy spawn
-        // with fan velocity + hitstun for non-throwable types.
+        // `enemy.thrown === false` (legacy key, still honored) keeps the
+        // immediate makeEnemy spawn with fan velocity + hitstun.
         if (ec.thrown === false) {
           const e = makeEnemy(c.enemyType ?? p.enemyType ?? 'explosive_monkey', c.x - 16, c.y - 24);
           if (!e) continue;
@@ -157,7 +198,6 @@ defineMacro('spawnSplit', {
         } else {
           const child = invokeChild(c.child, {
             ...ec,
-            enemyType: c.enemyType ?? p.enemyType,
             origin: { x: c.x, y: c.y }, direction: Math.atan2(c.vy, c.vx), speed,
             groundY: p.groundY, platforms: p.platforms,
             target: p.target ?? ctx.world?.hero ?? null,
@@ -171,46 +211,83 @@ defineMacro('spawnSplit', {
           child.on('land', ({ enemy }) => { if (enemy) enemies.push(enemy); });
         }
       } else if (c.child === 'mine') {
+        const m = cfg('mine', {
+          ttl: p.mine?.ttl, blinkDuration: p.mine?.blinkDuration, mineType: p.mineType,
+        }, { ttl: 2, blinkDuration: 2, mineType: 'explosion', radius: 70 });
         const child = invokeChild(c.child, {
-          ...p.mine, mineType: p.mineType,
+          ...m,
           origin: { x: c.x, y: c.y }, direction: Math.atan2(c.vy, c.vx), speed,
           groundY: p.groundY, platforms: p.platforms,
         }, ctx);
         handles.push(child);
       } else if (c.child === 'bomb') {
-        // `ballistic` is the post-rename key (d3c7571e); `bomb` is the legacy
-        // key some composers still emit — accept both so child params (ttl,
-        // arc, blastTeam...) are never silently dropped to defaults.
-        const b = p.ballistic ?? p.bomb ?? {};
         // Classic exploding bomb → the explosiveBomb macro (composition:
         // bomb flight + explosion payload). Primitives don't compose, so the
         // "it explodes" behavior is a macro concern.
+        const b = cfg('bomb', {
+          arc: p.bomb?.arc, bounce: p.bomb?.bounce, ttl: p.bomb?.ttl,
+          damage: p.bomb?.damage, radius: p.bomb?.radius,
+          blastTeam: p.bomb?.blastTeam, explodeOnContact: p.bomb?.explodeOnContact,
+        }, { arc: 700, bounce: true, ttl: 1.5, damage: 25, radius: 60, explodeOnContact: true });
         const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
-          arc: b.arc ?? 700, bounce: b.bounce ?? true, ttl: b.ttl ?? 1.5,
-          damage: b.damage ?? 25, radius: b.radius ?? 60,
-          blastTeam: b.blastTeam, groundY: p.groundY, platforms: p.platforms,
-          explodeOnContact: b.explodeOnContact ?? true,
+          arc: b.arc, bounce: b.bounce, ttl: b.ttl,
+          damage: b.damage, radius: b.radius,
+          blastTeam: b.blastTeam ?? p.blastTeam,
+          groundY: p.groundY, platforms: p.platforms,
+          explodeOnContact: b.explodeOnContact,
         }, ctx);
         if (child?.entity) handles.push(child);
       } else if (c.child === 'molotov') {
         // Fire lobe → the molotov macro (ballistic carrier + fireArea payload
         // on impact). Same composition pattern as the bomb branch above.
-        const m = p.molotov ?? {};
+        const m = cfg('molotov', {
+          arc: p.molotov?.arc, bounce: p.molotov?.bounce, ttl: p.molotov?.ttl,
+          damage: p.molotov?.damage, fireWidth: p.molotov?.fireWidth,
+          fireDuration: p.molotov?.fireDuration, fireTickRate: p.molotov?.fireTickRate,
+          fireDamage: p.molotov?.fireDamage, team: p.molotov?.team,
+        }, { arc: 800, bounce: false, ttl: 2, damage: 12, fireWidth: 96,
+            fireDuration: 3, fireTickRate: 5, fireDamage: 8, team: 'neutral' });
         const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
-          arc: m.arc ?? 800, bounce: m.bounce ?? false, ttl: m.ttl ?? 2,
-          damage: m.damage ?? 12, fireWidth: m.fireWidth ?? 96,
-          fireDuration: m.fireDuration ?? 3, fireTickRate: m.fireTickRate ?? 5,
-          fireDamage: m.fireDamage ?? 8, team: m.team ?? 'neutral',
+          arc: m.arc, bounce: m.bounce, ttl: m.ttl,
+          damage: m.damage, fireWidth: m.fireWidth,
+          fireDuration: m.fireDuration, fireTickRate: m.fireTickRate,
+          fireDamage: m.fireDamage, team: m.team,
           groundY: p.groundY, platforms: p.platforms,
         }, ctx);
         if (child?.entity) handles.push(child);
+      } else if (c.child === 'explosion' || c.child === 'shockwave' || c.child === 'napalm') {
+        // Impact child → straight carrier macro (explosiveProjectile /
+        // shockwaveProjectile / napalm): flies the fan vector and detonates at
+        // its death point (contact, surface, or ttl) — same composition as
+        // skyMissile's payloads, no settle/rest phase. The macro's .step()
+        // drives flight + payload; h.step above steps any handle that has one.
+        const bl = cfg(c.child, {
+          radius: c.child === 'shockwave' ? p.blast?.shockRadius : c.child === 'explosion' ? p.blast?.explosionRadius : undefined,
+          fireWidth: c.child === 'napalm' ? p.blast?.fireWidth : undefined,
+        }, {
+          radius: c.child === 'shockwave' ? 150 : 60,
+          fireWidth: 96,
+        });
+        const child = invokeChild(c.child, {
+          origin: { x: c.x, y: c.y }, direction: c.angle, speed,
+          solidBehavior: 'stop',
+          ...((c.child === 'napalm')
+            ? { fireWidth: bl.fireWidth }
+            : { radius: bl.radius }),
+          // Do not pass an absent damage override: the payload macro owns its
+          // default contact+blast damage (legacy behavior preserved).
+          ...(p.damage != null ? { damage: p.damage } : {}),
+          ...(p.blastTeam != null ? { blastTeam: p.blastTeam } : {}),
+        }, ctx);
+        if (child?.entity) handles.push(child);
       } else {
-        const pr = p.projectile ?? {};
+        const pr = cfg('projectile', { damage: p.projectile?.damage },
+          { damage: 8 }, { damageKey: 'damage' });
         const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
-          ttl: pr.ttl ?? 2, damage: pr.damage ?? 8,
+          damage: pr.damage,
         }, ctx);
         if (child?.entity) handles.push(child);
       }

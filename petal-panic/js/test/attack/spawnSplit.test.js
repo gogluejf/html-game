@@ -6,6 +6,10 @@ import { splitChildren } from '../../combat/attack/macros/spawnSplit.js'; // als
 import '../../combat/attack/primitives/projectile.js'; // for macro materialization
 import '../../combat/attack/primitives/projectile.js';       // throwEnemy carrier (enemy children)
 import '../../combat/attack/macros/throwEnemy.js';     // enemy children are thrown
+import '../../combat/attack/macros/explosiveProjectile.js'; // impact children (child=explosion)
+import '../../combat/attack/macros/shockwaveProjectile.js'; // child=shockwave
+import '../../combat/attack/macros/napalm.js';          // child=napalm
+import { Pool, Projectile } from '../../objects/projectile.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 
@@ -102,6 +106,21 @@ ok('spawnSplit thrown monkey detonates on victim contact through host stepping',
   }
   assert.ok(h.enemies[0]?._detonated || h.enemies[0]?.aiState === 'dead', 'monkey detonated');
   assert.ok(hero.hp < 100, `hero took damage (${hero.hp})`);
+});
+
+ok('child=explosion|shockwave|napalm: fan materializes straight impact carriers', () => {
+  // Full-child contract: the 3 straight payload macros fly the fan vector and
+  // detonate at their death point — one handle per child, straight carriers.
+  const P = { x: 400, y: 300, count: 2, centerDirection: 0, angle: Math.PI / 3, force: 300 };
+  for (const child of ['explosion', 'shockwave', 'napalm']) {
+    const ctx = makeContext(attacker(), { pools: { projectilePool: new Pool(Projectile, 32) } });
+    const h = invoke('spawnSplit', { ...P, child }, ctx);
+    assert.equal(h.handles.length, 2, `child=${child}: 2 live handles`);
+    for (const ch of h.handles) {
+      assert.ok(ch.entity, `child=${child}: carrier entity`);
+      assert.equal(ch.entity._arcRecipe, false, `child=${child}: straight carrier`);
+    }
+  }
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

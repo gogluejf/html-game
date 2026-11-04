@@ -32,6 +32,10 @@ import { fireDeclared } from '../../../effects/index.js';
 import './explosiveProjectile.js';
 import './shockwaveProjectile.js';
 import './napalm.js';
+import './explosiveBomb.js';
+import './throwMine.js';
+import './molotov.js';
+import './throwEnemy.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -52,15 +56,21 @@ const DEFAULTS = Object.freeze({
   radius: 30,          // reticle size (px)
   tracking: true,      // follow the target until lockTime
   // Shot stage.
-  child: 'projectile', // projectile | explosion | shockwave | napalm — payload on impact
+  child: 'projectile', // any ATTACK_IDS child — payload on impact
   speed: 500,          // projectile speed px/s
   ttl: 2,              // projectile lifetime (s)
   damage: 10,          // projectile / contact damage
-  blast: {             // per-payload size params (each payload reads its own key)
+  blast: {             // legacy per-payload size params (fallback)
     explosionRadius: 70, // explosion blast circle (px)
     shockRadius: 150,    // shockwave ring max radius (px)
     fireWidth: 96,       // napalm burn zone width (px)
   },
+  // Sub-payload config (M3 completion): keys per the child's CHILD_PARAM_SPECS
+  // (attackIds.js). NULL by default — a concrete default object would clobber
+  // the caller's flat legacy keys (blast.*, mineType, mineTtl, blinkDuration)
+  // at every `sub(child).x ?? p.flat` read. With null, flat keys fall through
+  // and unconfigured children read their OWN macro defaults.
+  payload: null,
 });
 
 /**
@@ -77,6 +87,10 @@ function aimPoint(params, ctx) {
 defineMacro('reticleShot', {
   attacks: [
     { id: 'projectile', role: 'payload' },
+    { id: 'explosiveBomb', role: 'payload' },
+    { id: 'throwMine', role: 'payload' },
+    { id: 'molotov', role: 'payload' },
+    { id: 'throwEnemy', role: 'payload' },
     { id: 'explosiveProjectile', role: 'payload' },
     { id: 'shockwaveProjectile', role: 'payload' },
     { id: 'napalm', role: 'payload' },
@@ -95,7 +109,8 @@ defineMacro('reticleShot', {
       { key: 'color', desc: 'VFX color' },
       { key: 'radius', desc: 'reticle size (px)' },
       { key: 'tracking', desc: 'follow the target until lockTime' },
-      { key: 'child', desc: "projectile | explosion | shockwave | napalm — payload on impact" },
+      { key: 'child', desc: "any ATTACK_IDS child — projectile | explosion | shockwave | napalm (straight) · bomb | mine | molotov | enemy (arc, host-settled)" },
+      { key: 'payload', desc: 'sub-payload config for the shot (keys per the child; see CHILD_PARAM_SPECS)' },
       { key: 'speed', desc: 'projectile speed px/s' },
       { key: 'ttl', desc: 'projectile lifetime (s)' },
       { key: 'damage', desc: 'projectile / contact damage' },
@@ -166,25 +181,62 @@ defineMacro('reticleShot', {
         const dir = Math.atan2(pt.y - o.y, pt.x - o.x);
         const child = params.child ?? 'projectile';
         const blast = params.blast ?? {};
-        // 'projectile' is the primitive itself; the other values are payload
-        // macros that compose the projectile carrier with their detonation —
-        // invokeChild (attackIds.js) resolves child to the concrete id. Each
-        // payload reads its OWN size key from `blast`.
+        const pl = params.payload ?? {};
+        const sub = pl[child] ?? {};
+        // 'projectile' is the primitive itself; the other straight values are
+        // payload macros that compose the projectile carrier with their
+        // detonation — invokeChild (attackIds.js) resolves child to the
+        // concrete id. Sub-payload config lives in the nested `payload`
+        // object (keys per CHILD_PARAM_SPECS in attackIds.js); the legacy
+        // `blast` keys are the fallback.
+        //
+        // ARC children (bomb/mine/molotov/enemy): the SAME telegraph, but the
+        // fired body is an arcing carrier (arc from the locked point toward
+        // the aim). Terrain settling is the host's job (theater's global arc
+        // pass / update.js's global carrier pass) — same contract as
+        // spawnSplit's arc children.
+        //   bomb    → explosiveBomb: arcs, detonates at first contact/settle
+        //   mine    → throwMine: arcs, settles, arms (payload.mine.ttl null = contact)
+        //   molotov → molotov: arcs, shatters into a burn area at death point
+        //   enemy   → throwEnemy: arcs, lands as a real enemy
+        const isArcChild = child === 'bomb' || child === 'mine' || child === 'molotov' || child === 'enemy';
         const payloadSize = child === 'shockwave'
-          ? { radius: blast.shockRadius }
+          ? { radius: sub.radius ?? blast.shockRadius }
           : child === 'napalm'
-            ? { fireWidth: blast.fireWidth }
+            ? { fireWidth: sub.fireWidth ?? blast.fireWidth }
             : child === 'projectile'
               ? {}
-              : { radius: blast.explosionRadius };
+              : { radius: sub.radius ?? blast.explosionRadius };
         const shot = invokeChild(child, {
           origin: { x: o.x, y: o.y },
           direction: dir,
           speed: params.speed,
           ttl: params.ttl,
-          damage: params.damage,
+          damage: child === 'projectile' ? (sub.damage ?? params.damage) : params.damage,
           solidBehavior: 'stop',
           ...payloadSize,
+          ...(isArcChild ? {
+            arc: sub.arc ?? 800,
+            bounce: false,
+            // Arc children own their fuse/flight config (payload first,
+            // legacy flat keys as fallback):
+            ...(child === 'bomb' ? { explodeOnContact: true } : {}),
+            ...(child === 'mine' ? {
+              ttl: sub.ttl ?? params.mineTtl ?? 2,
+              blinkDuration: sub.blinkDuration ?? params.blinkDuration ?? 2,
+              mineType: sub.mineType ?? params.mineType ?? 'explosion',
+              team: params.blastTeam,
+              radius: sub.radius ?? blast.explosionRadius,
+            } : {}),
+            ...(child === 'molotov' ? {
+              fireWidth: sub.fireWidth ?? blast.fireWidth,
+              team: params.blastTeam,
+            } : {}),
+            ...(child === 'enemy' ? {
+              enemyType: sub.enemyType ?? params.enemyType ?? 'explosive_monkey',
+              mineType: sub.mineType ?? params.mineType ?? 'explosion',
+            } : {}),
+          } : {}),
         }, ctx);
         if (shot?.entity) {
           h.shot = shot;
@@ -196,6 +248,14 @@ defineMacro('reticleShot', {
           h.handles.push(shot);
           shot.on('hit', (info) => h._emit('hit', info));
           shot.on('expire', () => h._emit('expire'));
+          // Enemy child: relay the landing so hosts register the landed enemy
+          // (same contract as throwEnemy's 'land' + spawnSplit's h.enemies).
+          if (child === 'enemy') {
+            if (!h.enemies) h.enemies = [];
+            shot.on('land', ({ enemy }) => {
+              if (enemy) { h.enemies.push(enemy); h._emit('land', { enemy }); }
+            });
+          }
         }
         h._complete({ point: s.locked ?? s.pt });
       }

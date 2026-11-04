@@ -33,6 +33,8 @@ import './explosiveProjectile.js';
 import './shockwaveProjectile.js';
 import './napalm.js';
 import './throwMine.js';
+import './explosiveBomb.js';
+import './molotov.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -57,7 +59,13 @@ const DEFAULTS = Object.freeze({
   mineType: 'explosion',
   mineTtl: 2,
   blinkDuration: 2,
-  child: 'explosion',    // explosion | shockwave | napalm | mine — payload on impact
+  child: 'explosion',    // any ATTACK_IDS child — payload that resolves on the marked surface
+  // Sub-payload config (M3 completion): keys per the child's CHILD_PARAM_SPECS
+  // (attackIds.js). NULL by default — a concrete default object would clobber
+  // the caller's flat legacy keys (blast.*, mineType, mineTtl, blinkDuration)
+  // at every `sub(child).x ?? p.flat` read. With null, flat keys fall through
+  // and unconfigured children read their OWN macro defaults.
+  payload: null,
   blast: {               // per-payload size params (each payload reads its own key)
     explosionRadius: 60, // explosion blast circle (px)
     shockRadius: 150,    // shockwave ring max radius (px)
@@ -92,20 +100,24 @@ export function resolveImpactPoint(p, ctx) {
 
 defineMacro('skyMissile', {
   attacks: [
+    { id: 'projectile', role: 'payload' },
     { id: 'explosiveProjectile', role: 'payload' },
     { id: 'shockwaveProjectile', role: 'payload' },
     { id: 'napalm', role: 'payload' },
     { id: 'throwMine', role: 'payload' },
+    { id: 'explosiveBomb', role: 'payload' },
+    { id: 'molotov', role: 'payload' },
   ],
   params: { ...DEFAULTS },
   meta: {
     name: 'Sky Missile',
-    desc: 'Ground marker warns a fixed spot → timeToTarget → vertical explosive projectile drops and detonates on the marked surface.',
+    desc: 'Ground marker warns a fixed spot → timeToTarget → vertical carrier drops and resolves on the marked surface (any child type).',
     effects: [
       { type: 'surface-target-marker', desc: 'landing warning fixed at the impact point for the whole warning window' },
     ],
     params: [
-      { key: 'child', desc: 'explosion | shockwave | napalm | mine — payload on impact' },
+      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | explosion | shockwave | napalm (enemy = dropped monkey)' },
+      { key: 'payload', desc: 'sub-payload config for the drop (keys per the child; see CHILD_PARAM_SPECS)' },
       { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'x', desc: 'impact x (world) — marker and drop share it' },
       { key: 'groundY', desc: 'fallback impact y; null → highest surface in the drop column' },
@@ -116,9 +128,8 @@ defineMacro('skyMissile', {
       { key: 'blastTeam', desc: 'who the blast hurts' },
       { key: 'size', desc: 'carrier box size (px)' },
       { key: 'specialType', desc: 'optional projectile style override; omitted inherits payload default, null selects plain projectile' },
-      { key: 'mineTtl', desc: 'resting mine seconds; null = contact only' },
+      { key: 'mineTtl', desc: 'resting mine/fuse seconds (mine/bomb/molotov); null = contact only' },
       { key: 'blinkDuration', desc: 'mine warning seconds' },
-      { key: 'child', desc: 'explosion | shockwave | napalm | mine — payload on impact' },
       { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
       { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
       { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
@@ -146,20 +157,38 @@ defineMacro('skyMissile', {
       // ttl covers the full fall from the view top to the impact line (+ small
       // margin so the surface contact resolves first, not the fuse).
       const fallTtl = ((pt.y - spawnY) / Math.max(1, p.fallSpeed)) + 0.25;
-      // Payload choice: explosion (default) | shockwave | napalm | mine. All
-      // share the same carrier surface (origin/direction/speed/ttl/team), so
-      // one call site works; invokeChild (attackIds.js) resolves p.child to
-      // the concrete payload id. Each payload reads its OWN size key from
-      // `blast`.
+      // Payload choice: any of the 8 ATTACK_IDS children. All share the same
+      // carrier surface (origin/direction/speed/ttl/team), so one call site
+      // works; invokeChild (attackIds.js) resolves p.child to the concrete
+      // payload id.
+      //   projectile — plain drop thorn: contact damage on the way down, dies
+      //     at the marked line (crossing check) or on target contact. No
+      //     payload — the drop shot IS the hit.
+      //   explosion | shockwave | napalm — straight impact carriers (each
+      //     reads its OWN size key from `blast`), killed at the marked line by
+      //     the drop-phase crossing check → payload materializes there.
+      //   mine — arc carrier (arc 0), settles at the marked surface via the
+      //     host terrain step, then arms (mine-only overrides below).
+      //   bomb — arc carrier (arc 0, no bounce): falls and detonates at the
+      //     marked surface on first contact (stepBombTerrain 'stop' settle).
+      //   molotov — arc carrier (arc 0, no bounce): falls and shatters into a
+      //     burning area at the marked surface.
       const blast = p.blast ?? {};
-      // Map our named keys → the param each payload macro actually reads:
+      // Sub-payload resolution: the nested `payload` object (keys per
+      // CHILD_PARAM_SPECS in attackIds.js) is the unified config surface —
+      // one sub-object per child, read ONLY by its child (no cross-child key
+      // collisions). Legacy flat keys (blast.*, mineType, mineTtl,
+      // blinkDuration) keep working and are the fallback.
+      const pl = p.payload ?? {};
+      const sub = (child) => pl[child] ?? {};
+      // Map our named keys → the param each impact-carrier payload reads:
       //   explosiveProjectile reads `radius`
       //   shockwaveProjectile reads `radius`
       //   napalm reads `fireWidth`
       const payloadSize = {
-        explosionRadius: () => ({ radius: blast.explosionRadius }),
-        shockwave: () => ({ radius: blast.shockRadius }),
-        napalm: () => ({ fireWidth: blast.fireWidth }),
+        explosionRadius: () => ({ radius: sub('explosion').radius ?? blast.explosionRadius }),
+        shockwave: () => ({ radius: sub('shockwave').radius ?? blast.shockRadius }),
+        napalm: () => ({ fireWidth: sub('napalm').fireWidth ?? blast.fireWidth }),
       }[p.child === 'shockwave' ? 'shockwave' : p.child === 'napalm' ? 'napalm' : 'explosionRadius']();
       const m = invokeChild(p.child, {
         origin: { x: pt.x, y: spawnY },
@@ -171,13 +200,39 @@ defineMacro('skyMissile', {
         blastTeam: p.blastTeam,
         size: p.size,
         solidBehavior: 'stop',
-        ...payloadSize,
+        ...(p.child === 'projectile' ? {} : payloadSize),
         // Do not pass an absent override: the named payload owns its default.
         ...(p.specialType !== undefined ? { specialType: p.specialType } : {}),
         ...(p.child === 'mine' ? {
           origin: { x: pt.x, y: spawnY }, groundY: pt.y, arc: 0, bounce: false,
-          ttl: p.mineTtl, blinkDuration: p.blinkDuration, mineType: p.mineType,
-          team: p.blastTeam, radius: p.mineType === 'shockwave' ? blast.shockRadius : blast.explosionRadius,
+          // ?? (not ||): an explicit null fuse (contact-only) must survive.
+          // No `?? 2` fallback — an ABSENT fuse falls through to the mine
+          // macro's own default (2s); an explicit null stays null.
+          ttl: sub('mine').ttl ?? p.mineTtl,
+          blinkDuration: sub('mine').blinkDuration ?? p.blinkDuration,
+          mineType: sub('mine').mineType ?? p.mineType,
+          team: p.blastTeam,
+          radius: sub('mine').radius ?? (p.mineType === 'shockwave' ? blast.shockRadius : blast.explosionRadius),
+        } : {}),
+        ...(p.child === 'bomb' ? {
+          origin: { x: pt.x, y: spawnY }, arc: 0, bounce: false,
+          ttl: sub('bomb').ttl ?? p.mineTtl ?? 2,
+          radius: sub('bomb').radius ?? blast.explosionRadius,
+          explodeOnContact: true,
+        } : {}),
+        ...(p.child === 'molotov' ? {
+          origin: { x: pt.x, y: spawnY }, arc: 0, bounce: false,
+          ttl: sub('molotov').ttl ?? p.mineTtl ?? 2,
+          fireWidth: sub('molotov').fireWidth ?? blast.fireWidth,
+          team: p.blastTeam,
+        } : {}),
+        ...(p.child === 'enemy' ? {
+          origin: { x: pt.x, y: spawnY }, arc: 0, bounce: false,
+          ttl: null,
+          enemyType: sub('enemy').enemyType ?? 'explosive_monkey',
+          mineType: sub('enemy').mineType ?? p.mineType,
+          team: p.blastTeam,
+          target: ctx.world?.hero ?? null,
         } : {}),
       }, ctx);
       h.state.missile = m;

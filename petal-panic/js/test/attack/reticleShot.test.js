@@ -105,4 +105,42 @@ ok('cancel tears down the effect instance (no ghost reticle)', () => {
   resetEffects();
 });
 
+ok('child=bomb / child=mine / child=napalm: one shot fires through invokeChild', () => {
+  // Full-child contract: every ATTACK_IDS child resolves to a live carrier
+  // (straight payload macros keep the plain projectile path; arc children —
+  // bomb, mine — fly the arc recipe and settle via the host's terrain pass).
+  for (const child of ['bomb', 'mine', 'napalm']) {
+    const t = target();
+    const ctx = makeContext(attacker(), { pools: pools(), target: t, effects: { fireManual } });
+    const h = invoke('reticleShot', { duration: 0.4, lockTime: 0.2, speed: 500, ttl: 2, child }, ctx);
+    for (let i = 0; i < 30; i++) h.step(1 / 60);
+    assert.ok(h.shot?.entity, `child=${child}: carrier spawned`);
+    if (child === 'bomb' || child === 'mine') {
+      assert.equal(h.shot.entity._arcRecipe, true, `child=${child}: arc carrier`);
+    } else {
+      assert.equal(h.shot.entity._arcRecipe, false, `child=${child}: straight carrier`);
+    }
+  }
+});
+
+ok('child=enemy: thrown enemy lands via the land relay', () => {
+  const t = target();
+  const ctx = makeContext(attacker(), { pools: pools(), target: t, effects: { fireManual }, groundY: 400, bombTerrainStepped: true });
+  const h = invoke('reticleShot', { duration: 0.3, lockTime: 0.15, speed: 700, ttl: 2, child: 'enemy' }, ctx);
+  const DT = 1 / 60;
+  let landed = null;
+  for (let i = 0; i < 300 && !landed; i++) {
+    ctx.pools.projectilePool.updateAll(DT);
+    h.step(DT);
+    const shot = h.shot;
+    if (!shot) continue;
+    // Force-settle the carrier, THEN step the payload macro: its step() reads
+    // _bombSettled → settles → lands → emits 'land' (the relay is the subject).
+    if (shot.entity && shot.entity._arcRecipe) shot.entity._bombSettled = true;
+    if (shot.step) shot.step(DT, []);
+    landed = h.enemies?.[0];
+  }
+  assert.ok(landed, 'landed enemy surfaced on h.enemies');
+});
+
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

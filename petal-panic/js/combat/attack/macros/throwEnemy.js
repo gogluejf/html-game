@@ -28,7 +28,7 @@ export const THROW_ENEMY_DEFAULTS = Object.freeze({
   speed: 500,
   direction: -0.5,
   arc: 1000,
-  bounce: true,
+  bounce: false,          // the landed enemy settles on FIRST contact — no bounce
   origin: null,          // marker label | {x,y} | null → attacker center
   // --- payload ---------------------------------------------------------------
   enemyType: 'explosive_monkey',

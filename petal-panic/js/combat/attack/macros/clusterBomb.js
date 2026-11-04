@@ -31,6 +31,9 @@ const DEFAULTS = Object.freeze({
   childTtl: 2,
   childDamage: 15,
   childRadius: 30,
+  // Sub-payload contract (M3 completion): forwarded verbatim to the inner
+  // spawnSplit fan — keys per the child's CHILD_PARAM_SPECS (attackIds.js).
+  payload: null,
 });
 
 defineMacro('clusterBomb', {
@@ -42,9 +45,10 @@ defineMacro('clusterBomb', {
   meta: {
     name: 'Cluster Bomb',
     effects: [],
-    desc: 'Parent bomb detonates → spawns N smaller bombs in a fan. Each child explodes on its own impact/fuse.',
+    desc: 'Parent bomb detonates → fans N children (any child type) via spawnSplit.',
     params: [
-      { key: 'child', desc: 'bomb | mine (children)' },
+      { key: 'child', desc: 'projectile | bomb | mine | molotov | enemy | explosion | shockwave | napalm (children)' },
+      { key: 'payload', desc: 'sub-payload config for the children (keys per the child; see CHILD_PARAM_SPECS)' },
       { key: 'mineType', desc: 'explosion | shockwave' },
       { key: 'speed', desc: 'parent launch force (px/s)' },
       { key: 'direction', desc: 'parent throw direction (radians)' },
@@ -80,6 +84,9 @@ defineMacro('clusterBomb', {
             angle: p.childAngle,
             force: p.childForce,
             child: p.child,
+            // Sub-payload config: the theater (or a composer) configures
+            // payload.<childKey>.* — forwarded verbatim to the fan.
+            ...(p.payload ? { payload: p.payload } : {}),
             mineType: p.mineType,
             mine: { ttl: p.mineTtl, blinkDuration: p.blinkDuration,
               arc: p.childArc, bounce: true, damage: p.childDamage, radius: p.childRadius, team: p.blastTeam },

@@ -2,7 +2,7 @@
 // Run: node --test petal-panic/js/test/attack/skyMissile.test.js
 
 import { strict as assert } from 'node:assert';
-import '../../combat/attack/primitives/projectile.js'; // register carrier primitive
+import { stepBombTerrain } from '../../combat/attack/primitives/projectile.js'; // register carrier primitive
 import '../../combat/attack/primitives/explosion.js';  // register blast primitive
 import '../../combat/attack/macros/explosiveProjectile.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
@@ -179,6 +179,36 @@ ok('the missile detonates ON the platform top, not below it (marker/blast agree)
   assert.ok(Math.abs(deathY - platTop) <= 400 * DT + 1,
     `death at platform top (${deathY} vs ${platTop})`);
   assert.ok(deathY < GROUND_Y - 20, 'did NOT fall through to the floor');
+});
+
+ok('child=mine (arc recipe): settles on the platform top via the external terrain step', () => {
+  // The mine is the ONLY arc-recipe skyMissile child — its carrier settles via
+  // stepBombTerrain, not the macro's straight-carrier crossing check (which
+  // explicitly skips _arcRecipe). With bombTerrainStepped=true (theater +
+  // gameplay), the HOST owns the terrain step and must pass the platform tops
+  // — the macro skips its own. Regression: the theater's arc-carrier pass
+  // omitted the platforms, so the mine fell THROUGH the platform and rested on
+  // the floor below while the marker said the platform.
+  const platTop = GROUND_Y - 70;
+  const c = ctx({ platforms: [{ x: 450, y: platTop, w: 100 }], bombTerrainStepped: true });
+  const h = invoke('skyMissile', { x: 500, timeToTarget: 0.1, fallSpeed: 400, child: 'mine', mineTtl: null }, c);
+  let mine = null, settled = false;
+  for (let i = 0; i < 300 && !settled; i++) {
+    c.pools.projectilePool.updateAll(DT);
+    // External terrain step — the theater's arc-carrier pass / update.js's
+    // global carrier pass: the floor line PLUS the platform tops.
+    for (const s of c.pools.projectilePool.items) {
+      if (s._arcRecipe && !s._attackDone) stepBombTerrain(s, DT, GROUND_Y, c.platforms);
+    }
+    h.step(DT, []);
+    mine = h.state.missile ?? mine; // handle exists once the drop phase launches it
+    settled = !!mine?.state?.settled;
+  }
+  assert.ok(settled, 'carrier settled on a surface');
+  // Resting box bottom = the PLATFORM top — not the floor below it.
+  const bottom = mine.state.box.y + mine.state.box.h;
+  assert.ok(Math.abs(bottom - platTop) <= 1, `rests on platform top (${bottom} vs ${platTop})`);
+  assert.ok(bottom < GROUND_Y - 20, 'did NOT fall through to the floor');
 });
 
 console.log(`\nskyMissile: ${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

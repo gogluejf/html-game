@@ -73,3 +73,72 @@ export function invokeChild(child, params = {}, ctx) {
   }
   return invoke(target, params, ctx);
 }
+
+/**
+ * Per-child param surface — the "sub-payload" contract (M3 completion).
+ *
+ * Every child-consuming macro reads the SAME shape:
+ *
+ *   child:   '<ATTACK_IDS value>'   — scalar selector
+ *   payload: { ... }                — one nested object, keys per the child
+ *
+ * Only ONE child materializes per invoke, so only ONE payload is ever read —
+ * the target macro reads the keys it wants and ignores the rest. No flat
+ * namespace merge -> no cross-child key collisions (mine's ttl vs bomb's ttl
+ * vs shockwave's radius never coexist in a live resolve).
+ *
+ * This table is METADATA ONLY (key + desc + kind for panels). It holds NO
+ * defaults — defaults live in the target macro (single owner, no drift).
+ * The attack theater derives the child panel rows from this spec: pick
+ * child=mine, the panel shows exactly the mine payload keys.
+ *
+ * kind: 'num' | 'enum' | 'enemy' — the theater's TWEAKABLE kinds.
+ * enum values are inlined here (stable vocabularies); 'enemy' references
+ * ENEMY_TYPE_IDS at panel-build time.
+ */
+export const CHILD_PARAM_SPECS = Object.freeze({
+  projectile: Object.freeze([
+    { key: 'damage', kind: 'num', step: 2, desc: 'thorn contact damage' },
+  ]),
+  bomb: Object.freeze([
+    { key: 'ttl', kind: 'num', step: 0.5, desc: 'fuse seconds' },
+    { key: 'arc', kind: 'num', step: 100, desc: 'gravity px/s2' },
+    { key: 'bounce', kind: 'enum', values: [false, true], desc: 'reflect off surfaces' },
+    { key: 'damage', kind: 'num', step: 5, desc: 'blast damage' },
+    { key: 'radius', kind: 'num', step: 10, desc: 'blast radius (px)' },
+  ]),
+  mine: Object.freeze([
+    { key: 'ttl', kind: 'num', step: 0.5, null: true, desc: 'resting fuse seconds; null = contact only' },
+    { key: 'blinkDuration', kind: 'num', step: 0.25, desc: 'warning seconds before detonation' },
+    { key: 'mineType', kind: 'enum', values: ['explosion', 'shockwave'], desc: 'payload type' },
+    { key: 'radius', kind: 'num', step: 10, desc: 'payload radius (px)' },
+  ]),
+  molotov: Object.freeze([
+    { key: 'damage', kind: 'num', step: 2, desc: 'carrier contact damage' },
+    { key: 'fireWidth', kind: 'num', step: 8, desc: 'burn area width (px)' },
+    { key: 'fireDuration', kind: 'num', step: 0.5, desc: 'how long the area burns (s)' },
+    { key: 'fireTickRate', kind: 'num', step: 1, desc: 'damage ticks per second in the area' },
+    { key: 'fireDamage', kind: 'num', step: 2, desc: 'damage per tick in the area' },
+  ]),
+  enemy: Object.freeze([
+    { key: 'enemyType', kind: 'enemy', desc: 'enemy id when the carrier lands' },
+    { key: 'mineType', kind: 'enum', values: ['explosion', 'shockwave'], desc: 'landed payload type' },
+  ]),
+  explosion: Object.freeze([
+    { key: 'damage', kind: 'num', step: 5, desc: 'blast damage' },
+    { key: 'radius', kind: 'num', step: 10, desc: 'blast radius (px)' },
+  ]),
+  shockwave: Object.freeze([
+    { key: 'damage', kind: 'num', step: 5, desc: 'ring damage' },
+    { key: 'radius', kind: 'num', step: 10, desc: 'ring max radius (px)' },
+  ]),
+  napalm: Object.freeze([
+    { key: 'fireWidth', kind: 'num', step: 8, desc: 'burn area width (px)' },
+    { key: 'fireDuration', kind: 'num', step: 0.5, desc: 'how long the area burns (s)' },
+  ]),
+});
+
+/** True when `child` is a valid ATTACK_IDS value. */
+export function isChild(child) {
+  return typeof child === 'string' && CHILD_TARGETS[child] != null;
+}
