@@ -25,7 +25,7 @@
 
 import { defineMacro } from '../defineMacro.js';
 import { AttackHandle } from '../engine.js';
-import { invokeChild } from '../attackIds.js';
+import { invokeChild, CHILD_TARGETS } from '../attackIds.js';
 import { targetCenter } from '../context.js';
 import { fireDeclared } from '../../../effects/index.js';
 import { ballisticAt } from '../../targeting.js';
@@ -188,16 +188,21 @@ defineMacro('reticleShot', {
         // Fallback chain that HONORS null (sub.ttl null = "contact only" for
         // mine/molotov — a ?? chain would swallow it and arm the default fuse).
         const pick = (...vals) => vals.find((v) => v != null);
-        // Direction: straight-line aim for flat children. Arc children use
-        // the shared ballistic solve (targeting.js) so the parabola LANDS
-        // ON the locked reticle point instead of flying straight at it and
-        // dropping short under gravity (the "aiming at the moving target"
-        // bug — straight-line dir never accounts for the arc budget).
-        const arcGravity = sub.arc ?? 800;
+        // Gravity is owned by the invoked child. Read the same registered
+        // default invoke() uses; never substitute a reticle-specific weight.
+        const childDefaults = getMacro(CHILD_TARGETS[child])?.params ?? {};
+        const arcGravity = sub.arc ?? childDefaults.arc;
+        let speed = params.speed;
         let dir = Math.atan2(pt.y - o.y, pt.x - o.x);
         if (isArcChild) {
+          // Minimum launch speed at fixed gravity: v² >= g (distance - dy).
+          // Preserve requested speed when reachable, otherwise increase only
+          // launch speed (small margin avoids a roundoff-negative discriminant).
+          const dx = pt.x - o.x, dy = pt.y - o.y;
+          const minimumSpeed = Math.sqrt(Math.max(0, arcGravity * (Math.hypot(dx, dy) - dy)));
+          speed = Math.max(speed, minimumSpeed * 1.001);
           dir = ballisticAt(o, { x: pt.x, y: pt.y, w: 0, h: 0 }, {
-            speed: params.speed, gravity: arcGravity, style: params.aimStyle ?? 'flat',
+            speed, gravity: arcGravity, style: params.aimStyle ?? 'flat',
           }).direction;
         }
         // 'projectile' is the primitive itself; the other straight values are
@@ -226,21 +231,23 @@ defineMacro('reticleShot', {
         const shot = invokeChild(child, {
           origin: { x: o.x, y: o.y },
           direction: dir,
-          speed: params.speed,
+          speed,
           ttl: params.ttl,
           damage: child === 'projectile' ? (sub.damage ?? params.damage) : params.damage,
-          solidBehavior: 'stop',
+          // Collision policy belongs to the child, not the telegraph.
+          // Only forward caller-supplied overrides; omission preserves defaults.
+          ...(sub.solidBehavior !== undefined ? { solidBehavior: sub.solidBehavior } : {}),
           ...payloadSize,
           ...(isArcChild ? {
-            arc: sub.arc ?? 800,
-            bounce: false,
+            ...(sub.arc != null ? { arc: sub.arc } : {}),
+            ...(sub.bounce !== undefined ? { bounce: sub.bounce } : {}),
+            ...(sub.explodeOnContact !== undefined ? { explodeOnContact: sub.explodeOnContact } : {}),
             // Arc children own their fuse/flight config (payload first,
             // legacy flat keys as fallback, then the child macro's OWN
             // defaults). Never pass explicit undefined — `invoke` spreads
             // caller params over the macro defaults, so an undefined key
             // CLOBBERS the default (this is why reticle mines never
             // detonated: ttl undefined broke the mine fuse clock).
-            ...(child === 'bomb' ? { explodeOnContact: true } : {}),
             ...(child === 'mine' ? {
               // ttl null is MEANINGFUL (contact-only) — honor explicit null,
               // fall through only on undefined:

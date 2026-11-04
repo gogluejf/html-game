@@ -3,6 +3,7 @@
 
 import { strict as assert } from 'node:assert';
 import { invoke } from '../../combat/attack/engine.js';
+import { invokeChild } from '../../combat/attack/attackIds.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
 import { fireManual, resetEffects, activeInstances } from '../../effects/index.js';
@@ -164,6 +165,52 @@ for (const child of ['bomb', 'mine', 'molotov', 'enemy']) {
       h.cancel();
     });
   }
+}
+
+for (const child of ['projectile', 'explosion', 'shockwave', 'napalm', 'bomb', 'mine', 'molotov', 'enemy']) {
+  ok(`${child}: reticle preserves the child's default terrain policy`, () => {
+    const ctx = makeContext(attacker(), { pools: pools(), target: target() });
+    const direct = invokeChild(child, {}, ctx);
+    const h = invoke('reticleShot', { child, duration: 0.2, lockTime: 0.1 }, ctx);
+    h.step(0.2);
+    assert.ok(direct.entity && h.shot.entity);
+    assert.equal(h.shot.entity.solidBehavior, direct.entity.solidBehavior);
+    if (child === 'projectile') assert.equal(h.shot.entity.solidBehavior, 'phase');
+    direct.cancel(); h.cancel();
+  });
+}
+for (const [child, payload, expected] of [
+  ['projectile', { solidBehavior: 'stop' }, 'stop'],
+  ['bomb', { bounce: false }, 'stop'],
+  ['mine', { bounce: false }, 'stop'],
+  ['molotov', { bounce: true }, 'reflect'],
+]) {
+  ok(`${child}: explicit payload collision override remains supported`, () => {
+    const ctx = makeContext(attacker(), { pools: pools(), target: target() });
+    const h = invoke('reticleShot', { child, duration: 0.2, payload: { [child]: payload } }, ctx);
+    h.step(0.2);
+    assert.equal(h.shot.entity.solidBehavior, expected);
+    h.cancel();
+  });
+}
+
+for (const child of ['bomb', 'mine', 'molotov', 'enemy']) {
+  ok(`${child}: keeps native gravity while solving a slow, distant throw`, () => {
+    const ctx = makeContext(attacker(), { pools: pools(), target: { x: 700, y: 200, w: 32, h: 32, alive: true } });
+    const direct = invokeChild(child, {}, ctx);
+    const gravity = direct.entity.gravityValue;
+    direct.cancel();
+    const h = invoke('reticleShot', { child, duration: 0.2, speed: 100, ttl: 10 }, ctx);
+    h.step(0.2);
+    const e = h.shot.entity;
+    assert.equal(e.gravityValue, gravity, 'gravity must match direct invocation');
+    assert.ok(Math.hypot(e.vx, e.vy) > 100, 'raise speed rather than lower gravity');
+    const pt = h.state.locked ?? h.state.pt;
+    const t = (pt.x - (e.x + e.w / 2)) / e.vx;
+    const y = e.y + e.h / 2 + e.vy * t + 0.5 * gravity * t * t;
+    assert.ok(Math.abs(y - pt.y) < 0.001, 'launch trajectory must intersect reticle');
+    h.cancel();
+  });
 }
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);
