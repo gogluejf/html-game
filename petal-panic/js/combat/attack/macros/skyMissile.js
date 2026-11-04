@@ -154,9 +154,10 @@ defineMacro('skyMissile', {
 
     const launchMissile = () => {
       // Strictly vertical: direction π/2 = straight down (radians, 0 = right).
-      // ttl covers the full fall from the view top to the impact line (+ small
-      // margin so the surface contact resolves first, not the fuse).
-      const fallTtl = ((pt.y - spawnY) / Math.max(1, p.fallSpeed)) + 0.25;
+      // No carrier ttl here: the plain drop dies at the marked line via the
+      // crossing check (or on contact / off-screen cull); arc-recipe children
+      // and the enemy payload own their OWN fuse via sub-payload keys. A
+      // macro-level fall fuse would arm a hidden timer on the landed monkey.
       // Payload choice: any of the 8 ATTACK_IDS children. All share the same
       // carrier surface (origin/direction/speed/ttl/team), so one call site
       // works; invokeChild (attackIds.js) resolves p.child to the concrete
@@ -198,7 +199,6 @@ defineMacro('skyMissile', {
         origin: { x: pt.x, y: spawnY },
         direction: Math.PI / 2,
         speed: p.fallSpeed,
-        ttl: fallTtl,
         damage: p.damage,
         team: p.team,
         blastTeam: p.blastTeam,

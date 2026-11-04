@@ -928,8 +928,9 @@ export const AttackTheater = {
     // family root (BombAttackHost) tracks completion via h.step().
     for (const e of this._thrownEnemies ?? []) {
       if (!e.alive) continue;
+      const prevBottom = e.y + e.h; // capture BEFORE update() integrates gravity
       e.update?.(DT, this._target, this._world);
-      if (e.gravity > 0) resolve(e, [this._floorSolid]);
+      if (e.gravity > 0) resolve(e, [this._floorSolid, ...((this._stompPlatforms ?? []).map(p => ({ ...p, h: 8 })))], { prevBottom });
       // BombAttackHost -> throwEnemy.step owns hostStep (TTL/contact), once.
     }
     // Off-screen cull (sandbox bounds instead of level zone).
