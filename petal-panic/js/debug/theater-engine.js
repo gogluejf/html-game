@@ -85,7 +85,9 @@ function mappingAdjust() {
  *   kind 'angle' or a direction/angle key → degrees with an 8-way arrow.
  */
 export function formatParamValue(val, p = {}, key = '') {
-  if (val === null) return p.nullMeans ?? 'null';
+  // null is a VALUE for every kind (fuse/ttl contact-only, ∞ lifetimes):
+  // the label applies regardless of kind.
+  if (val === null) return p.nullMeans ?? '∅';
   if (typeof val === 'number') {
     const isAngle = p.kind === 'angle' || /direction|angle/i.test(key);
     if (isAngle) {

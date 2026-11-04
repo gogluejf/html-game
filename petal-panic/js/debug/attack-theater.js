@@ -248,10 +248,15 @@ export const AttackTheater = {
       const spec = CHILD_PARAM_SPECS[childVal];
       if (spec) {
         const childIdx = list.findIndex((r) => r[0] === 'child');
+        // Row keys are the REAL param path: payload.<child>.<key> — the
+        // macros read pl[child][key], so flat payload.<key> rows would read
+        // a path that never exists (undefined) and write tweaks the macro
+        // ignores.
+        const prefix = `payload.${childVal}.`;
         const payloadRows = spec.map((e) => {
-          if (e.kind === 'enemy') return [`payload.${e.key}`, 'enum', ENEMY_TYPE_IDS];
-          if (e.kind === 'enum') return [`payload.${e.key}`, 'enum', e.values];
-          return [`payload.${e.key}`, 'num', e.step, e.null];
+          if (e.kind === 'enemy') return [`${prefix}${e.key}`, 'enum', ENEMY_TYPE_IDS];
+          if (e.kind === 'enum') return [`${prefix}${e.key}`, 'enum', e.values];
+          return [`${prefix}${e.key}`, 'num', e.step, e.null];
         });
         list = childIdx >= 0
           ? [...list.slice(0, childIdx + 1), ...payloadRows, ...list.slice(childIdx + 1)]
@@ -331,6 +336,9 @@ export const AttackTheater = {
       const idx = stepSize.indexOf(cur);
       const next = stepSize[(idx + deltaSign + stepSize.length) % stepSize.length];
       setVal(next);
+      // Switching the child selector re-materializes the new child's payload
+      // rows from ITS macro defaults — no replay needed to see real values.
+      if (key === 'child') this._materializeChildPayload();
       return;
     }
     // Unified sub-payload rows (payload.<key>): the panel reflects the
@@ -339,8 +347,9 @@ export const AttackTheater = {
     // Null-aware rows (fuse/ttl): stepping below 0 wraps to null
     // (contact-only); stepping up from null returns to the default.
     if (isDotted && key.startsWith('payload.') && kind !== 'enum') {
-      const pKey = key.slice('payload.'.length);
-      const target = CHILD_TARGETS[this._params?.child] ?? this._params?.child;
+      const rest = key.slice('payload.'.length).split('.');
+      const pKey = rest.slice(1).join('.');
+      const target = CHILD_TARGETS[rest[0]] ?? CHILD_TARGETS[this._params?.child];
       const d = (getMacro(target) ?? getPrimitive(target))?.params?.[pKey];
       const cur = getVal();
       if (cur === undefined) { setVal(d !== undefined ? d : 0); return; }
@@ -575,6 +584,29 @@ export const AttackTheater = {
     this._choreo = null;
   },
 
+  /**
+   * Materialize the selected child's payload sub-object from the TARGET
+   * MACRO's own defaults (single owner — the theater never hardcodes them).
+   * Called on every param rebuild AND when the child row is adjusted, so
+   * switching child live re-materializes without a full replay. Existing
+   * values (tweaks) are preserved; only missing keys fill from defaults.
+   */
+  _materializeChildPayload() {
+    const id = this.currentId();
+    if (!CHILD_MACROS.has(id)) return;
+    const childVal = this._params?.child;
+    const target = CHILD_TARGETS[childVal];
+    if (!target) return;
+    const tDef = getMacro(target)?.params ?? getPrimitive(target)?.params ?? {};
+    const spec = CHILD_PARAM_SPECS[childVal] ?? [];
+    const sub = { ...(this._params?.payload?.[childVal] ?? {}) };
+    for (const e of spec) {
+      const k = e.key;
+      if (!(k in sub) && k in tDef) sub[k] = tDef[k];
+    }
+    this._params.payload = { ...(this._params?.payload ?? {}), [childVal]: sub };
+  },
+
   _loadParams() {
     const id = this.currentId();
     const def = getPrimitive(id)?.params ?? getMacro(id)?.params ?? {};
@@ -582,6 +614,7 @@ export const AttackTheater = {
     // User tweaks (adjustParam) are stored per-id in _tweaks and merged on top,
     // so they survive the per-replay rebuild without leaking demo mutations.
     this._params = { ...def, ...preset };
+    this._materializeChildPayload();
     // Dotted tweak keys (e.g. 'seg0.damage') apply to nested params; flat keys
     // spread as before.
     for (const [key, val] of Object.entries(this._tweaks?.[id] ?? {})) {
@@ -1479,8 +1512,11 @@ export const AttackTheater = {
     const childVal = this._params?.child;
     const specFor = (key) => {
       if (key.startsWith('payload.') && childVal) {
-        const e = (CHILD_PARAM_SPECS[childVal] ?? []).find((x) => x.key === key.slice('payload.'.length));
-        if (e) return e;
+        const rest = key.slice('payload.'.length).split('.');
+        if (rest[0] === childVal) {
+          const e = (CHILD_PARAM_SPECS[childVal] ?? []).find((x) => x.key === rest.slice(1).join('.'));
+          if (e) return e;
+        }
       }
       return metaSpecs.get(key);
     };
@@ -1505,6 +1541,7 @@ export const AttackTheater = {
       const val = key.includes('.')
         ? key.split('.').reduce((o, k) => o?.[k], this._params)
         : this._params[key];
+
       const valStr = formatParamValue(val, specFor(key), key);
       ctx.fillText(`${selected ? '▶' : '·'} ${key} = ${valStr}${tweak ? '' : '  (fixed)'}`, panelX + 12, py);
       py += 15;
