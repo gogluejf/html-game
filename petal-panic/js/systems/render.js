@@ -392,12 +392,8 @@ export function render(ctx) {
           `BOSS:${b.phase}×${b.escalation.toFixed(2)}`, b.hp / b.maxHp, layerColor(b));
       }
     }
-    // Special projectiles: name + TTL/fuse bar
-    for (const s of getSpecials()) {
-      if (!s.alive) continue;
-      const frac = s.ttlFrac;
-      drawLabel(ctx, s.x + s.w / 2, s.y - 10, s.type, frac, layerColor(s));
-    }
+    // Special projectiles' TTL bars come from the unified timer stack
+    // (drawTimerStack) — no per-type loop.
     ctx.restore();
   }
 
@@ -1024,9 +1020,10 @@ function drawEntityTransformDebug(ctx, ent) {
   }
 
   // 3) Stacked labeled TTL bars — shown at ALL detail levels (this is the core
-  //    of the TTL debug; you should see life/fuse/death/rec/inv/special counting
+  //    of the TTL debug; you should see life/death/rec/inv/special counting
   //    down as soon as debug is on). One row per active timer, above the box.
-  drawTimerStack(ctx, ent, cx, b.y - 34);
+  //    Sits between the box top and the mirror-icon band (b.y - 24).
+  drawTimerStack(ctx, ent, cx, b.y - 14);
 
   // 4) Mirror icons (always shown — part of the collision debug details).
   //    Double-arrow glyphs: ↔ = mirrorX, ↕ = mirrorY. Lit cyan when active,

@@ -6,7 +6,7 @@
 //     line path, byte-identical (natural/sheet box, 'hit'/'expire' events).
 //   • arc != null (a number, 0 included) → ARCIING recipe: the former
 //     spawnBomb path — gravityValue = arc, 18px typeless carrier box,
-//     specialType sheet routing, fuse-labeled TTL, bounce →
+//     specialType sheet routing, plain life TTL, bounce →
 //     solidBehavior 'reflect'/'stop', terminal 'detonate' event.
 //
 // Entity tagging (BOTH recipes): _attackId = 'projectile' (engine/pool
@@ -93,7 +93,7 @@ function spawnCenter(ctx, origin) {
 
 /**
  * ARCIING recipe (formerly spawnBomb in the deleted 'ballistic' primitive).
- * Gravity arc, bounce or stop on impact, fuse-labeled TTL, 'detonate' on
+ * Gravity arc, bounce or stop on impact, plain life TTL, 'detonate' on
  * death. Runs exactly when the caller passed an explicit `arc` (any number,
  * 0 included).
  * @returns {object|null} the Projectile entity, or null if the pool is exhausted
@@ -135,12 +135,10 @@ function spawnArcing(p, ctx, h) {
   ent.damage = p.damage;
   ent.friendly = p.team !== 'foe';
   ent.layer = ent.friendly ? LAYER.PROJ_ALLY : LAYER.PROJ_FOE;
-  // Fuse: the bomb's TTL label is 'fuse' (Projectile relabels it), so setLife()
-  // — which writes the 'life' timer — would be ignored by tickTtl(). Write
-  // the labeled timer directly so the declared ttl actually governs expiry.
-  const label = ent._ttlLabel ?? 'life';
+  // TTL: the plain 'life' timer — one bar per entity, no relabel. tickTtl()
+  // honors it; _bombFuseDisabled gates detonation (not display) when ttl is
+  // null (contact-only carriers).
   ent.setLife(p.ttl ?? 0);
-  ent.timers.set(label, p.ttl ?? 0);
   ent._bombFuseDisabled = p.ttl === null;
   ent._bombRetainOnContact = p.retainOnContact;
   ent._bombRetainOnSettle = p.retainOnSettle;
@@ -242,8 +240,8 @@ export function spawnProjectile(p, ctx, h) {
     // Re-aim the sprite nose to the exact (possibly non-8-way) angle.
     ent.orientSprite(ent.vx, ent.vy);
     ent.damage = p.damage;
-    // setLife() writes the 'life' timer — Projectile's _ttlLabel is 'life', so
-    // tickTtl() honors it (legacy `this.life` field stays in sync too).
+    // setLife() writes the 'life' timer — tickTtl() honors it by default
+    // (legacy `this.life` field stays in sync too).
     ent.setLife(p.ttl);
   }
 

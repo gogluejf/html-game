@@ -38,12 +38,11 @@ ok('bounce=true → solidBehavior reflect; bounce=false → stop', () => {
   assert.equal(e2.solidBehavior, 'stop');
 });
 
-ok('ttl becomes the fuse on the entity', () => {
+ok('ttl becomes the plain life timer on the entity', () => {
   const ctx = makeCtx();
   const ent = spawnProjectile({ ...P, ttl: 2.5 }, ctx);
-  // setLife drives the life/fuse timer; verify via the timers facade if present.
-  assert.ok(ent.timers?.get('life') === 2.5 || ent.life === 2.5 || ent.timers?.get('fuse') === 2.5,
-    `life=${ent.life} timers=${JSON.stringify([...(ent.timers?.entries?.() ?? [])])}`);
+  // setLife() writes the single 'life' timer — no fuse relabel.
+  assert.equal(ent.timers.get('life'), 2.5);
 });
 
 ok('stepBomb: alive bomb returns false (still in flight)', () => {

@@ -38,14 +38,14 @@ ok('multiple timers run concurrently', () => {
 
 ok('tick removes expired timers and edge-triggers expired()', () => {
   const t = new Timers();
-  t.set('fuse', 0.1);
+  t.set('life', 0.1);
   t.tick(0.05);
-  assert.equal(t.expired('fuse'), false); // not yet
+  assert.equal(t.expired('life'), false); // not yet
   t.tick(0.05);
-  assert.equal(t.expired('fuse'), true);  // just crossed zero this frame
-  assert.equal(t.has('fuse'), false);     // removed
+  assert.equal(t.expired('life'), true);  // just crossed zero this frame
+  assert.equal(t.has('life'), false);     // removed
   t.tick(0.05);
-  assert.equal(t.expired('fuse'), false); // only true on the crossing frame
+  assert.equal(t.expired('life'), false); // only true on the crossing frame
 });
 
 ok('fraction goes 1 -> 0 over life', () => {
@@ -86,7 +86,7 @@ ok('clear / clearAll work', () => {
 });
 
 ok('known labels have colors', () => {
-  for (const k of ['life', 'fuse', 'death', 'rec', 'intangible', 'rapid']) {
+  for (const k of ['life', 'death', 'rec', 'intangible', 'rapid']) {
     assert.ok(TIMER_COLORS[k], `missing color for ${k}`);
   }
 });

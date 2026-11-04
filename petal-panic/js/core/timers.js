@@ -15,8 +15,7 @@
 
 /** Short label → color map for the debug bars. Unknown labels fall back to gray. */
 export const TIMER_COLORS = {
-  life:       '#95a5a6', // generic expiry (coin/projectile)
-  fuse:       '#e67e22', // bomb / barrel detonation countdown
+  life:       '#95a5a6', // generic expiry (coin/projectile/bomb fuse)
   death:      '#e74c3c', // enemy death shrink/fade before despawn
   rec:        '#f1c40f', // hero hit-stun / recovery (control locked)
   intangible: '#00e5ff', // hero intangible (no damage taken) — BLUE
@@ -35,8 +34,8 @@ export const TIMER_COLOR_DEFAULT = '#7f8c8d';
  *   this.timers.set('intangible', 0.6); // start/refresh a timer
  *   this.timers.tick(dt);             // advance all (call once per frame)
  *   if (this.timers.get('intangible') > 0) // still active?
- *   const f = this.timers.fraction('fuse'); // 0..1 for bars
- *   if (this.timers.expired('fuse'))  // true on the exact frame it hits 0
+ *   const f = this.timers.fraction('life'); // 0..1 for bars
+ *   if (this.timers.expired('life'))   // true on the exact frame it hits 0
  */
 export class Timers {
   constructor() {

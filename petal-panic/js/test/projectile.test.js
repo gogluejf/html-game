@@ -92,26 +92,24 @@ ok('moves straight (no gravity drift)', () => {
 });
 
 console.log('Ballistic fields (Task 1.1)');
-ok('defaults: gravityValue=0, explode=false, _ttlLabel=life', () => {
+ok('defaults: gravityValue=0, explode=false, plain life timer (no relabel)', () => {
   const p = new Projectile(0, 0, 0, true);
   assert.equal(p.gravityValue, 0);
   assert.equal(p.explode, false);
-  assert.equal(p._ttlLabel, 'life');
+  assert.equal(p._ttlLabel, undefined, 'no relabel — tickTtl() defaults to life');
+  assert.ok(p.timers.get('life') > 0, 'life timer registered');
 });
-ok('explode=true → _ttlLabel=fuse and a real fuse timer counts down', () => {
-  const p = new Projectile(0, 0, 0, true);
-  p.initialize(0, 0, 0, true); // fresh slot
-  p.timers.clear('fuse');
-  // Wire the fuse exactly as initialize() does for exploding shots.
-  p._ttlLabel = 'fuse';
-  p.setLife(2);
-  p.timers.clear('life');
-  p.timers.set('fuse', 2);
+ok('explode=true → plain life timer counts down and expiry kills the shot', () => {
+  const p = new Projectile(0, 0, 0, true, 'bomb');
+  // Bombs no longer relabel the life timer as 'fuse' — same plain 'life'
+  // countdown as thorns (display and expiry share one bar).
+  assert.ok(p.timers.get('life') > 0, 'bomb carries the plain life timer');
+  const t0 = p.timers.get('life'); // bomb lifetime (1.5)
   p.update(0.5);
-  assert.ok(Math.abs(p.ttl - 1.5) < 1e-9, `ttl=${p.ttl} want 1.5`);
+  assert.ok(Math.abs(p.ttl - (t0 - 0.5)) < 1e-9, `ttl=${p.ttl} want ${t0 - 0.5}`);
   assert.equal(p.alive, true);
   p.update(1.6);
-  assert.equal(p.alive, false, 'fuse expiry kills the shot');
+  assert.equal(p.alive, false, 'life expiry kills the shot');
   assert.equal(p.ttlExpired, true, 'expiry flagged ttlExpired');
 });
 ok('arcing motion: gravityValue=800 integrates vy += g*dt and moves by v*dt', () => {

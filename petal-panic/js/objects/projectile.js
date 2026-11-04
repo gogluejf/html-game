@@ -183,15 +183,9 @@ export class Projectile extends Entity {
     // only establishes safe defaults for pooled slots.
     this.gravityValue = isThorn ? 0 : (meta.gravity ?? 0);
     this.explode = isThorn ? false : !!meta.explode;
-    // Countdown label: 'fuse' when exploding so the debug stack reads it as a
-    // fuse, 'life' otherwise. tickTtl() honors _ttlLabel.
-    this._ttlLabel = this.explode ? 'fuse' : 'life';
+    // One TTL bar per entity: the plain 'life' timer (bombs relabel nothing —
+    // detonation keys off ttlExpired, not the timer name).
     this.setLife(this.life);
-    if (this.explode) {
-      // Relabel the life timer as 'fuse' for display; tickTtl() honors _ttlLabel.
-      this.timers.clear('life');
-      this.timers.set('fuse', this.life);
-    }
     this.radius = this.explode ? meta.radius : 0;
     this.exploded = false;
     // Solid-collision behavior (data, not class): thorns phase through terrain;
@@ -396,8 +390,8 @@ export class Projectile extends Entity {
     }
 
     this.tickAnim(dt);
-    // TTL countdown via the shared timer set: honors _ttlLabel ('life' or
-    // 'fuse'). ttlExpired lets hosts (gameplay/theater) distinguish a fuse/
+    // TTL countdown via the shared timer set: the plain 'life' timer.
+    // ttlExpired lets hosts (gameplay/theater) distinguish a fuse/
     // lifetime expiry from a contact kill. Gated by _bombFuseDisabled so a
     // thrown carrier with no flight fuse never self-detonates.
     const wasAlive = this.alive;
