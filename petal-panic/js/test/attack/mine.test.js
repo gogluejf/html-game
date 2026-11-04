@@ -256,3 +256,40 @@ for (const id of ['reticleShot', 'clusterBomb', 'spawnSplit', 'skyMissile', 'mis
     }
   });
 }
+
+test('child payload rows survive left/right navigation for every child macro', async () => {
+  const { CHILD_PARAM_SPECS } = await import('../../combat/attack/attackIds.js');
+  const t = AttackTheater;
+  t.open();
+  try {
+    for (const id of ['reticleShot', 'clusterBomb', 'spawnSplit', 'skyMissile', 'missileRain']) {
+      for (const child of Object.keys(CHILD_PARAM_SPECS)) {
+        t.index = t.entries.indexOf(id);
+        t._tweaks[id] = { child };
+        t._loadParams();
+        // Match the original working path: change child live, then navigate.
+        t._materializeChildPayload();
+        const before = { ...t._params.payload[child] };
+        for (const { key } of CHILD_PARAM_SPECS[child]) {
+          assert.notEqual(before[key], undefined, `${id}/${child}/${key}: initial default`);
+        }
+        t.step(1);
+        t.step(-1);
+        assert.equal(t.currentId(), id);
+        assert.equal(t._params.child, child);
+        assert.deepEqual(t._params.payload[child], before, `${id}/${child}: navigation preserves defaults`);
+        delete t._tweaks[id];
+      }
+    }
+    t.index = t.entries.indexOf('reticleShot');
+    t._tweaks.reticleShot = { child: 'mine', 'payload.mine.ttl': null, 'payload.mine.radius': 123 };
+    t._loadParams();
+    t.step(-1); t.step(1);
+    assert.equal(t._params.payload.mine.ttl, null);
+    assert.equal(t._params.payload.mine.radius, 123);
+    assert.notEqual(t._params.payload.mine.blinkDuration, undefined);
+  } finally {
+    for (const id of ['reticleShot', 'clusterBomb', 'spawnSplit', 'skyMissile', 'missileRain']) delete t._tweaks[id];
+    t.close();
+  }
+});

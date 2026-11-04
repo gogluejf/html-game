@@ -617,7 +617,6 @@ export const AttackTheater = {
     // User tweaks (adjustParam) are stored per-id in _tweaks and merged on top,
     // so they survive the per-replay rebuild without leaking demo mutations.
     this._params = { ...def, ...preset };
-    this._materializeChildPayload();
     // Dotted tweak keys (e.g. 'seg0.damage') apply to nested params; flat keys
     // spread as before.
     for (const [key, val] of Object.entries(this._tweaks?.[id] ?? {})) {
@@ -634,6 +633,10 @@ export const AttackTheater = {
         this._params[key] = val;
       }
     }
+    // Restore the selected child AND its saved values before filling defaults.
+    // Otherwise navigation back seeds the default child, then switches to an
+    // unmaterialized saved child whose panel rows display undefined.
+    this._materializeChildPayload();
   },
 
   /**
