@@ -669,11 +669,15 @@ export const AttackTheater = {
       if (h.id === 'throwEnemy') {
         if (seen.has(h)) return;
         seen.add(h);
-        h.on('land', ({ enemy }) => {
-          if (!enemy || !enemy.alive) return;
+        const register = ({ enemy }) => {
+          if (!enemy || !enemy.alive || this._thrownEnemies.includes(enemy)) return;
           this._thrownEnemies.push(enemy);
           this._world.add(enemy);
-        });
+        };
+        h.on('land', register);
+        // A deferred child may land during its parent's first step, before
+        // the host discovers it. Reconcile existing state as well as events.
+        register({ enemy: h.state?.enemy });
       }
       for (const ch of h.handles ?? []) visit(ch);
       if (h.inner && h.inner !== h) visit(h.inner);
@@ -986,7 +990,7 @@ export const AttackTheater = {
     // throwEnemy handles AFTER the spawn-time call. Re-walk each frame — the
     // _landSeen set makes late handles subscribe exactly once.
     for (const h of this._handles) {
-      if (BOMB_FAMILY.has(h.id)) this._registerThrownEnemies(h);
+      this._registerThrownEnemies(h);
     }
 
     // Step each live handle's entity.
@@ -1109,6 +1113,8 @@ export const AttackTheater = {
           finished = h.step(DT);
         }
       }
+      // Discover children created/landed in this step for EVERY root type.
+      this._registerThrownEnemies(h);
       if (finished) this._handles.splice(i, 1);
     }
 

@@ -237,7 +237,7 @@ defineMacro('skyMissile', {
           // throwEnemy owns its defaults (single source); the drop keeps the
           // contact-only fuse (null) unless the payload sets one.
           ttl: sub('enemy').ttl ?? null,
-          enemyType: sub('enemy').enemyType,
+          ...(sub('enemy').enemyType !== undefined ? { enemyType: sub('enemy').enemyType } : {}),
           mineType: sub('enemy').mineType ?? p.mineType,
           team: p.blastTeam,
           target: ctx.world?.hero ?? null,

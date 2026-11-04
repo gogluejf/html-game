@@ -230,3 +230,29 @@ test('pool exhaustion finishes throwMine without leaving a root', () => {
   assert.equal(host.spawn('throwMine', {}, c.attacker)._completed, true);
   assert.equal(host.roots.size, 0);
 });
+
+for (const id of ['reticleShot', 'clusterBomb', 'spawnSplit', 'skyMissile', 'missileRain']) {
+  test(`${id}: theater registers real landed enemies exactly once`, () => {
+    const t = AttackTheater;
+    t.open();
+    try {
+      t.index = t.entries.indexOf(id);
+      assert.ok(t.index >= 0);
+      t._tweaks[id] = { child: 'enemy', payload: { enemy: { ttl: null, explodeOnContact: false } } };
+      t._loadParams();
+      t._replay();
+      for (let i = 0; i < 600 && !t._thrownEnemies.length; i++) t.update(dt);
+      assert.ok(t._thrownEnemies.length > 0, `${id}: no landed enemy registered`);
+      const enemy = t._thrownEnemies[0];
+      assert.ok(enemy.alive, 'landed enemy is alive');
+      for (const h of t._handles) {
+        t._registerThrownEnemies(h);
+        t._registerThrownEnemies(h);
+      }
+      assert.equal(t._thrownEnemies.filter(e => e === enemy).length, 1);
+    } finally {
+      delete t._tweaks[id];
+      t.close();
+    }
+  });
+}
