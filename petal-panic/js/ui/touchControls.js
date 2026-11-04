@@ -200,7 +200,8 @@ function wireStick() {
 // Global: F1 debug · F2 effect theater · F3 collision view · F4 attack theater ·
 //         Shift+E collision dump · E stats dump · Escape back/close
 // In-debug (handleDebugKeys): F god · Z slowmo · T telemetry · U input monitor ·
-//         Y hero swap · L event log · W warp area · G drop ring · arrows select
+//         Y hero swap · L event log · W warp area · G drop ring · B barrel
+//         drop · arrows select
 
 const DEBUG_KEYS = [
   { label: 'F1', tap: () => keyTap('F1') },
@@ -217,6 +218,7 @@ const DEBUG_KEYS = [
   { label: 'L', tap: () => keyTap('KeyL') },   // event log
   { label: 'W', tap: () => keyTap('KeyW') },   // warp to next area
   { label: 'G', tap: () => keyTap('KeyG') },   // inject special drops
+  { label: 'B', tap: () => keyTap('KeyB') },   // barrel drop (every kind)
   { label: '◀', tap: () => keyTap('ArrowLeft') },
   { label: '▶', tap: () => keyTap('ArrowRight') },
   { label: '▲', tap: () => keyTap('ArrowUp') },
