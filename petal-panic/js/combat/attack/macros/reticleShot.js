@@ -105,7 +105,7 @@ defineMacro('reticleShot', {
     ],
     desc: 'Target-reticle effect tracks the target, locks at lockTime, then fires one projectile at the locked point when duration ends.',
     params: [
-      { key: 'child', desc: "any ATTACK_IDS child — projectile | explosion | shockwave | napalm (straight) · bomb | mine | molotov | enemy (arc, host-settled)" },
+      { key: 'child', desc: "any ATTACK_IDS child — projectile | expl_proj | shock_proj | napalm (straight) · bomb | mine | molotov | enemy (arc, host-settled)" },
       { key: 'target', desc: 'entity to track (default ctx.target)' },
       { key: 'duration', desc: 'warning window (s)' },
       { key: 'lockTime', desc: 's after start when the aim freezes' },
@@ -221,7 +221,7 @@ defineMacro('reticleShot', {
         //   mine    → throwMine: arcs, settles, arms (payload.mine.ttl null = contact)
         //   molotov → molotov: arcs, shatters into a burn area at death point
         //   enemy   → throwEnemy: arcs, lands as a real enemy
-        const payloadSize = child === 'shockwave'
+        const payloadSize = child === 'shock_proj'
           ? { radius: sub.radius ?? blast.shockRadius }
           : child === 'napalm'
             ? { fireWidth: sub.fireWidth ?? blast.fireWidth }

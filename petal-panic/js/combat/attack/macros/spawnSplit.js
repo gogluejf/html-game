@@ -123,7 +123,7 @@ defineMacro('spawnSplit', {
     effects: [],
     desc: 'Fan out N children and materialize each into a live projectile/bomb or enemy. Declarative — one invoke, live results.',
     params: [
-      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | enemy | explosion | shockwave | napalm' },
+      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | enemy | expl_proj | shock_proj | napalm' },
       { key: 'payload', desc: 'sub-payload config object — keys per the child (see CHILD_PARAM_SPECS); legacy flat keys below still work' },
       { key: 'count', desc: 'children created' },
       { key: 'centerDirection', desc: 'central direction (radians)' },
@@ -252,7 +252,7 @@ defineMacro('spawnSplit', {
           groundY: p.groundY, platforms: p.platforms,
         }, ctx);
         if (child?.entity) handles.push(child);
-      } else if (c.child === 'explosion' || c.child === 'shockwave' || c.child === 'napalm') {
+      } else if (c.child === 'expl_proj' || c.child === 'shock_proj' || c.child === 'napalm') {
         // Impact child → straight carrier macro (explosiveProjectile /
         // shockwaveProjectile / napalm): flies the fan vector and detonates at
         // its death point (contact, surface, or ttl) — same composition as
@@ -261,7 +261,7 @@ defineMacro('spawnSplit', {
         // The carrier macros own their size defaults (single source); legacy
         // blast.* fills only what the payload leaves unset.
         const bl = cfg(c.child, {
-          radius: c.child === 'shockwave' ? p.blast?.shockRadius : c.child === 'explosion' ? p.blast?.explosionRadius : undefined,
+          radius: c.child === 'shock_proj' ? p.blast?.shockRadius : c.child === 'expl_proj' ? p.blast?.explosionRadius : undefined,
           fireWidth: c.child === 'napalm' ? p.blast?.fireWidth : undefined,
         }, {});
         const child = invokeChild(c.child, {

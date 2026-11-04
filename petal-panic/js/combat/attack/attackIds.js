@@ -12,12 +12,12 @@
 //   mine       → 'throwMine'             macro: lobs a mine that rests
 //   molotov    → 'molotov'               macro: arcing fire lobe → fireArea
 //   enemy      → 'throwEnemy'            macro: thrown enemy carrier
-//   explosion  → 'explosiveProjectile'   macro: carrier → explosion zone on impact
-//   shockwave  → 'shockwaveProjectile'   macro: carrier → shockwave zone on impact
+//   expl_proj  → 'explosiveProjectile'   macro: carrier → explosion zone on impact
+//   shock_proj  → 'shockwaveProjectile'   macro: carrier → shockwave zone on impact
 //   napalm     → 'napalm'                macro: carrier → fireArea on impact
 //
-// Note: 'explosion'/'shockwave'/'napalm' are PROJECTILE-CARRIER macros — they
-// fly and materialize their zone effect on impact. They are NOT the
+// Note: 'expl_proj'/'shock_proj'/'napalm' are PROJECTILE-CARRIER
+// macros — they fly and materialize their zone effect on impact. They are NOT the
 // 'explosion'/'shockwave'/'fireArea' zone primitives.
 //
 // reticleShot's legacy 'plain' default is not a 9th value: it is absorbed
@@ -35,8 +35,8 @@ export const ATTACK_IDS = Object.freeze([
   'mine',
   'molotov',
   'enemy',
-  'explosion',
-  'shockwave',
+  'expl_proj',
+  'shock_proj',
   'napalm',
 ]);
 
@@ -47,8 +47,8 @@ export const CHILD_TARGETS = Object.freeze({
   mine: 'throwMine',
   molotov: 'molotov',
   enemy: 'throwEnemy',
-  explosion: 'explosiveProjectile',
-  shockwave: 'shockwaveProjectile',
+  expl_proj: 'explosiveProjectile',
+  shock_proj: 'shockwaveProjectile',
   napalm: 'napalm',
 });
 
@@ -127,11 +127,11 @@ export const CHILD_PARAM_SPECS = Object.freeze({
     { key: 'enemyType', kind: 'enemy', desc: 'enemy id when the carrier lands' },
     { key: 'mineType', kind: 'enum', values: ['explosion', 'shockwave'], desc: 'landed payload type' },
   ]),
-  explosion: Object.freeze([
+  expl_proj: Object.freeze([
     { key: 'damage', kind: 'num', step: 5, desc: 'blast damage' },
     { key: 'radius', kind: 'num', step: 10, desc: 'blast radius (px)' },
   ]),
-  shockwave: Object.freeze([
+  shock_proj: Object.freeze([
     { key: 'damage', kind: 'num', step: 5, desc: 'ring damage' },
     { key: 'radius', kind: 'num', step: 10, desc: 'ring max radius (px)' },
   ]),

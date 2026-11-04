@@ -60,7 +60,7 @@ const DEFAULTS = Object.freeze({
   mineType: 'explosion',
   mineTtl: 2,
   blinkDuration: 2,
-  child: 'explosion',    // any ATTACK_IDS child — payload per missile (pass-through to skyMissile)
+  child: 'expl_proj',    // any ATTACK_IDS child — payload per missile (pass-through to skyMissile)
   blast: {                // per-payload size params (each payload reads its own key)
     explosionRadius: 60,  // explosion blast circle (px)
     shockRadius: 150,     // shockwave ring max radius (px)

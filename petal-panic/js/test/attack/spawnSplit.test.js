@@ -112,7 +112,7 @@ ok('child=explosion|shockwave|napalm: fan materializes straight impact carriers'
   // Full-child contract: the 3 straight payload macros fly the fan vector and
   // detonate at their death point — one handle per child, straight carriers.
   const P = { x: 400, y: 300, count: 2, centerDirection: 0, angle: Math.PI / 3, force: 300 };
-  for (const child of ['explosion', 'shockwave', 'napalm']) {
+  for (const child of ['expl_proj', 'shock_proj', 'napalm']) {
     const ctx = makeContext(attacker(), { pools: { projectilePool: new Pool(Projectile, 32) } });
     const h = invoke('spawnSplit', { ...P, child }, ctx);
     assert.equal(h.handles.length, 2, `child=${child}: 2 live handles`);

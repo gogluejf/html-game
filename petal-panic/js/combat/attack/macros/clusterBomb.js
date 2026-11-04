@@ -47,7 +47,7 @@ defineMacro('clusterBomb', {
     effects: [],
     desc: 'Parent bomb detonates → fans N children (any child type) via spawnSplit.',
     params: [
-      { key: 'child', desc: 'projectile | bomb | mine | molotov | enemy | explosion | shockwave | napalm (children)' },
+      { key: 'child', desc: 'projectile | bomb | mine | molotov | enemy | expl_proj | shock_proj | napalm (children)' },
       { key: 'payload', desc: 'sub-payload config for the children (keys per the child; see CHILD_PARAM_SPECS)' },
       { key: 'mineType', desc: 'explosion | shockwave' },
       { key: 'speed', desc: 'parent launch force (px/s)' },

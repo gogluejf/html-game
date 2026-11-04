@@ -59,7 +59,7 @@ const DEFAULTS = Object.freeze({
   mineType: 'explosion',
   mineTtl: 2,
   blinkDuration: 2,
-  child: 'explosion',    // any ATTACK_IDS child — payload that resolves on the marked surface
+  child: 'expl_proj',    // any ATTACK_IDS child — payload that resolves on the marked surface
   // Sub-payload config (M3 completion): keys per the child's CHILD_PARAM_SPECS
   // (attackIds.js). NULL by default — a concrete default object would clobber
   // the caller's flat legacy keys (blast.*, mineType, mineTtl, blinkDuration)
@@ -116,7 +116,7 @@ defineMacro('skyMissile', {
       { type: 'surface-target-marker', desc: 'landing warning fixed at the impact point for the whole warning window' },
     ],
     params: [
-      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | explosion | shockwave | napalm (enemy = dropped monkey)' },
+      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | enemy | expl_proj | shock_proj | napalm' },
       { key: 'payload', desc: 'sub-payload config for the drop (keys per the child; see CHILD_PARAM_SPECS)' },
       { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'x', desc: 'impact x (world) — marker and drop share it' },
@@ -165,7 +165,7 @@ defineMacro('skyMissile', {
       //   projectile — plain drop thorn: contact damage on the way down, dies
       //     at the marked line (crossing check) or on target contact. No
       //     payload — the drop shot IS the hit.
-      //   explosion | shockwave | napalm — straight impact carriers (each
+      //   expl_proj | shock_proj | napalm — straight impact carriers (each
       //     reads its OWN size key from `blast`), killed at the marked line by
       //     the drop-phase crossing check → payload materializes there.
       //   mine — arc carrier (arc 0), settles at the marked surface via the
@@ -191,10 +191,10 @@ defineMacro('skyMissile', {
       // The carrier macros own their size defaults (single source) — no
       // macro-local private values here.
       const payloadSize = {
-        explosionRadius: () => ({ radius: sub('explosion').radius ?? blast.explosionRadius }),
-        shockwave: () => ({ radius: sub('shockwave').radius ?? blast.shockRadius }),
+        expl_proj: () => ({ radius: sub('expl_proj').radius ?? blast.explosionRadius }),
+        shock_proj: () => ({ radius: sub('shock_proj').radius ?? blast.shockRadius }),
         napalm: () => ({ fireWidth: sub('napalm').fireWidth ?? blast.fireWidth }),
-      }[p.child === 'shockwave' ? 'shockwave' : p.child === 'napalm' ? 'napalm' : 'explosionRadius']();
+      }[p.child === 'shock_proj' ? 'shock_proj' : p.child === 'napalm' ? 'napalm' : 'expl_proj']();
       const m = invokeChild(p.child, {
         origin: { x: pt.x, y: spawnY },
         direction: Math.PI / 2,

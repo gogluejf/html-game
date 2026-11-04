@@ -41,7 +41,7 @@ const ctx = () => makeContext(attacker(), { pools: { projectilePool: mkPool() } 
 
 ok('ATTACK_IDS is the exact 8-value flat list (no ballistic, no plain)', () => {
   assert.deepEqual(ATTACK_IDS, [
-    'projectile', 'bomb', 'mine', 'molotov', 'enemy', 'explosion', 'shockwave', 'napalm',
+    'projectile', 'bomb', 'mine', 'molotov', 'enemy', 'expl_proj', 'shock_proj', 'napalm',
   ]);
 });
 
@@ -63,8 +63,8 @@ ok('CHILD_TARGETS pins the user-confirmed mappings', () => {
     mine: 'throwMine',
     molotov: 'molotov',
     enemy: 'throwEnemy',
-    explosion: 'explosiveProjectile',
-    shockwave: 'shockwaveProjectile',
+    expl_proj: 'explosiveProjectile',
+    shock_proj: 'shockwaveProjectile',
     napalm: 'napalm',
   });
 });
@@ -95,7 +95,7 @@ ok('invokeChild delegates projectile → invoke("projectile")', () => {
 });
 
 ok('invokeChild delegates explosion → invoke("explosiveProjectile")', () => {
-  const h = invokeChild('explosion', { x: 400, y: 300, speed: 300, radius: 60 }, ctx());
+  const h = invokeChild('expl_proj', { x: 400, y: 300, speed: 300, radius: 60 }, ctx());
   assert.equal(h.id, 'explosiveProjectile');
   assert.ok(h.entity, 'carrier entity spawned');
 });
