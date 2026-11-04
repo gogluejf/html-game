@@ -647,15 +647,28 @@ export const AttackTheater = {
    * — it reads as a projectile that bounced and vanished.
    */
   _registerThrownEnemies(root) {
-    // Persistent per-theater set: handles materialize over time (cluster fan
-    // at detonate, missiles at launch) so this is re-called every frame; the
-    // set makes late-arriving handles subscribe exactly ONCE.
+    // Persistent per-theater set of SUBSCRIBED throwEnemy handles.
+    // NOTE: only LEAF throwEnemy handles are marked seen — NEVER the parents.
+    // The fan/shot handles are born LATE (clusterBomb at carrier detonate,
+    // reticleShot at fire, missileRain/skyMissile at launch). Marking parents
+    // made the walk skip them on later frames, so the late-born throwEnemy
+    // children were never subscribed — the landed enemy never entered
+    // _thrownEnemies, was never stepped/drawn (invisible), and its fuse
+    // detonated late ("laggy explosion"). Parents get re-traversed every
+    // frame instead (small trees, trivial cost); each throwEnemy still
+    // subscribes exactly once.
+    // TODO(self-contained-attack-invoke): DELETE this method — the
+    // AttackLifecycle registry (plans/self-contained-attack-invoke.md,
+    // M1-M2: invoke() auto-registers, the loop drives step/draw/prune)
+    // makes the theater own zero lifecycle walks. Landed-enemy registration
+    // is the enemy-layer handoff that contract absorbs.
     this._landSeen ??= new Set();
     const seen = this._landSeen;
     const visit = (h) => {
-      if (!h || seen.has(h)) return;
-      seen.add(h);
+      if (!h) return;
       if (h.id === 'throwEnemy') {
+        if (seen.has(h)) return;
+        seen.add(h);
         h.on('land', ({ enemy }) => {
           if (!enemy || !enemy.alive) return;
           this._thrownEnemies.push(enemy);
