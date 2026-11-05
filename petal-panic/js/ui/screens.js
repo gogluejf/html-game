@@ -2158,7 +2158,7 @@ export const GameOver = {
       if (actions.quit) actions.quit(); else tryTransition(S.HOME);
       return true;
     }
-    const opts = this.options();
+    const opts = this.options(hero);
     switch (action) {
       case 'up':
         stepOptionFocus(this, -1, opts);
