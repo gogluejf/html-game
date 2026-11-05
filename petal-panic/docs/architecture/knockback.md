@@ -95,6 +95,12 @@ knockback plays out visibly; control returns cleanly when it expires. This is wh
 a connect feel like it *lands*: the target actually reacts instead of the attacker passing
 through.
 
+**Ordering: shove before damage.** The impulse is applied to the victim BEFORE its HP is
+drained. A kill-blow zeroes the corpse's velocity in the death pipeline; applying the
+shove afterward would land on a body that never integrates it, so same-frame kills would
+not fly off. Shoving first means even the killing hit carries the full launch into the
+death slide.
+
 **Protection window.** After being hit, a victim may briefly absorb further hits. Heroes
 use this so a single encounter doesn't melt them across several overlapping frames.
 Enemies rely instead on the existing "one hit per swing" rule, so their protection window
@@ -155,9 +161,9 @@ This is a design description, not tuning values.
 | Body contact (idle) | Hero overlaps a stationary enemy body | Small shove away, short stun. You bonk your head; you keep most control. |
 | Body contact (charging / dashing) | A fast-moving enemy body hits the hero head-on | Large launch, longer stun. Scales with the enemy's speed into the hit — a charging enemy far exceeds an idle one. |
 | Boss body contact | Overlap or charge from a heavy boss | Heavier than a regular enemy through its mass and speed; reads as a big fling. |
-| Projectile | A foe bullet strikes the hero | Moderate shove along the bullet's travel direction, short stun. Lighter than a body hit. |
+| Projectile | A foe bullet strikes the hero | Moderate shove along the bullet's travel direction, short stun. Lighter than a body hit. **Currently missing** — enemy projectiles carry no knockback data; only body contact and explosions shove the hero today. |
 | Heavy projectile | A large/slow foe shot (e.g. bomb) | Stronger shove + longer stun than an ordinary bullet. |
-| Melee hitbox (whip, lunge, etc.) | An enemy's ranged melee swing connects | Short shove + brief stun, directional toward the swing. Currently missing — should behave like a light body hit. |
+| Melee hitbox (whip, lunge, etc.) | An enemy's ranged melee swing connects | Short shove + brief stun, directional toward the swing. **Currently missing** — enemy melee hitboxes carry no knockback setting; the hero reacts through `KNOCKBACK_PROFILES` source keys instead. Should behave like a light body hit. |
 | Explosion / blast | Hero inside a blast radius | Strong radial shove outward from the blast center, falling off with distance; moderate-long stun. The heaviest "area" reaction. |
 
 Reading: the heavier and faster the source, the bigger the launch and the longer the
@@ -168,18 +174,18 @@ stun. Idle bodies are mild; charging bodies, heavy shots, and explosions are sev
 ## 11. Impact matrix — hero attacks on enemies
 
 Every way the hero can hurt an enemy, and how that hit should read in terms of knockback on
-the enemy. v1 scope applies knockback to the three committed attacks only; the rest deal
-damage without shoving (for now).
+the enemy. The committed attacks carry their full launch; normal melee carries a small
+burst shove; ranged fire deals damage without shoving.
 
 | Hero attack | Commitment | Knockback character on the enemy |
 |-------------|-----------|-------------------------------|
-| Normal melee | Low (quick poke) | v1: damage only, no knockback. (Future: small flinch.) |
+| Normal melee | Low (quick poke) | Small burst shove away from the hero, very short stun, no loft. Reads as a hit without committing — far lighter than the committed attacks. |
 | Sweep (Balthazar) | High — committed forward lunge | Medium-strong shove forward along the lunge + short stun. Clears the path ahead. |
 | Cartwheel (Scarlet) | High — committed retreat | Strong shove away from the hero + short stun. Creates escape space behind. |
 | Supermove dash | Highest — full-body commit | Strongest launch, longest stun, visible loft. The big reward; scales with dash speed. |
 | Thorn projectile | None (ranged) | No knockback — pure damage. Keeps basic fire safe and non-committal. |
 | Special projectile (saw/bomb) | Low (ranged) | v1: damage only. (Future: bomb could carry a radial shove.) |
-| Friendly explosion | Area | Blows enemies radially outward, falling off with distance. |
+| Friendly explosion | Area | Blows enemies radially outward, falling off with distance. Implemented — `BARREL_EXPLOSION_KNOCKBACK` / `JACKO_EXPLOSION_KNOCKBACK` route through `resolveExplosion()`'s radial path. |
 
 Reading: the more the hero commits their body, the harder the enemy is thrown. A bullet
 never shoves; a supermove launches. This contrast is the core of the design intent.
@@ -198,31 +204,33 @@ without shoving, so there is a clear contrast between "I threw my whole body at 
 
 ## 13. v1 Scope & Handoff
 
-v1 ships knockback on the three committed hero attacks — Balthazar's sweep, Scarlet's
+v1 ships knockback on the hero's committed attacks — Balthazar's sweep, Scarlet's
 cartwheel, and the shared supermove dash — each carrying its own `knockback` setting on
-its attack hitbox and routing through the single `applyKnockback()` engine. Enemies react
-with hitstun (their `ai()` freezes while physics keep integrating, so the shove plays out
-visibly). Body contact is unified under the same rule for heroes and enemies: one
-velocity-scaled `bodyKnockback` carried on the entity, idle versus charging falling out of
-the motion term with no separate branch. And every shove carries a vertical pop, so a hard
-hit visibly lofts the victim off the ground before gravity brings it back.
+its attack hitbox and routing through the single `applyKnockback()` engine. Normal melee
+carries a small burst shove (lighter base, short stun, no pop) so a jab reads as a hit;
+the loft is reserved for the committed attacks. Enemies react with hitstun (their `ai()`
+freezes while physics keep integrating, so the shove plays out visibly). The impulse is
+applied before damage so a same-frame kill still carries the launch into its death slide.
+Body contact is unified under the same rule for heroes and enemies: one velocity-scaled
+`bodyKnockback` carried on the entity, idle versus charging falling out of the motion term
+with no separate branch. Friendly explosions shove radially (`BARREL_EXPLOSION_KNOCKBACK`,
+`JACKO_EXPLOSION_KNOCKBACK` via `resolveExplosion()`), and solid objects resist shoves
+through a `knockbackResist` divisor (barrels default 0.5).
 
 **Out of scope for v1 — deferred to future work:**
 
 - **Enemy→hero per-attack knockback.** Enemy melee hitboxes (Jester's whip, Vine Hound's
-  lunge, Violetta's swing) currently route through `KNOCKBACK_PROFILES` source keys rather
-  than `applyKnockback`, so they use flat profile strengths instead of a per-attack setting
-  with a motion contribution. The impact matrix in §10 describes the intended character; the
-  wiring to carry it on the enemy's own hitbox is not done.
+  lunge, Violetta's swing) and enemy projectiles carry no knockback setting; the hero
+  reacts through `KNOCKBACK_PROFILES` source keys (flat profile strengths, no motion
+  contribution) or not at all. The impact matrix in §10 describes the intended character;
+  the wiring to carry it on the enemy's own hitbox/projectile is not done.
 - **Friendly projectile knockback.** Thorn, saw, and bomb carry no knockback — pure damage.
   This is intentional for v1 (basic fire stays non-committal); a radial shove on the bomb is
   a candidate for later.
 - **Boss mass-based resistance.** Bosses read harder today via a higher base value chosen by
-  an `isBoss` check (`base: 340` vs `260`), not a true mass divisor. A real mass term that
-  resists all knockback uniformly is still to come.
+  an `isBoss` check (`base: 340` vs `260`), not a true mass divisor. The divisor path exists
+  (`knockbackResist`, used by solid objects) but bosses do not use it yet.
 - **Hit-stop.** Documented separately in `.squid-os/plans/knockback-system/hitstop-proposal.md`;
   not implemented.
-- **Radial explosion knockback on enemies.** The engine supports a `radial` dirMode, but no
-  explosion currently carries a knockback setting, so blasts shove nothing yet.
 
 The next epic picks up enemy→hero per-attack knockback and friendly projectile shove.
