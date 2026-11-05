@@ -33,6 +33,7 @@ import { Anim, makeTestFrame } from '../core/anim.js';
 import { tryTransition, getState, setState, S } from '../core/state.js';
 import { TUNING } from '../tuning.js';
 import { loadStore, saveStore, clearRunSave, updateProgress, markMediaUnlocked } from './progressStore.js';
+import { ctx as wctx } from '../world/context.js';
 
 // --- Zone-snapshot chain (state-persistence.md §1) ---------------------------
 //
@@ -522,7 +523,7 @@ export function resetAttemptState(h, c) {
  * @param {object} [ctx]
  */
 export function restartAttempt(h, ctx) {
-  const c = ctx ?? ctxOf(h);
+  const c = (ctx ?? ctxOf(h)) || buildContextFromHero(h);
   // Trace: open a fresh life bucket for each NEW attempt. The very first
   // attempt after startGame/continueRun reuses the already-present bucket
   // (index 0 / activeContinue's scope); only subsequent death-restarts push.
@@ -1371,3 +1372,26 @@ export function formatAreaId(level, area) {
 const _ctx = new WeakMap();
 export function bindAreaContext(h, ctx) { _ctx.set(h, ctx); }
 function ctxOf(h) { return _ctx.get(h); }
+
+/**
+ * Last-resort area context for a hero with NO bound context (e.g. the boot
+ * placeholder built before update.js's bindAreaContext ran — the MENU →
+ * AREA_ENTRY continue path hits this). Built from the shared world context
+ * (world/context.js), which update.js wires to the same entity lists as its
+ * own areaContext object. Without this fallback restartAttempt() crashed on
+ * `ctx.enemies` ("ctx is undefined") when the screen dispatch passed no ctx
+ * and the hero had none bound.
+ */
+function buildContextFromHero() {
+  return {
+    enemies: wctx.realEnemies ?? [],
+    boss: wctx.boss ?? null,
+    barrels: [...(wctx.barrels ?? []), ...(wctx.woodBarrels ?? []), ...(wctx.coinBarrels ?? [])],
+    powerups: wctx.powerups ?? [],
+    checkpoints: wctx.checkpoints ?? [],
+    projectiles: wctx.projectilePool ?? null,
+    coins: wctx.coins ?? null,
+    particles: wctx.particles ?? null,
+    effects: wctx.effects ?? null,
+  };
+}

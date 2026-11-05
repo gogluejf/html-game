@@ -41,6 +41,16 @@ function updateRealEnemy(e, dt) {
     resolve(e, [...ctx.solids, ...ctx.barrelSolidBoxes]);
   }
 
+  // Host-step contract (explosiveMonkey et al.): some real enemies carry an
+  // optional hostStep(dt, targets) that owns per-frame rules the base Enemy
+  // update doesn't cover — detonation contact/TTL for thrown carriers. The
+  // theater sandbox drives its own copies; this is the GAMEPLAY-side call so
+  // a monkey spawned into the real world behaves identically to one in the
+  // theater (self-contained enemy, host-agnostic step).
+  if (typeof e.hostStep === 'function' && e.alive) {
+    e.hostStep(dt, [ctx.hero, ...ctx.realEnemies.filter(x => x !== e)]);
+  }
+
   // Lethal fall cull (mirrors the hero's isBelowVerticalBottom rule): an enemy
   // that drops below the active zone's floor has no surface left — kill it
   // immediately so it can't linger as a phantom in the collision world
