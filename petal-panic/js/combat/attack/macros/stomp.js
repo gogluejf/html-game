@@ -52,9 +52,11 @@ const DEFAULTS = Object.freeze({
   // --- Telegraph timing (absolute seconds; the effect derives its total) ---
   buildTime: 0.9,         // grow/expand phase (s)
   gapTime: 0.4,           // silence hold ("be ready")
-  blinkTime: 0.5,         // final warning blinks (s)
-  impactDelay: 0.1,       // beat AFTER the warning, BEFORE the hop/slam
-                          // (macro-only — the effect finishes at blink end)
+  blinkTime: 0.5,         // final warning blinks (s) — MUST end before impact
+  impactDelay: 1.0,       // beat AFTER the warning ends, BEFORE the hop/slam.
+                          // Must be >= blinkTime so the last blink finishes
+                          // before the strike lands (old 0.1 made the blink
+                          // dot overlap the impact — read as "strike first").
   // --- Pattern ----------------------------------------------------------------
   count: 1,               // number of stomps
   interval: 0.5,          // pause between stomps (s)
