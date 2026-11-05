@@ -127,6 +127,13 @@ const ENTRY_AREA = 1;
  */
 export function makeHero(heroDef) {
   const h = new Hero(heroDef, 0, 0);
+  // The continue pool is the single source of truth for continues (gameRules.js).
+  // Every hero — including ones built by makeHero() WITHOUT going through
+  // startGame() (e.g. update.js's boot placeholder before it is swapped out) —
+  // must own a real pool: canSpend()/spend() and the GameOver screen read
+  // h.continues.remaining directly, and a missing pool throws
+  // "can't access property 'remaining', pool is undefined".
+  if (!h.continues) h.continues = createContinuePool(GAME_RULES.startingContinues);
   h.anim = new Anim(
     ['#2ecc71', '#27ae60', '#1abc9c'].map(c => makeTestFrame(h.w, h.h, c)),
     { speed: 200, loop: true },
