@@ -107,6 +107,11 @@ export class ExplosiveMonkey extends Enemy {
    */
   ai(dt, hero, world) {
     if (this.aiState === 'dead') return;
+    // Remember the live hero reference for the contact-detonation check in
+    // hostStep: ambient monkeys (level population) are built with no explicit
+    // cfg.target and no _heroRef — the AI's hero param is their only link to
+    // "who I am walking toward". Without this latch they could never detonate.
+    if (hero && hero.alive !== false) this._heroRef = hero;
     const t = this.cfg.target ?? hero;
     if (!t || t.alive === false) { this.vx = 0; return; }
     const dx = (t.x + t.w / 2) - (this.x + this.w / 2);
@@ -137,12 +142,16 @@ export class ExplosiveMonkey extends Enemy {
       if (this._fuseLeft <= 1e-9) this.detonate(targets);
     }
     // --- Contact -------------------------------------------------------------
+    // Detonate ONLY on the chase target (the hero). The monkey is a FOE that
+    // exists to deliver itself into the player — bumping into other enemies
+    // or barrels along the way must NOT waste it. (The blast payload remains
+    // neutral AoE once fired; only the TRIGGER is target-specific.)
     if (!this._detonated && this.cfg.explodeOnContact) {
-      const box = this.worldBox();
-      for (const t of targets) {
-        if (!this.validBlastTarget(t)) continue;
-        const tb = t.worldBox?.() ?? t;
-        if (overlaps(box, tb)) { this.detonate(targets); break; }
+      const victim = this.cfg.target ?? this._heroRef ?? null;
+      if (victim && victim.alive !== false && victim !== this) {
+        const box = this.worldBox();
+        const tb = victim.worldBox?.() ?? victim;
+        if (overlaps(box, tb)) this.detonate(targets);
       }
     }
     return this.alive === false;
