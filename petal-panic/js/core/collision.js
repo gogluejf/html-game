@@ -411,13 +411,23 @@ export class CollisionWorld {
    */
   update() {
     this.grid.clear();
+    // Callbacks can remove targets and recycle pooled entities synchronously.
+    // Broadphase entries belong to the generation inserted at pass start,
+    // never to a new occupant of the same object reference. Pool reuse clears
+    // _pairId; add() assigns the new life a fresh identity.
+    const participants = new Map();
     for (const e of this.entities) {
       if (e.alive === false || e.visible === false) continue;
+      participants.set(e, e._pairId);
       this.grid.insert(e);
     }
+    const isCurrent = (e) => this.entities.has(e) &&
+      e.alive !== false && e.visible !== false &&
+      participants.get(e) === e._pairId;
 
     this.events.length = 0;
     this.grid.forEachPair((a, b) => {
+      if (!isCurrent(a) || !isCurrent(b)) return;
       if (!masksInteract(a.layer, b.layer)) return;
       const boxA = a.worldBox ? a.worldBox() : a;
       const boxB = b.worldBox ? b.worldBox() : b;
