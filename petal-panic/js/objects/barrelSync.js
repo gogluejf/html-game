@@ -14,45 +14,9 @@ import '../combat/attack/primitives/dustZone.js'; // registers the 'dustZone' pr
 import '../combat/attack/macros/index.js'; // registers spawnSplit + molotov (propane fan)
 import { isSpecialType } from '../objects/specialWeapons.js';
 import { getDamageables, getActiveFloorY } from '../world/accessors.js';
+import { projectilePool } from '../objects/projectile.js';
 import { record } from '../stats.js';
 import { Debug } from '../debug/debug.js';
-
-/** Toxic barrel dust zones: the dustZone primitive is a bare handle (no macro
- *  host), so gameplay owns its step/draw lifecycle here. Zones self-complete
- * after their duration; dead handles are pruned each frame. */
-const toxicZones = [];
-
-export function spawnToxicDustZone(params, attacker) {
-  const h = invoke('dustZone', params, {
-    attacker,
-    world: { hero: ctx.hero, targets: getDamageables() },
-  });
-  if (!h._completed) toxicZones.push(h);
-  return h;
-}
-
-export function stepToxicZones(dt) {
-  for (let i = toxicZones.length - 1; i >= 0; i--) {
-    const h = toxicZones[i];
-    if (h._completed || h._cancelled) { toxicZones.splice(i, 1); continue; }
-    h.step(dt, getDamageables());
-    if (h._completed || h._cancelled) toxicZones.splice(i, 1);
-  }
-}
-
-export function drawToxicZones(c) {
-  for (const h of toxicZones) {
-    if (h._completed || h._cancelled) continue;
-    h.zone?.draw(c);
-  }
-}
-
-/** Propane-barrel molotov fan routes through the shared bombAttacks host (the
- *  same one every other barrel bomb uses) so its fire zones get stepped + drawn
- *  by the standard gameplay path — no separate registry. Lazy getter avoids an
- *  import cycle (systems/update.js imports this module). */
-let _getBombHost = null;
-export function setBombHostGetter(fn) { _getBombHost = fn; }
 
 /** Live destructible surfaces retain ordinary box geometry plus their owner.
  * Collision-world membership makes this work for future GameObj types too.
@@ -115,9 +79,9 @@ export function handleBarrelDestroyed(barrel) {
     // macro (ballistic carrier + fireArea payload). Neutral team: the fire
     // hurts whoever stands in it (hero AND enemies).
     const floorY = getActiveFloorY();
-    // Route through the shared bombAttacks host (like every other barrel bomb)
-    // so the molotov fire zones are stepped + drawn by the standard path.
-    _getBombHost().spawn('spawnSplit', {
+    // Self-contained invoke (task 2.3): the registry owns step/draw/prune —
+    // no host, no getter, no lifecycle wiring at the call site.
+    invoke('spawnSplit', {
       x: cx, y: cy,
       count: 5,
       centerDirection: -Math.PI / 2,        // straight up
@@ -126,7 +90,7 @@ export function handleBarrelDestroyed(barrel) {
       child: 'molotov',
       molotov: { arc: 800, bounce: false, ttl: null, fireWidth: 96, team: 'neutral' },
       groundY: floorY,
-    }, barrel);
+    }, { attacker: barrel, pools: { projectilePool }, world: { hero: ctx.hero, targets: getDamageables() } });
     Effects.fireParticleBurst(cx, cy, 8);   // regular barrel-break particles
     Effects.triggerShake(8);                // smaller kick than a real blast
     // SFX: propane pop
@@ -136,12 +100,12 @@ export function handleBarrelDestroyed(barrel) {
     // the zone IS the damage.
     const W = 7 * UNIT_PX_X;  // 336px wide
     const H = 5 * UNIT_PX_Y;  // 240px tall
-    spawnToxicDustZone({
+    invoke('dustZone', {
       x: cx, y: cy,
       width: W, height: H,
       duration: 3, tickRate: 5, damage: 6,
       team: 'neutral', palette: 'hazard',
-    }, barrel);
+    }, { attacker: barrel, world: { hero: ctx.hero, targets: getDamageables() } });
     Effects.fireParticleBurst(cx, cy, 10);  // initial puff burst
     Effects.triggerShake(6);
     // SFX: toxic hiss

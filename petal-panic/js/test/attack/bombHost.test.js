@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
+import { AttackLifecycle } from '../../combat/attack/lifecycle.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
 import { stepBombTerrain } from '../../combat/attack/primitives/projectile.js';
 import { LAYER } from '../../consts.js';
@@ -7,6 +8,8 @@ import { LAYER } from '../../consts.js';
 const dt = 1 / 60;
 const attacker = { x: 0, y: 0, w: 32, h: 32 };
 function setup(size = 16, platforms = []) {
+  // Registry is global — isolate each scenario (mirrors theater close).
+  AttackLifecycle.clear();
   const pool = new Pool(Projectile, size);
   const target = { x: 390, y: 376, w: 24, h: 24, layer: LAYER.ENEMY,
     alive: true, hp: 1000, takeDamage(n) { this.hp -= n; return n; } };
@@ -18,7 +21,7 @@ function setup(size = 16, platforms = []) {
     // Gameplay order: integrate (including fuse death), shared terrain,
     // collision dispatch, then root lifecycle. No theater child promotion.
     for (const e of pool.items) stepBombTerrain(e, dt, 400, platforms);
-    host.step(dt);
+    AttackLifecycle.stepAll(dt, context.world.targets, { refreshCtx: () => context });
   };
   return { pool, target, context, host, frame };
 }
@@ -38,7 +41,7 @@ for (const platform of [null, { x: 350, y: 300, w: 100, oneWay: true },
   assert.equal(h.handles[0].zone.y + 48, surface);
   const rects = [];
   const gradStub = { addColorStop() {} };
-  host.draw({ save() {}, restore() {}, strokeRect() {}, fillRect(...r) { rects.push(r); },
+  AttackLifecycle.drawAll({ save() {}, restore() {}, strokeRect() {}, fillRect(...r) { rects.push(r); },
     createLinearGradient: () => gradStub, createRadialGradient: () => gradStub });
   // The fire drawer paints the base glow rect PLUS time-based flicker columns
   // (performance.now()-driven), so assert the glow rect specifically.
@@ -47,7 +50,7 @@ for (const platform of [null, { x: 350, y: 300, w: 100, oneWay: true },
   for (let i = 0; i < 40; i++) frame();
   assert.ok(target.hp < 1000, 'host steps damage after carrier death');
   assert.equal(completes, 1);
-  assert.equal(host.roots.size, 0);
+  assert.ok(!AttackLifecycle._live.has(h), 'root cleaned up after completion');
   console.log(`PASS host molotov surface ${surface}: placement, draw, damage, completion`);
 }
 
@@ -65,7 +68,7 @@ for (const id of ['explosiveBomb', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
   for (let i = 0; i < 180; i++) frame();
   assert.equal(h._completed, true, `${id} completes despite partial pool exhaustion`);
   assert.equal(completes, 1, `${id} completes exactly once`);
-  assert.equal(host.roots.size, 0);
+  assert.ok(!AttackLifecycle._live.has(h), 'root cleaned up after completion');
   assert.equal(pool.items.filter(e => e.alive).length, 0);
   console.log(`PASS host ${id}: fuse, child lifecycle, pool exhaustion`);
 }
@@ -99,7 +102,10 @@ for (const id of ['explosiveBomb', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
   assert.equal(h.handles.length, 0, 'contact-only molotov does not fizzle midair');
   host.clear();
   assert.equal(h._cancelled, true);
-  assert.equal(host.roots.size, 0);
+  // The registry prunes cancelled roots on its next stepAll (mirrors the old
+  // host.step pruning) — drive one frame so cleanup is observable.
+  frame();
+  assert.ok(!AttackLifecycle._live.has(h), 'root cleaned up after cancellation');
   console.log('PASS contact-only policy and zone teardown');
 }
 
@@ -108,7 +114,7 @@ for (const id of ['explosiveBomb', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
   const h = host.spawn('explosiveBomb', { ttl: dt }, attacker);
   pool.updateAll(dt);
   assert.equal(pool.spawn(0, 0, 0, 'saw'), null, 'pending detonation reserves dead slot');
-  host.step(dt);
+  AttackLifecycle.stepAll(dt, [], { refreshCtx: () => ({}) });
   assert.ok(pool.spawn(0, 0, 0, 'saw'));
   assert.equal(h._completed, true);
   console.log('PASS dead carrier cannot be stolen before terminal dispatch');

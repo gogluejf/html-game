@@ -18,6 +18,7 @@ import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { projectilePool } from '../objects/projectile.js';
 import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
+import { AttackLifecycle } from '../combat/attack/lifecycle.js';
 import { stepBombTerrain, stepBomb } from '../combat/attack/primitives/projectile.js';
 import { S, getState, tryTransition, onTransition } from '../core/state.js';
 import { dispatchScreenInput, setMenuHero } from '../ui/screens.js';
@@ -871,7 +872,10 @@ ctx.coins = coins;
 ctx.projectilePool = projectilePool;
 // Unified pool: specials ARE projectiles now (Special folded into Projectile,
 // task 1.3) — the engine has ONE pool.
-export const bombAttacks = new BombAttackHost(() => {
+// Fresh per-frame world-state bag for the bomb-family attack context. Used by
+// BombAttackHost at spawn time AND by AttackLifecycle.stepAll(opts.refreshCtx)
+// each frame to refresh live handles' contexts in place.
+export function freshBombContextBag() {
   const az = getActiveZone(hero);
   return {
     pools: { projectilePool }, collisionWorld, bombTerrainStepped: true,
@@ -880,11 +884,9 @@ export const bombAttacks = new BombAttackHost(() => {
     camera: ctx.camera,
     world: { targets: getDamageables() },
   };
-});
+}
+export const bombAttacks = new BombAttackHost(freshBombContextBag);
 ctx.bombAttacks = bombAttacks;
-// Expose the host to barrel payloads (propane fan) via a lazy getter — avoids
-// an import cycle (this module imports barrelSync.js).
-setBombHostGetter(() => bombAttacks);
 // Gameplay callers use this entry point, not a discarded invoke() result.
 export function spawnBombAttack(id, params, attacker = hero) {
   return bombAttacks.spawn(id, params, attacker);
@@ -1150,8 +1152,8 @@ export function update(dt) {
   // 2c. thorn integration: advance the pool, cull off-screen shots,
   //     then refresh the collision world's live set from the pool.
   // Engine-owned carriers (ballistic/projectile with a live attack handle) are
-  // integrated by their OWN host clock (bombAttacks.step / carrierMacro h.step /
-  // theater _stepOnce) — same as the old separate-pool updateAll pass.
+  // integrated by their OWN clock (AttackLifecycle.stepAll / carrierMacro
+  // h.step / theater _stepOnce) — same as the old separate-pool updateAll pass.
   // Stepping them here too would double-integrate; skipping them alone would
   // leave them frozen when no host steps them this frame. Net: every entity
   // gets exactly one update() per frame, from whichever clock owns it.
@@ -1258,8 +1260,15 @@ export function update(dt) {
     }
   }
   collisionWorld.update();
-  bombAttacks.step(dt);
-  stepToxicZones(dt); // toxic barrel dust clouds tick damage + expire
+  // Self-contained attack lifecycle (task 3.2 B2a): the registry drives
+  // EVERYTHING — hero-shot roots (registry-owned since task 3.2 B1), toxic
+  // dust zones, barrel payloads, enemy/boss handles. opts.refreshCtx hands
+  // each handle's _ctxRefresh the same fresh world-state bag BombAttackHost
+  // used to Object.assign into its contexts. The `targets` argument matches
+  // the old semantics: live.world.targets === getDamageables() from the
+  // host's context bag. This single pass also covers barrel toxic dust zones
+  // (previously a separate ad-hoc step in the game loop).
+  AttackLifecycle.stepAll(dt, getDamageables(), { refreshCtx: freshBombContextBag });
   // Compatibility for directly invoked primitives/macros without a host root.
   // (Engine-carrier detonation for pool-resident carriers runs right after
   // cullOffScreen above — one stepBomb pass covers host roots AND nested
@@ -1334,5 +1343,5 @@ import { processAllHitboxes } from '../combat/hitboxes.js';
 import { registerCollisionHandlers } from '../combat/collisionHandlers.js';
 import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFlow, updateBoss } from '../boss/bossFlow.js';
 import { updateRealEnemies } from '../enemies/enemyUpdate.js';
-import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, stepToxicZones, setBombHostGetter, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
+import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
 import { applyObjectImpact } from '../combat/objectImpact.js';

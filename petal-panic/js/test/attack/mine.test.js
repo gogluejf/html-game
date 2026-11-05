@@ -7,6 +7,7 @@ import { invokeChild } from '../../combat/attack/attackIds.js';
 import { activeInstances, resetEffects } from '../../effects/index.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
+import { AttackLifecycle } from '../../combat/attack/lifecycle.js';
 import { AttackTheater } from '../../debug/attack-theater.js';
 
 const dt = 1 / 60;
@@ -135,10 +136,14 @@ test('mine payload configuration propagates through split, cluster, sky missile 
 
 
 test('gameplay host owns mine stepping, drawing and cancellation', () => {
+  AttackLifecycle.clear();
   const c = context(); const host = new BombAttackHost(() => c);
   const h = host.spawn('throwMine', { ttl: null }, c.attacker);
-  let rects = 0; host.draw({ save() {}, restore() {}, fillRect() { rects++; } });
-  assert.equal(rects, 4); host.step(dt); host.clear(); assert.equal(h._cancelled, true);
+  let rects = 0; AttackLifecycle.drawAll({ save() {}, restore() {}, fillRect() { rects++; } });
+  assert.equal(rects, 4);
+  c.pools.projectilePool.updateAll(dt);
+  AttackLifecycle.stepAll(dt, c.world?.targets ?? [], { refreshCtx: () => c });
+  host.clear(); assert.equal(h._cancelled, true);
 });
 
 test('base theater mine is centered and target contact triggers before TTL', () => {
@@ -208,6 +213,7 @@ test('actual bomb composition: production wall dispatch reflects and contact ret
 
 for (const id of ['throwMine', 'skyMissile', 'missileRain', 'spawnSplit', 'clusterBomb']) {
   test(`${id}: host integrates nested mine once, releases carrier and cancels safely`, () => {
+    AttackLifecycle.clear();
     const c = context(); const host = new BombAttackHost(() => c);
     const root = host.spawn(id, { origin: { x: 0, y: 10 }, speed: 0, arc: 400,
       ttl: id === 'clusterBomb' ? dt : null, mineTtl: null, timeToTarget: 0,
@@ -216,22 +222,30 @@ for (const id of ['throwMine', 'skyMissile', 'missileRain', 'spawnSplit', 'clust
     const find = h => h.id === 'throwMine' ? h : (h.handles ?? []).map(find).find(Boolean);
     let mine;
     for (let i = 0; i < 120 && !mine; i++) {
-      c.pools.projectilePool.updateAll(dt); host.step(dt); mine = find(root);
+      c.pools.projectilePool.updateAll(dt);
+      AttackLifecycle.stepAll(dt, c.world?.targets ?? [], { refreshCtx: () => c });
+      mine = find(root);
     }
     assert.ok(mine); const e = mine.entity;
     assert.ok(e instanceof Projectile);
     const x = e.x, y = e.y, vx = e.vx, vy = e.vy;
-    c.pools.projectilePool.updateAll(dt); host.step(dt);
+    c.pools.projectilePool.updateAll(dt);
+    AttackLifecycle.stepAll(dt, c.world?.targets ?? [], { refreshCtx: () => c });
     assert.equal(e.x, x + vx * dt);
     assert.equal(e.y, y + (vy + e.gravityValue * dt) * dt);
     for (let i = 0; i < 600 && !mine.state.settled; i++) {
-      c.pools.projectilePool.updateAll(dt); host.step(dt);
+      c.pools.projectilePool.updateAll(dt);
+      AttackLifecycle.stepAll(dt, c.world?.targets ?? [], { refreshCtx: () => c });
     }
     assert.equal(mine.state.settled, true); assert.equal(mine.state.elapsed, 0);
     assert.equal(e.alive, false); assert.equal(e._attackDone, true);
-    for (let i = 0; i < 300; i++) { c.pools.projectilePool.updateAll(dt); host.step(dt); }
+    for (let i = 0; i < 300; i++) { c.pools.projectilePool.updateAll(dt); AttackLifecycle.stepAll(dt, c.world?.targets ?? [], { refreshCtx: () => c }); }
     assert.equal(mine.state.phase, 'idle', 'null TTL survives resting');
-    host.clear(); assert.equal(host.roots.size, 0);
+    host.clear();
+    // The registry prunes cancelled roots on its next stepAll (mirrors the old
+    // host.step pruning) — drive one frame so cleanup is observable.
+    AttackLifecycle.stepAll(dt, c.world?.targets ?? [], { refreshCtx: () => c });
+    assert.ok(!AttackLifecycle._live.has(root), 'root cleaned up after cancellation');
     assert.ok(c.pools.projectilePool.items.every(e => !e.alive));
     const recycled = c.pools.projectilePool.spawn(0, 0, 0, true, 'bomb');
     assert.equal(recycled._bombFuseDisabled, undefined);
@@ -254,10 +268,15 @@ for (const id of ['throwMine', 'skyMissile', 'missileRain', 'spawnSplit', 'clust
 
 
 test('pool exhaustion finishes throwMine without leaving a root', () => {
+  AttackLifecycle.clear();
   const c = context(); c.pools.projectilePool = new Pool(Projectile, 0);
   const host = new BombAttackHost(() => c);
-  assert.equal(host.spawn('throwMine', {}, c.attacker)._completed, true);
-  assert.equal(host.roots.size, 0);
+  const h = host.spawn('throwMine', {}, c.attacker);
+  assert.equal(h._completed, true);
+  // The registry prunes completed roots on its next stepAll (mirrors the old
+  // host.step pruning) — drive one frame so cleanup is observable.
+  AttackLifecycle.stepAll(dt, c.world?.targets ?? [], { refreshCtx: () => c });
+  assert.ok(!AttackLifecycle._live.has(h), 'root cleaned up after completion');
 });
 
 for (const id of ['reticleShot', 'clusterBomb', 'spawnSplit', 'skyMissile', 'missileRain']) {

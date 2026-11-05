@@ -14,6 +14,8 @@
 import { getPrimitive, getMacro } from './registry.js';
 import { ATTACK_EVENTS } from './context.js';
 import { installEffectGuard } from './effectGuard.js';
+import { AttackLifecycle } from './lifecycle.js';
+import { _step } from './engineDepth.js';
 
 // Enforce declaration-before-fire for the whole attack engine (single source
 // of truth: an attack may only fire effects it listed in meta.effects). Runs
@@ -118,10 +120,15 @@ export class AttackHandle {
  * @param {string} id            registry id ('projectile', 'spread_shot', ...)
  * @param {object} [params]      caller params; merged over the def's defaults
  * @param {object} ctx           AttackContext (see context.js)
+ * @param {{owned?: boolean}} [opts] registration options forwarded to the
+ *   SINGLE registration point below. owned=true => a host steps this handle;
+ *   the registry still draws it but never calls h.step(). Hosts (e.g.
+ *   BombAttackHost.spawn) pass this instead of re-registering themselves —
+ *   every handle is stamped with its owner exactly once, here.
  * @returns {AttackHandle}
  * @throws {Error} if the id is not registered
  */
-export function invoke(id, params = {}, ctx) {
+export function invoke(id, params = {}, ctx, opts = {}) {
   const def = getPrimitive(id) ?? getMacro(id);
   if (!def) throw new Error(`attack: unknown attack '${id}'`);
   const merged = { ...(def.params ?? {}), ...params };
@@ -130,8 +137,20 @@ export function invoke(id, params = {}, ctx) {
   // shares this SAME array — single source of truth, zero drift possible.
   const declaredEffects = (def.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
   const handle = new AttackHandle(id, null, declaredEffects);
+  // Root detection: only handles invoked from OUTSIDE another impl are roots.
+  // Nested invokes (a macro's impl composing a carrier/payload) must NOT
+  // auto-register — their parent steps them (carrierMacro child loop, etc.),
+  // and registering them too would double-step. Depth counter: 0 = root.
+  const depthBefore = _invokeDepth;
+  _invokeDepth += 1;
   // Wire the inner handle AFTER construction so its id is authoritative.
-  const inner = def.impl(merged, ctx);
+  let inner;
+  try {
+    inner = def.impl(merged, ctx);
+  } finally {
+    _invokeDepth = depthBefore;
+  }
+  let result;
   if (inner instanceof AttackHandle) {
     inner.id = id;
     // The impl's own handle was constructed with an EMPTY set (it can't know
@@ -144,11 +163,30 @@ export function invoke(id, params = {}, ctx) {
     // hit, expire). Deferred-composition macros (explosiveBomb & co.) depend
     // on those events firing after invoke returns.
     inner._inner = null;
-    return inner;
+    result = inner;
+  } else {
+    handle.setInner(inner);
+    result = handle;
   }
-  handle.setInner(inner);
-  return handle;
+  // Self-contained lifecycle (Task 2.1): the SINGLE registration point, ROOTS
+  // ONLY. A handle is a root iff it was invoked from OUTSIDE another invoke's
+  // impl AND outside any per-frame step callback. Handles created by NESTED
+  // invokes are stepped by their parent macro (carrierMacro child loop /
+  // wrapper steps) and must not be driven twice by the registry — this covers
+  // BOTH composition-time nesting (impl calling invoke) AND deferred
+  // materialization inside a step() (e.g. skyMissile launching its payload
+  // mid-step, clusterBomb's onDetonate firing spawnSplit). Instant macros that
+  // completed synchronously are skipped by register(). Hosts pass { owned: true }
+  // through this same call (opts passthrough) — they never re-register or write
+  // _registryStepped themselves, so each root gets exactly one owner, stamped
+  // once, here.
+  if (depthBefore === 0 && _step.depth === 0) AttackLifecycle.register(result, opts);
+  return result;
 }
+
+
+/** Nesting depth of active invoke() calls (0 = top level / root). */
+let _invokeDepth = 0;
 
 export const attackEngine = { invoke };
 export default attackEngine;

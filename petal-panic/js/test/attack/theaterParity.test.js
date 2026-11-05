@@ -14,6 +14,7 @@ import { AttackTheater } from '../../debug/attack-theater.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { Enemy } from '../../enemies/enemy.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
+import { AttackLifecycle } from '../../combat/attack/lifecycle.js';
 import { stepBombTerrain } from '../../combat/attack/primitives/projectile.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
 import { LAYER } from '../../consts.js';
@@ -183,13 +184,14 @@ ok('molotov parity: identical zone placement across context shapes', () => {
     const ctx = { pools: { projectilePool: pool }, groundY: GROUND_Y, platforms: [],
       bombTerrainStepped: true, world: { targets } };
     const host = new BombAttackHost(() => ctx);
+    AttackLifecycle.clear(); // registry is global — isolate this scenario
     const h = host.spawn('molotov', { ...params }, attacker);
     let zones = [];
     for (let i = 0; i < 180; i++) {
       pool.updateAll(DT);
       // Same external terrain stepping both hosts rely on (gameplay pattern).
       for (const s of pool.items) if (s._arcRecipe && !s._attackDone) stepBombTerrain(s, DT, GROUND_Y);
-      host.step(DT);
+      AttackLifecycle.stepAll(DT, ctx.world.targets, { refreshCtx: () => ctx });
       const z = collectZones([h]);
       if (z.length > 0) zones = z; // remember the last live zone
     }

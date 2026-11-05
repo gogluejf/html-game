@@ -8,6 +8,7 @@ import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
+import { AttackLifecycle } from '../../combat/attack/lifecycle.js';
 import { stepBombTerrain } from '../../combat/attack/primitives/projectile.js';
 import { getMacro } from '../../combat/attack/registry.js';
 import { ENEMY_TYPES, makeEnemy } from '../../world/build.js';
@@ -32,10 +33,11 @@ function setup(targets = [target()]) {
   const context = { pools: { projectilePool: pool }, groundY: GROUND_Y, platforms: [],
     bombTerrainStepped: true, world: { targets, hero: null } };
   const host = new BombAttackHost(() => context);
+  AttackLifecycle.clear(); // registry is global — isolate this scenario
   const frame = () => {
     pool.updateAll(dt);
     for (const e of pool.items) stepBombTerrain(e, dt, GROUND_Y);
-    host.step(dt);
+    AttackLifecycle.stepAll(dt, context.world.targets, { refreshCtx: () => context });
   };
   return { pool, attacker, context, host, frame, targets };
 }
@@ -123,7 +125,7 @@ ok('team semantics: foe blast hits hero-ref only, ally hits enemies, neutral bot
   assert.deepEqual(mk('neutral'), { heroOk: true, foeOk: true });
 });
 
-ok('TTL detonates after settling when configured', () => {
+ok('TTL detonates after settling when configured', async () => {
   const e = new ExplosiveMonkey(100, GROUND_Y - 36, { ttl: 1, mineType: 'shockwave' });
   e.vy = 0;
   const t = target(); t.x = 900;
@@ -131,7 +133,21 @@ ok('TTL detonates after settling when configured', () => {
   assert.equal(e._detonated, false, 'not yet at 0.98s');
   e.hostStep(dt, [t]);
   assert.equal(e._detonated, true, 'detonated at ~1s');
-  assert.equal(e._payloadHandle?.id, 'shockwave', 'shockwave subtype honored');
+  // Fire-and-forget (task 3.1): the payload handle is owned by the
+  // AttackLifecycle registry, not stored on the enemy — verify it landed in
+  // _live as a shockwave and actually ticks damage over its duration (the
+  // latent inert-shockwave bug this migration fixes).
+  const { AttackLifecycle } = await import('../../combat/attack/lifecycle.js');
+  const ph = [...AttackLifecycle._live].find((x) => x.id === 'shockwave');
+  assert.ok(ph, 'shockwave payload registered with the lifecycle registry');
+  assert.equal(e._payloadHandle, undefined, 'no stored payload handle on the enemy');
+  // Ring-pass damage: a victim just outside the start radius (4px) is caught
+  // as the ring expands. Driven ONLY through the registry — no manual step.
+  const victim = { x: 100 + 30, y: GROUND_Y - 18, w: 24, h: 24, alive: true, hp: 999,
+    takeDamage(n) { this.hp -= n; return n; } };
+  for (let i = 0; i < 72 && !ph._completed; i++) AttackLifecycle.stepAll(dt, [victim]);
+  assert.ok(ph._completed, 'shockwave completed via registry stepAll');
+  assert.ok(victim.hp < 999, `ring-pass damaged the victim: ${victim.hp}`);
 });
 
 ok('cancellation removes the entity cleanly and suppresses payload', () => {

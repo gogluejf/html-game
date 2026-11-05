@@ -85,7 +85,6 @@ export class ExplosiveMonkey extends Enemy {
     this._settled = false;     // ground contact reached (TTL clock may start)
     this._settleTimer = 0;     // grace period before fuse arms
     this._fuseLeft = this.cfg.ttl;
-    this._payloadHandle = null;
     // Snappy death: a suicide unit shouldn't linger with a long shrink/fade.
     this.deathDuration = 0.25;
   }
@@ -176,6 +175,11 @@ export class ExplosiveMonkey extends Enemy {
    * primitive) centered on the body, then enter the death pipeline. The
    * _detonated latch is set BEFORE the synchronous payload invoke so a
    * re-entrant contact check can never double-fire.
+   *
+   * Fire-and-forget: the AttackLifecycle registry (engine.invoke auto-
+   * registration) owns the payload handle's step/draw/prune — no stored
+   * handle, no manual stepping here. This also fixes the latent inert-
+   * shockwave bug: the ring now actually ticks damage over its duration.
    */
   detonate(targets) {
     if (this._detonated || this.aiState === 'dead') return;
@@ -183,7 +187,7 @@ export class ExplosiveMonkey extends Enemy {
     const cx = this.x + this.w / 2, cy = this.y + this.h / 2;
     const cands = [...new Set([...(targets ?? []), this.cfg.target, this._heroRef].filter(Boolean))]
       .filter((t) => t !== this && this.validBlastTarget(t));
-    this._payloadHandle = invoke(this.cfg.mineType === 'shockwave' ? 'shockwave' : 'explosion', {
+    invoke(this.cfg.mineType === 'shockwave' ? 'shockwave' : 'explosion', {
       x: cx, y: cy,
       radius: this.cfg.radius, damage: this.cfg.damage, team: this.cfg.team,
       self: this, targets: cands,

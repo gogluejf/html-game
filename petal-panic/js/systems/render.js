@@ -23,8 +23,8 @@ import { drawFloor, getFloorEntity } from '../world/terrainTiles.js';
 import { collectTileEntities, drawTileSprites } from '../world/tileSprite.js';
 import { getLastWorldSeed } from '../world/build.js';
 import { drawParallaxBg } from '../world/parallax.js';
-import { bombAttacks, getActiveZone } from './update.js';
-import { drawToxicZones } from '../objects/barrelSync.js';
+import { getActiveZone } from './update.js';
+import { AttackLifecycle } from '../combat/attack/lifecycle.js';
 import { PLATFORM_DRAW_H } from '../world/macros.js';
 
 // I-frame blink tuning (design §27): the flicker phase is derived from the
@@ -143,8 +143,13 @@ export function render(ctx) {
     ctx.restore();
   };
   if (showSprites) {
-    bombAttacks.draw(ctx);
-    drawToxicZones(ctx); // toxic barrel dust clouds (world space)
+    // Self-contained attack lifecycle (task 2.2): the registry draws EVERY
+    // live handle's zones in world space — hero-shot roots included. This is
+    // the SINGLE zone-draw path; the old per-host and toxic-zone draw passes
+    // are gone so no zone is ever drawn twice per frame. Draw order follows
+    // registration order (Set insertion), which is fine for translucent
+    // additive fills.
+    AttackLifecycle.drawAll(ctx);
     // destructible barrels (drawn via Entity.draw; white flash on hit).
     for (const b of getBarrels()) {
       if (!b.alive) continue;

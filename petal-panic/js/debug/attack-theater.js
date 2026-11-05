@@ -21,6 +21,7 @@ import { listPrimitives, listMacros, getPrimitive, getMacro } from '../combat/at
 import { invoke } from '../combat/attack/engine.js';
 import { makeContext } from '../combat/attack/context.js';
 import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
+import { AttackLifecycle } from '../combat/attack/lifecycle.js';
 import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
 import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/projectile.js';
@@ -142,7 +143,7 @@ const SANDBOX_PRESETS = {
   throwEnemy: { speed: 420, direction: -0.35, arc: 1000, bounce: false, enemyType: 'explosive_monkey', ttl: null, settleDelay: 0.2, explodeOnContact: true, mineType: 'explosion', team: 'neutral', damage: 40, radius: 70 },
   shockwaveBomb: { direction: -0.5, arc: 800, bounce: false, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
   shockwaveProjectile: { direction: 0, speed: 700, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, solidBehavior: 'stop', blastTeam: 'neutral' },
-  stomp: { impact: 'strike', buildTime: 0.9, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, damage: 30, team: 'neutral', shakeStrength: 5, radius: 590, strike: { width: Infinity, height: 30, reach: Infinity, duration: 0.35 }, wave: { sides: 'both', speed: 300, height: 24, width: 28, ttl: null } },
+  stomp: { impact: 'strike', buildTime: 0.9, gapTime: 0.4, blinkTime: 0.5, impactDelay: 1.0, count: 1, interval: 0.5, hopHeight: 10, damage: 30, team: 'neutral', shakeStrength: 5, radius: 590, strike: { width: Infinity, height: 30, reach: Infinity, duration: 0.35 }, wave: { sides: 'both', speed: 300, height: 24, width: 28, ttl: null } },
   skyMissile: { mineType: 'explosion', x: TARGET_POS.x + 16, timeToTarget: 1.0, fallSpeed: 500, damage: 30, team: 'ally', blastTeam: 'neutral', child: 'expl_proj', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
   skyDiveStomp: { x: VIEW_W / 2, groundY: GROUND_Y, timeToTarget: 1.0, dropHeight: 480, fallSpeed: 500, size: 14, impact: 'wave', stomp: { sides: 'both', hopHeight: 0, hopTime: 0.001, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'ally', shakeStrength: 6 }, vanish: true, lingerOnGround: 0.4, vanishTime: 2 },
   missileRain: { mineType: 'explosion', count: 5, distanceType: 'relative', distance: 90, pattern: 'simultaneous', interval: 0.15, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0.5, timeToTarget: 0.9, descentSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', child: 'expl_proj', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
@@ -289,6 +290,10 @@ export const AttackTheater = {
   close() {
     this.active = false;
     this._teardown();
+    // The registry is a single global: the theater's roots are registry-owned
+    // (BombAttackHost.spawn no longer passes { owned: true }), so clear them
+    // here — otherwise their zones would keep drawing in gameplay.
+    AttackLifecycle.clear();
     resetEffects(); // drop in-flight effect instances (beams, flashes...)
     particles.reset(); // clear demo sparkles/explosion particles so they don't
                        // leak into gameplay — same guard the Effect Theater uses
@@ -732,6 +737,10 @@ export const AttackTheater = {
       for (const h of this._handles) { try { h.cancel?.(); } catch { /* already done */ } }
       this._handles = [];
       if (this._bombHost) { try { this._bombHost.clear(); } catch { /* noop */ } }
+      // The registry is a single global: roots spawned by THIS theater are
+      // registry-owned, so clear them here too — otherwise their zones/steps
+      // leak into the next replay or into gameplay.
+      AttackLifecycle.clear();
       for (const p of this._pools?.projectilePool.activeItems ?? []) p.alive = false;
       if (this._pools) {
         this._pools.projectilePool.active.length = 0;
@@ -985,10 +994,14 @@ export const AttackTheater = {
     // Never integrate a freshly consumed shot and overwrite its impact snapshot.
     this._world?.update();
 
-    // Bomb-family roots: stepped through the shared host (same as gameplay).
-    // The host steps root lifecycle + deferred children (fireArea zones, split
-    // bombs) and drops completed roots from its own set — no theater branches.
-    this._bombHost?.step(DT);
+    // Bomb-family roots: stepped by the AttackLifecycle registry (task 3.2 B2b):
+    // engine.invoke() registered every root at spawn (registry-owned — no
+    // { owned: true }), so stepAll drives their lifecycle + deferred children
+    // (fireArea zones, split bombs) and prunes completed ones. opts.refreshCtx
+    // hands each handle's _ctxRefresh the same fresh sandbox world-state bag
+    // BombAttackHost used to Object.assign into its contexts via host.step().
+    // Targets match the old semantics: live.world.targets from this._ctx().
+    AttackLifecycle.stepAll(DT, this._ctx().world.targets);
     // Landed-enemy registration is async: payload macros (clusterBomb fan,
     // missileRain/skyMissile payloads, reticleShot shot) spawn their
     // throwEnemy handles AFTER the spawn-time call. Re-walk each frame — the
@@ -1388,7 +1401,10 @@ export const AttackTheater = {
       }
     };
     for (const h of this._handles) drawChildren(h);
-    this._bombHost?.draw(ctx);
+    // Bomb-family root zones are drawn by the registry (task 3.2 B2b): every
+    // root is registered at spawn, so drawAll covers them — the old
+    // _bombHost.draw(ctx) pass is gone.
+    AttackLifecycle.drawAll(ctx);
 
     // --- Wave-2 state visuals ---------------------------------------------------
     for (const h of this._handles) {
