@@ -939,7 +939,12 @@ export function showAreaEntry(h, ctx) {
   const data = {
     levelName: levelName(h.currentLevel),
     areaId: formatAreaId(h.currentLevel, fmtArea),
-    lives: h.lives,
+    // Area entry shows the TOTAL life count for the run (design choice: the
+    // entry screen is a "you start with N lives" statement — always the
+    // starting total, not the depleted remaining count). The HUD badge shows
+    // REMAINING lives (live hero.lives) — the two surfaces are deliberately
+    // different semantics.
+    lives: GAME_RULES.startingLives,
   };
   _areaEntryData = data;
   if (_onAreaEntryData) _onAreaEntryData(data);
