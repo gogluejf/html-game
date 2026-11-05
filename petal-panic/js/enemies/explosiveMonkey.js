@@ -23,10 +23,16 @@ import { UNIT_PX_X } from '../world/macros.js';
 import { invoke } from '../combat/attack/engine.js';
 import { makeContext } from '../combat/attack/context.js';
 import { isValidTarget } from '../combat/explosion.js';
+import { getHero } from '../world/accessors.js';
 
-/** Minimal context for detonation when no attack ctx was wired (standalone use). */
+/** Minimal context for detonation when no attack ctx was wired (standalone use).
+ * MUST carry the LIVE hero — a null hero makes resolveExplosion unable to
+ * route the hero's damage/knockback branch (t === hero fails, isValidTarget
+ * loses its reference), so ambient monkeys would blast everything except the
+ * player. Read lazily at detonation time, not construction time. */
 function makeDetonateContext() {
-  return makeContext(null, { world: { targets: [], hero: null } });
+  const hero = getHero?.() ?? null;
+  return makeContext(null, { world: { targets: hero ? [hero] : [], hero } });
 }
 
 export const EXPLOSIVE_MONKEY_DEF = {
