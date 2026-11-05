@@ -114,17 +114,17 @@ ok('cancel tears down the effect instance (no ghost reticle)', () => {
   resetEffects();
 });
 
-ok('child=bomb / child=mine / child=napalm: one shot fires through invokeChild', () => {
+ok('child=bomb / child=mine / child=rock / child=napalm: one shot fires through invokeChild', () => {
   // Full-child contract: every ATTACK_IDS child resolves to a live carrier
   // (straight payload macros keep the plain projectile path; arc children —
-  // bomb, mine — fly the arc recipe and settle via the host's terrain pass).
-  for (const child of ['bomb', 'mine', 'napalm']) {
+  // bomb, mine, rock — fly the arc recipe and settle via the host's terrain pass).
+  for (const child of ['bomb', 'mine', 'rock', 'napalm']) {
     const t = target();
     const ctx = makeContext(attacker(), { pools: pools(), target: t, effects: { fireManual } });
     const h = invoke('reticleShot', { duration: 0.4, lockTime: 0.2, speed: 500, ttl: 2, child }, ctx);
     for (let i = 0; i < 30; i++) h.step(1 / 60);
     assert.ok(h.shot?.entity, `child=${child}: carrier spawned`);
-    if (child === 'bomb' || child === 'mine') {
+    if (child === 'bomb' || child === 'mine' || child === 'rock') {
       assert.equal(h.shot.entity._arcRecipe, true, `child=${child}: arc carrier`);
     } else {
       assert.equal(h.shot.entity._arcRecipe, false, `child=${child}: straight carrier`);
@@ -175,7 +175,7 @@ for (const child of ['bomb', 'mine', 'molotov', 'enemy']) {
   }
 }
 
-for (const child of ['projectile', 'expl_proj', 'shock_proj', 'shock_bomb', 'napalm', 'bomb', 'mine', 'molotov', 'enemy']) {
+for (const child of ['projectile', 'expl_proj', 'shock_proj', 'shock_bomb', 'rock', 'napalm', 'bomb', 'mine', 'molotov', 'enemy']) {
   ok(`${child}: reticle preserves the child's default terrain policy`, () => {
     const ctx = makeContext(attacker(), { pools: pools(), target: target() });
     const direct = invokeChild(child, {}, ctx);

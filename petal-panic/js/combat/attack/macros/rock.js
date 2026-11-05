@@ -14,7 +14,7 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 
-const DEFAULTS = Object.freeze({
+const ROCK_DEFAULTS = Object.freeze({
   speed: 500,            // launch force (px/s)
   direction: -0.5,       // radians — up-right throw
   arc: 800,              // gravity px/s² (throw height)
@@ -23,13 +23,21 @@ const DEFAULTS = Object.freeze({
   origin: null,          // marker label | {x,y} | null → attacker center
   team: 'ally',
 });
+export { ROCK_DEFAULTS };
 
 defineMacro('rock', {
   attacks: [{ id: 'projectile', role: 'carrier' }],
-  params: { ...DEFAULTS },
+  params: { ...ROCK_DEFAULTS },
   meta: {
     name: 'Rock',
-    effects: [], // macro owns no effects — inherits projectile's (hit-sparkle, debris)
+    // Inherited from the projectile primitive it composes: the rock handle
+    // carries the primitive's effects (h.id is rewritten to 'rock' at invoke,
+    // but declared types ride on the handle). The guard checks THIS set, so
+    // hit-sparkle/debris must be declared here or the first hit throws.
+    effects: [
+      { type: 'hit-sparkle', desc: 'blood sparkles on enemy impact (hit juice)' },
+      { type: 'debris', desc: 'dusty grain puff when the rock dies on terrain' },
+    ],
     desc: 'Arcing rock: gravity arc + decay bounce, NO explosion. Contact damage like a projectile; expires on ttl if it never hits.',
     params: [
       { key: 'speed', desc: 'launch force (px/s)' },
@@ -42,7 +50,7 @@ defineMacro('rock', {
     ],
   },
   impl(params, ctx) {
-    const p = { ...DEFAULTS, ...params };
+    const p = { ...ROCK_DEFAULTS, ...params };
     return invoke('projectile', {
       speed: p.speed,
       direction: p.direction,

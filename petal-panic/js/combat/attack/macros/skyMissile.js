@@ -36,6 +36,7 @@ import './throwMine.js';
 import './explosiveBomb.js';
 import './shockwaveBomb.js';
 import './molotov.js';
+import './rock.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -108,6 +109,7 @@ defineMacro('skyMissile', {
     { id: 'throwMine', role: 'payload' },
     { id: 'explosiveBomb', role: 'payload' },
     { id: 'shockwaveBomb', role: 'payload' },
+    { id: 'rock', role: 'payload' },
     { id: 'molotov', role: 'payload' },
   ],
   params: { ...DEFAULTS },
@@ -118,7 +120,7 @@ defineMacro('skyMissile', {
       { type: 'surface-target-marker', desc: 'landing warning fixed at the impact point for the whole warning window' },
     ],
     params: [
-      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | enemy | expl_proj | shock_proj | shock_bomb | napalm' },
+      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | enemy | expl_proj | shock_proj | shock_bomb | rock | napalm' },
       { key: 'payload', desc: 'sub-payload config for the drop (keys per the child; see CHILD_PARAM_SPECS)' },
       { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'x', desc: 'impact x (world) — marker and drop share it' },
@@ -178,6 +180,8 @@ defineMacro('skyMissile', {
       //     then shockwave ring at the marked surface.
       //   molotov — arc carrier (arc 0, no bounce): falls and shatters into a
       //     burning area at the marked surface.
+      //   rock — arc carrier: falls dealing contact damage, bounces (decay)
+      //     on the marked surface; ttl fuse ends the flight. No explosion.
       const blast = p.blast ?? {};
       // Sub-payload resolution: the nested `payload` object (keys per
       // CHILD_PARAM_SPECS in attackIds.js) is the unified config surface —
@@ -198,7 +202,8 @@ defineMacro('skyMissile', {
         expl_proj: () => ({ radius: sub('expl_proj').radius ?? blast.explosionRadius }),
         shock_proj: () => ({ radius: sub('shock_proj').radius ?? blast.shockRadius }),
         napalm: () => ({ fireWidth: sub('napalm').fireWidth ?? blast.fireWidth }),
-      }[p.child === 'shock_proj' ? 'shock_proj' : p.child === 'napalm' ? 'napalm' : 'expl_proj']();
+        rock: () => ({}), // rock: no zone payload (contact damage only)
+      }[p.child === 'shock_proj' ? 'shock_proj' : p.child === 'napalm' ? 'napalm' : p.child === 'rock' ? 'rock' : 'expl_proj']();
       const m = invokeChild(p.child, {
         origin: { x: pt.x, y: spawnY },
         direction: Math.PI / 2,
@@ -242,6 +247,13 @@ defineMacro('skyMissile', {
           ...(sub('molotov').ttl !== undefined ? { ttl: sub('molotov').ttl } : (p.mineTtl !== undefined ? { ttl: p.mineTtl } : {})),
           ...(sub('molotov').fireWidth !== undefined ? { fireWidth: sub('molotov').fireWidth } : {}),
           ...(sub('molotov').team !== undefined ? { team: sub('molotov').team } : (p.blastTeam !== undefined ? { team: p.blastTeam } : {})),
+        } : {}),
+        ...(p.child === 'rock' ? {
+          origin: { x: pt.x, y: spawnY },
+          // Absent payload keys inherit rock's own defaults.
+          ...(sub('rock').ttl !== undefined ? { ttl: sub('rock').ttl } : (p.mineTtl !== undefined ? { ttl: p.mineTtl } : {})),
+          ...(sub('rock').arc !== undefined ? { arc: sub('rock').arc } : {}),
+          ...(sub('rock').damage !== undefined ? { damage: sub('rock').damage } : {}),
         } : {}),
         ...(p.child === 'enemy' ? {
           origin: { x: pt.x, y: spawnY },

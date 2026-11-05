@@ -37,7 +37,9 @@ import './explosiveBomb.js';
 import './shockwaveBomb.js';
 import './throwMine.js';
 import './molotov.js';
+import './rock.js';
 import { MINE_DEFAULTS } from './mine.js';
+import { ROCK_DEFAULTS } from './rock.js';
 import { THROW_ENEMY_DEFAULTS } from './throwEnemy.js';
 
 // Declared effect types for THIS registration (single source of truth:
@@ -97,6 +99,7 @@ defineMacro('reticleShot', {
     { id: 'throwEnemy', role: 'payload' },
     { id: 'explosiveProjectile', role: 'payload' },
     { id: 'shockwaveProjectile', role: 'payload' },
+    { id: 'rock', role: 'payload' },
     { id: 'napalm', role: 'payload' },
   ],
   params: { ...DEFAULTS },
@@ -107,7 +110,7 @@ defineMacro('reticleShot', {
     ],
     desc: 'Target-reticle effect tracks the target, locks at lockTime, then fires one projectile at the locked point when duration ends.',
     params: [
-      { key: 'child', desc: "any ATTACK_IDS child — projectile | expl_proj | shock_proj | napalm (straight) · bomb | shock_bomb | mine | molotov | enemy (arc, host-settled)" },
+      { key: 'child', desc: "any ATTACK_IDS child — projectile | expl_proj | shock_proj | napalm (straight) · bomb | shock_bomb | rock | mine | molotov | enemy (arc, host-settled)" },
       { key: 'target', desc: 'entity to track (default ctx.target)' },
       { key: 'duration', desc: 'warning window (s)' },
       { key: 'lockTime', desc: 's after start when the aim freezes' },
@@ -194,7 +197,7 @@ defineMacro('reticleShot', {
         const blast = params.blast ?? {};
         const pl = params.payload ?? {};
         const sub = pl[child] ?? {};
-        const isArcChild = child === 'bomb' || child === 'shock_bomb' || child === 'mine' || child === 'molotov' || child === 'enemy';
+        const isArcChild = child === 'bomb' || child === 'shock_bomb' || child === 'rock' || child === 'mine' || child === 'molotov' || child === 'enemy';
         // Fallback chain that HONORS null (sub.ttl null = "contact only" for
         // mine/molotov — a ?? chain would swallow it and arm the default fuse).
         const pick = (...vals) => vals.find((v) => v != null);
@@ -229,6 +232,7 @@ defineMacro('reticleShot', {
         // spawnSplit's arc children.
         //   bomb    → explosiveBomb: arcs, detonates at first contact/settle
         //   shock_bomb → shockwaveBomb: arcs, telegraph blink, shockwave ring
+        //   rock    → rock: arcs + decay bounce, NO explosion, contact damage
         //   mine    → throwMine: arcs, settles, arms (payload.mine.ttl null = contact)
         //   molotov → molotov: arcs, shatters into a burn area at death point
         //   enemy   → throwEnemy: arcs, lands as a real enemy
@@ -236,8 +240,8 @@ defineMacro('reticleShot', {
           ? { radius: sub.radius ?? blast.shockRadius }
           : child === 'napalm'
             ? { fireWidth: sub.fireWidth ?? blast.fireWidth }
-            : child === 'projectile'
-              ? {}
+            : child === 'projectile' || child === 'rock'
+              ? {} // rock: no zone payload (contact damage only)
               : { radius: sub.radius ?? blast.explosionRadius };
         const shot = invokeChild(child, {
           origin: { x: o.x, y: o.y },
@@ -276,6 +280,13 @@ defineMacro('reticleShot', {
               radius: sub.radius ?? blast.shockRadius,
               duration: sub.duration,
               team: params.blastTeam,
+            } : {}),
+            ...(child === 'rock' ? {
+              // rock owns its own flight config (single source); the generic
+              // params.ttl/params.damage above would clobber rock's defaults.
+              arc: pick(sub.arc, ROCK_DEFAULTS.arc),
+              damage: pick(sub.damage, ROCK_DEFAULTS.damage),
+              ttl: pick(sub.ttl, ROCK_DEFAULTS.ttl),
             } : {}),
             ...(child === 'enemy' ? {
               enemyType: sub.enemyType ?? params.enemyType ?? THROW_ENEMY_DEFAULTS.enemyType,

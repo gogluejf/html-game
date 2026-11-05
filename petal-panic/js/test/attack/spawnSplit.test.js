@@ -73,6 +73,23 @@ ok('macro materializes projectile children into live handles', () => {
   assert.equal(h.handles.length, 3, 'each child → a live projectile handle');
 });
 
+ok('child=rock: fan materializes arcing rock carriers (arc recipe, no explosion)', () => {
+  // Rock is an arc child: gravity recipe, decay bounce, contact damage only.
+  // The rock macro's OWN default gravity (800) must apply — the projectile
+  // primitive's default arc is null, so an undefined clobber would silently
+  // make the rocks fly straight.
+  const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:12,h:12,vx:0,vy:0,orientSprite(){},setLife(){},applyRockLook(){},timers:new Map()};items.push(e);return e;}, updateAll(){} }; };
+  const ctx = makeContext(attacker(), { pools: { projectilePool: mk() }, world: { targets: [] } });
+  const h = invoke('spawnSplit', { ...P, child: 'rock', count: 1 }, ctx);
+  assert.equal(h.handles.length, 1, 'one rock handle');
+  const rock = h.handles[0];
+  assert.equal(rock.id, 'rock');
+  assert.ok(rock.entity, 'live carrier entity');
+  assert.equal(rock.entity._arcRecipe, true, 'arc carrier (gravity recipe)');
+  assert.equal(rock.entity.gravityValue, 800, 'rock macro default gravity in play');
+  assert.equal(rock.entity.solidBehavior, 'reflect', 'rock bounces (decay)');
+});
+
 ok('macro materializes enemy children as thrown carriers (throwEnemy)', () => {
   const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:18,h:18,vx:0,vy:0,orientSprite(){},setLife(){},applyRockLook(){},timers:new Map()};items.push(e);return e;}, updateAll(){} }; };
   const ctx = makeContext(attacker(), { pools: { projectilePool: mk() } });

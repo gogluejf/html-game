@@ -24,6 +24,8 @@
 import './throwMine.js';
 import './shockwaveBomb.js'; // ensure registered (spawnSplit child)
 import { SHOCK_BOMB_DEFAULTS } from './shockwaveBomb.js';
+import './rock.js'; // ensure registered (spawnSplit child)
+import { ROCK_DEFAULTS } from './rock.js';
 import { defineMacro } from '../defineMacro.js';
 import { AttackHandle } from '../engine.js';
 import { invokeChild } from '../attackIds.js';
@@ -113,6 +115,7 @@ defineMacro('spawnSplit', {
     { id: 'molotov', role: 'child' },
     { id: 'explosiveProjectile', role: 'child' },
     { id: 'shockwaveProjectile', role: 'child' },
+    { id: 'rock', role: 'child' },
     { id: 'napalm', role: 'child' },
   ],
   params: { ...DEFAULTS },
@@ -126,7 +129,7 @@ defineMacro('spawnSplit', {
     effects: [],
     desc: 'Fan out N children and materialize each into a live projectile/bomb or enemy. Declarative — one invoke, live results.',
     params: [
-      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | enemy | expl_proj | shock_proj | napalm' },
+      { key: 'child', desc: 'any ATTACK_IDS child: projectile | bomb | mine | molotov | enemy | expl_proj | shock_proj | shock_bomb | rock | napalm' },
       { key: 'payload', desc: 'sub-payload config object — keys per the child (see CHILD_PARAM_SPECS); legacy flat keys below still work' },
       { key: 'count', desc: 'children created' },
       { key: 'centerDirection', desc: 'central direction (radians)' },
@@ -296,6 +299,19 @@ defineMacro('spawnSplit', {
           // default contact+blast damage (legacy behavior preserved).
           ...(p.damage != null ? { damage: p.damage } : {}),
           ...(p.blastTeam != null ? { blastTeam: p.blastTeam } : {}),
+        }, ctx);
+        if (child?.entity) handles.push(child);
+      } else if (c.child === 'rock') {
+        // Rock → the rock macro (composition: arc flight + decay bounce,
+        // NO explosion — contact damage only, ttl fuse). rock owns ALL
+        // defaults (single source).
+        const rk = cfg('rock', {
+          arc: p.rock?.arc, ttl: p.rock?.ttl, damage: p.rock?.damage,
+        }, ROCK_DEFAULTS);
+        const child = invokeChild(c.child, {
+          origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
+          arc: rk.arc, ttl: rk.ttl, damage: rk.damage,
+          groundY: p.groundY, platforms: p.platforms,
         }, ctx);
         if (child?.entity) handles.push(child);
       } else {

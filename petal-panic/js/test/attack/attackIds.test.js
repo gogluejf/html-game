@@ -39,9 +39,9 @@ const ctx = () => makeContext(attacker(), { pools: { projectilePool: mkPool() } 
 
 // --- ATTACK_IDS: the shared list -------------------------------------------
 
-ok('ATTACK_IDS is the exact 8-value flat list (no ballistic, no plain)', () => {
+ok('ATTACK_IDS is the exact 9-value flat list (no ballistic, no plain)', () => {
   assert.deepEqual(ATTACK_IDS, [
-    'projectile', 'bomb', 'mine', 'molotov', 'enemy', 'expl_proj', 'shock_proj', 'shock_bomb', 'napalm',
+    'projectile', 'bomb', 'mine', 'molotov', 'enemy', 'expl_proj', 'shock_proj', 'shock_bomb', 'rock', 'napalm',
   ]);
 });
 
@@ -66,6 +66,7 @@ ok('CHILD_TARGETS pins the user-confirmed mappings', () => {
     expl_proj: 'explosiveProjectile',
     shock_proj: 'shockwaveProjectile',
     shock_bomb: 'shockwaveBomb',
+    rock: 'rock',
     napalm: 'napalm',
   });
 });
@@ -80,7 +81,7 @@ ok('every CHILD_TARGETS target is a registered attack', () => {
 // --- invokeChild: delegation + failure --------------------------------------
 
 ok('invokeChild rejects unknown children with the valid list in the error', () => {
-  for (const bad of ['ballistic', 'plain', 'rock', 'blast', undefined, 42]) {
+  for (const bad of ['ballistic', 'plain', 'stomp', 'blast', undefined, 42]) {
     assert.throws(
       () => invokeChild(bad, {}, ctx()),
       (e) => e instanceof Error && e.message.includes(`'${bad}'`) && e.message.includes('projectile') && e.message.includes('napalm'),

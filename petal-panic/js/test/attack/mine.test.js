@@ -364,7 +364,7 @@ test('child is the first tweakable row and payload follows immediately', async (
 for (const id of ['skyMissile', 'missileRain']) {
   test(`${id}: preserves every child's native terrain behavior`, () => {
     const c = context();
-    for (const child of ['projectile', 'expl_proj', 'shock_proj', 'shock_bomb', 'napalm', 'bomb', 'mine', 'molotov', 'enemy']) {
+    for (const child of ['projectile', 'expl_proj', 'shock_proj', 'shock_bomb', 'rock', 'napalm', 'bomb', 'mine', 'molotov', 'enemy']) {
       const h = invoke(id, { child, timeToTarget: 0, count: 1, pattern: 'simultaneous', interval: 0, launchInterval: 0, fallDelay: 0 }, c);
       for (let i = 0; i < 120 && !(id === 'skyMissile' ? h.state.missile : h.state.missiles?.length); i++) h.step(dt, []);
       const skyH = id === 'skyMissile' ? h : h.state.missiles[0];

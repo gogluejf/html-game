@@ -14,6 +14,7 @@
 //   enemy      → 'throwEnemy'            macro: thrown enemy carrier
 //   expl_proj  → 'explosiveProjectile'   macro: carrier → explosion zone on impact
 //   shock_proj  → 'shockwaveProjectile'   macro: carrier → shockwave zone on impact
+//   rock         → 'rock'                  macro: arcing carrier, decay bounce, contact damage, no explosion
 //   napalm     → 'napalm'                macro: carrier → fireArea on impact
 //
 // Note: 'expl_proj'/'shock_proj'/'napalm' are PROJECTILE-CARRIER
@@ -38,6 +39,7 @@ export const ATTACK_IDS = Object.freeze([
   'expl_proj',
   'shock_proj',
   'shock_bomb',
+  'rock',
   'napalm',
 ]);
 
@@ -51,6 +53,7 @@ export const CHILD_TARGETS = Object.freeze({
   expl_proj: 'explosiveProjectile',
   shock_proj: 'shockwaveProjectile',
   shock_bomb: 'shockwaveBomb',
+  rock: 'rock',
   napalm: 'napalm',
 });
 
@@ -144,6 +147,11 @@ export const CHILD_PARAM_SPECS = Object.freeze({
     { key: 'damage', kind: 'num', step: 5, desc: 'ring-pass damage' },
     { key: 'radius', kind: 'num', step: 10, desc: 'shockwave max radius (px)' },
     { key: 'duration', kind: 'num', step: 0.1, desc: 'ring expansion time (s)' },
+  ]),
+  rock: Object.freeze([
+    { key: 'arc', kind: 'num', step: 100, desc: 'gravity px/s2' },
+    { key: 'damage', kind: 'num', step: 5, desc: 'contact damage' },
+    { key: 'ttl', kind: 'num', step: 0.5, desc: 'fuse seconds' },
   ]),
   napalm: Object.freeze([
     { key: 'fireWidth', kind: 'num', step: 8, desc: 'burn area width (px)' },
