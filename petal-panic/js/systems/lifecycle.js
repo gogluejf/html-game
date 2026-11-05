@@ -939,12 +939,11 @@ export function showAreaEntry(h, ctx) {
   const data = {
     levelName: levelName(h.currentLevel),
     areaId: formatAreaId(h.currentLevel, fmtArea),
-    // Area entry shows the TOTAL life count for the run (design choice: the
-    // entry screen is a "you start with N lives" statement — always the
-    // starting total, not the depleted remaining count). The HUD badge shows
-    // REMAINING lives (live hero.lives) — the two surfaces are deliberately
-    // different semantics.
-    lives: GAME_RULES.startingLives,
+    // REMAINING lives — the single honest number. The HUD badge, the pause
+    // menu's Retry eligibility, and this screen must all agree: showing the
+    // run's TOTAL here while the player is on their last life reads as a lie
+    // (entry says 3, retry is disabled, HUD says 1). One source of truth.
+    lives: h.lives,
   };
   _areaEntryData = data;
   if (_onAreaEntryData) _onAreaEntryData(data);

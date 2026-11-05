@@ -89,10 +89,9 @@ test('showAreaEntry: screen data has exactly level name, area id, and lives (no 
 
   assert.equal(data.levelName, 'Big Top', 'level name from the level definitions');
   assert.equal(data.areaId, '1-3', 'area identifier');
-  // Design decision (2026-11): the entry screen states the run's TOTAL life
-  // count (a stable "you start with N lives" statement), NOT the depleted
-  // remaining count — the HUD badge owns the live remaining display.
-  assert.equal(data.lives, GAME_RULES.startingLives, 'total lives for the run');
+  // REMAINING lives — the entry screen, HUD badge, and pause-menu Retry
+  // eligibility all read hero.lives; one honest number everywhere.
+  assert.equal(data.lives, 2, 'lives remaining');
   assert.equal('score' in data, false, 'NO score field on the entry screen (game-rules.md §3)');
   assert.equal(getState(), S.AREA_ENTRY, 'the entry screen state is active');
 });
@@ -221,9 +220,9 @@ test('death in 1-3 re-enters 1-3 beside its entry flag (same area, same arrangem
   assert.equal(hero.lives, 1, 'one life consumed exactly once');
   const data = SC.getAreaEntryData();
   assert.equal(data.areaId, '1-3', 're-enters 1-3, not a different area');
-  // Entry screen shows the run's TOTAL life count (design decision 2026-11),
-  // not the depleted remaining count — the HUD owns the live display.
-  assert.equal(data.lives, GAME_RULES.startingLives, 'total lives for the run');
+  // REMAINING lives (single source of truth: hero.lives) — must match what the
+  // HUD shows and what the pause menu's Retry rule assumes.
+  assert.equal(data.lives, 1, 'the new life count is shown');
 
   // Confirming the screen starts the attempt beside the 1-3 flag.
   L.areaEntryOnAction('confirm', hero);

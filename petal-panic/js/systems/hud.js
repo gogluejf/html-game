@@ -462,7 +462,7 @@ function drawLivesBadge(ctx, hero, x, y, now) {
     const aidx = Math.min(ap.frameIndex, angryEntry.frames.length - 1);
     const aimg = loadHudImg(`angry_${heroId}_${aidx + 1}`, `../../assets/hud/${heroId}/angry_f${aidx + 1}.png`);
     if (aimg) drawIconCentered(ctx, aimg, x, y, BADGE, BADGE_ICON_FRAC);
-    drawCountBadge(ctx, x, y, hero.lives ?? 0, '#ff5b5b');
+    drawCountBadge(ctx, x, y, Math.max(0, (hero.lives ?? 1) - 1), '#ff5b5b'); // SPARES: lives left after the current one
     ctx.restore();
     return;
   }
@@ -471,7 +471,7 @@ function drawLivesBadge(ctx, hero, x, y, now) {
   if (!entry) {
     const img = loadHudImg(`life_${heroId}_1`, `../../assets/hud/${heroId}/idle_f1.png`);
     if (img) drawIconCentered(ctx, img, x, y, BADGE, BADGE_ICON_FRAC);
-    drawCountBadge(ctx, x, y, hero.lives ?? 0, '#ff5b5b');
+    drawCountBadge(ctx, x, y, Math.max(0, (hero.lives ?? 1) - 1), '#ff5b5b'); // SPARES: lives left after the current one
     ctx.restore();
     return;
   }
@@ -494,7 +494,7 @@ function drawLivesBadge(ctx, hero, x, y, now) {
   const idx = Math.min(player.frameIndex, frames.length - 1);
   const img = loadHudImg(`life_${heroId}_${idx + 1}`, `../../assets/hud/${heroId}/idle_f${idx + 1}.png`);
   if (img) drawIconCentered(ctx, img, x, y, BADGE, BADGE_ICON_FRAC);
-  drawCountBadge(ctx, x, y, hero.lives ?? 0, '#ff5b5b');
+  drawCountBadge(ctx, x, y, Math.max(0, (hero.lives ?? 1) - 1), '#ff5b5b'); // SPARES: lives left after the current one
   ctx.restore();
 }
 
