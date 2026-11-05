@@ -19,6 +19,7 @@ import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
 import { record } from '../stats.js';
 import { GameObj, Checkpoint } from '../objects/object.js';
+import { applyObjectImpact } from './objectImpact.js';
 import { SolidBox } from '../core/solidBox.js';
 import { aabbOverlap } from '../core/collision.js';
 import { Powerup } from '../objects/powerup.js';
@@ -121,27 +122,17 @@ export function registerCollisionHandlers(collisionWorld) {
 
       if (retainBombContact(allyProj, target)) return;
 
-      // friendly thorn hits a barrel (SOLID with an HP pool). Chip its
-      // HP; on destruction the barrel explodes (AoE + VFX) and is removed from the
-      // world. Thorns are consumed on impact either way.
+      // Friendly shot hits a destructible solid (SOLID with an HP pool). The
+      // shared object-impact op owns the whole contact: chip HP, consume the
+      // shot, per-hit rewards and destruction aftermath (host callbacks via
+      // ctx). Side hits arrive here through broadphase dispatch; TOP landings
+      // arrive from stepBombTerrain's pre-terrain surface contact — both run
+      // this exact operation, so top and side behave identically.
       if (target instanceof GameObj) {
-        if (allyProj._arcRecipe) {
-          allyProj._attackHit = true;
-          allyProj._impactPoint = entryImpactPoint(allyProj, target.worldBox());
-        }
-        const dealt = target.hit(allyProj.damage, hero, 'projectile');
-        if (dealt > 0) {
-          allyProj.alive = false;
-          // Super-coin barrel: pop coins proportional to the damage dealt.
-          ctx.popSuperCoinHit?.(target, dealt);
-          if (target.destroyed) ctx.handleBarrelDestroyed(target);
-        } else {
-          allyProj.alive = false; // hit an already-destroyed solid — still consumed
-        }
-        // Specials explode/fizzle on barrel contact too.
-        if (isSpecialType(allyProj.type)) {
-          explodeSpecial(allyProj);
-        }
+        applyObjectImpact(allyProj, target, hero, {
+          onObjectReward: (t, dealt) => ctx.popSuperCoinHit?.(t, dealt),
+          onObjectDestroyed: (t) => ctx.handleBarrelDestroyed(t),
+        });
         return;
       }
 

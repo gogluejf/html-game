@@ -1102,9 +1102,21 @@ export function update(dt) {
     ignoreOneWay: hero.droppingThrough,
   });
   // Shared top-surface collision before broadphase; payloads after dispatch.
+  // Owned surfaces (live destructibles) get a PRE-terrain contact offer: a
+  // falling bomb landing on an object's TOP damages/detonates it exactly like
+  // a side hit (shared object-impact op), instead of bouncing off an
+  // anonymous box. Anonymous terrain keeps its configured bounce.
   for (const s of projectilePool.items) {
     if (s._arcRecipe && !s._attackDone) {
-      stepBombTerrain(s, dt, bombGroundY, [...SOLIDS.slice(1), ...barrelSolidBoxes]);
+      stepBombTerrain(s, dt, bombGroundY, [...SOLIDS.slice(1), ...barrelSolidBoxes], {
+        onSurfaceContact: (ent, surface) => {
+          if (!surface.owner?.alive || !ent.friendly) return; // preserve side-hit team eligibility
+          applyObjectImpact(ent, surface.owner, hero, {
+            onObjectReward: (t, dealt) => popSuperCoinHit(t, dealt),
+            onObjectDestroyed: (t) => handleBarrelDestroyed(t),
+          });
+        },
+      });
     }
   }
   collisionWorld.update();
@@ -1185,3 +1197,4 @@ import { registerCollisionHandlers } from '../combat/collisionHandlers.js';
 import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFlow, updateBoss } from '../boss/bossFlow.js';
 import { updateRealEnemies } from '../enemies/enemyUpdate.js';
 import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, stepToxicZones, setBombHostGetter, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
+import { applyObjectImpact } from '../combat/objectImpact.js';

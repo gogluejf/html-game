@@ -7,7 +7,7 @@ import { VIEW_W, VIEW_H } from '../core/view.js';
 import { roomFloorTop } from '../world/level.js';
 import { Effects } from '../effects.js';
 import { particles, coins } from '../effects/particles.js';
-import { BARREL_DAMAGE, SUPERCOIN_BARREL_DEF, PROPANE_BARREL_DEF, TOXIC_BARREL_DEF } from './object.js';
+import { GameObj, BARREL_DAMAGE, SUPERCOIN_BARREL_DEF, PROPANE_BARREL_DEF, TOXIC_BARREL_DEF } from './object.js';
 import { invoke } from '../combat/attack/engine.js';
 import '../combat/attack/primitives/explosion.js'; // registers the 'explosion' primitive
 import '../combat/attack/primitives/dustZone.js'; // registers the 'dustZone' primitive (toxic cloud)
@@ -54,12 +54,16 @@ export function drawToxicZones(c) {
 let _getBombHost = null;
 export function setBombHostGetter(fn) { _getBombHost = fn; }
 
-/** Rebuild the dynamic solid registry (world boxes of every LIVE barrel). */
+/** Live destructible surfaces retain ordinary box geometry plus their owner.
+ * Collision-world membership makes this work for future GameObj types too.
+ */
 export function refreshBarrelSolidBoxes() {
   const boxes = ctx.barrelSolidBoxes;
   boxes.length = 0;
-  for (const b of [...ctx.barrels, ...ctx.woodBarrels, ...ctx.coinBarrels]) {
-    if (b.alive) boxes.push(b.worldBox());
+  for (const object of ctx.collisionWorld.entities) {
+    if (object instanceof GameObj && object.alive && !object.destroyed) {
+      boxes.push({ ...object.worldBox(), owner: object });
+    }
   }
 }
 

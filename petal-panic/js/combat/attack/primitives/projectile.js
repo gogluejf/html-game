@@ -354,10 +354,13 @@ export const BOMB_SETTLE_VY = 40;
  * @param {object} ent          the Projectile entity (must be alive)
  * @param {number} dt           seconds
  * @param {number} groundY      floor top y (world)
- * @param {Array}  [platforms]  optional extra surfaces [{x, y, w}] (tops only)
+ * @param {Array} [platforms] Surface boxes {x,y,w,h,owner?}.
+ * @param {object} [opts] Optional onSurfaceContact(entity, surface) callback.
+ *   Offered before terrain correction for live, non-retained carriers hitting
+ *   an owned surface. Consume the carrier to replace terrain bounce with impact.
  * @returns {boolean} true when the carrier settled this call (end pending)
  */
-export function stepBombTerrain(ent, dt, groundY, platforms = []) {
+export function stepBombTerrain(ent, dt, groundY, platforms = [], opts = {}) {
   if (!ent || (!ent.alive && !ent.ttlExpired) || ent._attackDone) return false;
   if (ent._bombSettled) return false;
   const bottom = ent.y + ent.h;
@@ -365,19 +368,32 @@ export function stepBombTerrain(ent, dt, groundY, platforms = []) {
   const prevBottom = ent._bombPrevBottom ?? bottom - ent.vy * dt;
   let surface = null;
   if (ent.vy > 0) {
-    if (Number.isFinite(groundY) && bottom >= groundY) surface = groundY;
+    if (Number.isFinite(groundY) && bottom >= groundY) surface = { y: groundY };
     for (const p of platforms) {
+      if (p.owner && (!p.owner.alive || p.owner.destroyed)) continue;
       if (prevBottom <= p.y + 2 && bottom >= p.y &&
           ent.x + ent.w > p.x && ent.x < p.x + p.w &&
-          (surface == null || p.y < surface)) surface = p.y;
+          (surface == null || p.y < surface.y)) surface = p;
     }
   }
   ent._bombSurfaceY = null;
   if (surface == null) return false;
 
-  ent.y = surface - ent.h;
+  // Object impacts must see the original motion segment, before terrain snap
+  // erases it. Mines/retained carriers still use ordinary landing behavior.
+  if (ent.alive && surface.owner && !ent._bombRetainOnContact) {
+    opts.onSurfaceContact?.(ent, surface);
+    if (!ent.alive) {
+      // Preserve the contacted top for payloads such as molotov fire, while
+      // retaining the swept impact point captured by the object-hit handler.
+      ent.y = surface.y - ent.h;
+      ent._bombSurfaceY = surface.y;
+      return true;
+    }
+  }
+  ent.y = surface.y - ent.h;
   invalidateImpactMotion(ent);
-  ent._bombSurfaceY = surface;
+  ent._bombSurfaceY = surface.y;
   if (!ent.alive) return false; // fuse expired on this landing frame
   if (ent.solidBehavior === 'reflect') {
     if (ent.bounceHeight != null && ent.gravityValue > 0) {
