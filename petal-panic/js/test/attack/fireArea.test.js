@@ -7,6 +7,7 @@ import '../../combat/attack/macros/molotov.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
+import { stepBombTerrain } from '../../combat/attack/primitives/projectile.js';
 import { LAYER } from '../../consts.js';
 
 let passed = 0;
@@ -96,10 +97,7 @@ ok('team routing: foe area skips enemies', () => {
 
 for (const scenario of [
   { name: 'floor impact', y: 391, surface: 400, impact: true },
-  { name: 'airborne fuse drops to floor', y: 200, surface: 400 },
   { name: 'platform impact', y: 291, surface: 300, impact: true, platforms: [{ x: 350, y: 300, w: 100 }] },
-  { name: 'bottle breaks midair beside a platform', y: 350, platforms: [{ x: 350, y: 300, w: 100 }] },
-  { name: 'platform outside column drops to floor', y: 200, surface: 400, platforms: [{ x: 500, y: 300, w: 100 }] },
 ]) {
   ok(`Molotov ${scenario.name}: rendered fire and damage share the impact box`, () => {
     const ctx = {
@@ -142,5 +140,51 @@ for (const scenario of [
       'damage box matches the rendered zone');
   });
 }
+
+function molotovFixture() {
+  const pool = new Pool(Projectile, 4);
+  const ctx = { attacker: attacker(), groundY: 480, platforms: [],
+    pools: { projectilePool: pool }, world: { targets: [] } };
+  return { pool, h: invoke('molotov', {
+    origin: { x: 400, y: 100 }, speed: 0, arc: 0, ttl: DT,
+  }, ctx) };
+}
+ok('Molotov ignores a caller-supplied flight TTL', () => {
+  const { pool, h } = molotovFixture();
+  for (let i = 0; i < 120; i++) { pool.updateAll(DT); h.step(DT); }
+  assert.equal(h.entity.alive, true);
+  assert.equal(h.handles.length, 0);
+});
+ok('Molotov offscreen removal produces no fire', () => {
+  const { h } = molotovFixture();
+  h.entity.y = -60;
+  h.entity.alive = false;
+  h.step(DT);
+  assert.equal(h.handles.length, 0);
+  assert.equal(h._completed, true);
+});
+ok('Molotov side contact uses recorded impact, not floor or carrier center', () => {
+  const { h } = molotovFixture();
+  h.entity._impactPoint = { x: 420, y: 160 };
+  h.entity._attackHit = true;
+  h.entity.alive = false;
+  h.step(DT);
+  assert.equal(h.handles.length, 1);
+  const z = h.handles[0].zone;
+  assert.equal(z.x + z.w / 2, 420);
+  assert.equal(z.y + z.h / 2, 160);
+});
+ok('One-way platform cannot catch a bottle far above its top', () => {
+  const { h } = molotovFixture();
+  const e = h.entity;
+  e.y = 21.2; e._bombPrevBottom = 39.1; e.vy = 4;
+  assert.equal(stepBombTerrain(e, DT, 480,
+    [{ x: 350, y: 384, w: 100, oneWay: true }]), false);
+  assert.equal(e.y, 21.2);
+  e.y = 377; e._bombPrevBottom = 380; e.vy = 900;
+  assert.equal(stepBombTerrain(e, DT, 480,
+    [{ x: 350, y: 384, w: 100, oneWay: true }]), true);
+  assert.equal(e.y + e.h, 384);
+});
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

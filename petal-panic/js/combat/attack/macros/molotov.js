@@ -1,6 +1,6 @@
 // Attack Engine — Molotov (macro). ONE object, one id.
 //
-// A thrown bottle that shatters on impact/fuse and leaves a persistent
+// A thrown bottle that shatters on impact and leaves a persistent
 // burning area (fireArea) at the death point. Uses CarrierMacro base for
 // unified stepping + deferred child management.
 
@@ -8,16 +8,17 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
 import { FIRE_HEIGHT } from '../primitives/fireArea.js';
-import { resolveImpactPoint } from './skyMissile.js';
 import { molotovDrawer } from '../drawers/index.js';
-import { getActiveFloorY } from '../../../world/accessors.js';
 
 const DEFAULTS = Object.freeze({
   speed: 600,           // launch force (px/s)
   direction: -0.5,
   arc: 800,             // gravity px/s²
   bounce: false,        // molotovs shatter on first impact
-  ttl: 2,               // fuse seconds
+  // NO ttl — a molotov is contact-only by contract. The bottle carries no
+  // fire until it breaks; a flight fuse would detonate it midair and anchor
+  // the zone to the floor below (ghost fire through platforms). Callers
+  // cannot arm a fuse: impl() ignores any supplied ttl.
   damage: 12,           // carrier contact damage
   fireWidth: 96,        // burn area width (px); height fixed at FIRE_HEIGHT
   fireDuration: 3,      // how long the area burns (s)
@@ -37,13 +38,12 @@ defineMacro('molotov', {
   meta: {
     name: 'Molotov',
     effects: [],
-    desc: 'Thrown bottle → shatters on impact/fuse → persistent burning area at death point.',
+    desc: 'Thrown bottle → shatters on impact → persistent burning area at the death point. Contact-only (no flight fuse).',
     params: [
       { key: 'speed', desc: 'launch force (px/s)' },
       { key: 'direction', desc: 'throw direction (radians)' },
       { key: 'arc', desc: 'gravity px/s²' },
       { key: 'bounce', desc: 'reflect off surfaces (default false)' },
-      { key: 'ttl', desc: 'fuse seconds' },
       { key: 'damage', desc: 'carrier contact damage' },
       { key: 'fireWidth', desc: 'burn area width (px); height fixed at 48' },
       { key: 'fireDuration', desc: 'how long the area burns (s)' },
@@ -57,24 +57,16 @@ defineMacro('molotov', {
     const p = { ...DEFAULTS, ...params };
 
     const h = createCarrierHandle('molotov', p, ctx, {
-      onDetonate({ x, y, surfaceY }, macroH) {
+      onDetonate({ x, y, surfaceY, contact }, macroH) {
+        if (!contact) return; // Off-screen cleanup is not an impact.
         try {
           const targets = new Set();
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
           const aimed = p.target ?? ctx.target;
           if (aimed) targets.add(aimed);
-          let anchor = null;
-          if (surfaceY != null) anchor = surfaceY;
-          else {
-            const floorY = p.groundY ?? ctx.groundY ?? getActiveFloorY();
-            const pt = resolveImpactPoint({ x, groundY: typeof floorY === 'number' ? floorY : null }, ctx);
-            // Anchor to the resolved surface whenever it's a valid floor.
-            // The old guard (y + FIRE_HEIGHT/2 > pt.y) was backwards for
-            // ground impacts: the floor is ALWAYS below the carrier center,
-            // so the condition always failed and the fire floated in air.
-            if (pt.y > 0) anchor = pt.y;
-          }
-          const zoneY = anchor != null ? anchor - FIRE_HEIGHT / 2 : y;
+          // Top landings put the fire base on the surface. Side/enemy hits
+          // keep the fire centered at the actual impact, never at the floor.
+          const zoneY = surfaceY != null ? surfaceY - FIRE_HEIGHT / 2 : y;
           const fire = invoke('fireArea', {
             x, y: zoneY,
             width: p.fireWidth,
@@ -99,7 +91,7 @@ defineMacro('molotov', {
       arc: p.arc,
       bounce: p.bounce,
       explodeOnContact: true,
-      ttl: p.ttl,
+      ttl: null, // contact-only — molotovs never self-detonate midair (see DEFAULTS)
       damage: p.damage,
       radius: 0,
       origin: p.origin,

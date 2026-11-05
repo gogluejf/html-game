@@ -120,7 +120,7 @@ export function handleBarrelDestroyed(barrel) {
       angle: Math.PI * 0.7,                 // ~126° fan — wide popcorn spread
       force: 520,                           // lobe launch speed
       child: 'molotov',
-      molotov: { arc: 800, bounce: false, ttl: 1.2, fireWidth: 96, team: 'neutral' },
+      molotov: { arc: 800, bounce: false, ttl: null, fireWidth: 96, team: 'neutral' },
       groundY: floorY,
     }, barrel);
     Effects.fireParticleBurst(cx, cy, 8);   // regular barrel-break particles

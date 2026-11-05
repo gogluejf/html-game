@@ -51,7 +51,10 @@ for (const platform of [null, { x: 350, y: 300, w: 100, oneWay: true },
   console.log(`PASS host molotov surface ${surface}: placement, draw, damage, completion`);
 }
 
-for (const id of ['explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
+// Molotov is contact-only (no flight fuse) — a zero-speed carrier never
+// touches a surface and never completes on its own. The pool-exhaustion
+// contract is covered by the other four macros instead.
+for (const id of ['explosiveBomb', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
   const { host, pool, frame } = setup(2);
   const h = host.spawn(id, { origin: { x: 400, y: 200 }, x: 400, y: 200,
     speed: 0, force: 0, arc: 0, ttl: dt, childTtl: dt, childForce: 0,
@@ -89,17 +92,15 @@ for (const id of ['explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spaw
 
 {
   const { host, frame } = setup();
-  const h = host.spawn('molotov', { origin: { x: 400, y: 200 }, speed: 0, arc: 0, ttl: dt }, attacker);
-  frame();
-  // Midair break: detonate reports the bottle position; with no surfaceY the
-  // fire box TOP sits ~FIRE_HEIGHT/2 above the reported point.
-  assert.ok(Math.abs(h.handles[0].zone.y - 176) < 1,
-    `midair fire anchors near the bottle (got ${h.handles[0].zone.y})`);
+  // Molotov is contact-only (no flight fuse): a zero-speed, zero-arc carrier
+  // never touches a surface, so it must NOT detonate — no fire zone spawns.
+  const h = host.spawn('molotov', { origin: { x: 400, y: 200 }, speed: 0, arc: 0 }, attacker);
+  for (let i = 0; i < 10; i++) frame();
+  assert.equal(h.handles.length, 0, 'contact-only molotov does not fizzle midair');
   host.clear();
   assert.equal(h._cancelled, true);
-  assert.equal(h.handles[0]._cancelled, true);
   assert.equal(host.roots.size, 0);
-  console.log('PASS midair policy and zone teardown');
+  console.log('PASS contact-only policy and zone teardown');
 }
 
 {

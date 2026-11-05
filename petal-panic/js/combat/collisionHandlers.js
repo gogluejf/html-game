@@ -48,6 +48,7 @@ function hitSolidTerrain(projectile, target) {
     projectile.reflectVelocity(box);
   } else if (projectile.solidBehavior === 'stop') {
     projectile._impactPoint = entryImpactPoint(projectile, box);
+    if (projectile._arcRecipe) projectile._attackHit = true;
     projectile.alive = false;
     if (projectile.type === 'bomb') snapToImpact(projectile, projectile._impactPoint);
     if (isSpecialType(projectile.type)) explodeSpecial(projectile);
@@ -124,6 +125,10 @@ export function registerCollisionHandlers(collisionWorld) {
       // HP; on destruction the barrel explodes (AoE + VFX) and is removed from the
       // world. Thorns are consumed on impact either way.
       if (target instanceof GameObj) {
+        if (allyProj._arcRecipe) {
+          allyProj._attackHit = true;
+          allyProj._impactPoint = entryImpactPoint(allyProj, target.worldBox());
+        }
         const dealt = target.hit(allyProj.damage, hero, 'projectile');
         if (dealt > 0) {
           allyProj.alive = false;
@@ -170,6 +175,7 @@ export function registerCollisionHandlers(collisionWorld) {
       // the contact edge so telegraphs/rings center where it actually hit.
       const ip = entryImpactPoint(allyProj, target.worldBox ? target.worldBox() : target);
       allyProj._impactPoint = ip ?? null;
+      if (allyProj._arcRecipe) allyProj._attackHit = true;
       const dealt = isRealEnemy
         ? target.takeDamage(allyProj.damage, hero, 'projectile')
         : damage(hero, target, allyProj.damage, 'projectile');
@@ -218,6 +224,10 @@ export function registerCollisionHandlers(collisionWorld) {
       }
       if (victim.layer !== LAYER.HERO) return;
       if (retainBombContact(foeProj, victim)) return;
+      if (foeProj._arcRecipe) {
+        foeProj._attackHit = true;
+        foeProj._impactPoint = entryImpactPoint(foeProj, victim.worldBox ? victim.worldBox() : victim);
+      }
       // Boss zone flow (boss-arena.md §2): the boss is untouchable before
       // COMBAT, so it fires no attacks during the intro either.
       if (foeProj === boss && !bossZone.bossCanTakeDamage()) { foeProj.alive = false; return; }

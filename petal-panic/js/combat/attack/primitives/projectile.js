@@ -439,7 +439,9 @@ export function stepBomb(ent, p, ctx, h) {
   if (ent.alive) return false;
 
   ent._attackDone = true;
-  const cx = ent.x + ent.w / 2, cy = ent.y + ent.h / 2;
+  const ip = ent._impactPoint;
+  const cx = ip ? ip.x : ent.x + ent.w / 2;
+  const cy = ip ? ip.y : ent.y + ent.h / 2;
 
   // Fuse expiry without contact = timed end (still an end, not a silent
   // expire): bombs are designed to go off wherever they land.
