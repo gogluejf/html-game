@@ -11,7 +11,7 @@ import { input } from '../core/input.js';
 import { VIEW_W } from '../core/view.js';
 import { SolidBox } from '../core/solidBox.js';
 import { GRAVITY, MAX_FALL_SPEED } from '../consts.js';
-import { CollisionWorld, resolve } from '../core/collision.js';
+import { CollisionWorld, resolve, aabbOverlap } from '../core/collision.js';
 import { Camera } from '../core/camera.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { Hero } from '../hero/hero.js';
@@ -24,6 +24,7 @@ import { dispatchScreenInput, setMenuHero } from '../ui/screens.js';
 import { makeElephant } from '../boss/boss.js';
 import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER } from '../boss/bossZone.js';
 import { particles, coins } from '../effects/particles.js';
+import { applyKnockback } from '../combat/knockback.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
 import { applyGodMode, setHeroRefSetter, tickDebugBarrelDrops } from '../debug/debugHarness.js';
@@ -128,14 +129,33 @@ const solidEntities = [];
  * @param {object[]} statics static terrain boxes (SOLID/PLATFORM)
  * @param {object[]} peers all dynamic solids INCLUDING e (self is filtered out)
  */
+// Horizontal friction for externally-impulsed motion (knockback). Exponential
+// decay per second: 0.02 means a shoved barrel keeps 2% of its slide speed
+// after one full second — it skids to a stop in ~0.3-0.5s, matching the
+// character of the hero's ground friction (0.85 per fixed step ≈ 0.14/s at
+// 60fps). Frame-rate independent via Math.pow(friction, dt).
+const DYNAMIC_SOLID_FRICTION_PER_SECOND = 0.02;
+
 export function stepDynamicSolid(e, dt, statics, peers) {
   if (!e.alive) return;
+  // Horizontal friction for externally-impulsed motion (knockback). Retained
+  // as a parameter so tests can override the decay character.
+  const friction = e.dynamicFrictionPerSecond ?? DYNAMIC_SOLID_FRICTION_PER_SECOND;
   if (e.vy == null) e.vy = 0;
   const before = e.worldBox();
   const prevBottom = before.y + before.h;
   e.vy = Math.min(e.vy + GRAVITY * dt, MAX_FALL_SPEED);
   e.x += (e.vx ?? 0) * dt;
   e.y += e.vy * dt;
+  // Horizontal friction: external impulses (knockback from melee/supermove/
+  // explosions) write vx once and nothing else drives it — without decay a
+  // shoved barrel slides forever at constant speed. Exponential bleed per
+  // second (frame-rate independent), same character as the hero's ground
+  // friction so a kicked barrel skids to a stop in ~0.3-0.5s.
+  if (e.vx) {
+    e.vx *= Math.pow(friction, dt);
+    if (Math.abs(e.vx) < 2) e.vx = 0; // rest threshold: kill sub-pixel creep
+  }
   const others = peers.filter(p => p !== e && p.alive);
   resolve(e, [...statics, ...others.map(p => p.worldBox())], { prevBottom });
   // Landing snap: zero fall velocity when resting on a surface.
@@ -144,6 +164,55 @@ export function stepDynamicSolid(e, dt, statics, peers) {
     if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
     const gap = s.y - (wb.y + wb.h);
     if (gap >= -2 && gap <= 2 && e.vy > 0) { e.vy = 0; break; }
+  }
+}
+
+// --- Rolling-barrel impacts (declaration of impact) ---------------------------
+// A knocked barrel is a physical object with momentum: when it is MOVING fast
+// enough and overlaps an enemy, that overlap is an IMPACT — the barrel deals
+// damage to the enemy, knocks the enemy back in the barrel's travel direction,
+// and loses part of its own speed (momentum transfer). One impact per enemy
+// per barrel until the barrel slows below the threshold or separates, so a
+// rolling barrel does not machine-gun an enemy every frame.
+const BARREL_IMPACT_MIN_SPEED = 120;   // px/s — slower than this = gentle roll, no hit
+const BARREL_IMPACT_DAMAGE = 15;       // flat impact damage (speed-scaled below)
+const BARREL_IMPACT_KNOCKBACK = { base: 260, hitstun: 0.25, pop: 30 };
+const BARREL_IMPACT_MOMENTUM_LOSS = 0.45; // barrel keeps 55% of speed per impact
+
+/**
+ * Impact sweep for one moving barrel against live enemies. Called from the
+ * dynamic-solid step AFTER integration so positions are final for this frame.
+ * @param {GameObj} b the barrel (any type — wood/coin/propane all roll)
+ */
+export function barrelImpactSweep(b) {
+  if (!b.alive || b.destroyed) return;
+  const speed = Math.abs(b.vx ?? 0);
+  if (speed < BARREL_IMPACT_MIN_SPEED) { b._impactCooldown = 0; return; }
+  if (b._impactCooldown > 0) { b._impactCooldown -= 1 / 60; return; }
+
+  const bb = b.worldBox();
+  const dirX = Math.sign(b.vx) || 1;
+  for (const e of realEnemies) {
+    if (!e || e.alive === false || e.aiState === 'dead') continue;
+    const eb = e.worldBox ? e.worldBox() : { x: e.x, y: e.y, w: e.w, h: e.h };
+    if (!aabbOverlap(bb, eb)) continue;
+
+    // Damage: flat base scaled by how hard the barrel is going (a full-speed
+    // launch hits ~2x the base value). Routed through the enemy's normal
+    // damage pipeline so defense/telemetry/death all work as usual.
+    const dmg = Math.round(BARREL_IMPACT_DAMAGE * (0.5 + speed / 400));
+    const dealt = e.takeDamage(dmg, b, 'barrelImpact');
+    if (dealt <= 0) continue; // i-frames/invuln absorbed it — no impact reaction
+
+    // Knockback on the ENEMY along the barrel's travel direction (§ declaration
+    // of impact): the victim flies away from where the blow came from.
+    applyKnockback(e, { vx: b.vx, vy: 0 }, BARREL_IMPACT_KNOCKBACK, { x: dirX, y: 0 });
+    Effects.beginEnemyShake(e);
+
+    // Momentum transfer: the barrel slows down — it did NOT pass through.
+    b.vx *= (1 - BARREL_IMPACT_MOMENTUM_LOSS);
+    b._impactCooldown = 0.35; // re-arm window: no second hit on the same body
+    break; // one enemy per barrel per impact event
   }
 }
 
@@ -984,6 +1053,7 @@ export function update(dt) {
   for (const b of dynBarrels) {
     b.update(dt);
     stepDynamicSolid(b, dt, SOLIDS, dynBarrels);
+    barrelImpactSweep(b);
   }
 
   // 1d3. tick powerups (bob anim), checkpoints (flash decay), and
