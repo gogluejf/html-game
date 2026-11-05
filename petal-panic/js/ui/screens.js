@@ -9,6 +9,7 @@ import { areaEntryOnAction, setAreaEntryDataCallback, getAreaEntryData as getAre
 import { newGameFromMenu, continueFromMenu, setMenuHeroRegistrar, saveCurrentRun } from '../systems/lifecycle.js';
 import { startArea } from '../systems/lifecycle.js';
 import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback, setBossRushReturn } from '../systems/lifecycle.js';
+import { canRetryLevel } from '../world/zoneLifecycle.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { calculateScore } from '../stats.js';
@@ -630,6 +631,26 @@ const COLOR_OPT_FOCUSED = '#ff6ec7';
 const COLOR_OPT_NORMAL = '#d8cdb4';
 const COLOR_OPT_DISABLED = '#555555';
 
+/**
+ * Universal option-list focus step (shared by every screen that renders an
+ * option list via drawOptionList). Steps `focus` by `dir` (±1) and SKIPS
+ * disabled entries, wrapping around. If no entry is enabled, focus is left
+ * untouched. Screens own their `focus` field; this owns the skip logic so
+ * Pause / Menu / GameOver cannot drift apart.
+ * @param {object} screen  object with a numeric `focus` property
+ * @param {number} dir     +1 (down) or -1 (up)
+ * @param {Array<{enabled?:boolean}>} options  live option list
+ */
+export function stepOptionFocus(screen, dir, options) {
+  const n = options.length;
+  if (!n) return;
+  let next = screen.focus;
+  for (let step = 0; step < n; step++) {
+    next = (next + dir + n) % n; // advance FROM the candidate, not from focus
+    if (options[next].enabled !== false) { screen.focus = next; return; }
+  }
+}
+
 // --- Menu-hub layout constants (task 2.2) ------------------------------------
 // The hub's own geometry, hoisted from the drawOptionList() call site so the
 // renderer never carries inline magic numbers. Values are identical to the
@@ -712,6 +733,10 @@ export function getMenuHero() { return _menuHero; }
 // the boot hero. The callback indirection (rather than a direct import) avoids
 // a circular module-evaluation TDZ error between screens.js and lifecycle.js.
 setMenuHeroRegistrar(setMenuHero);
+
+// Retry eligibility is owned by zoneLifecycle (it owns the lives rule); the
+// pause menu reads canRetryLevel() live so "Retry Level" disables exactly when
+// no spare life remains — same pattern as Continue/hasSave in the hub.
 
 export const Menu = {
   focus: 0,
@@ -1927,11 +1952,13 @@ export const Pause = {
   /** The five pause options with live routing data (menu-hub plan §4.2), in
    * the same data-driven shape as Menu.options(): `go` transitions to the
    * named state; `action` names a special handler. execute() dispatches on
-   * this data — never on label strings or hardcoded indices. */
+   * this data — never on label strings or hardcoded indices. Retry Level is
+   * disabled while no spare life remains (canRetryLevel) — exactly like the
+   * hub's Continue when no save exists: dimmed, un-focusable, un-activatable. */
   options() {
     return [
       { label: 'Resume',      enabled: true, action: 'resume' },
-      { label: 'Retry Level', enabled: true, action: 'retry' },
+      { label: 'Retry Level', enabled: canRetryLevel(), action: 'retry' },
       { label: 'Save & Quit', enabled: true, action: 'saveQuit' },
       { label: 'Controls',    enabled: true, go: S.REMAP },
       { label: 'Options',     enabled: true, go: S.OPTIONS },
@@ -1976,12 +2003,13 @@ export const Pause = {
       return true;
     }
     if (action === 'pause') return true; // consume: Start re-press/release is a no-op in the menu
+    const opts = this.options(hero);
     switch (action) {
       case 'up':
-        this.focus = (this.focus + 4) % 5;
+        stepOptionFocus(this, -1, opts);
         return true;
       case 'down':
-        this.focus = (this.focus + 1) % 5;
+        stepOptionFocus(this, 1, opts);
         return true;
       case 'confirm':
         this.execute(actions, hero);
@@ -2052,6 +2080,20 @@ export function canContinue(hero) {
 
 export const GameOver = {
   focus: 0, // 0=Continue, 1=Quit
+
+  /** The two options with a live enabled flag (draw + onAction share this) —
+   * same data-driven shape as Menu/Pause.options(). Continue disables when no
+   * continue remains; stepOptionFocus then skips it automatically. */
+  options(hero) {
+    const pool = hero?.continues;
+    const remaining = pool ? pool.remaining
+      : ((hero?.maxContinues ?? 3) - (hero?.continuesUsed ?? 0));
+    return [
+      { label: `Continue (${remaining} left)`, enabled: canContinue(hero) },
+      { label: 'Quit to Home', enabled: true },
+    ];
+  },
+
   /** @param {CanvasRenderingContext2D} ctx @param {object} hero the hero entity */
   draw(ctx, hero) {
     // Full-opaque dark background (game over hides the world, unlike pause).
@@ -2074,14 +2116,7 @@ export const GameOver = {
     ctx.fillText(`Enemies Killed: ${kills}   ·   Coins: ${coins}   ·   Distance: ${distance} px`, VIEW_W / 2, VIEW_H / 2 - 45);
 
     // Options — same shared list layout as the pause menu.
-    const pool = hero.continues;
-    const remaining = pool ? pool.remaining
-      : (hero.maxContinues ?? 3) - (hero.continuesUsed ?? 0);
-    const okCont = canContinue(hero);
-    const options = [
-      { label: `Continue (${remaining} left)`, enabled: okCont },
-      { label: 'Quit to Home', enabled: true },
-    ];
+    const options = this.options(hero);
     drawOptionList(ctx, {
       items: options,
       focus: this.focus,
@@ -2108,12 +2143,13 @@ export const GameOver = {
       if (actions.quit) actions.quit(); else tryTransition(S.HOME);
       return true;
     }
+    const opts = this.options();
     switch (action) {
       case 'up':
-        this.focus = (this.focus + 1) % 2;
+        stepOptionFocus(this, -1, opts);
         return true;
       case 'down':
-        this.focus = (this.focus + 1) % 2;
+        stepOptionFocus(this, 1, opts);
         return true;
       case 'confirm':
         this.execute(hero, actions);

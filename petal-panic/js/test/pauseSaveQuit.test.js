@@ -67,7 +67,9 @@ test('Pause exposes draw/onAction/reset and lists the five §4.2 options', () =>
     ['Resume', 'Retry Level', 'Save & Quit', 'Controls', 'Options'],
     'canonical order',
   );
-  assert.ok(opts.every(o => o.enabled === true), 'all enabled');
+  // Retry Level mirrors canRetryLevel(): no live hero (headless) → disabled;
+  // every other option stays enabled.
+  assert.ok(opts.every((o, i) => (i === 1 ? o.enabled === false : o.enabled === true)), 'enabled flags');
 });
 
 test('Pause.draw renders all five labels via the shared centered list', () => {
@@ -166,7 +168,7 @@ test('Options opens OPTIONS with origin PAUSE (back returns to PAUSE)', () => {
   assert.equal(getState(), S.PAUSE, 'back from OPTIONS lands on PAUSE');
 });
 
-test('Resume and Retry behavior preserved (existing ergonomics intact)', () => {
+test('Resume and Retry behavior preserved (existing ergonomics intact)', async () => {
   // Resume: confirm on focus 0 → PLAY.
   setState(S.PLAY);
   go(S.PAUSE);
@@ -175,9 +177,14 @@ test('Resume and Retry behavior preserved (existing ergonomics intact)', () => {
   assert.equal(getState(), S.PLAY, 'resume returns to PLAY');
 
   // Retry: the injected retry action fires (update.js owns the real flow).
+  // Retry Level is only enabled while a spare life remains — give the live
+  // hero one so the focused option is activatable.
   let retried = false;
   setState(S.PLAY);
   go(S.PAUSE);
+  const { ctx } = await import('../world/context.js');
+  if (!ctx.hero) ctx.hero = {};
+  ctx.hero.lives = 3;
   SC.Pause.focus = 1;
   assert.equal(SC.screenOnAction('confirm', undefined, { retry: () => { retried = true; } }), true);
   assert.equal(retried, true, 'retry action invoked');

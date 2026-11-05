@@ -154,7 +154,7 @@ test('Space jump and Circle super never pause; Escape/Options do; pause menu clo
   key('Space', false); const p = pad(); pads.push(p); p.buttons[1].pressed = true; U.processInput(); assert.equal(input.state.supermove, true); assert.equal(getState(), S.PLAY);
   p.buttons[9].pressed = true; U.processInput(); assert.equal(getState(), S.PAUSE);
   U.processInput(); assert.equal(getState(), S.PAUSE); p.buttons[9].pressed = false; U.processInput();
-  Pause.focus = 1; U.getHero().lives = 1; tap('Enter');
+  Pause.focus = 1; U.getHero().lives = 2; tap('Enter');
   // Retry (focus 1) opens the shared area-entry screen first (checkpoints.md §3).
   assert.equal(getState(), S.AREA_ENTRY);
   confirmAreaEntry();
