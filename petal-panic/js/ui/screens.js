@@ -684,23 +684,35 @@ const MENU_NAV_GAP = 20;        // space between last row and the nav bar
  */
 export function drawOptionList(ctx, {
   title, titleY, titleSize = 56, items, focus, startY,
-  gap = PILL_ROW_GAP, pillW = 240, navEntries, navGap = 24,
+  gap = PILL_ROW_GAP, pillW = null, navEntries, navGap = 24,
 }) {
   if (title) {
     drawMarqueeTitle(ctx, title, VIEW_W / 2, titleY, titleSize, { color: CREAM });
   }
 
+  // Content-sized pills: measure each row's label and pad it — a short
+  // "Continue x3" no longer stretches a 240px bar of empty space around it.
+  const pillWidths = items.map((it) => {
+    const font = OPT_FONT_NORMAL + 'px ' + FONT_UI;
+    ctx.save(); ctx.font = font;
+    const w = ctx.measureText('▸ ' + it.label).width;
+    ctx.restore();
+    return Math.ceil(w) + 36; // arrow room + horizontal padding
+  });
+  const maxPill = pillW ?? Math.max(...pillWidths);
+
   for (let i = 0; i < items.length; i++) {
     const y = startY + i * gap;
     const focused = i === focus;
     if (focused) {
+      const w = Math.min(pillWidths[i], maxPill);
       ctx.save();
       ctx.fillStyle = COLOR_PILL_FILL;
-      roundRect(ctx, VIEW_W / 2 - pillW / 2, y - PILL_Y_OFF, pillW, PILL_H, PILL_R);
+      roundRect(ctx, VIEW_W / 2 - w / 2, y - PILL_Y_OFF, w, PILL_H, PILL_R);
       ctx.fill();
       ctx.strokeStyle = COLOR_PILL_STROKE;
       ctx.lineWidth = 1;
-      roundRect(ctx, VIEW_W / 2 - pillW / 2, y - PILL_Y_OFF, pillW, PILL_H, PILL_R);
+      roundRect(ctx, VIEW_W / 2 - w / 2, y - PILL_Y_OFF, w, PILL_H, PILL_R);
       ctx.stroke();
       ctx.restore();
     }
@@ -2090,7 +2102,9 @@ export const GameOver = {
     const remaining = (pool && typeof pool.remaining === 'number') ? pool.remaining
       : ((hero?.maxContinues ?? 3) - (hero?.continuesUsed ?? 0));
     return [
-      { label: `Continue (${remaining} left)`, enabled: canContinue(hero) },
+      // Arcade label: "Continue x3" — count shown only when available; at zero
+      // it's just a plain disabled "Continue" (no x0, which reads as a bug).
+      { label: remaining > 0 ? `Continue x${remaining}` : 'Continue', enabled: canContinue(hero) },
       { label: 'Quit to Home', enabled: true },
     ];
   },
