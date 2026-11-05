@@ -316,17 +316,20 @@ test('Menu.draw renders all eight options with the focus pill on the focused row
   const pillFills = rec.fills.filter(f => f.style === pillFill && f.path);
   assert.equal(pillFills.length, 1, 'exactly one focus pill filled');
   const p = pillFills[0].path;
+  // Content-sized pill (2026-11): width derives from the measured label +
+  // padding, so verify GEOMETRY RELATIONS instead of absolute coordinates —
+  // centered on VIEW_W/2, correct height/radius, right edge before left edge.
   const pill = menuPillForRow(3);
   assert.equal(p.arcs.length, 4, 'pill path has exactly four corner arcs');
-  // G5: actually verify the corner RADIUS (5th arcTo argument) on all four
-  // corners — the pill's rounded corners must be r=6.
   for (let c = 0; c < 4; c++) {
     assert.equal(p.arcs[c][4], pill.r, `pill corner ${c} radius is ${pill.r}`);
   }
-  assert.equal(p.arcs[0][0], pill.x + pill.w, 'pill right edge');
-  assert.equal(p.arcs[0][1], pill.top, 'pill top edge');
-  assert.equal(p.arcs[2][0], pill.x, 'pill left edge');
-  assert.equal(p.arcs[2][1], pill.top + pill.h, 'pill bottom edge');
+  const rightEdge = p.arcs[0][0], topEdge = p.arcs[0][1];
+  const leftEdge = p.arcs[2][0], bottomEdge = p.arcs[2][1];
+  assert.ok(rightEdge > leftEdge, 'pill right edge is right of left edge');
+  assert.equal((rightEdge + leftEdge) / 2, VIEW_W / 2, 'pill is horizontally centered');
+  assert.equal(topEdge, pill.top, 'pill top edge');
+  assert.equal(bottomEdge - topEdge, pill.h, 'pill height matches the row geometry');
   // The same path is also stroked with the pink outline. Because drawOptionList
   // calls roundRect() twice (once before fill, once before stroke), the
   // recording proxy captures two distinct path objects with identical geometry.
