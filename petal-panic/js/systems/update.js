@@ -28,8 +28,8 @@ import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
 import { applyGodMode, setHeroRefSetter, tickDebugBarrelDrops } from '../debug/debugHarness.js';
 import { buildWorld, captureAreaMap, newGameSeed, getLastWorldSeed } from '../world/build.js';
-import { CLEAR_SEQ, clearSeq, areaEntrySeq, setMenuEntryPending, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
-export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver };
+import { CLEAR_SEQ, clearSeq, areaEntrySeq, setMenuEntryPending, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryLevel, continueFromGameOver } from '../world/zoneLifecycle.js';
+export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryLevel, continueFromGameOver };
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, roomFloorTop, BOSS_TRIGGER_X } from '../world/level.js';
 import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, applySavedState } from '../systems/lifecycle.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
@@ -457,7 +457,7 @@ export function processInput() {
   dispatchScreenInput(input, hero, {
     // On rejection (0 lives) tryTransition(S.OVER) is an intentional no-op when
     // we are already in S.OVER — it just keeps us on the Game Over screen.
-    retry: () => { if (!retryFromGameOver()) tryTransition(S.OVER); },
+    retry: () => { if (!retryLevel()) tryTransition(S.OVER); },
     cont: continueFromGameOver,
     playAgain: () => tryTransition(S.SELECT),
     quit: () => tryTransition(S.HOME),

@@ -599,17 +599,17 @@ test('integration: continue from 2-3 lands the hero at the level entry (area -1)
 
 // --- Paid manual retry (state-persistence.md §2.1, task 2.1) ------------------
 //
-// retryFromGameOver (zoneLifecycle.js) costs exactly 1 life — identical to a
+// retryLevel (zoneLifecycle.js) costs exactly 1 life — identical to a
 // death — and applies the SAME resets as the death-restart path. Rejected at
 // 0 lives (no free restarts). These run against the live world booted by
 // update.js (same harness as the integration tests above).
 
-test('retryFromGameOver: with lives>0 decrements exactly 1 life and starts the entry sequence', () => {
+test('retryLevel: with lives>0 decrements exactly 1 life and starts the entry sequence', () => {
   const hero = U.getHero();
   setState(S.OVER);
   hero.lives = 3;
   hero.energy = 0; // stale state from the failed attempt
-  const applied = U.retryFromGameOver();
+  const applied = U.retryLevel();
   assert.equal(applied, true, 'retry applies when lives remain');
   assert.equal(hero.lives, 2, 'exactly one life consumed (3→2)');
   assert.equal(getState(), S.AREA_ENTRY, 'entry sequence started (shared area-entry screen)');
@@ -620,19 +620,31 @@ test('retryFromGameOver: with lives>0 decrements exactly 1 life and starts the e
   assert.ok(hero.energy === hero.maxEnergy, 'full energy restored at attempt start');
 });
 
-test('retryFromGameOver: at 0 lives returns false and changes nothing', () => {
+test('retryLevel: at 1 life returns false (no retry into a 0-life run)', () => {
+  const hero = U.getHero();
+  setState(S.OVER);
+  hero.lives = 1; // last attempt — retrying would consume it
+  const coinsBefore = hero.coins;
+  const applied = U.retryLevel();
+  assert.equal(applied, false, 'rejected — no spare life to spend');
+  assert.equal(getState(), S.OVER, 'still in OVER (caller routes to Game Over)');
+  assert.equal(hero.lives, 1, 'lives unchanged (not drained to 0)');
+  assert.equal(hero.coins, coinsBefore, 'wallet untouched');
+});
+
+test('retryLevel: at 0 lives returns false and changes nothing', () => {
   const hero = U.getHero();
   setState(S.OVER);
   hero.lives = 0;
   const coinsBefore = hero.coins;
-  const applied = U.retryFromGameOver();
+  const applied = U.retryLevel();
   assert.equal(applied, false, 'rejected — no free restarts');
   assert.equal(getState(), S.OVER, 'still in OVER');
   assert.equal(hero.lives, 0, 'lives unchanged');
   assert.equal(hero.coins, coinsBefore, 'wallet untouched');
 });
 
-test('retryFromGameOver: reset sequence matches death (coins rolled back, energy full, weapon default, specials/shield/super cleared)', () => {
+test('retryLevel: reset sequence matches death (coins rolled back, energy full, weapon default, specials/shield/super cleared)', () => {
   const hero = U.getHero();
   const checkpoints = U.getCheckpoints();
   // Baseline: clean PLAY state with a fresh zone snapshot recorded.
@@ -658,7 +670,7 @@ test('retryFromGameOver: reset sequence matches death (coins rolled back, energy
 
   // The paid retry.
   setState(S.OVER);
-  const applied = U.retryFromGameOver();
+  const applied = U.retryLevel();
   assert.equal(applied, true);
   assert.equal(hero.lives, 2, 'one life consumed');
   assert.equal(getState(), S.AREA_ENTRY, 'entry sequence started');

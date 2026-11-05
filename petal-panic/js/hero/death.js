@@ -85,7 +85,7 @@ export function finishHeroDeath() {
     // entities — restoreArea() cannot re-add defeated enemies, destroyed
     // barrels, or collected powerups (lifecycle.md §3: "the previous
     // attempt's kills and destroyed objects do not leave the next attempt
-    // partly cleared"). Shared with retryFromGameOver so a retry resets the
+    // partly cleared"). Shared with retryLevel so a retry resets the
     // area identically to a death-restart.
     resetActiveZoneContent();
     // checkpoints.md §4: after the death presentation and the fade, consume

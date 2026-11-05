@@ -111,20 +111,20 @@ test('row [Die/Retry]: death restart rolls to zone snapshot, full energy, weapon
 });
 
 test('row [Die/Retry]: manual retry costs exactly 1 life and rejects at 0 lives', async () => {
-  // retryFromGameOver operates on the LIVE booted hero (world/context.js ctx),
+  // retryLevel operates on the LIVE booted hero (world/context.js ctx),
   // same harness as lifecycle.test.js's retry tests.
   const U = await import('../systems/update.js');
   const hero = U.getHero();
   setState(S.OVER);
   hero.lives = 2;
-  const r1 = U.retryFromGameOver();
+  const r1 = U.retryLevel();
   assert.equal(r1, true, 'retry accepted with lives remaining');
   assert.equal(hero.lives, 1, 'exactly one life consumed (2→1)');
   // At 0 lives: rejected, nothing changes.
   setState(S.OVER);
   hero.lives = 0;
   const coinsBefore = hero.wallet.current.coins;
-  const r2 = U.retryFromGameOver();
+  const r2 = U.retryLevel();
   assert.equal(r2, false, 'retry rejected at 0 lives');
   assert.equal(hero.lives, 0, 'lives unchanged on rejection');
   assert.equal(hero.wallet.current.coins, coinsBefore, 'wallet unchanged on rejection');

@@ -15,6 +15,18 @@ import { makeCheckpoint } from '../objects/object.js';
 import { showAreaEntry, formatAreaId, recordZoneSnapshot, setAreaEntryFadeOutCallback, setAreaEntryAdvanceFlag, setAreaEntryAdvanceConsume, setMenuEntryFlag, restartAttempt, arriveAtZone, continueRun, saveCurrentRun } from '../systems/lifecycle.js';
 import { instantiateZone } from './build.js';
 import { restoreBossRunFloor } from '../boss/bossFlow.js';
+
+// --- Retry eligibility (state-persistence.md §2.1) ---------------------------
+// A manual retry costs exactly 1 life — identical to dying. It is only legal
+// while a SPARE life remains (lives >= 2); spending the last life would leave
+// a playable 0-life run. screens.js cannot import this module directly
+// (circular: zoneLifecycle → lifecycle → ... → screens), so it registers its
+// option-flag callback here at module evaluation and reads the result live.
+
+/** @returns {boolean} true when the hero has a spare life to spend on a retry. */
+export function canRetryLevel() {
+  return !!(ctx.hero && ctx.hero.lives >= 2);
+}
 // --- Area-clear sequence (checkpoints.md §2) -----------------------------------
 // When the hero reaches an area's EXIT flag the area is cleared and the next
 // zone is generated. The sequence (checkpoints.md §2, structure.md §2):
@@ -466,7 +478,7 @@ export function heroEntryPosition(hero, zone) {
  * powerups are all restored). This is the BLOCKER 6 reset: restoreArea() alone
  * cannot re-add defeated entities, so we re-instantiate the whole zone from its
  * immutable snapshot instead. Shared by the death-restart path
- * (finishHeroDeath) and the pause/OVER retry path (retryFromGameOver) so both
+ * (finishHeroDeath) and the pause/OVER retry path (retryLevel) so both
  * reset the area identically. No-op for non-area zones (the boss zone keeps its
  * own flow) or when no content is stored for the zone.
  */
@@ -519,9 +531,16 @@ export function resetActiveZoneContent() {
  * Returns true when the retry was applied (life consumed + entry screen shown),
  * false when rejected (0 lives — caller should route to Game Over instead).
  */
-export function retryFromGameOver() {
+export function retryLevel() {
   const hero = ctx.hero;
-  if (hero.lives <= 0) return false;
+  // Retry costs exactly 1 life (identical to dying). It must be REJECTED when
+  // that would consume the LAST life — otherwise a player at 1 life could
+  // retry into a 0-life run and keep playing with no attempts left (the
+  // "retry retry retry → 0 lives" bug). A spare life is required: lives >= 2
+  // before spending one. At 1 life the caller routes to Game Over instead
+  // (update.js: if (!retryLevel()) tryTransition(S.OVER)). The pause menu
+  // mirrors this rule in its option list via canRetryLevel().
+  if (hero.lives < 2) return false;
   // Cost: exactly 1 life (identical to dying).
   hero.lives -= 1;
   // Reset the active zone to a fresh arrangement (enemies, barrels, powerups,
