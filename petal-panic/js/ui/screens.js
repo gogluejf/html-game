@@ -10,6 +10,7 @@ import { newGameFromMenu, continueFromMenu, setMenuHeroRegistrar, saveCurrentRun
 import { startArea } from '../systems/lifecycle.js';
 import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback, setBossRushReturn } from '../systems/lifecycle.js';
 import { canRetryLevel } from '../world/zoneLifecycle.js';
+import { getHero } from '../world/accessors.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { calculateScore } from '../stats.js';
@@ -2620,7 +2621,14 @@ export function screenReset(s, from) {
   if (s === S.BOSS_RUSH) BossRush.reset(from);
   if (s === S.MEDIA) Media.reset();
   if (s === S.PAUSE) Pause.reset();
-  if (s === S.OVER) GameOver.focus = 0;
+  // OVER: land focus on the first ENABLED option. Continue is disabled when no
+  // continues remain — a hardcoded focus 0 would strand the cursor on a dead
+  // row (down works, up doesn't). canContinue needs the live hero; screenReset
+  // runs on transition without one, so read it from the world context.
+  if (s === S.OVER) {
+    GameOver.focus = 0;
+    if (!canContinue(getHero())) GameOver.focus = 1;
+  }
   // REMAP returns to wherever it was opened from: HOME, PAUSE, or MENU.
   if (s === S.REMAP) { remapParent = [S.HOME, S.PAUSE, S.MENU].includes(from) ? from : S.PAUSE; Remap.resetState(); }
   // AREA_ENTRY: the screen data is pushed by lifecycle.js (showAreaEntry)
