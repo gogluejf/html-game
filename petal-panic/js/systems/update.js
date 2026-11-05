@@ -25,6 +25,8 @@ import { makeElephant } from '../boss/boss.js';
 import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER } from '../boss/bossZone.js';
 import { particles, coins } from '../effects/particles.js';
 import { applyKnockback } from '../combat/knockback.js';
+import { damage } from '../combat/damage.js';
+import { separateHeroFromBumper } from '../combat/collisionHandlers.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
 import { applyGodMode, setHeroRefSetter, tickDebugBarrelDrops } from '../debug/debugHarness.js';
@@ -214,6 +216,69 @@ export function barrelImpactSweep(b) {
     b._impactCooldown = 0.35; // re-arm window: no second hit on the same body
     break; // one enemy per barrel per impact event
   }
+}
+
+// --- Falling-barrel impacts (stomp / bonk) -----------------------------------
+// A barrel falling FAST onto the hero is a physical impact, not a pass-through:
+//   - hero's head is in the lower half of the barrel and the barrel is moving
+//     down → STOMP: the barrel takes heavy damage (often dies → its normal
+//     destruction payload), the hero bounces off the top.
+//   - any other fast overlap (barrel hits you from the side/above while you're
+//     under it) → BONK: the hero takes contact damage + launch, the barrel
+//     loses its fall speed.
+// Below FALLING_MIN_VY the barrel is just settling — no impact (stacking and
+// gentle drops keep working). One impact per barrel per short window so a
+// resting-on-head frame doesn't machine-gun.
+const FALLING_BARREL_MIN_VY = 260;   // px/s downward before it counts as "falling"
+const FALLING_BARREL_STOMP_DMG = 40; // damage the stomp deals to the BARREL
+const FALLING_BARREL_BONK_DMG = 15;  // damage a non-stomp bonk deals to the HERO
+const FALLING_BARREL_BOUNCE = 380;   // hero bounce impulse (px/s upward)
+const FALLING_BARREL_COOLDOWN = 0.3; // re-arm window per barrel
+
+/**
+ * Impact check for one falling barrel against the hero. Called from the
+ * dynamic-solid step AFTER integration (positions final for this frame).
+ * @param {GameObj} b the barrel
+ */
+export function fallingBarrelImpact(b) {
+  if (!b.alive || b.destroyed) return;
+  const vy = b.vy ?? 0;
+  if (vy < FALLING_BARREL_MIN_VY) { b._fallCd = 0; return; } // settling, not falling
+  if (b._fallCd > 0) { b._fallCd -= 1 / 60; return; }
+
+  const h = ctx.hero;
+  if (!h || !h.alive || h.dying) return;
+  const bb = b.worldBox();
+  const hb = h.worldBox ? h.worldBox() : { x: h.x, y: h.y, w: h.w, h: h.h };
+  if (!aabbOverlap(bb, hb)) return;
+
+  // STOMP: hero's center is in the LOWER half of the barrel (head under it).
+  const hcy = hb.y + hb.h / 2;
+  const isStomp = hcy >= bb.y + bb.h * 0.5;
+  if (isStomp) {
+    // The barrel eats the hit through its normal pipeline (flash, destroy
+    // latch, payload on death all work as usual). Source = hero.
+    const dealt = b.hit(FALLING_BARREL_STOMP_DMG, h, 'stomp');
+    if (dealt > 0) {
+      h.vy = -FALLING_BARREL_BOUNCE; // bounce off the top
+      h.jumpsUsed = Math.max(0, (h.jumpsUsed ?? 0) - 1); // stomp refunds a jump (SMB-style)
+      Effects.beginEnemyShake?.(b);
+      record(h, { kind: 'enemyStomped' }) ;
+    }
+  } else {
+    // BONK: the barrel caught the hero from above/the side mid-fall.
+    if (h.intangible) { separateHeroFromBumper(h, b); b.vy = 0; return; } // bumper rule
+    const dealt = damage(b, h, FALLING_BARREL_BONK_DMG, 'contact');
+    if (dealt > 0) {
+      const dirX = Math.sign((hb.x + hb.w / 2) - (bb.x + bb.w / 2)) || 1;
+      applyKnockback(h, { vx: 0, vy: vy }, { base: 200, hitstun: 0.25, pop: 60 }, { x: dirX, y: -0.5 });
+      separateHeroFromBumper(h, b);
+      Effects.heroDamaged();
+      record(h, { kind: 'hitTaken', source: 'barrelFall' });
+    }
+  }
+  b.vy = 0;                 // the fall ENDS on impact either way
+  b._fallCd = FALLING_BARREL_COOLDOWN;
 }
 
 // The hero's physical entry position for the active zone. Area -1 has no entry
@@ -1054,6 +1119,7 @@ export function update(dt) {
     b.update(dt);
     stepDynamicSolid(b, dt, SOLIDS, dynBarrels);
     barrelImpactSweep(b);
+    fallingBarrelImpact(b);
   }
 
   // 1d3. tick powerups (bob anim), checkpoints (flash decay), and

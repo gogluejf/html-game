@@ -41,6 +41,41 @@ import { ctx } from '../world/context.js';
 import { entryImpactPoint, snapToImpact } from './entryImpact.js';
 export { entryImpactPoint, snapToImpact };
 
+/**
+ * Pinball-bumper separation: push the hero's box out of a solid body along
+ * the minimum-penetration axis so it can never render INSIDE an enemy while
+ * intangible (or right after a hit). One-shot positional resolve — velocity
+ * is owned by knockback; this only fixes the overlap. The ENEMY never moves
+ * (it is the fixed bumper; the hero is the ball).
+ * @param {object} hero  hero entity (x/y mutated)
+ * @param {object} body  the enemy/boss body to separate from
+ */
+export function separateHeroFromBumper(hero, body) {
+  const hb = hero.worldBox ? hero.worldBox() : { x: hero.x, y: hero.y, w: hero.w, h: hero.h };
+  const bb = body.worldBox ? body.worldBox() : { x: body.x, y: body.y, w: body.w, h: body.h };
+  // Penetration depths (<=0 on an axis = no overlap that axis).
+  const penX = Math.min(hb.x + hb.w - bb.x, bb.x + bb.w - hb.x);
+  const penY = Math.min(hb.y + hb.h - bb.y, bb.y + bb.h - hb.y);
+  if (penX <= 0 || penY <= 0) return; // not overlapping
+  // Push along the axis of least penetration; ties break HORIZONTAL so a
+  // side-by-side touch never launches the hero vertically off the floor.
+  if (penX < penY || (penX === penY && penX > 0)) {
+    const hcx = hb.x + hb.w / 2, bcx = bb.x + bb.w / 2;
+    hero.x += (hcx >= bcx ? penX : -penX);
+    if (hero.vx && Math.sign(hero.vx) !== Math.sign(hcx - bcx)) hero.vx = 0; // don't slide back in
+  } else {
+    const hcy = hb.y + hb.h / 2, bcy = bb.y + bb.h / 2;
+    // Hero ABOVE the bumper center → rest on top (push up, kill fall speed).
+    if (hcy < bcy) {
+      hero.y -= penY;
+      if (hero.vy > 0) hero.vy = 0;
+    } else {
+      // Hero BELOW (inside from under) → push DOWN out of the body.
+      hero.y += penY;
+    }
+  }
+}
+
 function hitSolidTerrain(projectile, target) {
   const box = target.worldBox();
   projectile._impactPoint = null;
@@ -267,9 +302,16 @@ export function registerCollisionHandlers(collisionWorld) {
     if (!source.alive || source.aiState === 'dead') return; // dead enemies don't hurt
     // Boss zone flow (boss-arena.md §2): the boss is untouchable before COMBAT.
     if (source === boss && !bossZone.bossCanTakeDamage()) return;
-    // i-frames absorb contact hits (prevents melt while overlapping). takeHit()
-    // returns false when invincible, so we skip damage + cooldown in that case.
-    if (heroEnt.intangible) return;
+    // PINBALL BUMPER RULE: intangible absorbs DAMAGE but never disables
+    // collision. While blinking, live enemies are solid bumpers to the hero —
+    // push the hero's box out along the overlap normal so it can never render
+    // inside a body. (Previously this early-returned and the hero phased
+    // through enemies for the full i-frame window.) The damage path below
+    // stays gated on intangible as before.
+    if (heroEnt.intangible) {
+      separateHeroFromBumper(heroEnt, source);
+      return;
+    }
     // Self-protection on connect (knockback.md ): a clean sweep or
     // cartwheel connect keeps the hero immune to contact damage until that
     // swing's active+recovery end. The flag is set by the unified hitbox
@@ -293,6 +335,11 @@ export function registerCollisionHandlers(collisionWorld) {
       const rawLen = Math.hypot(dirX, -0.6) || 1;
       const normal = { x: dirX / rawLen, y: -0.6 / rawLen };
       applyKnockback(heroEnt, source, source.bodyKnockback, normal);
+      // ON-HIT SEPARATION (pinball bumper): the impulse alone is a suggestion —
+      // weak hits (idle enemy, no motion term) leave the hero parked inside
+      // the attacker's box for the whole stun. Push the boxes apart NOW so the
+      // i-frame blink plays NEXT TO the enemy, never inside it.
+      separateHeroFromBumper(heroEnt, source);
       // Route applyKnockback's plain-field results into the hero's unified timer
       // system so the existing intangible flag + render blink keep working.
       if (heroEnt.hitstunTimer > 0) {
