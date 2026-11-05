@@ -34,7 +34,16 @@ const HITS_LANDED_METHODS = new Set(['melee', 'projectile', 'special', 'specialM
  * @param {string} [method] 'projectile' | 'melee' | 'contact' | 'explosion'...
  * @returns {number} real damage dealt (>=1 if the target was alive), else 0.
  */
+/** Reject malformed damage before it can poison HP or energy. */
+export function assertDamageAmount(amount, source, target, method) {
+  if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0) {
+    const identify = (entity) => entity?.type ?? entity?.id ?? entity?.constructor?.name ?? 'unknown';
+    throw new TypeError(`Invalid damage ${String(amount)} (${typeof amount}); method=${method}; source=${identify(source)}; target=${identify(target)}. Expected a finite non-negative number.`);
+  }
+}
+
 export function damage(source, target, amt, method = 'projectile') {
+  assertDamageAmount(amt, source, target, method);
   if (!target.alive) return 0;
 
   // Defense mitigation, floored at 1 so a hit always registers.

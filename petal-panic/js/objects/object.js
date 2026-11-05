@@ -18,7 +18,7 @@ import { spriteOutline } from '../effects/spriteOutline.js';
 import { isHighGraphic } from '../core/renderMode.js';
 import { LAYER } from '../consts.js';
 import { BARREL_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
-import { flashTarget } from '../combat/damage.js';
+import { flashTarget, assertDamageAmount } from '../combat/damage.js';
 import { parseSheet } from '../core/spriteData.js';
 import { loadFrames } from '../core/frameLoader.js';
 
@@ -257,6 +257,7 @@ export class GameObj extends Entity {
    * @returns {number} damage actually applied (clamped to remaining HP)
    */
   hit(dmg, _source, _method = 'projectile') {
+    assertDamageAmount(dmg, _source, this, _method);
     if (!this.alive || this.destroyed) return 0;
     const applied = Math.min(this.hp, dmg);
     this.hp -= dmg;

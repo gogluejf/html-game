@@ -265,14 +265,14 @@ defineMacro('spawnSplit', {
           fireDuration: p.molotov?.fireDuration, fireTickRate: p.molotov?.fireTickRate,
           fireDamage: p.molotov?.fireDamage, team: p.molotov?.team,
         }, {});
-        const child = invokeChild(c.child, {
+        const child = invokeChild(c.child, defined({
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           arc: m.arc, bounce: m.bounce, ttl: m.ttl,
           damage: m.damage, fireWidth: m.fireWidth,
           fireDuration: m.fireDuration, fireTickRate: m.fireTickRate,
           fireDamage: m.fireDamage, team: m.team,
           groundY: p.groundY, platforms: p.platforms,
-        }, ctx);
+        }), ctx);
         if (child?.entity) handles.push(child);
       } else if (c.child === 'expl_proj' || c.child === 'shock_proj' || c.child === 'napalm') {
         // Impact child → straight carrier macro (explosiveProjectile /

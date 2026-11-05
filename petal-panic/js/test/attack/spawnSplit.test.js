@@ -1,3 +1,6 @@
+import { damage } from '../../combat/damage.js';
+import '../../combat/attack/macros/molotov.js';
+import { GameObj, WOOD_BARREL_DEF } from '../../objects/object.js';
 // Task 1.17 — Spawn / Split primitive tests (pure logic, no DOM).
 // Run: node js/test/attack/spawnSplit.test.js
 
@@ -124,3 +127,60 @@ ok('child=explosion|shockwave|napalm: fan materializes straight impact carriers'
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);
+
+
+ok('propane molotov fan preserves damage defaults and barrels remain killable', () => {
+  const pool = new Pool(Projectile, 8);
+  const h = invoke('spawnSplit', {
+    x: 100, y: 100, count: 5, centerDirection: -Math.PI / 2,
+    angle: Math.PI * 0.7, force: 520, child: 'molotov',
+    molotov: { arc: 800, bounce: false, ttl: null, fireWidth: 96, team: 'neutral' },
+    groundY: 480,
+  }, { attacker: attacker(), pools: { projectilePool: pool },
+    groundY: 480, world: { targets: [] } });
+  assert.equal(pool.activeItems.length, 5);
+  for (const e of pool.activeItems) {
+    assert.equal(e.damage, 12);
+    const barrel = new GameObj(WOOD_BARREL_DEF, 0, 0);
+    barrel.hit(e.damage);
+    assert.equal(barrel.hp, 28);
+    barrel.hit(1000);
+    assert.equal(barrel.destroyed, true);
+    e._attackHit = true;
+    e._impactPoint = { x: 100, y: 100 };
+    e.alive = false;
+  }
+  h.step(1 / 60);
+  for (const child of h.handles) {
+    const fire = child.handles[0];
+    assert.ok(fire, 'contact creates fire');
+    assert.equal(fire.zone.damage, 8);
+    assert.equal(fire.zone.duration, 3);
+    assert.equal(fire.zone.tickRate, 5);
+  }
+});
+
+
+ok('invalid damage throws before mutating barrel HP or hero/enemy resources', () => {
+  const source = { type: 'molotov' };
+  for (const invalid of [undefined, null, NaN, Infinity, -Infinity, -1, '12']) {
+    const barrel = new GameObj(WOOD_BARREL_DEF, 0, 0);
+    assert.throws(() => barrel.hit(invalid, source, 'fire'),
+      { name: 'TypeError', message: /Invalid damage.*method=fire.*source=molotov/ });
+    assert.equal(barrel.hp, 40);
+    assert.equal(barrel.alive, true);
+    for (const target of [
+      { type: 'enemy', alive: true, hp: 40 },
+      { type: 'hero', alive: true, energy: 40, shield: 10 },
+    ]) {
+      const before = { ...target };
+      assert.throws(() => damage(source, target, invalid, 'fire'), TypeError);
+      assert.deepEqual(target, before);
+    }
+  }
+  const barrel = new GameObj(WOOD_BARREL_DEF, 0, 0);
+  assert.equal(barrel.hit(0, source), 0);
+  assert.equal(barrel.hp, 40);
+  assert.equal(barrel.hit(12, source), 12);
+  assert.equal(barrel.hp, 28);
+});
