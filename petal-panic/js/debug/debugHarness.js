@@ -447,6 +447,7 @@ function swapHero() {
     specialSlots: [...(hero.specialSlots ?? [])],
     selectedWeapon: hero.selectedWeapon,
     checkpoint: hero.checkpoint, continuesUsed: hero.continuesUsed,
+    continues: hero.continues, // the pool object itself — swap keeps the run's continue balance
     stats: hero.stats,
     wallet: hero.wallet, // preserve the live wallet (current + snapshot)
     traceStats: hero.traceStats, // preserve the accumulating trace

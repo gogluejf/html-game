@@ -2480,6 +2480,12 @@ export const EndOfGame = {
  * stays visible behind them.
  */
 export function drawScreen(ctx, hero) {
+  // The live hero is the single source for hero-dependent screens (GameOver
+  // continue count, Win stats). render.js calls drawScreen(ctx) without one —
+  // fall back to the world context so the rendered label and the focus logic
+  // in screenReset read the SAME pool (two sources disagreeing is what made
+  // "Continue x3" render while focus sat on Quit).
+  const h = hero ?? getHero();
   const s = getState();
   if (s === S.HOME) {
     Home.draw(ctx);
@@ -2518,11 +2524,11 @@ export function drawScreen(ctx, hero) {
     return true;
   }
   if (s === S.OVER) {
-    GameOver.draw(ctx, hero);
+    GameOver.draw(ctx, h);
     return true;
   }
   if (s === S.WIN) {
-    Win.draw(ctx, hero);
+    Win.draw(ctx, h);
     return true;
   }
   if (s === S.AREA_ENTRY) {
@@ -2640,8 +2646,13 @@ export function screenReset(s, from) {
   // row (down works, up doesn't). canContinue needs the live hero; screenReset
   // runs on transition without one, so read it from the world context.
   if (s === S.OVER) {
-    GameOver.focus = 0;
-    if (!canContinue(getHero())) GameOver.focus = 1;
+    const gh = getHero();
+    const opts = GameOver.options(gh);
+    // First enabled option, scanning from the top — single source of truth is
+    // the SAME options() the screen renders, so focus can never point at a
+    // row the label says is disabled (or vice versa).
+    GameOver.focus = opts.findIndex(o => o.enabled !== false);
+    if (GameOver.focus < 0) GameOver.focus = 0;
   }
   // REMAP returns to wherever it was opened from: HOME, PAUSE, or MENU.
   if (s === S.REMAP) { remapParent = [S.HOME, S.PAUSE, S.MENU].includes(from) ? from : S.PAUSE; Remap.resetState(); }

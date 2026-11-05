@@ -62,7 +62,7 @@ export function createContinuePool(starting = GAME_RULES.startingContinues) {
 }
 
 export function canSpend(pool) {
-  return pool.remaining > 0;
+  return !!pool && pool.remaining > 0;
 }
 
 // Consume exactly one continue. No-op when the pool is empty — with no
