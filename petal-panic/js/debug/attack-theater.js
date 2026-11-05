@@ -23,8 +23,7 @@ import { makeContext } from '../combat/attack/context.js';
 import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { AttackLifecycle } from '../combat/attack/lifecycle.js';
 import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
-import { stepProjectile } from '../combat/attack/primitives/projectile.js';
-import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/projectile.js';
+import { stepBombTerrain, retainBombContact } from '../combat/attack/primitives/projectile.js';
 import { spikeDrawer, boomerangDrawer, mineDrawer } from '../combat/attack/drawers/index.js';
 import { Pool, Projectile } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
@@ -143,7 +142,7 @@ const SANDBOX_PRESETS = {
   throwEnemy: { speed: 420, direction: -0.35, arc: 1000, bounce: false, enemyType: 'explosive_monkey', ttl: null, settleDelay: 0.2, explodeOnContact: true, mineType: 'explosion', team: 'neutral', damage: 40, radius: 70 },
   shockwaveBomb: { direction: -0.5, arc: 800, bounce: false, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
   shockwaveProjectile: { direction: 0, speed: 700, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, solidBehavior: 'stop', blastTeam: 'neutral' },
-  stomp: { impact: 'strike', buildTime: 0.9, gapTime: 0.4, blinkTime: 0.5, impactDelay: 1.4, count: 1, interval: 0.5, hopHeight: 10, damage: 30, team: 'neutral', shakeStrength: 5, radius: 590, strike: { width: Infinity, height: 30, reach: Infinity, duration: 0.35 }, wave: { sides: 'both', speed: 300, height: 24, width: 28, ttl: null } },
+  stomp: { impact: 'strike', buildTime: 0.9, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.5, count: 1, interval: 0.5, hopHeight: 10, damage: 30, team: 'neutral', shakeStrength: 5, radius: 590, strike: { width: Infinity, height: 30, reach: Infinity, duration: 0.35 }, wave: { sides: 'both', speed: 300, height: 24, width: 28, ttl: null } },
   skyMissile: { mineType: 'explosion', x: TARGET_POS.x + 16, timeToTarget: 1.0, fallSpeed: 500, damage: 30, team: 'ally', blastTeam: 'neutral', child: 'expl_proj', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
   skyDiveStomp: { x: VIEW_W / 2, groundY: GROUND_Y, timeToTarget: 1.0, dropHeight: 480, fallSpeed: 500, size: 14, impact: 'wave', stomp: { sides: 'both', hopHeight: 0, hopTime: 0.001, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'ally', shakeStrength: 6 }, vanish: true, lingerOnGround: 0.4, vanishTime: 2 },
   missileRain: { mineType: 'explosion', count: 5, distanceType: 'relative', distance: 90, pattern: 'simultaneous', interval: 0.15, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0.5, timeToTarget: 0.9, descentSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', child: 'expl_proj', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
@@ -994,146 +993,48 @@ export const AttackTheater = {
     // Never integrate a freshly consumed shot and overwrite its impact snapshot.
     this._world?.update();
 
-    // Bomb-family roots: stepped by the AttackLifecycle registry (task 3.2 B2b):
-    // engine.invoke() registered every root at spawn (registry-owned — no
-    // { owned: true }), so stepAll drives their lifecycle + deferred children
-    // (fireArea zones, split bombs) and prunes completed ones. opts.refreshCtx
-    // hands each handle's _ctxRefresh the same fresh sandbox world-state bag
-    // BombAttackHost used to Object.assign into its contexts via host.step().
-    // Targets match the old semantics: live.world.targets from this._ctx().
-    AttackLifecycle.stepAll(DT, this._ctx().world.targets);
-    // Landed-enemy registration is async: payload macros (clusterBomb fan,
-    // missileRain/skyMissile payloads, reticleShot shot) spawn their
-    // throwEnemy handles AFTER the spawn-time call. Re-walk each frame — the
-    // _landSeen set makes late handles subscribe exactly once.
+    // Registry owns root lifecycle; parents alone drive their children.
+    // The theater supplies live world context and external physics/collisions.
+    const live = this._ctx();
+    AttackLifecycle.stepAll(DT, live.world.targets, { refreshCtx: () => live });
     for (const h of this._handles) {
       this._registerThrownEnemies(h);
-    }
-
-    // Step each live handle's entity.
-    for (let i = this._handles.length - 1; i >= 0; i--) {
-      const h = this._handles[i];
-      let finished = false;
-      if (BOMB_FAMILY.has(h.id)) {
-        // BombAttackHost already stepped this root and its children above.
-        finished = h._completed || h._cancelled;
-      } else if (h.id === 'meleeHitbox' && typeof h.step === 'function') {
-        finished = h.step([this._target]);
-      } else if (h.id === 'reticleShot') {
-        // Dumb host: the macro owns track → lock → fire. The shot handle may
-        // be a plain projectile (child=projectile) OR a carrier macro
-        // (explosiveProjectile/napalm/shockwaveProjectile). For carrier
-        // macros the entity lives at h.shot.inner.entity and the macro's
-        // .step() drives the carrier + payload. Step both correctly.
-        finished = h.step(DT);
-        const shot = h.shot;
-        if (shot) {
-          // Carrier macros (explosiveProjectile, napalm, shockwaveProjectile)
-          // own their sequence via .step() — this drives the carrier flight
-          // AND the detonation payload.
-          if (typeof shot.step === 'function' && shot.id !== 'projectile') {
-            finished = shot.step(DT, [this._target]) || finished;
-          } else if (shot.entity) {
-            // Plain projectile: step the entity directly.
-            finished = stepProjectile(shot.entity, shot) || finished;
-          }
+      if (h.id === 'boomerang') {
+        // Contact via the sandbox CollisionWorld: each live boomerang body is
+        // a transient PROJ_ALLY entity, so the shared 'hit' handler (same as
+        // gameplay's PROJ_ALLY×ENEMY branch) resolves damage + flash. The
+        // handler kills the transient on impact; we clear it here and log the
+        // melee hit. No theater-local AABB math.
+        for (const s of h.states ?? []) {
+          if (!s || s.done || !this._target?.alive) continue;
+          const body = { x: s.x - 8, y: s.y - 8, w: 16, h: 16, alive: true,
+            layer: LAYER.PROJ_ALLY, friendly: true, damage: this._params.damage ?? 12 };
+          this._world.add(body);
+          this._world.update();
+          this._world.remove(body);
+          if (body._attackHit) this._log.unshift(`BOOMERANG HIT ${body._dealt ?? ''} dmg`.trim());
         }
-      } else if (h.id === 'targetedBeam' || h.id === 'sweepingBeam') {
-        // Beam macros: step the macro which internally steps its beam phase(s).
-        finished = h.step(DT, [this._target]);
-      } else if (h.id === 'surfaceStrike') {
-        // Surface Strike burns EVERY surface in the scene — staged victims sit
-        // on those surfaces, so pass ALL live victims as candidates (not just
-        // the dummy target). Same routing as the stomp family below.
-        const vics = [this._target, ...(this._stompVics ?? [])].filter((v) => v?.alive);
-        finished = h.step(DT, vics);
-      } else if (h.entity) {
-        if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
-        else if (typeof h.step === 'function') {
-          // Step-based primitives (homingMissile, beam, fireArea, spike, etc.)
-          // all expose a unified .step(dt, targets).
-          finished = h.step(DT, [this._target]);
-        }
-      } else if (typeof h.step === 'function') {
-        // Multi-shot macros (spreadShot/radialShot/burstShot): the macro's
-        // step() drives its launch cadence AND owns completion (true only
-        // when all shots are launched AND dead). Child flights are stepped
-        // for TTL/cull/hit resolution, but their return value is IGNORED —
-        // a dying bullet while later shots are pending must not end the macro.
-        if (h.id === 'spreadShot' || h.id === 'radialShot' || h.id === 'burstShot') {
-          finished = h.step(DT);
-          for (const ch of h.handles ?? []) {
-            if (ch.entity) stepProjectile(ch.entity, ch);
-          }
-        } else if (h.id === 'mine' || h.id === 'throwMine' || h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike' || h.id === 'dustZone') {
-          finished = h.step(DT, [this._target]);
-        } else if (h.id === 'laneSequence' || h.id === 'stomp' || h.id === 'surfaceWave' || h.id === 'surfaceStrike' || h.id === 'shockwaveProjectile' || h.id === 'shockwaveBomb' || h.id === 'skyDiveStomp') {
-          // Stomp family + shockwave projectile: the macro owns its sequence
-          // (telegraph → beat → ring); pass every live victim as candidates.
-          // The macro's _complete guard holds it open during the pending beat
-          // so the host keeps stepping it (the ring fires mid-sequence).
-          const vics = [this._target, ...(this._stompVics ?? [])].filter((v) => v?.alive);
-          finished = h.step(DT, vics);
-        } else if (h.id === 'skyMissile') {
-          // Sky Missile: the macro owns warning → drop; its payload macro
-          // (explosiveProjectile/napalm/shockwaveProjectile) is stepped
-          // INTERNALLY and also promoted into h.handles for zone drawing.
-          // Do NOT step h.handles here — that would double-step the carrier.
-          finished = h.step(DT, [this._target]);
-        } else if (h.id === 'missileRain') {
-          // Missile Rain: the macro owns launch burst → per-missile activation;
-          // each child skyMissile is stepped internally.
-          finished = h.step(DT, [this._target]);
-        } else if (h.id === 'dashCombo') {
-          // Dash Combo: the macro owns the whole timeline (move/freeze per
-          // segment, shove, afterimage) AND applies its freeze-hitbox knockback
-          // through the shared applyKnockback() path inside its own processHitboxes
-          // onHit callback — same routing gameplay uses. Nothing to do here.
-          finished = h.step(DT, [this._target]);
-        } else if (h.id === 'boomerang') {
-          finished = h.step(DT);
-          // Contact via the sandbox CollisionWorld: each live boomerang body is
-          // a transient PROJ_ALLY entity, so the shared 'hit' handler (same as
-          // gameplay's PROJ_ALLY×ENEMY branch) resolves damage + flash. The
-          // handler kills the transient on impact; we clear it here and log the
-          // melee hit. No theater-local AABB math.
-          for (const s of h.states ?? []) {
-            if (!s || s.done || !this._target?.alive) continue;
-            const body = { x: s.x - 8, y: s.y - 8, w: 16, h: 16, alive: true,
-              layer: LAYER.PROJ_ALLY, friendly: true, damage: this._params.damage ?? 12 };
+      } else if (h.id === 'orbit') {
+        // Contact via the sandbox CollisionWorld: each live satellite is a
+        // transient PROJ_ALLY entity resolved by the shared 'hit' handler.
+        // One hit per ring per frame is enough for the sandbox.
+        for (const st of h._rings ?? [h.state]) {
+          if (st.done || !this._target?.alive) continue;
+          let ringHit = false;
+          for (const e of st.entities ?? []) {
+            if (ringHit) break;
+            const body = { x: e.x - 6, y: e.y - 6, w: 12, h: 12, alive: true,
+              layer: LAYER.PROJ_ALLY, friendly: true, damage: this._params.damage ?? 10 };
             this._world.add(body);
             this._world.update();
             this._world.remove(body);
-            if (body._attackHit) this._log.unshift(`BOOMERANG HIT ${body._dealt ?? ''} dmg`.trim());
+            if (body._attackHit) { ringHit = true; this._log.unshift(`ORBIT HIT ${body._dealt ?? ''} dmg`.trim()); }
           }
-        } else if (h.id === 'orbit') {
-          finished = h.step(DT);
-          // Contact via the sandbox CollisionWorld: each live satellite is a
-          // transient PROJ_ALLY entity resolved by the shared 'hit' handler.
-          // One hit per ring per frame is enough for the sandbox.
-          for (const st of h._rings ?? [h.state]) {
-            if (st.done || !this._target?.alive) continue;
-            let ringHit = false;
-            for (const e of st.entities ?? []) {
-              if (ringHit) break;
-              const body = { x: e.x - 6, y: e.y - 6, w: 12, h: 12, alive: true,
-                layer: LAYER.PROJ_ALLY, friendly: true, damage: this._params.damage ?? 10 };
-              this._world.add(body);
-              this._world.update();
-              this._world.remove(body);
-              if (body._attackHit) { ringHit = true; this._log.unshift(`ORBIT HIT ${body._dealt ?? ''} dmg`.trim()); }
-            }
-          }
-        } else if (h.id === 'charge') {
-          finished = h.step(DT);
-        } else {
-          finished = h.step(DT);
         }
       }
-      // Discover children created/landed in this step for EVERY root type.
-      this._registerThrownEnemies(h);
-      if (finished) this._handles.splice(i, 1);
     }
+    // UI/staging references only: lifecycle pruning belongs to the registry.
+    this._handles = this._handles.filter(h => !h._completed && !h._cancelled);
 
     // Target bookkeeping.
     if (this._target.hitFlash > 0) this._target.hitFlash -= DT;
@@ -1389,21 +1290,7 @@ export const AttackTheater = {
       ctx.fillText(e.type?.toUpperCase() ?? 'ENEMY', e.x + e.w / 2, e.y - 6);
     }
 
-    // Deferred zones stay owned/stepped by their root macro, but draw here.
-    // Bomb-family roots live in _bombHost; projectile-family carrier macros
-    // (explosiveProjectile, napalm, shockwaveProjectile...) live in _handles —
-    // both can own deferred zone children (napalm → fireArea).
-    const drawChildren = (h) => {
-      for (const child of h.handles ?? []) {
-        if (child._completed || child._cancelled) continue;
-        child.zone?.draw(ctx);
-        drawChildren(child);
-      }
-    };
-    for (const h of this._handles) drawChildren(h);
-    // Bomb-family root zones are drawn by the registry (task 3.2 B2b): every
-    // root is registered at spawn, so drawAll covers them — the old
-    // _bombHost.draw(ctx) pass is gone.
+    // One draw traversal for registered roots and their child zones.
     AttackLifecycle.drawAll(ctx);
 
     // --- Wave-2 state visuals ---------------------------------------------------
@@ -1455,12 +1342,8 @@ export const AttackTheater = {
         ctx.font = '9px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(`seg${st.segmentIndex + 1} · ${st.frame ?? ''}`, box.x + box.w / 2, box.y - 6);
-      } else if ((h.id === 'mine' || h.id === 'throwMine' || h.id === 'fireArea' || h.id === 'spike' || h.id === 'dustZone') && !st.done) {
-        // HazardZone-backed primitives: delegate to the zone's own draw().
-        if (h.zone) { h.zone.draw(ctx); }
-        else if (h.id === 'spike' && st.phase === 'visible') {
-          spikeDrawer(ctx, this._params);
-        }
+      } else if (h.id === 'spike' && !st.done && !h.zone && st.phase === 'visible') {
+        spikeDrawer(ctx, this._params);
       } else if (h.id === 'throwMine' && !st.settled && h.entity && h.entity.alive !== false) {
         // Throw Mine FLIGHT phase: the pooled carrier is visual-owned (the pool
         // skips its draw), so the theater draws the mine body via the shared

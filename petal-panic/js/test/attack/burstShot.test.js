@@ -94,8 +94,9 @@ ok('interval 0: whole group fires at once, completes when all die', () => {
   const ctx = makeContext(attacker(), { pools: pools() });
   const h = invoke('burstShot', { count: 3, interval: 0, direction: 0, speed: 300, ttl: 5 }, ctx);
   assert.equal(h.handles.length, 3, 'all 3 immediate');
-  assert.equal(typeof h.step, 'undefined', 'no step needed');
-  h.handles.forEach((ch) => { ch.entity.alive = false; ch._emit('complete', {}); });
+  assert.equal(typeof h.step, 'function', 'parent drives child lifecycle');
+  h.handles.forEach((ch) => { ch.entity.alive = false; });
+  h.step(1 / 60);
   assert.ok(h._completed, 'completes after all children done');
 });
 

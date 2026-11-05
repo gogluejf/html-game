@@ -32,13 +32,13 @@ ok('tracks then locks: ONE shot fires at the LOCKED point, not current position'
   let completed = null;
   h.on('complete', (info) => { completed = info; });
   for (let i = 0; i < 32 && !completed; i++) { t.x += -160 / 60; h.step(1 / 60); }
-  assert.ok(completed, 'complete fired with the locked point');
+  assert.equal(completed, null, 'root stays live while its shot flies');
   assert.ok(h.shot?.entity, 'a projectile was spawned');
   // Exactly one bullet in the pool — no double fire.
   assert.equal(ctx.pools.projectilePool.active.length, 1, `one live bullet, got ${ctx.pools.projectilePool.active.length}`);
   // The locked point must be AHEAD of where the target is now (it kept walking
   // left after the lock) — proof we shot the lock, not the live position.
-  assert.ok(completed.point.x > t.x + t.w / 2, `locked ${Math.round(completed.point.x)} > current ${Math.round(t.x + 16)}`);
+  assert.ok(h.state.locked.x > t.x + t.w / 2, `locked ${Math.round(h.state.locked.x)} > current ${Math.round(t.x + 16)}`);
 });
 
 ok('shot direction points from attacker center at the locked point', () => {
@@ -48,8 +48,9 @@ ok('shot direction points from attacker center at the locked point', () => {
   let completed = null;
   h.on('complete', (info) => { completed = info; });
   for (let i = 0; i < 60 && !completed; i++) { t.x += -160 / 60; h.step(1 / 60); }
-  assert.ok(completed, 'completed');
-  const expected = Math.atan2(completed.point.y - 116, completed.point.x - 116);
+  assert.ok(h.shot, 'shot fired');
+  assert.equal(completed, null, 'completion waits for payload');
+  const expected = Math.atan2(h.state.locked.y - 116, h.state.locked.x - 116);
   assert.ok(Math.abs(h.shot.entity.vx - Math.cos(expected) * 500) < 1, 'vx matches aim');
   assert.ok(Math.abs(h.shot.entity.vy - Math.sin(expected) * 500) < 1, 'vy matches aim');
 });
@@ -61,10 +62,17 @@ ok('shot entity carries the configured damage (host routes contact)', () => {
   let completed = null;
   h.on('complete', (info) => { completed = info; });
   for (let i = 0; i < 120 && !completed; i++) h.step(1 / 60);
-  assert.ok(completed, 'completed');
-  // The macro's job ends at spawning a correctly-armed bullet; contact routing
+  assert.ok(h.shot, 'shot fired');
+  assert.equal(completed, null, 'completion waits for payload');
+  // The macro owns its bullet lifecycle; contact routing
   // (overlap → takeDamage) belongs to the host, as with every projectile.
   assert.equal(h.shot.entity.damage, 7, 'damage passed through to the entity');
+  for (let i = 0; i < 180 && !completed; i++) {
+    ctx.pools.projectilePool.updateAll(1 / 60);
+    h.step(1 / 60);
+  }
+  assert.ok(completed, 'parent completes when its projectile completes');
+  assert.deepEqual(completed.point, h.state.locked);
 });
 
 // --- Effect lifecycle (the macro owns the telegraph directly) -----------------
@@ -138,7 +146,7 @@ ok('child=enemy: thrown enemy lands via the land relay', () => {
     // Force-settle the carrier, THEN step the payload macro: its step() reads
     // _bombSettled → settles → lands → emits 'land' (the relay is the subject).
     if (shot.entity && shot.entity._arcRecipe) shot.entity._bombSettled = true;
-    if (shot.step) shot.step(DT, []);
+    // The parent steps the settled payload on the next frame.
     landed = h.enemies?.[0];
   }
   assert.ok(landed, 'landed enemy surfaced on h.enemies');

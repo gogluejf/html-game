@@ -308,4 +308,97 @@ ok('throwEnemy: TTL counts once per frame from enemy spawn', () => {
   }
 });
 
+ok('lifecycle matrix: exact-once roots/children, drawing, finite completion and timing', () => {
+  const cases = [
+    ...[0.2, 0.5, 2].map(impactDelay => ['stomp', { impactDelay }]),
+    ['skyDiveStomp', {}], ['projectile', {}], ['meleeHitbox', {}],
+    ['spreadShot', { sequenceInterval: null }], ['spreadShot', { sequenceInterval: 0.2 }],
+    ['radialShot', { sequenceInterval: null }], ['radialShot', { sequenceInterval: 0.2 }],
+    ['burstShot', { interval: 0 }], ['burstShot', { interval: 0.2 }],
+    ...['projectile', 'napalm', 'bomb'].map(child => ['reticleShot', { child }]),
+    ['beam', {}], ['targetedBeam', {}], ['sweepingBeam', {}],
+    ['fireArea', {}], ['surfaceStrike', {}], ['surfaceWave', { ttl: 1 }],
+    ['dashCombo', {}], ['boomerang', {}], ['orbit', { ttl: 1 }],
+    ['laneSequence', { mode: 'beam' }], ['molotov', {}],
+  ];
+  const failures = [];
+  const canvas = new Proxy({}, { get: (_, key) => key === 'createLinearGradient' || key === 'createRadialGradient'
+    ? () => ({ addColorStop() {} }) : () => {} });
+  for (const [id, params] of cases) {
+    const label = `${id} ${JSON.stringify(params)}`;
+    const t = AttackTheater;
+    t.open();
+    try {
+      t.index = t.entries.indexOf(id);
+      t._tweaks[id] = params;
+      t._loadParams();
+      t._replay();
+      // Melee and sky-dive choreography can defer invocation.
+      for (let f = 0; f < 600 && !t._handles.length; f++) t.update(DT);
+      const root = t._handles[0];
+      assert.ok(root, `${label}: root exists`);
+      assert.ok(AttackLifecycle._live.has(root), `${label}: registry owns root`);
+      const watched = new Map();
+      let frame = 0, hopAt = null, impactAt = null;
+      const watch = h => {
+        if (!watched.has(h)) {
+          const record = { calls: 0, draws: 0 };
+          watched.set(h, record);
+          if (h.step) {
+            const step = h.step;
+            h.step = (...args) => { record.calls++; return step(...args); };
+          }
+          if (h.zone?.draw) {
+            const draw = h.zone.draw.bind(h.zone);
+            h.zone.draw = (...args) => { record.draws++; return draw(...args); };
+          }
+        }
+        for (const child of h.handles ?? []) {
+          assert.ok(!AttackLifecycle._live.has(child), `${label}: child belongs to parent`);
+          watch(child);
+        }
+      };
+      for (frame = 1; frame <= 1200 && !root._completed; frame++) {
+        watch(root);
+        const before = new Map([...watched].map(([h, r]) => [h, r.calls]));
+        t.update(DT);
+        assert.equal(watched.get(root).calls - before.get(root), 1, `${label}: one root tick`);
+        for (const [h, r] of watched) {
+          assert.ok(r.calls - before.get(h) <= 1, `${label}: ${h.id} child not double-stepped`);
+        }
+        if (id === 'stomp') {
+          if (frame === 1) assert.ok(Math.abs(root.state.t - DT) < 1e-9, 'clock advances DT, not 2DT');
+          if (hopAt === null && root.state.phase === 'hop') hopAt = frame * DT;
+          if (impactAt === null && root.state.impact) impactAt = frame * DT;
+        }
+        watch(root);
+        for (const r of watched.values()) r.draws = 0;
+        t.draw(canvas, 1280, 720);
+        for (const [h, r] of watched) {
+          if (h.zone && !h._completed && !h._cancelled && !root._completed) {
+            assert.equal(r.draws, 1, `${label}: ${h.id} zone drawn once`);
+          } else assert.equal(r.draws, 0, `${label}: terminal zones not drawn`);
+        }
+      }
+      assert.ok(root._completed, `${label}: finite completion within 20 seconds`);
+      assert.ok(!AttackLifecycle._live.has(root), `${label}: registry pruned root`);
+      assert.ok(!t._handles.includes(root), `${label}: staging released reference`);
+      const terminalCalls = watched.get(root).calls;
+      t.update(DT);
+      assert.equal(watched.get(root).calls, terminalCalls, `${label}: no ticks after completion`);
+      if (id === 'stomp') {
+        const expectedHop = 0.9 + 0.4 + 0.5 + params.impactDelay;
+        assert.ok(Math.abs(hopAt - expectedHop) <= DT * 2, `${label}: hop ${hopAt} vs ${expectedHop}`);
+        assert.ok(Math.abs(impactAt - (expectedHop + 0.12)) <= DT * 3, `${label}: impact includes hopTime`);
+      }
+    } catch (error) {
+      failures.push(`${label}: ${error.message}`);
+    } finally {
+      delete t._tweaks[id];
+      t.close();
+    }
+  }
+  assert.deepEqual(failures, []);
+});
+
 console.log(`\ntheaterParity: ${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

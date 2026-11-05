@@ -82,20 +82,26 @@ defineMacro('burstShot', {
     if (interval <= 0) {
       // Degenerate burst: whole group at once (still N distinct shots).
       for (let i = 0; i < count; i++) spawnOne();
+      h.step = (dt, targets) => {
+        if (h._completed || h._cancelled) return true;
+        for (const child of h.handles) child.step?.(dt, targets);
+        return h._completed;
+      };
       _wireCompletion(h, count);
       return h;
     }
 
     // Timed burst: one shot per interval; host steps h.step(dt).
     h.state = { spawned: 0, t: 0, done: false };
-    h.step = (dt) => {
+    h.step = (dt, targets) => {
       const s = h.state;
-      if (s.done) return true;
+      if (s.done || h._completed || h._cancelled) return true;
       s.t += dt;
       while (s.spawned < count && s.t >= s.spawned * interval) {
         spawnOne();
         s.spawned++;
       }
+      for (const child of h.handles) child.step?.(dt, targets);
       // All launched AND all dead → complete. Completion is owned HERE —
       // a dying shot while later shots are pending must NOT end the burst
       // (theater regression: child-death ≠ macro-done).
@@ -126,10 +132,12 @@ function _wireCompletion(h, total) {
     if (remaining <= 0) h._complete({ shots: h.handles.length });
   };
   for (const ch of h.handles) {
-    ch.on('complete', done);
-    ch.on('expire', done);
-  }
-  for (const ch of h.handles) {
-    if (ch._completed || ch._cancelled) done();
+    // Expiry is followed by complete; cancellation emits only expire.
+    // Count each child once, regardless of which terminal path it takes.
+    let ended = false;
+    const end = () => { if (!ended) { ended = true; done(); } };
+    ch.on('complete', end);
+    ch.on('expire', end);
+    if (ch._completed || ch._cancelled) end();
   }
 }

@@ -506,6 +506,13 @@ function makeImpl(id) {
     }
     h.entity = ent;
     h.entities = [ent];
+    // Physics remains pool/terrain-owned; the handle bridges terminal events.
+    h.step = (dt) => {
+      if (h._completed || h._cancelled) return true;
+      if (!ent._arcRecipe) return stepProjectile(ent, h);
+      if (!ctx.bombTerrainStepped) stepBombTerrain(ent, dt, ctx.groundY, ctx.platforms);
+      return stepBomb(ent, params, ctx, h);
+    };
     const cancel = h.cancel.bind(h);
     h.cancel = () => {
       if (ent._attackHandle === h && !h._completed) {

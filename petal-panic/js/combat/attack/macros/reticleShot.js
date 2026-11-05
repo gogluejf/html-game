@@ -18,7 +18,7 @@
 //   - Telegraph: target, duration, lockTime, color, radius, tracking
 //   - Shot: speed, ttl, damage
 //
-// Handle events: 'complete' ({point}) when the shot has been spawned; 'hit'
+// Handle events: 'complete' ({point}) when the shot/payload has finished; 'hit'
 // and 'expire' are forwarded from the shot so hosts dismiss the telegraph
 // with the bullet's terminal event. handle.state carries the timing + the
 // live effect instance (state._fx) for renderers/debug.
@@ -149,9 +149,17 @@ defineMacro('reticleShot', {
     }
 
     let fired = false;
-    h.step = (dt) => {
+    h.step = (dt, targets) => {
       const s = h.state;
-      if (s.done && !h.shot?.entity?.alive) return true; // shot finished, macro done
+      if (h._completed || h._cancelled) return true;
+      if (fired) {
+        h.shot?.step?.(dt, targets);
+        if (!h.shot || h.shot._completed || h.shot._cancelled) {
+          s.done = true;
+          h._complete({ point: s.locked ?? s.pt });
+          return true;
+        }
+      }
       s.t += dt;
 
       // Track the target until lockTime, then freeze the aim point.
@@ -277,8 +285,8 @@ defineMacro('reticleShot', {
         if (shot?.entity) {
           h.shot = shot;
           // Promote the payload macro into the root's deferred-children list
-          // so hosts (theater/gameplay) step AND draw its zone children
-          // uniformly — same pattern as skyMissile. Without this the napalm
+          // for registry drawing; this parent alone steps the payload.
+          // Same pattern as skyMissile. Without this the napalm
           // fire zone / explosion is invisible: it lives only under h.shot.
           if (!h.handles) h.handles = [];
           h.handles.push(shot);
@@ -293,17 +301,18 @@ defineMacro('reticleShot', {
             });
           }
         }
-        h._complete({ point: s.locked ?? s.pt });
       }
       return false;
     };
 
+    const cancel = h.cancel.bind(h);
     h.cancel = () => {
       // Tear down the telegraph instance so a cancelled attack never leaves a
       // ghost reticle in the engine's active set.
       try { h.state._fx?.complete?.(); } catch { /* noop */ }
       h.state._fx = null;
       h.shot?.cancel?.();
+      cancel();
     };
     return h;
   },

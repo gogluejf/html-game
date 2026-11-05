@@ -116,7 +116,9 @@ registerPrimitive('meleeHitbox', {
     const hb = makeHitbox({ owner: ctx.attacker, team: params.team, box: null, damage: params.damage, method: params.method });
     resetHitbox(hb);
     h.state = { hb, frame: 0, done: false };
-    h.step = (targets) => stepMelee(h.state, params, ctx, targets, h);
+    // Accept legacy direct step(targets) callers as well as the shared contract.
+    h.step = (dt, targets) => stepMelee(h.state, params, ctx,
+      Array.isArray(dt) ? dt : (targets ?? ctx.world?.targets ?? []), h);
     return h;
   },
 });

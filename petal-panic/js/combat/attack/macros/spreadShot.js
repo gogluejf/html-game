@@ -19,7 +19,7 @@
 // Handle shape:
 //   h.handles  — live projectile handles (one per angle), all sharing params
 //   h.angles   — the generated angles (for inspection/debug)
-//   h.step     — present ONLY when sequenceInterval > 0
+//   h.step     — owns launch cadence and child lifecycle in both modes
 //   complete   — fires once every shot has ended (hit/expire)
 //   hit        — forwarded from any child shot
 
@@ -104,6 +104,11 @@ defineMacro('spreadShot', {
       // --- Simultaneous fan (classic behavior) --------------------------------
       h.handles = [];
       for (const a of angles) spawnOne(a);
+      h.step = (dt, targets) => {
+        if (h._completed || h._cancelled) return true;
+        for (const child of h.handles) child.step?.(dt, targets);
+        return h._completed;
+      };
       _wireCompletion(h, angles.length);
       return h;
     }
@@ -111,16 +116,17 @@ defineMacro('spreadShot', {
     // --- Sequenced fan: one shot per interval, host steps h.step(dt) ---------
     h.handles = [];
     h.state = { spawned: 0, t: 0, done: false };
-    h.step = (dt) => {
+    h.step = (dt, targets) => {
       const s = h.state;
-      if (s.done) return true;
+      if (s.done || h._completed || h._cancelled) return true;
       s.t += dt;
       while (s.spawned < angles.length && s.t >= s.spawned * interval) {
         spawnOne(angles[s.spawned]);
         s.spawned++;
       }
+      for (const child of h.handles) child.step?.(dt, targets);
       // All launched AND all dead → complete. (Pool exhaustion: fewer live
-    // handles than angles — the every() on what exists is still correct.)
+      // handles than angles — the every() on what exists is still correct.)
       if (s.spawned >= angles.length && h.handles.every((e) => !e.entity.alive)) {
         s.done = true;
         h._complete({ count: angles.length });
@@ -148,10 +154,12 @@ function _wireCompletion(h, total) {
     if (remaining <= 0) h._complete({ count: total });
   };
   for (const ch of h.handles) {
-    ch.on('complete', done);
-    ch.on('expire', done);
-  }
-  for (const ch of h.handles) {
-    if (ch._completed || ch._cancelled) done();
+    // Expiry is followed by complete; cancellation emits only expire.
+    // Count each child once, regardless of which terminal path it takes.
+    let ended = false;
+    const end = () => { if (!ended) { ended = true; done(); } };
+    ch.on('complete', end);
+    ch.on('expire', end);
+    if (ch._completed || ch._cancelled) end();
   }
 }

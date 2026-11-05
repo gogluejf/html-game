@@ -102,6 +102,10 @@ export const AttackLifecycle = {
     _step.depth += 1; // suppress auto-registration of handles born inside a step
     try {
       for (const h of [...this._live]) {
+        if (h._completed || h._cancelled) {
+          this._live.delete(h);
+          continue;
+        }
         // Explicit check: only a handle stamped _registryStepped === true by
         // register() is stepped here. An unflagged/undefined flag can never
         // silently skip stepping — it simply isn't stepped (and every current
@@ -155,6 +159,7 @@ function needsDriving(h) {
 
 /** Recursively draw h.zone and every nested handle in h.handles. */
 function visitAndDraw(h, ctx) {
+  if (h._completed || h._cancelled) return;
   h.zone?.draw?.(ctx);
   for (const child of h.handles ?? []) visitAndDraw(child, ctx);
 }
