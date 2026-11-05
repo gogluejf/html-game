@@ -1,0 +1,89 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "done",
+      "name": "AttackLifecycle registry module",
+      "milestone": "Attack Lifecycle Registry",
+      "milestone_number": "1"
+    },
+    "1.2": {
+      "number": "1.2",
+      "status": "done",
+      "name": "Ownership tag to prevent double-stepping",
+      "milestone": "Attack Lifecycle Registry",
+      "milestone_number": "1"
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "done",
+      "name": "invoke() auto-registers live handles",
+      "milestone": "Self-Registering Invoke",
+      "milestone_number": "2"
+    },
+    "2.2": {
+      "number": "2.2",
+      "status": "done",
+      "name": "Game loop drives the registry",
+      "milestone": "Self-Registering Invoke",
+      "milestone_number": "2"
+    },
+    "2.3": {
+      "number": "2.3",
+      "status": "done",
+      "name": "barrelSync fires macros with zero lifecycle wiring",
+      "milestone": "Self-Registering Invoke",
+      "milestone_number": "2"
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "done",
+      "name": "Migrate enemy + boss payloads to bare invoke",
+      "milestone": "Host Unification & Migration",
+      "milestone_number": "3",
+      "summary": {
+        "confidence": "high",
+        "failures": "None introduced. Baseline failure set unchanged: top-level 10 failing files, attack dir 6 failing files (identical lists before/after). The pre-existing 'contact detonates exactly once' failure in throwEnemy.test.js exists at baseline too.",
+        "decisions": "Did not migrate bodyExplosion's payloadHandle storage \u2014 it is event-waiting state inside a macro, not an enemy/boss hand-stepping an attack handle. Did not touch theater sandbox stepping (out of scope for this task; M3 TODOs cover it).",
+        "tradeoffs": "throwEnemy.test.js TTL test became async and imports lifecycle.js dynamically to avoid a new top-level import; test now depends on registry internals (_live) which is consistent with attackLifecycle.test.js conventions.",
+        "done": "explosiveMonkey.detonate is now a bare fire-and-forget invoke() \u2014 _payloadHandle field and its assignment removed; the AttackLifecycle registry (auto-registration in engine.invoke) steps/draws/prunes the explosion/shockwave payload. Updated throwEnemy.test.js: the TTL test now asserts the shockwave lands in AttackLifecycle._live, that no handle is stored on the enemy, and that driving ONLY via AttackLifecycle.stepAll ticks ring-pass damage over the duration (proves the previously inert shockwave now works). Scanned petal-panic/js/enemies + js/boss for other stored-handle/manual-step patterns: explosiveMonkey was the only one (bodyExplosion macro stores h.state.payloadHandle but uses it to wait/forward events, not to hand-step \u2014 left as-is).",
+        "lessons_learned": "The old _payloadHandle was never read anywhere except the test \u2014 confirming the latent unstepped-shockwave bug. Shockwave ring-pass requires the victim distance to be > startRadius (4px) and <= current radius on some tick; place victims ~30px out for deterministic single-tick capture."
+      }
+    },
+    "3.2": {
+      "number": "3.2",
+      "status": "done",
+      "name": "Decide bombAttacks fate: adapter or removal",
+      "milestone": "Host Unification & Migration",
+      "milestone_number": "3"
+    },
+    "3.3": {
+      "number": "3.3",
+      "status": "done",
+      "name": "Delete dead wiring + verify baseline",
+      "milestone": "Host Unification & Migration",
+      "milestone_number": "3"
+    },
+    "4.1": {
+      "number": "4.1",
+      "status": "done",
+      "name": "Plug-and-play contract test",
+      "milestone": "Guards & Regression Net",
+      "milestone_number": "4"
+    },
+    "4.2": {
+      "number": "4.2",
+      "status": "done",
+      "name": "Discarded-handle guard test",
+      "milestone": "Guards & Regression Net",
+      "milestone_number": "4"
+    },
+    "4.3": {
+      "number": "4.3",
+      "status": "done",
+      "name": "Document the self-contained invoke contract",
+      "milestone": "Guards & Regression Net",
+      "milestone_number": "4"
+    }
+  }
+}
