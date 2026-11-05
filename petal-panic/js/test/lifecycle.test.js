@@ -48,7 +48,7 @@ const { Hero } = await import('../hero/hero.js');
 const { HEROES } = await import('../hero/heroDefs.js');
 const { createTrace } = await import('../stats.js');
 const U = await import('../systems/update.js');
-const { ZONE_ENTRY_X } = await import('../world/level.js');
+const { ZONE_ENTRY_X, ZONE_GROUND_Y } = await import('../world/level.js');
 
 // --- Helpers -----------------------------------------------------------------
 
@@ -340,21 +340,24 @@ test('startGame: a bare startGame (no areaContext) does NOT reroll', () => {
   assert.ok(h, 'hero returned');
 });
 
-test('continueRun: re-positions the hero at the level entry (area -1), not the death spot', () => {
+test('continueRun: returns to area 1 and respects the caller-provided entry checkpoint', () => {
   const h = makeTestHero();
   h.currentLevel = 2;
   h.currentArea = 3; // "1-3" (level index is 1 for the current single-level build)
   h.lives = 0;
-  // The hero died deep in 1-3; the checkpoint still points there.
-  h.checkpoint = { x: 6000, y: 492 };
-  h.x = 6000; h.y = 492;
+  // The respawn WRAPPER (zoneLifecycle.continueFromGameOver) installs area 1 and
+  // sets the hero's checkpoint from ZONE DATA before calling continueRun. A bare
+  // continueRun (this test) must NOT clobber a caller-provided checkpoint — it
+  // only falls back to the horizontal-floor default when none is present. This
+  // is what keeps a vertical first-area from being stranded mid-climb.
+  h.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - h.h }; // wrapper-set entry
+  h.x = 6000; h.y = 492; // still physically at the death spot pre-confirm
   const ctx = makeAreaContext(h);
   setState(S.OVER);
   L.continueRun(h, ctx);
   // The entry screen is shown; confirming starts the fresh attempt. Continuing
   // after defeat in 1-3 lands the hero at the level's area 1 entry
-  // (x=ZONE_ENTRY_X, the zone-model start position), NOT at the death
-  // spot (x=6000).
+  // (x=ZONE_ENTRY_X), NOT at the death spot (x=6000).
   L.areaEntryOnAction('confirm', h, ctx);
   assert.equal(h.currentArea, 1, 'area reset to 1');
   assert.equal(h.x, ZONE_ENTRY_X, 'hero positioned at the level entry, not the death spot');

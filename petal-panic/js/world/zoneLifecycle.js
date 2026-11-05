@@ -546,11 +546,33 @@ export function retryFromGameOver() {
 export function continueFromGameOver() {
   const hero = ctx.hero;
   // Continue rolls the wallet back to zone 1-1's entry snapshot (lifecycle.js
-  // §4 / state-persistence.md §2.2). The respawned zone must therefore be
-  // area 1 of the CURRENT level — install it BEFORE continueRun so the
-  // restored arrangement matches the zone the hero lands in (and so a later
-  // restartAttempt restores that same preserved arrangement, never rerolling).
-  if (hero.currentArea !== 1) resetActiveZoneContent();
+  // §4 / state-persistence.md §2.2). The respawned zone is area 1 of the
+  // CURRENT level — and it must be INSTALLED into the collision world, exactly
+  // like debugWrapToNextArea / stepClearSequence do for a genuine advance.
+  //
+  // BUG FIX (vertical-zone corruption): the old code called
+  // resetActiveZoneContent(), which only re-instantiates the zone the hero is
+  // CURRENTLY standing in (e.g. 1-3). continueRun then flips currentArea to 1
+  // and shows a "1-1" entry screen, but the collision world still held 1-3's
+  // vertical terrain and the checkpoint was the hardcoded horizontal floor —
+  // so the hero spawned mid-air in a 2688px lethal-bottom climb and died
+  // instantly. Install area 1's real content + spawn here so the world matches
+  // the zone the entry screen names.
+  const z1 = ctx.getActiveZone({ ...hero, currentArea: 1 });
+  if (z1.kind === 'area' && ctx.world.world.has(z1.areaIdx)) {
+    ctx.loadActiveZone(z1, ctx.world.world.get(z1.areaIdx));
+  } else if (z1.kind === 'boss') {
+    const bossCp = z1.entryFlag
+      ? [makeCheckpoint(z1.entryFlag.id, z1.entryFlag.x, z1.entryFlag.y, { isEntry: true, appearance: z1.entryFlag.appearance, spawnPos: z1.spawn })]
+      : [];
+    ctx.loadActiveZone(z1, { solids: z1.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
+  }
+  // Respawn position is ZONE DATA (REVISION-zones-as-data §4): area 1's spawn
+  // (feet on its floor), NOT the hardcoded horizontal floor — this is what
+  // keeps a vertical first-area from stranding the hero mid-climb.
+  const sp = z1.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+  hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
+  ctx.camera.setZoneBounds(z1);
   const applied = continueRun(hero, ctx.areaContext);
   if (applied) console.log('[lifecycle] continue applied');
   return applied;

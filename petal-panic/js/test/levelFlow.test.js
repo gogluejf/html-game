@@ -397,7 +397,11 @@ test('continue: lands the hero at area 1 with lives restored', () => {
   h.currentArea = 3; // died deep in the level (area 3)
   h.x = 3000;
   h.y = 460;
-  h.checkpoint = { x: 3000, y: 460 }; // the death spot
+  // The respawn WRAPPER (zoneLifecycle.continueFromGameOver) installs area 1 and
+  // sets the checkpoint from ZONE DATA before calling continueRun. A bare
+  // continueRun must respect that caller-provided checkpoint (not clobber it),
+  // so this test supplies the wrapper's entry value rather than the death spot.
+  h.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - h.h };
   const ctx = makeAreaContext();
 
   setState(S.OVER);
