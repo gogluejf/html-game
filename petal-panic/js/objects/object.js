@@ -232,11 +232,10 @@ export class GameObj extends Entity {
   /** Derived flag for backward compat: true when this object carries a blast. */
   get explosive() { return !!this.explosion; }
 
-  /** Per-frame step: decay the hit-flash timer (clamped at 0) and tick the
-   *  sprite player so loop-mode barrel anims (4-frame idle cycles) actually
-   *  advance — super.update() drives the SpritePlayer clock. */
+  /** Presentation only. stepDynamicSolid owns movement and collision together;
+   * calling Entity.update here would integrate before its landing snapshot. */
   update(dt) {
-    super.update(dt);
+    this.tickAnim(dt);
     if (this.hitFlash > 0) this.hitFlash = Math.max(0, this.hitFlash - dt);
   }
 

@@ -20,7 +20,8 @@ globalThis.window = { addEventListener: () => {} };
 
 const U = await import('../systems/update.js');
 const { setState, S } = await import('../core/state.js');
-const { makeWoodBarrel } = await import('../objects/object.js');
+const { makeWoodBarrel, BARREL_TYPES } = await import('../objects/object.js');
+const { makeBarrelById } = await import('../world/build.js');
 const { ctx } = await import('../world/context.js');
 
 const DT = 1 / 60;
@@ -101,6 +102,39 @@ ok('single barrel still falls to the floor (no self-resolution artifact)', () =>
   assert.ok(Math.abs(bottom(b) - FLOOR_TOP) <= 2,
     `barrel bottom=${bottom(b).toFixed(1)} should rest on floor=${FLOOR_TOP}`);
   assert.equal(b.vy, 0, 'at rest');
+});
+
+ok('all debug-drop barrel types land on the first crossed platform', () => {
+  const platforms = [
+    { x: 0, y: 300, w: 500, h: 6, oneWay: true },
+    { x: 0, y: 400, w: 500, h: 6, oneWay: true },
+  ];
+  for (const type of BARREL_TYPES) {
+    for (const speed of [0, 300, 800]) {
+      for (const clearance of [1, 6, 12]) {
+        const b = makeBarrelById(type.id, 100, 0);
+        b.y += 300 - clearance - bottom(b);
+        b.gravity = 1; b.vy = speed;
+        for (let i = 0; i < 60; i++) {
+          b.update(DT);
+          U.stepDynamicSolid(b, DT, platforms, [b]);
+        }
+        assert.ok(Math.abs(bottom(b) - 300) < 1e-6,
+          `${type.id} speed=${speed} clearance=${clearance}: bottom=${bottom(b)}`);
+        assert.equal(b.vy, 0);
+      }
+    }
+  }
+});
+
+ok('object update does not integrate before the shared physics step', () => {
+  const b = makeWoodBarrel(100, 100);
+  b.gravity = 1; b.vx = 60; b.vy = 300;
+  b.update(DT);
+  assert.equal(b.x, 100); assert.equal(b.y, 100); assert.equal(b.vy, 300);
+  U.stepDynamicSolid(b, DT, [], [b]);
+  assert.equal(b.x, 101);
+  assert.ok(Math.abs(b.y - (100 + 325 * DT)) < 1e-6);
 });
 
 console.log(`\n${passed} passed`);

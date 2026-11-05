@@ -131,9 +131,11 @@ const solidEntities = [];
 export function stepDynamicSolid(e, dt, statics, peers) {
   if (!e.alive) return;
   if (e.vy == null) e.vy = 0;
+  const before = e.worldBox();
+  const prevBottom = before.y + before.h;
   e.vy = Math.min(e.vy + GRAVITY * dt, MAX_FALL_SPEED);
+  e.x += (e.vx ?? 0) * dt;
   e.y += e.vy * dt;
-  const prevBottom = e.worldBox().y + e.worldBox().h - e.vy * dt;
   const others = peers.filter(p => p !== e && p.alive);
   resolve(e, [...statics, ...others.map(p => p.worldBox())], { prevBottom });
   // Landing snap: zero fall velocity when resting on a surface.
