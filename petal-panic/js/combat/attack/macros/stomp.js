@@ -53,10 +53,11 @@ const DEFAULTS = Object.freeze({
   buildTime: 0.9,         // grow/expand phase (s)
   gapTime: 0.4,           // silence hold ("be ready")
   blinkTime: 0.5,         // final warning blinks (s) — MUST end before impact
-  impactDelay: 1.0,       // beat AFTER the warning ends, BEFORE the hop/slam.
+  impactDelay: 1.4,       // beat AFTER the warning ends, BEFORE the hop/slam.
                           // The hop is FAST (~0.12s), so this must clear the
-                          // tail of the blink window: old 0.1 made the strike
-                          // land mid-blink (read as "blink + strike together").
+                          // WHOLE blink window after teleTotal: old 0.1 made
+                          // the strike land mid-blink (read as "blink +
+                          // strike together"). 1.0 was still ~0.3s short.
   // --- Pattern ----------------------------------------------------------------
   count: 1,               // number of stomps
   interval: 0.5,          // pause between stomps (s)
