@@ -4,7 +4,6 @@
 // persists → stay active, box disappears → deactivate.
 
 import { makeHitbox, resetHitbox, processHitboxes } from './hitbox.js';
-import { applyKnockback } from './knockback.js';
 import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../hero/heroDefs.js';
 import { LAYER } from '../consts.js';
 import { Effects } from '../effects.js';
@@ -152,32 +151,9 @@ export function processAllHitboxes() {
     // knockback application.
     if (target.layer === LAYER.HERO) {
       Effects.heroDamaged();
-    } else {
-      // Hero→enemy knockback: if the attack hitbox carries a `knockback`
-      // setting, apply the physical reaction to the enemy. No per-attack-type
-      // branching — presence of the data is the only gate. The setting lives on
-      // the hitbox (design §7), not the hero; the hero is used for motion/dir.
-      const source = hb.owner;
-      if (hb.knockback) {
-        const dirMode = hb.knockback.dirMode || 'fromAttacker';
-        let nx, ny;
-        if (dirMode === 'alongVelocity') {
-          const len = Math.hypot(source.vx || 0, source.vy || 0) || 1;
-          nx = (source.vx || 0) / len;
-          ny = (source.vy || 0) / len;
-        } else {
-          // 'fromAttacker' or 'radial': direction from source center to enemy center
-          const scx = source.x + (source.w || 0) / 2;
-          const scy = source.y + (source.h || 0) / 2;
-          const ecx = target.x + target.w / 2;
-          const ecy = target.y + target.h / 2;
-          const dx = ecx - scx, dy = ecy - scy;
-          const len = Math.hypot(dx, dy) || 1;
-          nx = dx / len; ny = dy / len;
-        }
-        applyKnockback(target, source, hb.knockback, { x: nx, y: ny });
-      }
     }
+    // Hero→enemy knockback is applied by processHitboxes() BEFORE damage so a
+    // same-frame kill still carries the impulse into its death slide.
     // Remove dead enemies from world.
     if (target.alive === false && target !== h) {
       ctx.collisionWorld.remove(target);

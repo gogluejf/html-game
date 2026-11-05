@@ -17,6 +17,7 @@
 import { LAYER } from '../consts.js';
 import { Effects } from '../effects.js';
 import { damage } from './damage.js';
+import { applyKnockback } from './knockback.js';
 
 /** Methods whose connect deals blood (melee-family strikes). */
 const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
@@ -87,6 +88,31 @@ export function processHitboxes(hitboxes, targets, onHit) {
       if (t.layer === LAYER.HERO) {
         if (t.intangible) continue;
         if (t.dying) continue;
+      }
+
+      // Knockback BEFORE damage: the impulse must land on a still-alive victim
+      // so its physics integrate it. takeDamage() → die() zeroes vx/vy, and a
+      // corpse's velocity is wiped before the death slide plays — applying the
+      // shove after damage meant same-frame kills never flew off. The hitbox
+      // carries the setting (hb.knockback); direction follows dirMode, with the
+      // attacker's velocity as the motion term. Hero victims keep their own
+      // reaction path (takeHit) — this only shoves enemy/boss/solid targets.
+      if (hb.knockback && t.layer !== LAYER.HERO) {
+        const kb = hb.knockback;
+        let nx, ny;
+        if (kb.dirMode === 'alongVelocity') {
+          const len = Math.hypot(hb.owner?.vx || 0, hb.owner?.vy || 0) || 1;
+          nx = (hb.owner?.vx || 0) / len;
+          ny = (hb.owner?.vy || 0) / len;
+        } else {
+          // 'fromAttacker' or 'radial': source center → target center.
+          const scx = hb.owner.x + (hb.owner.w || 0) / 2;
+          const scy = hb.owner.y + (hb.owner.h || 0) / 2;
+          const dx = (tb.x + tb.w / 2) - scx, dy = (tb.y + tb.h / 2) - scy;
+          const len = Math.hypot(dx, dy) || 1;
+          nx = dx / len; ny = dy / len;
+        }
+        applyKnockback(t, hb.owner, kb, { x: nx, y: ny });
       }
 
       // Route damage: prefer takeDamage (enemies run death pipeline, set their

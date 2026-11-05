@@ -79,12 +79,20 @@ ok('sweep and cartwheel carry a smaller pop than the supermove (§5)', () => {
   assert.ok(superPop > sweepPop, `super pop (${superPop}) must exceed sweep pop (${sweepPop})`);
 });
 
-ok('normal melee carries NO knockback (damage only, v1)', () => {
+ok('normal melee carries a SMALL burst knockback (lighter than committed attacks)', () => {
   for (const id of ['scarlet', 'balthazar']) {
     const entry = HEROES[id].attacks[ATTACK_MELEE];
-    assert.equal(entry.knockback, undefined, `${id} melee must not carry knockback`);
+    const kb = entry.knockback;
+    assert.ok(kb, `${id} melee must carry a knockback setting`);
+    // Burst only: no pop (committed attacks loft, the jab does not).
+    assert.ok(!kb.pop, `${id} melee must not pop victims off the ground`);
+    // Clearly lighter than the committed attacks.
+    const specialBase = HEROES[id].specialMelee.knockback.base;
+    const superBase = HEROES[id].attacks[ATTACK_SUPERMOVE].knockback.base;
+    assert.ok(kb.base < specialBase, `melee base (${kb.base}) must be lighter than special (${specialBase})`);
+    assert.ok(kb.base < superBase, `melee base (${kb.base}) must be lighter than supermove (${superBase})`);
     for (const frame of entry.frames) {
-      if (frame) assert.equal(frame.knockback, undefined, 'melee frames must not carry knockback');
+      if (frame) assert.equal(frame.knockback, undefined, 'knockback sits beside the frames, not inside them');
     }
   }
 });

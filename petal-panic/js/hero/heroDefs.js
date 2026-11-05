@@ -42,6 +42,16 @@ export function resolveHeroStats(def) {
 const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }, null];
 
 /**
+ * Normal-melee knockback: a small burst shove — enough to read as a hit,
+ * far lighter than the committed attacks (special/supermove base ~320-360).
+ * No pop: the jab pushes horizontally at body level; only the committed
+ * attacks loft victims. Presence of this field is what makes melee shove
+ * at all (knockback.md §11 gate) — before it existed, melee was damage-only
+ * and enemies only moved via solid-body separation on overlap.
+ */
+const MELEE_KNOCKBACK = { base: 90, scaleBySpeed: 0.15, hitstun: 0.10, dirMode: 'fromAttacker' };
+
+/**
  * Shared supermove dash box + knockback (thin, full body height, in front).
  * Both heroes share the same supermove launch character (knockback.md §11):
  * the strongest shove — big base heft, scales hardest with dash speed, longest
@@ -85,7 +95,7 @@ export const HEROES = {
     },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
-      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES },
+      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockback: MELEE_KNOCKBACK },
       [ATTACK_SUPERMOVE]: { box: SUPERMOVE_HITBOX, knockback: SUPERMOVE_KNOCKBACK },
     },
   },
@@ -116,7 +126,7 @@ export const HEROES = {
     },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
-      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES },
+      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockback: MELEE_KNOCKBACK },
       [ATTACK_SUPERMOVE]: { box: SUPERMOVE_HITBOX, knockback: SUPERMOVE_KNOCKBACK },
     },
   },

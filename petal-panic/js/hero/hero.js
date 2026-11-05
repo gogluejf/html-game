@@ -911,7 +911,8 @@ export class Hero extends Entity {
     if (attackName === ATTACK_SUPERMOVE) {
       return this.heroDef.attacks[ATTACK_SUPERMOVE].knockback;
     }
-    return undefined; // normal melee: damage only, no knockback (v1)
+    // Normal melee: small burst shove (MELEE_KNOCKBACK in heroDefs).
+    return this.heroDef.attacks[ATTACK_MELEE]?.knockback;
   }
 
   /**
