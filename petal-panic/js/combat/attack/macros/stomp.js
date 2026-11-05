@@ -54,9 +54,9 @@ const DEFAULTS = Object.freeze({
   gapTime: 0.4,           // silence hold ("be ready")
   blinkTime: 0.5,         // final warning blinks (s) — MUST end before impact
   impactDelay: 1.0,       // beat AFTER the warning ends, BEFORE the hop/slam.
-                          // Must be >= blinkTime so the last blink finishes
-                          // before the strike lands (old 0.1 made the blink
-                          // dot overlap the impact — read as "strike first").
+                          // The hop is FAST (~0.12s), so this must clear the
+                          // tail of the blink window: old 0.1 made the strike
+                          // land mid-blink (read as "blink + strike together").
   // --- Pattern ----------------------------------------------------------------
   count: 1,               // number of stomps
   interval: 0.5,          // pause between stomps (s)
