@@ -15,7 +15,10 @@ export function mineDrawer(ctx, e) {
   if (e.rotation != null) {
     ctx.translate(x + w / 2, y + h / 2);
     ctx.rotate(e.rotation);
-    ctx.translate(-w / 2, -h / 2);
+    // Rectangles below use WORLD coordinates. Translate back by the full
+    // world-space pivot, not only half the size; otherwise x/y are applied
+    // twice and the visible mine orbits far away from its collision body.
+    ctx.translate(-x - w / 2, -y - h / 2);
   }
   // Dark casing base.
   ctx.fillStyle = '#222b32';

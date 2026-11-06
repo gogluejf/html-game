@@ -8,7 +8,38 @@ import { activeInstances, resetEffects } from '../../effects/index.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
 import { AttackLifecycle } from '../../combat/attack/lifecycle.js';
+import { mineDrawer } from '../../combat/attack/drawers/ballistic/mine.js';
 import { AttackTheater } from '../../debug/attack-theater.js';
+
+// Track the canvas affine transform, not just the number of fillRects.
+// The rendered casing center must stay on the physical body at every angle.
+test('mine drawer stays centered on its body through rotation and landing', () => {
+  for (const rotation of [undefined, 0, -0.5, Math.PI / 2, Math.PI, 2.4]) {
+    const body = { x: 147, y: 401, w: 24, h: 8, rotation };
+    let m = [1, 0, 0, 1, 0, 0];
+    const stack = [], centers = [];
+    const ctx = {
+      save() { stack.push([...m]); },
+      restore() { m = stack.pop(); },
+      translate(x, y) { m[4] += m[0] * x + m[2] * y; m[5] += m[1] * x + m[3] * y; },
+      rotate(angle) {
+        const [a, b, c, d, e, f] = m, cs = Math.cos(angle), sn = Math.sin(angle);
+        m = [a * cs + c * sn, b * cs + d * sn, c * cs - a * sn, d * cs - b * sn, e, f];
+      },
+      fillRect(x, y, w, h) {
+        const cx = x + w / 2, cy = y + h / 2;
+        centers.push([m[0] * cx + m[2] * cy + m[4], m[1] * cx + m[3] * cy + m[5]]);
+      },
+    };
+    const before = { ...body };
+    mineDrawer(ctx, body);
+    assert.ok(Math.abs(centers[0][0] - 159) < 1e-9, `x drift at rotation ${rotation}`);
+    assert.ok(Math.abs(centers[0][1] - 405) < 1e-9, `y drift at rotation ${rotation}`);
+    assert.equal(centers.length, 4);
+    assert.deepEqual(m, [1, 0, 0, 1, 0, 0], 'restores canvas transform');
+    assert.deepEqual(body, before, 'drawing never mutates physics');
+  }
+});
 
 const dt = 1 / 60;
 const enemy = (x = 0, y = 92) => ({ x, y, w: 16, h: 8, alive: true, hp: 999,
@@ -116,7 +147,8 @@ test('mine payload configuration propagates through split, cluster, sky missile 
   const sky = invoke('skyMissile', { child: 'mine', mineType: 'shockwave', mineTtl: null, blinkDuration: 0.7, timeToTarget: 0 }, c);
   sky.step(dt, []); check(sky.state.missile);
   run(sky, 2); assert.equal(sky.state.missile.state.settled, true);
-  assert.equal(sky.state.missile.state.box.y + 8, 100);
+  // Settled box bottom sits ON the ground line (box.h = carrier height).
+  assert.equal(sky.state.missile.state.box.y + sky.state.missile.state.box.h, 100);
   const rain = invoke('missileRain', { count: 1, child: 'mine', mineType: 'shockwave', mineTtl: null, blinkDuration: 0.7, timeToTarget: 0 }, c);
   run(rain, 2); check(rain.state.missiles[0].state.missile);
 });
@@ -139,7 +171,17 @@ test('gameplay host owns mine stepping, drawing and cancellation', () => {
   AttackLifecycle.clear();
   const c = context(); const host = new BombAttackHost(() => c);
   const h = host.spawn('throwMine', { ttl: null }, c.attacker);
-  let rects = 0; AttackLifecycle.drawAll({ save() {}, restore() {}, fillRect() { rects++; } });
+  let rects = 0; AttackLifecycle.drawAll({ save() {}, restore() {}, fillRect() { rects++; }, translate() {}, rotate() {} });
+  // Flight body renders through the STANDARD pool draw pass: Projectile.draw()
+  // delegates to the mineDrawer override (dark casing + olive plate + rim +
+  // fuse cap = exactly 4 fillRects). The zone owns only the SETTLED box, so
+  // the flight frame shows exactly one mine body from the pool pass — no
+  // theater-side hand-draw.
+  const mockCtx = { save() {}, restore() {}, translate() {}, rotate() {}, fillRect() { rects++; },
+    beginPath() {}, moveTo() {}, lineTo() {}, closePath() {}, fill() {}, stroke() {} };
+  for (const p of c.pools.projectilePool.activeItems) {
+    p.draw(mockCtx);
+  }
   assert.equal(rects, 4);
   c.pools.projectilePool.updateAll(dt);
   AttackLifecycle.stepAll(dt, c.world?.targets ?? [], { refreshCtx: () => c });
@@ -197,7 +239,7 @@ test('actual bomb composition: production wall dispatch reflects and contact ret
     const e = h.entity;
     assert.equal(h.inner.id, 'projectile'); assert.ok(e instanceof Projectile);
     assert.equal(e._attackHandle, h.inner);
-    assert.deepEqual(e.worldBox(), { x: 76, y: 26, w: 24, h: 8 });
+    assert.deepEqual(e.worldBox(), { x: 79, y: 21, w: 24, h: 8 });
     // Wall reflection is covered by the bomb primitive's own tests; here we
     // verify the carrier has the correct solidBehavior for reflection.
     assert.equal(e.solidBehavior, 'reflect', 'carrier reflects off terrain');

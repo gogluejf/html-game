@@ -20,11 +20,10 @@
 import { listPrimitives, listMacros, getPrimitive, getMacro } from '../combat/attack/registry.js';
 import { invoke } from '../combat/attack/engine.js';
 import { makeContext } from '../combat/attack/context.js';
-import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { AttackLifecycle } from '../combat/attack/lifecycle.js';
 import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
 import { stepBombTerrain, retainBombContact } from '../combat/attack/primitives/projectile.js';
-import { spikeDrawer, boomerangDrawer, mineDrawer } from '../combat/attack/drawers/index.js';
+import { spikeDrawer, boomerangDrawer } from '../combat/attack/drawers/index.js';
 import { Pool, Projectile } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
 import { LAYER } from '../consts.js';
@@ -77,12 +76,9 @@ const DEG = Math.PI / 180;
 const REPEAT_DELAY_FRAMES = 13; // ~217ms before the first auto-repeat
 const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
 
-// Bomb-derived attacks route through the shared BombAttackHost (same as
-// gameplay) instead of raw invoke(): the host owns root lifecycle + child
-// payload promotion (carrier → fireArea / split bombs). Everything else stays
-// on the theater's direct handle path.
-const BOMB_FAMILY = new Set(['explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit', 'throwMine', 'throwEnemy']);
-
+// All attacks are plain registry-owned invokes: engine.invoke() auto-registers
+// every root, and AttackLifecycle.stepAll/drawAll own step/draw/prune. No
+// special spawn path, no host, no theater-side lifecycle wiring.
 // Macros with the unified `child` + `payload` sub-payload contract
 // (M3 completion). Their theater panel derives the payload rows from
 // CHILD_PARAM_SPECS[current child] instead of the static TWEAKABLE list.
@@ -217,7 +213,6 @@ export const AttackTheater = {
   _attacker: null,
   _target: null,
   _handles: [],
-  _bombHost: null,   // BombAttackHost — owns bomb-family roots (same as gameplay)
   _params: {},
   _log: [],
   _choreo: null,      // per-run choreography state
@@ -289,9 +284,9 @@ export const AttackTheater = {
   close() {
     this.active = false;
     this._teardown();
-    // The registry is a single global: the theater's roots are registry-owned
-    // (BombAttackHost.spawn no longer passes { owned: true }), so clear them
-    // here — otherwise their zones would keep drawing in gameplay.
+    // The registry is a single global: the theater's roots are registry-owned,
+    // so clear them here — otherwise their zones would keep drawing in
+    // gameplay.
     AttackLifecycle.clear();
     resetEffects(); // drop in-flight effect instances (beams, flashes...)
     particles.reset(); // clear demo sparkles/explosion particles so they don't
@@ -546,13 +541,6 @@ export const AttackTheater = {
       if (typeof target.takeDamage !== 'function' && !target.alive) this._world.remove(target);
     });
     this._handles = [];
-    // Bomb-family attacks (bomb, explosiveBomb, molotov, clusterBomb,
-    // bombSpread, spawnSplit, throwMine, throwEnemy) run through the shared
-    // BombAttackHost (same as gameplay): it owns root lifecycle + child
-    // payload promotion. The context fn returns the sandbox's LIVE context
-    // each frame (pools/targets change as staging runs), mirroring
-    // systems/update.js's bombAttacks wiring.
-    this._bombHost = new BombAttackHost(() => this._ctx());
     this._log = [];
     this._choreo = null;
     this._aimPoint = null;
@@ -571,10 +559,6 @@ export const AttackTheater = {
   _teardown() {
     for (const h of this._handles) { try { h.cancel?.(); } catch { /* already done */ } }
     this._handles = [];
-    // Bomb-family roots live in the host, not _handles — cancel them too so
-    // their carrier entities die with the sandbox.
-    if (this._bombHost) { try { this._bombHost.clear(); } catch { /* noop */ } }
-    this._bombHost = null;
     for (const e of this._thrownEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
     this._thrownEnemies = [];
     this._landSeen = new Set();
@@ -735,7 +719,6 @@ export const AttackTheater = {
       // used to boom at their death points while roots vanished cleanly).
       for (const h of this._handles) { try { h.cancel?.(); } catch { /* already done */ } }
       this._handles = [];
-      if (this._bombHost) { try { this._bombHost.clear(); } catch { /* noop */ } }
       // The registry is a single global: roots spawned by THIS theater are
       // registry-owned, so clear them here too — otherwise their zones/steps
       // leak into the next replay or into gameplay.
@@ -810,22 +793,17 @@ export const AttackTheater = {
       //  - punch (melee): starts once the attacker is beside the target
       const gated = this._choreo?.kind === 'punch' || this._choreo?.kind === 'kamikaze' || this._choreo?.kind === 'skyDiveWalkOff';
       if (!gated) {
-        // Bomb-family attacks spawn through the shared BombAttackHost (same as
-        // gameplay): it owns root lifecycle + child-payload promotion. Every
-        // OTHER attack is a single raw invoke — macros own their composition
-        // (homingMissile = projectile + steering, predictiveShot = aim math +
-        // projectile, spreadShot = fan + projectiles, bodyExplosion = payload
-        // + death); the theater only stages the scene and passes params.
-        h = BOMB_FAMILY.has(id)
-          ? this._bombHost.spawn(id, { ...this._params, target: this._target }, this._attacker)
-          : invoke(id, { ...this._params, target: this._target }, this._ctx());
+        // One path for every attack: a single raw invoke. engine.invoke()
+        // registers the root with the registry (step/draw/prune owned by
+        // AttackLifecycle); macros own their composition (bomb = flight +
+        // explosion payload, molotov = carrier + fireArea, ...). The theater
+        // only stages the scene and passes params.
+        h = invoke(id, { ...this._params, target: this._target }, this._ctx());
         // Enemy children materialize ASYNCHRONOUSLY on carrier settle (the
         // fan/payload fans spawn the throwEnemy handles at detonate time,
         // after this line). Polling is handled by the macro 'land' events;
-        // the recursive register below also picks up handles that already
-        // exist (immediate-settle replays). Re-called each replay is safe
-        // (seen-set guards against double-subscription).
-        if (BOMB_FAMILY.has(id)) this._registerThrownEnemies(h);
+        // the _stepOnce loop re-walks every handle each frame (seen-set
+        // guards against double-subscription).
         if (id === 'spawnSplit') {
           // Dumb host follow-up: the spawnSplit MACRO owns all materialization
           // (fan → live projectiles/bombs/thrown enemies). The theater only
@@ -931,15 +909,14 @@ export const AttackTheater = {
       if (e.gravity > 0) resolve(e, [this._floorSolid]);
     }
     // Landed throwEnemy children (real enemy entities): same host contract —
-    // real update() for AI/physics, resolve() onto the floor, then the
-    // entity's own hostStep() for detonation rules (contact/TTL). The bomb
-    // family root (BombAttackHost) tracks completion via h.step().
+    // real update() for AI/physics, resolve() onto the floor. The registry's
+    // stepAll drives the throwEnemy root's hostStep (TTL/contact) once.
     for (const e of this._thrownEnemies ?? []) {
       if (!e.alive) continue;
       const prevBottom = e.y + e.h; // capture BEFORE update() integrates gravity
       e.update?.(DT, this._target, this._world);
       if (e.gravity > 0) resolve(e, [this._floorSolid, ...((this._stompPlatforms ?? []).map(p => ({ ...p, h: 8 })))], { prevBottom });
-      // BombAttackHost -> throwEnemy.step owns hostStep (TTL/contact), once.
+      // Registry -> throwEnemy.step owns hostStep (TTL/contact), once.
     }
     // Off-screen cull (sandbox bounds instead of level zone).
     for (const p of projectilePool.activeItems) {
@@ -1344,12 +1321,11 @@ export const AttackTheater = {
         ctx.fillText(`seg${st.segmentIndex + 1} · ${st.frame ?? ''}`, box.x + box.w / 2, box.y - 6);
       } else if (h.id === 'spike' && !st.done && !h.zone && st.phase === 'visible') {
         spikeDrawer(ctx, this._params);
-      } else if (h.id === 'throwMine' && !st.settled && h.entity && h.entity.alive !== false) {
-        // Throw Mine FLIGHT phase: the pooled carrier is visual-owned (the pool
-        // skips its draw), so the theater draws the mine body via the shared
-        // ballistic drawer at the carrier's live position.
-        mineDrawer(ctx, h.entity);
       }
+      // (throwMine flight draw removed: the mine macro's zone IS the single
+      // draw path for both phases — the registry's drawAll above renders the
+      // flying carrier and the settled box. Hand-drawing the carrier here
+      // double-drew the body with a ghost.)
     }
     // (No aim-point marker for predictiveShot: the demo is pure "shoot where it
     // will be" — a crosshair would turn it into a reticle demo.)

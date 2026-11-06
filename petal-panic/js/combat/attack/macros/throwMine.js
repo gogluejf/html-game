@@ -2,11 +2,12 @@
 import {defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { stepBombTerrain } from '../primitives/projectile.js';
+import { mineDrawer } from '../drawers/ballistic/mine.js';
 import { MINE_DEFAULTS, MINE_PARAMS } from './mine.js';
 
 defineMacro('throwMine', {
   attacks: [{ id: 'projectile', role: 'carrier' }, { id: 'mine', role: 'payload' }],
-  params: { ...MINE_DEFAULTS, speed: 500, direction: -0.5, arc: 1000, bounce: true, origin: null },
+  params: { ...MINE_DEFAULTS, speed: 500, direction: -0.5, arc: 1300, bounce: true, origin: null },
   meta: { name: 'Throw Mine', desc: 'Bouncing mine; fuse starts at rest. Airborne contact arms a warning that starts on landing.',
     effects: [{ type: 'blink-transition', desc: 'mine warning overlay' }],
     params: [...MINE_PARAMS,
@@ -15,8 +16,16 @@ defineMacro('throwMine', {
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' }],
   },
   impl(p, ctx) {
+    // Plain gravity projectile — identical flight pipeline to rock/bomb
+    // (stepBombTerrain + retain flags), but the carrier keeps the MINE body:
+    // 24x8 flat slab + mineDrawer for the whole flight (same art as the
+    // settled box). No rock look, no visual-ownership flags.
+    // retainOnSettle keeps the carrier alive until it rests so we can
+    // snapshot the landing point.
     const carrier = invoke('projectile', {
       speed: p.speed, direction: p.direction, arc: p.arc, bounce: p.bounce,
+      width: 24, height: 8,
+      drawer: mineDrawer,
       origin: p.origin, team: p.team, damage: 0, ttl: null,
       retainOnContact: true, retainOnSettle: true,
     }, ctx);
@@ -25,10 +34,11 @@ defineMacro('throwMine', {
     const ent = carrier.entity;
     if (!ent) { h._complete(); return h; }
     h.entity = ent;
-    // Same rectangular body for collision and visual; Projectile remains the only integrator.
-    const cx = ent.x + ent.w / 2, cy = ent.y + ent.h / 2;
-    Object.assign(ent, { x: cx - 12, y: cy - 4, w: 24, h: 8, _attackVisualOwned: true });
     const box = h.state.box;
+    // Resting body matches the flight carrier (24x8 slab) so the settle frame
+    // shows no size jump. The base `mine` (no carrier) keeps its own 24x8 box
+    // — this only runs for throwMine, which parks the live carrier.
+    Object.assign(box, { w: ent.w, h: ent.h });
     const sync = () => { box.x = ent.x; box.y = ent.y; };
     sync();
     h.state.settled = false;

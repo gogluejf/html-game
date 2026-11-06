@@ -30,6 +30,12 @@ export function createMine(p, ctx) {
   // Delegates to the shared mine drawer (same art as the flight phase).
   h.zone = { draw(c) {
     if (h._completed || h._cancelled || h.state.phase === 'payload') return;
+    // SETTLED phase only: the throwMine wrapper parks the live flight carrier
+    // on h.entity and swaps it to null on settle. During flight the POOL DRAW
+    // PASS renders the body (Projectile.draw → drawer override), same as
+    // bombs/rocks; the zone owns the resting box after. One draw per phase,
+    // no double-draw.
+    if (h.entity) return;
     mineDrawer(c, box);
   } };
   const candidates = (targets) => [...new Set([...(targets ?? ctx.world?.targets ?? []), ctx.world?.hero, p.target ?? ctx.target].filter(Boolean))];
