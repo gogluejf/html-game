@@ -11,10 +11,16 @@
 
 export function mineDrawer(ctx, e) {
   const { x, y, w, h } = e;
+  // Primitive art follows the true velocity angle, without mirroring.
+  // Entity.rotation is mirror-adjusted for HD sprites; do not reuse it
+  // for a moving primitive. Settled snapshots have no velocity or rotation.
+  const angle = Number.isFinite(e.vx) && Number.isFinite(e.vy)
+    ? Math.atan2(e.vy, e.vx)
+    : e.rotation;
   ctx.save();
-  if (e.rotation != null) {
+  if (angle != null) {
     ctx.translate(x + w / 2, y + h / 2);
-    ctx.rotate(e.rotation);
+    ctx.rotate(angle);
     // Rectangles below use WORLD coordinates. Translate back by the full
     // world-space pivot, not only half the size; otherwise x/y are applied
     // twice and the visible mine orbits far away from its collision body.

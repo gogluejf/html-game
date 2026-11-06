@@ -41,6 +41,22 @@ test('mine drawer stays centered on its body through rotation and landing', () =
   }
 });
 
+test('primitive mine follows velocity without HD mirror-adjusted rotation', () => {
+  for (const [vx, vy] of [[100, -100], [-100, -100], [-100, 100], [100, 100], [-100, 0], [0, -100]]) {
+    const body = { x: 147, y: 401, w: 24, h: 8, vx, vy,
+      mirrorX: vx < 0, rotation: Math.atan2(vy, Math.abs(vx)) };
+    const before = { ...body };
+    const angles = [];
+    mineDrawer({
+      save() {}, restore() {}, translate() {}, fillRect() {},
+      rotate(angle) { angles.push(angle); },
+      scale() { assert.fail('primitive mine must not mirror'); },
+    }, body);
+    assert.deepEqual(angles, [Math.atan2(vy, vx)], `velocity ${vx},${vy}`);
+    assert.deepEqual(body, before, 'HD orientation and physics remain untouched');
+  }
+});
+
 const dt = 1 / 60;
 const enemy = (x = 0, y = 92) => ({ x, y, w: 16, h: 8, alive: true, hp: 999,
   takeDamage(n) { this.hp -= n; return n; } });
