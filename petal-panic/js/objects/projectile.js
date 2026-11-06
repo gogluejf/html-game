@@ -361,7 +361,13 @@ export class Projectile extends Entity {
     // mutated OUTSIDE this class — without this, the sheet art would stay
     // frozen at the launch angle while the body curves. Bombs handle their
     // own fuse-forward orientation below (mirrorX + settle ease-back).
-    if (this.type !== 'bomb') this.orientSprite(this.vx, this.vy);
+    // Rocks opt OUT of the tangent snap: they TUMBLE instead — a slow
+    // per-rock spin (random sign/magnitude, set at spawn) integrated on top
+    // of the throw direction. The spin dies with the motion (same speed gate
+    // as the settle logic below) so a landed rock sits still, not twirling.
+    if (this._rockTumble) {
+      if (Math.hypot(this.vx, this.vy) > 1) this.rotation += this._rockSpin * dt;
+    } else if (this.type !== 'bomb') this.orientSprite(this.vx, this.vy);
 
     // Bomb orientation (sheet art): while flying, the fuse trails the motion —
     // rotation follows the velocity tangent and mirrorX tracks horizontal

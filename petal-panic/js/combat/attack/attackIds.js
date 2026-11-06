@@ -152,6 +152,7 @@ export const CHILD_PARAM_SPECS = Object.freeze({
     { key: 'arc', kind: 'num', step: 100, desc: 'gravity px/s2' },
     { key: 'damage', kind: 'num', step: 5, desc: 'contact damage' },
     { key: 'ttl', kind: 'num', step: 0.5, desc: 'fuse seconds' },
+    { key: 'spin', kind: 'num', step: 0.5, desc: 'tumble rate (rad/s)' },
   ]),
   napalm: Object.freeze([
     { key: 'fireWidth', kind: 'num', step: 8, desc: 'burn area width (px)' },

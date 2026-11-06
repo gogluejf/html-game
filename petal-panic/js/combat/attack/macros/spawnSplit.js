@@ -306,11 +306,11 @@ defineMacro('spawnSplit', {
         // NO explosion — contact damage only, ttl fuse). rock owns ALL
         // defaults (single source).
         const rk = cfg('rock', {
-          arc: p.rock?.arc, ttl: p.rock?.ttl, damage: p.rock?.damage,
+          arc: p.rock?.arc, ttl: p.rock?.ttl, damage: p.rock?.damage, spin: p.rock?.spin,
         }, ROCK_DEFAULTS);
         const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
-          arc: rk.arc, ttl: rk.ttl, damage: rk.damage,
+          arc: rk.arc, ttl: rk.ttl, damage: rk.damage, spin: rk.spin,
           groundY: p.groundY, platforms: p.platforms,
         }, ctx);
         if (child?.entity) handles.push(child);

@@ -20,6 +20,7 @@ const ROCK_DEFAULTS = Object.freeze({
   arc: 800,              // gravity px/s² (throw height)
   damage: 40,            // contact damage (rock is heavy)
   ttl: 2,                // fuse seconds — the only thing that kills it if it never hits
+  spin: 4,               // tumble angular rate (rad/s, center — random ±50% per rock)
   origin: null,          // marker label | {x,y} | null → attacker center
   team: 'ally',
 });
@@ -45,6 +46,7 @@ defineMacro('rock', {
       { key: 'arc', desc: 'gravity px/s² (throw height)' },
       { key: 'damage', desc: 'damage per enemy contact' },
       { key: 'ttl', desc: 'fuse seconds (disappears if it never hits)' },
+      { key: 'spin', desc: 'tumble rate (rad/s, random ±50% per rock)' },
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
       { key: 'team', desc: 'ally | foe' },
     ],
@@ -57,6 +59,7 @@ defineMacro('rock', {
       arc: p.arc,
       bounce: true,          // bomb-style decay bounce (classic 0.5 restitution)
       rock: true,            // rock look: rock_medium / rockDrawer, no outline
+      spin: p.spin,          // tumble rate — random start + slow spin on tangent
       damage: p.damage,
       ttl: p.ttl,
       origin: p.origin,

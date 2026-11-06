@@ -88,6 +88,25 @@ ok('child=rock: fan materializes arcing rock carriers (arc recipe, no explosion)
   assert.equal(rock.entity._arcRecipe, true, 'arc carrier (gravity recipe)');
   assert.equal(rock.entity.gravityValue, 800, 'rock macro default gravity in play');
   assert.equal(rock.entity.solidBehavior, 'reflect', 'rock bounces (decay)');
+  // Tumble: opt-in flag + slow per-rock spin; the tangent re-aim must NOT
+  // have pinned the rotation at the launch angle.
+  assert.ok(rock.entity._rockTumble, 'tumble enabled');
+  const s1 = rock.entity.rotation;
+  assert.ok(s1 >= 0 && s1 < Math.PI * 2, `rotation in [0,2π): ${s1}`);
+  assert.ok(Math.abs(rock.entity._rockSpin) <= 6 && Math.abs(rock.entity._rockSpin) >= 2,
+    `spin rate in 2..6 rad/s: ${rock.entity._rockSpin.toFixed(2)}`);
+});
+
+ok('child=rock: each rock in a fan starts at a different rotation', () => {
+  const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:12,h:12,vx:0,vy:0,orientSprite(){},setLife(){},applyRockLook(){},timers:new Map()};items.push(e);return e;}, updateAll(){} }; };
+  const ctx = makeContext(attacker(), { pools: { projectilePool: mk() }, world: { targets: [] } });
+  const h = invoke('spawnSplit', { ...P, child: 'rock', count: 3 }, ctx);
+  const rots = h.handles.map((ch) => ch.entity.rotation);
+  const spins = h.handles.map((ch) => ch.entity._rockSpin);
+  // All three distinct (random 0..2π — collision probability ~0) and per-rock
+  // spin rates differ (random magnitude/sign).
+  assert.equal(new Set(rots.map((r) => r.toFixed(6))).size, 3, `distinct starts: ${rots.map((r) => r.toFixed(2)).join(', ')}`);
+  assert.equal(new Set(spins.map((s) => s.toFixed(6))).size, 3, `distinct spins: ${spins.map((s) => s.toFixed(2)).join(', ')}`);
 });
 
 ok('macro materializes enemy children as thrown carriers (throwEnemy)', () => {

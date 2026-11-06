@@ -254,6 +254,7 @@ defineMacro('skyMissile', {
           ...(sub('rock').ttl !== undefined ? { ttl: sub('rock').ttl } : (p.mineTtl !== undefined ? { ttl: p.mineTtl } : {})),
           ...(sub('rock').arc !== undefined ? { arc: sub('rock').arc } : {}),
           ...(sub('rock').damage !== undefined ? { damage: sub('rock').damage } : {}),
+          ...(sub('rock').spin !== undefined ? { spin: sub('rock').spin } : {}),
         } : {}),
         ...(p.child === 'enemy' ? {
           origin: { x: pt.x, y: spawnY },

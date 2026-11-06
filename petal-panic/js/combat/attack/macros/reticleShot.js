@@ -287,6 +287,7 @@ defineMacro('reticleShot', {
               arc: pick(sub.arc, ROCK_DEFAULTS.arc),
               damage: pick(sub.damage, ROCK_DEFAULTS.damage),
               ttl: pick(sub.ttl, ROCK_DEFAULTS.ttl),
+              spin: pick(sub.spin, ROCK_DEFAULTS.spin),
             } : {}),
             ...(child === 'enemy' ? {
               enemyType: sub.enemyType ?? params.enemyType ?? THROW_ENEMY_DEFAULTS.enemyType,

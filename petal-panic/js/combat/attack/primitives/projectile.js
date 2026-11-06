@@ -121,7 +121,18 @@ function spawnArcing(p, ctx, h) {
     // typeless arcing carrier keeps the thorn look. applyRockLook() switches
     // to rock_medium / rockDrawer (no outline) and re-asserts the 18px box
     // after setAnim (which would hand width ownership to the rock sheet).
-    if (p.rock) ent.applyRockLook();
+    if (p.rock) {
+      ent.applyRockLook();
+      // Tumble: the rock drawer reads e.rotation, but update() re-aims every
+      // frame along the velocity tangent (orientSprite) — a rock would never
+      // spin. Opt the entity into slow spin-on-tangent instead: random start
+      // orientation (each rock in a fan reads as its own) + a slow per-rock
+      // angular rate (random sign/magnitude around p.spin rad/s).
+      ent._rockTumble = true;
+      ent.rotation = Math.random() * Math.PI * 2;
+      const spin = p.spin ?? 2;
+      ent._rockSpin = (0.5 + Math.random()) * spin * (Math.random() < 0.5 ? -1 : 1);
+    }
   }
   ent.vx = Math.cos(p.direction) * p.speed;
   ent.vy = Math.sin(p.direction) * p.speed;
@@ -130,7 +141,9 @@ function spawnArcing(p, ctx, h) {
   // keep it live so tumbling reads correctly in both theater and gameplay.
   // Weapon-typed carriers with sheet art (homing) also want the nose along
   // travel; bombs handle their own mirrorX orientation downstream.
-  if (type !== 'bomb') ent.orientSprite(ent.vx, ent.vy);
+  // Rocks are excluded: their rotation is the RANDOM start orientation
+  // (tumble owns it from spawn, update() integrates the spin).
+  if (type !== 'bomb' && !ent._rockTumble) ent.orientSprite(ent.vx, ent.vy);
   ent.gravityValue = p.arc;
   ent.damage = p.damage;
   ent.friendly = p.team !== 'foe';
