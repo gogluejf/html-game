@@ -2,7 +2,7 @@
 // Run: node js/test/attack/bomb.test.js
 
 import { strict as assert } from 'node:assert';
-import { spawnProjectile, stepBomb, stepBombTerrain } from '../../combat/attack/primitives/projectile.js';
+import { spawnProjectile, stepBomb, stepBombTerrain, stepProjectile } from '../../combat/attack/primitives/projectile.js';
 import { invoke, AttackHandle } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
@@ -89,6 +89,19 @@ ok('off-screen cull expires without detonating', () => {
   ent._cullOffScreen = true;
   ent.alive = false;
   stepBomb(ent, P, ctx, h);
+  assert.deepEqual(seen, []);
+  assert.equal(h._completed, true);
+});
+
+ok('off-screen cull expires without detonating or debris', () => {
+  const ctx = makeCtx();
+  const h = new AttackHandle('projectile');
+  const ent = spawnProjectile({ ...P, arc: null, solidBehavior: 'stop' }, ctx);
+  const seen = [];
+  h.on('detonate', (d) => seen.push(d.contact));
+  ent._cullOffScreen = true;
+  ent.alive = false;
+  stepProjectile(ent, h);
   assert.deepEqual(seen, []);
   assert.equal(h._completed, true);
 });

@@ -337,7 +337,7 @@ export function stepProjectile(ent, h) {
     const ip = ent._impactPoint;
     const cx = ip ? ip.x : ent.x + ent.w / 2;
     const cy = ip ? ip.y : ent.y + ent.h / 2;
-    if (!ent._attackHit && !ent.ttlExpired && ent.solidBehavior === 'stop') {
+    if (!ent._cullOffScreen && !ent._attackHit && !ent.ttlExpired && ent.solidBehavior === 'stop') {
       fireDeclared({ type: 'debris', params: { x: cx, y: cy } }, h.declaredEffectTypes());
     }
     if (ent._attackHit) h._emit('hit', { dealt: ent.damage, x: cx, y: cy });
