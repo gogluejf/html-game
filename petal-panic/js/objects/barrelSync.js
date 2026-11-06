@@ -166,6 +166,7 @@ export function cullOffScreen(items) {
   const right = cam ? cam.x + cam.w + 40 : VIEW_W + 40;
   for (const p of items) {
     if (p.x + p.w < left || p.x > right || p.y + p.h < top || p.y > bottom) {
+      p._cullOffScreen = true;
       p.alive = false;
     }
   }

@@ -80,6 +80,19 @@ ok('fuse expiry (no contact) still detonates, contact=false', () => {
   assert.deepEqual(seen, [false]);
 });
 
+ok('off-screen cull expires without detonating', () => {
+  const ctx = makeCtx();
+  const h = new AttackHandle('projectile');
+  const ent = spawnProjectile(P, ctx);
+  const seen = [];
+  h.on('detonate', (d) => seen.push(d.contact));
+  ent._cullOffScreen = true;
+  ent.alive = false;
+  stepBomb(ent, P, ctx, h);
+  assert.deepEqual(seen, []);
+  assert.equal(h._completed, true);
+});
+
 ok('stepBomb is idempotent after detonation', () => {
   const ctx = makeCtx();
   const h = new AttackHandle('projectile');

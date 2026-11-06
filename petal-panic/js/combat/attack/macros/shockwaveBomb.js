@@ -174,6 +174,7 @@ defineMacro('shockwaveBomb', {
     // impact. Listen on BOTH handles (hosts emit on whichever they step).
     // doDetonate is guarded idempotent.
     const fireAtImpact = ({ x, y } = {}) => {
+      if (carrier.entity?._cullOffScreen) return;
       if (x == null || y == null) {
         const ent = carrier.entity;
         doDetonate({ x: ent.x + ent.w / 2, y: ent.y + ent.h / 2 });

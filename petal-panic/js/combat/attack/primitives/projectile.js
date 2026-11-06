@@ -318,7 +318,6 @@ export function spawnProjectile(p, ctx, h) {
 export function stepProjectile(ent, h) {
   if (ent._attackDone) return true;
   if (!ent.alive) {
-    ent._attackDone = true;
     // Solid-impact debris: a shot that DIED against terrain (not an enemy hit,
     // not a fuse expiry) puffs dusty grain at its death point — the projectile
     // owns this juice so every host gets it for free (same pattern as bomb's
@@ -466,6 +465,13 @@ export function stepBombTerrain(ent, dt, groundY, platforms = [], opts = {}) {
 export function stepBomb(ent, p, ctx, h) {
   if (h._completed || h._cancelled || ent._attackDone) return true;
   if (ent.alive) return false;
+
+  // Off-screen removal is a silent pool cull, not an impact or fuse end.
+  if (ent._cullOffScreen) {
+    h._emit('expire');
+    h._complete();
+    return true;
+  }
 
   ent._attackDone = true;
   const ip = ent._impactPoint;

@@ -920,7 +920,10 @@ export const AttackTheater = {
     }
     // Off-screen cull (sandbox bounds instead of level zone).
     for (const p of projectilePool.activeItems) {
-      if (p.x + p.w < -40 || p.x > VIEW_W + 40 || p.y + p.h < -40 || p.y > VIEW_H + 40) p.alive = false;
+      if (p.x + p.w < -40 || p.x > VIEW_W + 40 || p.y + p.h < -40 || p.y > VIEW_H + 40) {
+        p._cullOffScreen = true;
+        p.alive = false;
+      }
     }
     // Projectile terrain stop: solidBehavior 'stop' shots die on floor/platform
     // contact (same rule as collisionHandlers.js in gameplay). The sandbox has

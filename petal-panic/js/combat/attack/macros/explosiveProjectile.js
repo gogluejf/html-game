@@ -104,6 +104,7 @@ defineMacro('explosiveProjectile', {
     // pool slots are recycled after death, so re-reading ent.x/y would land
     // the blast on the recycled slot's position, not the true impact.
     const fireBlastAt = ({ x, y } = {}) => {
+      if (carrier.entity?._cullOffScreen) return;
       if (x == null || y == null) {
         const ent = carrier.entity;
         x = ent.x + ent.w / 2; y = ent.y + ent.h / 2;
