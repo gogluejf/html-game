@@ -151,11 +151,14 @@ function molotovFixture() {
     origin: { x: 400, y: 100 }, speed: 0, arc: 0, ttl: DT,
   }, ctx) };
 }
-ok('Molotov ignores a caller-supplied flight TTL', () => {
-  const { pool, h } = molotovFixture();
-  for (let i = 0; i < 120; i++) { pool.updateAll(DT); h.step(DT); }
-  assert.equal(h.entity.alive, true);
-  assert.equal(h.handles.length, 0);
+ok('Molotov flight fuse (flightTtl) shatters into fire midair', () => {
+  const pool = new Pool(Projectile, 4);
+  const ctx = { attacker: attacker(), groundY: 480, platforms: [],
+    pools: { projectilePool: pool }, world: { targets: [] } };
+  const h = invoke('molotov', { origin: { x: 400, y: 100 }, speed: 0, arc: 0, flightTtl: 1 }, ctx);
+  for (let i = 0; i < 62 && !h._completed; i++) { pool.updateAll(DT); h.step(DT); }
+  assert.equal(h.entity.alive, false, 'fuse expired');
+  assert.equal(h.handles.length, 1, 'fire spawned at the death point');
 });
 ok('Molotov offscreen removal produces no fire', () => {
   const { h } = molotovFixture();

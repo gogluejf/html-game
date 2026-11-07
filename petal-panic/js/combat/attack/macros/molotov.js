@@ -35,7 +35,7 @@ defineMacro('molotov', {
   meta: {
     name: 'Molotov',
     effects: [],
-    desc: 'Thrown bottle → shatters on impact → persistent burning area at the death point. Contact-only (no flight fuse).',
+    desc: 'Thrown bottle → shatters on impact OR flight-fuse expiry → persistent burning area at the death point.',
     params: [
       { key: 'speed', desc: 'launch force (px/s)' },
       { key: 'direction', desc: 'throw direction (radians)' },
@@ -55,7 +55,10 @@ defineMacro('molotov', {
 
     const h = createCarrierHandle('molotov', p, ctx, {
       onDetonate({ x, y, surfaceY, contact }, macroH) {
-        if (!contact) return; // Off-screen cleanup is not an impact.
+        // Off-screen cleanup is not an impact — no fire. Both a real hit AND
+        // a flight-fuse expiry (contact=false, ttlExpired) must shatter: a
+        // bottle that runs out of air still breaks into a burning area.
+        if (!contact && !h.entity?.ttlExpired) return;
         try {
           const targets = new Set();
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);

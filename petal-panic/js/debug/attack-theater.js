@@ -184,7 +184,7 @@ export const TWEAKABLE = {
   spawnSplit: [['child', 'enum', CHILD_ENUM], ['mineType', 'enum', ['explosion', 'shockwave']], ['enemyType', 'enum', ENEMY_TYPE_IDS], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['enemy.mineType', 'enum', ['explosion', 'shockwave']], ['enemy.ttl', 'enum', [null, 1, 2, 4, 8]], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireSegments', 'int', 1]],
   bodyExplosion: [['payloadDelay', 'num', 0.05]],
   bombSpread: [['count', 'int', 1], ['direction', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
-  molotov: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['flightTtl', 'num', 1, true], ['fireSegments', 'int', 1], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
+  molotov: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['flightTtl', 'num', 0.25, true], ['fireSegments', 'int', 1], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
   napalm: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.25], ['damage', 'num', 2], ['fireSegments', 'int', 1], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
   clusterBomb: [['child', 'enum', CHILD_ENUM], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
   targetedBeam: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['beamDuration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
@@ -364,6 +364,18 @@ export const AttackTheater = {
         if (next < 0) next = nullable && deltaSign < 0 ? null : 0;
       }
       setVal(next);
+      return;
+    }
+    // Flat numeric rows: null-aware when flagged (stepping below 0 wraps to
+    // null / contact-only; stepping up from null returns to the step value).
+    if (kind === 'num' && nullable) {
+      const cur = getVal();
+      if (cur === null || cur === undefined) {
+        setVal(deltaSign > 0 ? round2(stepSize) : null);
+      } else {
+        const next = round2(cur + deltaSign * stepSize);
+        setVal(next < 0 && deltaSign < 0 ? null : next);
+      }
       return;
     }
     const nextNum = round2((getVal() ?? 0) + deltaSign * stepSize);
