@@ -61,6 +61,7 @@ const DEFAULTS = Object.freeze({
   mineTtl: 2,
   blinkDuration: 2,
   child: 'expl_proj',    // any ATTACK_IDS child — payload per missile (pass-through to skyMissile)
+  payload: null,         // nested child settings forwarded unchanged to each skyMissile
   blast: {                // per-payload size params (each payload reads its own key)
     explosionRadius: 60,  // explosion blast circle (px)
     shockRadius: 150,     // shockwave ring max radius (px)
@@ -132,6 +133,7 @@ defineMacro('missileRain', {
     ],
     params: [
       { key: 'child', desc: "any ATTACK_IDS child — payload per missile (pass-through to skyMissile)" },
+      { key: 'payload', desc: 'nested child settings forwarded to each skyMissile (see CHILD_PARAM_SPECS)' },
       { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'count', desc: 'missiles in the rain' },
       { key: 'xCoordinate', desc: 'center x (null → view center)' },
@@ -199,6 +201,7 @@ defineMacro('missileRain', {
         size: p.size,
         markerStyle: p.markerStyle,
         child: p.child,
+        payload: p.payload,
         mineType: p.mineType, mineTtl: p.mineTtl, blinkDuration: p.blinkDuration,
         blast: p.blast,
       }, ctx);

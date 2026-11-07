@@ -196,4 +196,31 @@ ok('a target under one of the marked spots takes a blast', () => {
   assert.ok(e.hp < 100, `target damaged (hp=${e.hp})`);
 });
 
+ok('nested napalm payload reaches every missile and its spawned fire', () => {
+  const c = ctx();
+  const h = invoke('missileRain', {
+    count: 2, child: 'napalm', fallDelay: 0, launchInterval: 0,
+    timeToTarget: 0.1, descentSpeed: 600,
+    payload: { napalm: { fireSegments: 6 } },
+    blast: { fireSegments: 2 }, // nested payload must win over legacy fallback
+  }, c);
+  const fires = new Set();
+  for (let i = 0; i < 600 && !h._completed; i++) {
+    c.pools.projectilePool.updateAll(DT);
+    h.step(DT, []);
+    for (const missile of h.state.missiles) {
+      const napalm = missile.state.missile;
+      if (!napalm) continue;
+      assert.equal(napalm._params.fireSegments, 6);
+      for (const fire of napalm.handles ?? []) {
+        if (fire.id !== 'fireArea') continue;
+        assert.equal(fire.zone.segs.length, 6);
+        fires.add(fire);
+      }
+    }
+  }
+  assert.equal(fires.size, 2, 'both missiles spawn six-segment fire');
+  assert.ok(h._completed);
+});
+
 console.log(`\nmissileRain: ${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);
