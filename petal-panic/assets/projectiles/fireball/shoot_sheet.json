@@ -4,7 +4,7 @@
  "rows": 2,
  "cols": 4,
  "kind": "animation",
- "description": "dynamic comic fireball projectile (8 frames)",
+ "description": "animated molten fireball projectile (8 frames)",
  "entities": [
   {
    "name": "fireball",
@@ -15,14 +15,14 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      13,
-      17,
-      470,
-      321
+      27,
+      19,
+      448,
+      319
      ],
      "offset": {
-      "x": -235,
-      "y": -321
+      "x": -204,
+      "y": -337
      },
      "scale": {
       "sx": 1,
@@ -36,14 +36,14 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      543,
+      544,
       19,
-      503,
-      319
+      496,
+      321
      ],
      "offset": {
-      "x": -255,
-      "y": -323
+      "x": -248,
+      "y": -331
      },
      "scale": {
       "sx": 1,
@@ -57,14 +57,14 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      1109,
-      7,
-      487,
-      331
+      1095,
+      15,
+      485,
+      325
      ],
      "offset": {
-      "x": -243,
-      "y": -343
+      "x": -242.5,
+      "y": -325
      },
      "scale": {
       "sx": 1,
@@ -78,14 +78,14 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      1642,
-      11,
-      511,
-      327
+      1647,
+      13,
+      490,
+      326
      ],
      "offset": {
-      "x": -271,
-      "y": -334
+      "x": -245,
+      "y": -326
      },
      "scale": {
       "sx": 1,
@@ -100,13 +100,13 @@
      "col": 0,
      "bbox": [
       17,
-      375,
+      371,
       488,
-      329
+      334
      ],
      "offset": {
-      "x": -249,
-      "y": -331
+      "x": -244,
+      "y": -334
      },
      "scale": {
       "sx": 1,
@@ -120,14 +120,14 @@
      "row": 1,
      "col": 1,
      "bbox": [
-      542,
-      375,
-      503,
-      330
+      552,
+      379,
+      496,
+      326
      ],
      "offset": {
-      "x": -257,
-      "y": -330
+      "x": -248,
+      "y": -326
      },
      "scale": {
       "sx": 1,
@@ -141,14 +141,14 @@
      "row": 1,
      "col": 2,
      "bbox": [
-      1109,
-      378,
-      489,
-      327
+      1098,
+      373,
+      490,
+      334
      ],
      "offset": {
-      "x": -244.5,
-      "y": -327
+      "x": -245,
+      "y": -334
      },
      "scale": {
       "sx": 1,
@@ -162,13 +162,13 @@
      "row": 1,
      "col": 3,
      "bbox": [
-      1638,
-      375,
-      514,
+      1635,
+      377,
+      508,
       330
      ],
      "offset": {
-      "x": -267,
+      "x": -262,
       "y": -328
      },
      "scale": {
@@ -184,21 +184,21 @@
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": -15,
-    "y": -284,
-    "w": 267,
-    "h": 284
+    "x": -19,
+    "y": -281,
+    "w": 258,
+    "h": 267
    },
    "pivot": {
-    "x": 119,
-    "y": -142
+    "x": 0,
+    "y": -155
    },
    "markers": []
   }
  ],
  "crop": {
   "frames_dir": "petal-panic/assets/projectiles/fireball",
-  "pass": "/home/goglue/tmp/fireball2-v1"
+  "pass": "/home/goglue/tmp/fireball3-v1"
  },
- "updated": "2026-11-07T14:43:13"
+ "updated": "2026-11-07T15:12:08"
 }
