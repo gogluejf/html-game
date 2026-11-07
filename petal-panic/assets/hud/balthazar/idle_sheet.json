@@ -96,7 +96,7 @@
      "durUnits": 1
     }
    ],
-   "fps": 8,
+   "fps": 6,
    "playback": "once",
    "direction": "ping_pong",
    "collision": {

@@ -1,27 +1,183 @@
 {
-  "file": "petal-panic/assets/enemies/sneaky_viper/bounce_sheet.png",
-  "size": "2172x724",
-  "rows": 1,
-  "cols": 7,
-  "kind": "animation",
-  "description": "sneaky viper hop arc",
-  "entities": [{
-    "name": "sneaky_viper",
-    "anim": "bounce",
-    "frames": [
-      {"file": "bounce_f1.png", "row": 0, "col": 0, "bbox": [53, 497, 329, 182]},
-      {"file": "bounce_f2.png", "row": 0, "col": 1, "bbox": [413, 330, 265, 330]},
-      {"file": "bounce_f3.png", "row": 0, "col": 2, "bbox": [710, 240, 244, 377]},
-      {"file": "bounce_f4.png", "row": 0, "col": 3, "bbox": [977, 49, 227, 436]},
-      {"file": "bounce_f5.png", "row": 0, "col": 4, "bbox": [1256, 155, 265, 420]},
-      {"file": "bounce_f6.png", "row": 0, "col": 5, "bbox": [1516, 379, 274, 296]},
-      {"file": "bounce_f7.png", "row": 0, "col": 6, "bbox": [1804, 481, 336, 198]}
-    ],
-    "frames_dir": "petal-panic/assets/enemies/sneaky_viper"
-  }],
-  "updated": "2026-10-26T15:42:08",
-  "crop": {
-    "frames_dir": "petal-panic/assets/enemies/sneaky_viper",
-    "pass": "/home/goglue/tmp/sprite-ingest/viper_bounce"
+ "file": "petal-panic/assets/enemies/sneaky_viper/bounce_sheet.png",
+ "size": "2172x724",
+ "rows": 1,
+ "cols": 7,
+ "kind": "animation",
+ "description": "sneaky viper hop arc",
+ "entities": [
+  {
+   "name": "sneaky_viper",
+   "anim": "bounce",
+   "frames": [
+    {
+     "file": "bounce_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      53,
+      497,
+      329,
+      182
+     ],
+     "offset": {
+      "x": 0,
+      "y": -182
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "bounce_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      413,
+      330,
+      265,
+      330
+     ],
+     "offset": {
+      "x": 0,
+      "y": -330
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "bounce_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      710,
+      240,
+      244,
+      377
+     ],
+     "offset": {
+      "x": 0,
+      "y": -377
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "bounce_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      977,
+      49,
+      227,
+      436
+     ],
+     "offset": {
+      "x": 0,
+      "y": -436
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "bounce_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1256,
+      155,
+      265,
+      420
+     ],
+     "offset": {
+      "x": 0,
+      "y": -420
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "bounce_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1516,
+      379,
+      274,
+      296
+     ],
+     "offset": {
+      "x": 0,
+      "y": -296
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "bounce_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1804,
+      481,
+      336,
+      198
+     ],
+     "offset": {
+      "x": 0,
+      "y": -198
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/sneaky_viper",
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 23,
+    "y": -256,
+    "w": 228,
+    "h": 226
+   },
+   "pivot": {
+    "x": 137,
+    "y": -143
+   },
+   "markers": []
   }
+ ],
+ "updated": "2026-10-26T15:42:08",
+ "crop": {
+  "frames_dir": "petal-panic/assets/enemies/sneaky_viper",
+  "pass": "/home/goglue/tmp/sprite-ingest/viper_bounce"
+ }
 }
