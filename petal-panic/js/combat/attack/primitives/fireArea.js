@@ -28,18 +28,32 @@ import { parseSheet, placeSheetFrame } from '../../../core/spriteData.js';
 import { loadFrames } from '../../../core/frameLoader.js';
 import { SpritePlayer } from '../../../core/spritePlayer.js';
 import { isHighGraphic } from '../../../core/renderMode.js';
+import { fireDeclared } from '../../../effects/index.js';
+import { blastFallbackDrawer } from '../../../effects/spriteBurst.js';
+import { getSpecialSpriteData } from '../../../objects/projectile.js';
 
 /** One fire unit in world pixels — the square cell size (width AND height). */
 export const FIRE_UNIT = 48;
 
-// Eased-drop feel: segments don't plummet in lockstep. Each rolls a small
-// hover delay (starts falling a beat after its neighbors) and a reduced
-// gravity scale (sinks instead of dropping like a rock). Low gravity gives
-// the ease-in for free — starts slow, accelerates gently. Landing/snapping
-// and damage logic are untouched; only the fall FEEL changes.
-const DROP_DELAY_MAX = 0.15;          // seconds of staggered hover (0 = off)
-const GRAV_SCALE_MIN = 0.4;           // floatiest a segment can fall
-const GRAV_SCALE_MAX = 0.7;           // heaviest a segment can fall
+// Eased-drop feel: segments don't plummet in lockstep. Each starts falling
+// a beat after its neighbors (appearance delay) with a reduced gravity scale
+// (sinks instead of dropping like a rock). Low gravity gives the ease-in for
+// free — starts slow, accelerates gently. Landing/snapping and damage logic
+// are untouched; only the fall FEEL changes.
+//
+// APPEARANCE = SPREAD: flames POP in CENTER-OUT (center first, then ±1,
+// ±2 …) with a small jitter, so a multi-segment area reads as fire SPREADING
+// from the impact point instead of a row popping in at once. Appearance gates
+// VISIBILITY + DAMAGE + the per-segment ignition burst (ignitePerSegment) —
+// physics are immediate: a segment falls and settles from t=0 (invisible
+// while counting down), so landing/position contracts are spread-untouched.
+// The zone clock runs from detonation, so the outermost flames live a beat
+// shorter — imperceptible at real durations, and the fade-out still ends
+// them all together at the finish line.
+const SPREAD_STEP = 0.06;              // s of added delay per step from center
+const SPREAD_JITTER_MAX = 0.02;        // small random so the spread feels organic
+const GRAV_SCALE_MIN = 0.4;            // floatiest a segment can fall
+const GRAV_SCALE_MAX = 0.7;            // heaviest a segment can fall
 // Eased fade-out: EVERY segment reaches full fade exactly when the zone ends
 // (total duration unchanged) — only the RAMP start varies per segment: a
 // random point in the last ~35% of the lifetime. Flames burn at FULL strength
@@ -57,6 +71,7 @@ const DEFAULTS = Object.freeze({
   damage: 8,          // damage per tick
   team: 'ally',       // ally | foe | neutral
   method: 'fire',     // telemetry label
+  ignitePerSegment: false, // fire explosion + sprite-burst at each segment's spawn point (molotov/napalm opt in)
 });
 
 /** Fixed vertical extent of a fire area (px): always exactly one unit. */
@@ -101,11 +116,10 @@ function fireSurfaces(ctx) {
  * A segment only considers tops that span its own 48px x-range — a segment
  * over a gap falls past a neighbor's platform; a segment over a barrel stops
  * on the barrel. Resting contact uses an FP epsilon so a settled segment does
- * not fall through its support between frames.
+ * not fall through its support between frames. Physics run from t=0 (the
+ * center-out appearance delay gates drawing/damage, not landing).
  */
 function stepSegment(seg, dt, ctx, surfaces) {
-  // Eased-drop: hover for this segment's staggered delay before falling.
-  if (seg.dropDelay > 0) { seg.dropDelay -= dt; return; }
   const bottom = seg.y + FIRE_HEIGHT;
   seg.vy += GRAVITY * seg.gravScale * dt;   // floaty weight per segment
   const nextBottom = bottom + seg.vy * dt;
@@ -132,13 +146,16 @@ function stepSegment(seg, dt, ctx, surfaces) {
  * Initial placement honors carrier top-contact (surfaceY) or a shallow
  * overlap with a surface at/below the spawn center — never a teleport to a
  * surface overhead or a distant floor below.
+ * Appearance: each segment's `appear` delay counts down before it becomes
+ * visible/damaging/falling (center-out spread — see SPREAD_STEP).
  */
-function buildSegments(p, ctx) {
+export function buildSegments(p, ctx) {
   const n = Math.max(1, Math.round(Number(p.segments) || DEFAULTS.segments));
   const totalW = n * FIRE_UNIT;
   const left = p.x - totalW / 2;
   const centerY = Number.isFinite(p.surfaceY) ? p.surfaceY - FIRE_HEIGHT / 2 : p.y;
   const surfaces = fireSurfaces(ctx);
+  const centerStep = (n - 1) / 2;
   const segs = [];
   for (let i = 0; i < n; i++) {
     const x = left + i * FIRE_UNIT;
@@ -151,9 +168,10 @@ function buildSegments(p, ctx) {
       if (Number.isFinite(top)) y = top - FIRE_HEIGHT;
     }
     const seg = { x, y, vy: 0, w: FIRE_UNIT, h: FIRE_HEIGHT };
-    // Eased-drop rolls: unique per segment so a row of flames settles at its
-    // own pace instead of clacking down in sync.
-    seg.dropDelay = Math.random() * DROP_DELAY_MAX;
+    // Eased-drop rolls: appearance is CENTER-OUT (steps from center × step +
+    // small jitter) so the row reads as fire spreading; gravity scale stays
+    // random per segment so the fall feel never clacks in sync.
+    seg.appear = Math.abs(i - centerStep) * SPREAD_STEP + Math.random() * SPREAD_JITTER_MAX;
     seg.gravScale = GRAV_SCALE_MIN + Math.random() * (GRAV_SCALE_MAX - GRAV_SCALE_MIN);
     segs.push(seg);
   }
@@ -169,6 +187,7 @@ function segmentedFireDrawer(ctx, z) {
   ctx.save();
   ctx.globalAlpha = alpha;
   for (const s of z.segs) {
+    if (s.appear > 0) continue; // center-out spread: not born yet
     const grad = ctx.createLinearGradient(s.x, s.y + FIRE_HEIGHT, s.x, s.y);
     grad.addColorStop(0, 'rgba(255,80,0,0.7)');
     grad.addColorStop(0.5, 'rgba(255,160,0,0.4)');
@@ -273,6 +292,7 @@ function segmentedFireSpriteDrawer(ctx, z) {
   const frac = 1 - z.t / z.duration;   // 1 → 0 over the zone lifetime
   for (let i = 0; i < z.segs.length; i++) {
     const s = z.segs[i];
+    if (s.appear > 0) continue; // center-out spread: not born yet
     const sp = z.segSprites[i];
     // Per-segment eased fade: full alpha until this segment's random fade
     // start, then linear ramp to 0 that lands EXACTLY at zone end (frac=0).
@@ -314,6 +334,7 @@ registerPrimitive('fireArea', {
     desc: 'Ground-anchored damaging area that persists for a duration, ticking damage (Molotov pattern). Width is unit-based: N × 48px segments, each with its own gravity and column support.',
     effects: [
       { type: 'dust-cloud', desc: 'fire particles at the zone (optional visual)' },
+      { type: 'sprite-burst', desc: 'bomb-explode art at each segment spawn point (ignitePerSegment: molotov/napalm)' },
     ],
     params: [
       { key: 'x', desc: 'center x (world)' },
@@ -351,6 +372,17 @@ registerPrimitive('fireArea', {
       segmentedFireDrawer(ctx, z);
     };
     zone.segs = segs;
+    // Per-segment ignition VFX (molotov/napalm): each segment's sprite-burst
+    // pops when ITS flame appears (center-out spread), so a multi-segment
+    // area reads as fire spreading from the impact point — one burst per
+    // flame, in order. Bursts fire at the segment's LIVE position at appear
+    // time (it has been silently falling since t=0, so the pop lands where
+    // the flame is igniting). Queued here, fired lazily in h.step().
+    const igniteQueue = [];
+    if (p.ignitePerSegment) {
+      const ex = getSpecialSpriteData('bomb_explode')?.anims.explode;
+      for (const s of segs) igniteQueue.push({ seg: s, done: false, ex });
+    }
     // Per-segment hitboxes: each tracks its OWN segment position so damage
     // follows the fall. A single processHitboxes() call with ALL boxes means
     // the hitSet guard prevents double-dip when a target straddles a seam.
@@ -371,9 +403,27 @@ registerPrimitive('fireArea', {
       const list = targets ?? [];
       const surfaces = fireSurfaces(ctx);
       for (const s of segs) stepSegment(s, dt, ctx, surfaces);
-      // Advance per-segment sprite playback (sprite mode only).
+      // Center-out appearance clock: count down each segment's appear delay
+      // with the zone clock (physics already ran — the flame is just hidden).
+      for (const s of segs) {
+        if (s.appear > 0) s.appear = Math.max(0, s.appear - dt);
+      }
+      // Ignition bursts pop when each segment APPEARS (center-out order).
+      // Position is read LIVE at fire time — the segment has been falling
+      // since t=0, so the pop lands exactly where the flame ignites.
+      for (const b of igniteQueue) {
+        if (b.done || b.seg.appear > 0) continue;
+        b.done = true;
+        const sx = b.seg.x + FIRE_UNIT / 2, sy = b.seg.y + FIRE_HEIGHT / 2;
+        fireDeclared({ type: 'sprite-burst', params: { x: sx, y: sy, size: 48, duration: 0.5, anim: b.ex, fallback: blastFallbackDrawer } }, h.declaredEffectTypes());
+      }
+      // Advance per-segment sprite playback (sprite mode only). Unborn
+      // segments hold their start frame — they begin flickering on appear.
       if (zone.segSprites) {
-        for (const sp of zone.segSprites) sp.player.tick(dt);
+        for (let i = 0; i < segs.length; i++) {
+          if (segs[i].appear > 0) continue;
+          zone.segSprites[i].player.tick(dt);
+        }
       }
       // Advance the zone clock manually (t/duration/alive) WITHOUT running its
       // internal damage tick — the union hitbox owns all damage. This avoids
@@ -399,7 +449,9 @@ registerPrimitive('fireArea', {
           h._segHbs[i].box = { x: s.x, y: s.y, w: FIRE_UNIT, h: FIRE_HEIGHT };
           h._segHbs[i].damage = p.damage;
           h._segHbs[i].hitSet = sharedHitSet;
-          h._segHbs[i].active = true;
+          // Damage is born with the flame: center-out spread segments don't
+          // hurt (or draw) while their appearance delay is counting down.
+          h._segHbs[i].active = s.appear <= 0;
         }
         processHitboxes(h._segHbs, list, (_hb, t, dealt) => {
           h._emit('hit', { target: t, dealt });

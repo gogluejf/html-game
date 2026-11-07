@@ -11,9 +11,6 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
-import { fireDeclared } from '../../../effects/index.js';
-import { blastFallbackDrawer } from '../../../effects/spriteBurst.js';
-import { getSpecialSpriteData } from '../../../objects/projectile.js';
 import '../primitives/fireArea.js';
 import { fireballDrawer } from '../drawers/index.js';
 
@@ -44,8 +41,7 @@ defineMacro('napalm', {
   meta: {
     name: 'Napalm',
     effects: [
-      { type: 'explosion', desc: 'ignition burst at the death point (particles only, no shake/flash)' },
-      { type: 'sprite-burst', desc: 'bomb explode sheet art at the death point (procedural fallback in primitive mode)' },
+      { type: 'sprite-burst', desc: 'bomb-explode art at each fire segment spawn point (via fireArea ignitePerSegment; procedural fallback in primitive mode)' },
     ],
     desc: 'Straight-line shot that leaves a persistent burning area at its death point (impact or TTL). Instant ignition, no telegraph.',
     params: [
@@ -71,17 +67,12 @@ defineMacro('napalm', {
     const h = createCarrierHandle('napalm', p, ctx, {
       onDetonate({ x, y }, macroH) {
         try {
-          // Ignition VFX at the death point (impact OR ttl expiry) — particles
-          // only: the 'explosion' effect type carries no shake/flash.
-          fireDeclared({ type: 'explosion', params: { x, y, radius: 40 } }, macroH.declaredEffectTypes());
-          // Ignition burst art: bomb explode sheet when loaded (high-graphic),
-          // procedural flash+ring otherwise. No shake/flash — ignition juice only.
-          const ex = getSpecialSpriteData('bomb_explode')?.anims.explode;
-          fireDeclared({ type: 'sprite-burst', params: { x, y, size: 64, duration: 0.5, anim: ex, fallback: blastFallbackDrawer } }, macroH.declaredEffectTypes());
           const targets = new Set();
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
           const aimed = p.target ?? ctx.target;
           if (aimed) targets.add(aimed);
+          // Per-segment ignition VFX lives in the fireArea primitive — each
+          // flame pops at its own spawn point (no single death-point burst).
           const fire = invoke('fireArea', {
             x, y,
             segments: p.fireSegments,
@@ -89,6 +80,7 @@ defineMacro('napalm', {
             tickRate: p.fireTickRate,
             damage: p.fireDamage,
             team: p.blastTeam,
+            ignitePerSegment: true,
             targets: [...targets],
           }, ctx);
           macroH.handles.push(fire);

@@ -122,6 +122,9 @@ for (const scenario of [
         assert.ok(s.y > 0 && s.y < 400, `midair: segment in-bounds (top=${s.y})`);
       }
     }
+    // Let the center-out APPEARANCE spread finish (max delay < 0.1s for 3
+    // segs) so the render/damage lockstep check runs with every flame visible.
+    for (let i = 0; i < 12; i++) fire.step(DT);
     const rects = [];
     const gradStub = { addColorStop() {} };
     fire.zone.draw({ save() {}, restore() {}, strokeRect() {},
