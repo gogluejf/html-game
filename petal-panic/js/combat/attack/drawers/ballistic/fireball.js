@@ -1,9 +1,9 @@
 // Drawer contract: (ctx, entity) => void
 
 /**
- * Molotov carrier in flight: glowing orange-red fireball with a trailing flicker.
+ * Fireball carrier in flight (molotov): glowing orange-red fireball with a trailing flicker.
  */
-export function molotovDrawer(ctx, e) {
+export function fireballDrawer(ctx, e) {
   const cx = e.x + e.w / 2;
   const cy = e.y + e.h / 2;
   const r = e.w / 2;

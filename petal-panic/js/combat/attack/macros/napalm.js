@@ -15,6 +15,7 @@ import { fireDeclared } from '../../../effects/index.js';
 import { blastFallbackDrawer } from '../../../effects/spriteBurst.js';
 import { getSpecialSpriteData } from '../../../objects/projectile.js';
 import '../primitives/fireArea.js';
+import { fireballDrawer } from '../drawers/index.js';
 
 const DEFAULTS = Object.freeze({
   speed: 700,           // px/s
@@ -108,6 +109,7 @@ defineMacro('napalm', {
       gravity: p.gravity,
       team: p.team,
       size: p.size,
+      drawer: fireballDrawer,
     }, ctx);
 
     if (!carrier?.entity) {

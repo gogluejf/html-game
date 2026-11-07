@@ -11,7 +11,7 @@ import { fireDeclared } from '../../../effects/index.js';
 import { blastFallbackDrawer } from '../../../effects/spriteBurst.js';
 import { getSpecialSpriteData } from '../../../objects/projectile.js';
 import '../primitives/fireArea.js';
-import { molotovDrawer } from '../drawers/index.js';
+import { fireballDrawer } from '../drawers/index.js';
 
 const DEFAULTS = Object.freeze({
   speed: 600,           // launch force (px/s)
@@ -105,7 +105,7 @@ defineMacro('molotov', {
       damage: p.damage,
       radius: 0,
       origin: p.origin,
-      drawer: molotovDrawer,
+      drawer: fireballDrawer,
     }, ctx);
 
     if (!carrier?.entity) {
