@@ -1,10 +1,10 @@
 {
  "file": "petal-panic/assets/projectiles/molotov/throw_sheet.png",
- "size": "2158x441",
- "rows": 1,
- "cols": 5,
+ "size": "3076x781",
+ "rows": 2,
+ "cols": 8,
  "kind": "animation",
- "description": "molotov throw (5 frames) \u2014 flaming bottle projectile arc",
+ "description": "molotov bottle flame rotation (16 frames) \u2014 12 original + f13-f16 rotated from f8-f11; f1/f12 angle-trimmed 15deg",
  "entities": [
   {
    "name": "molotov",
@@ -17,57 +17,352 @@
      "col": 0,
      "bbox": [
       0,
-      8,
-      484,
-      425
-     ]
+      0,
+      414,
+      369
+     ],
+     "offset": {
+      "x": -40,
+      "y": -346
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "throw_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
-      484,
-      0,
-      379,
-      441
-     ]
+      414,
+      36,
+      349,
+      297
+     ],
+     "offset": {
+      "x": 0,
+      "y": -297
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "throw_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
-      863,
-      33,
-      460,
-      375
-     ]
+      767,
+      29,
+      332,
+      310
+     ],
+     "offset": {
+      "x": 0,
+      "y": -310
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "throw_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
-      1323,
-      3,
-      402,
-      434
-     ]
+      1145,
+      26,
+      298,
+      317
+     ],
+     "offset": {
+      "x": 0,
+      "y": -317
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "throw_f5.png",
      "row": 0,
      "col": 4,
      "bbox": [
-      1725,
-      20,
-      433,
-      401
-     ]
+      1525,
+      29,
+      297,
+      310
+     ],
+     "offset": {
+      "x": 0,
+      "y": -310
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1947,
+      21,
+      241,
+      326
+     ],
+     "offset": {
+      "x": 0,
+      "y": -326
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      2337,
+      18,
+      265,
+      333
+     ],
+     "offset": {
+      "x": 0,
+      "y": -333
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      2734,
+      27,
+      274,
+      314
+     ],
+     "offset": {
+      "x": 0,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f9.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      59,
+      432,
+      296,
+      286
+     ],
+     "offset": {
+      "x": 0,
+      "y": -286
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f10.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      425,
+      461,
+      326,
+      228
+     ],
+     "offset": {
+      "x": 0,
+      "y": -228
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f11.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      763,
+      456,
+      340,
+      237
+     ],
+     "offset": {
+      "x": 0,
+      "y": -237
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f12.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1103,
+      422,
+      383,
+      305
+     ],
+     "offset": {
+      "x": 0,
+      "y": -305
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f13.png",
+     "row": 1,
+     "col": 4,
+     "bbox": [
+      1486,
+      402,
+      376,
+      346
+     ],
+     "offset": {
+      "x": 0,
+      "y": -346
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f14.png",
+     "row": 1,
+     "col": 5,
+     "bbox": [
+      1862,
+      369,
+      412,
+      412
+     ],
+     "offset": {
+      "x": 0,
+      "y": -412
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f15.png",
+     "row": 1,
+     "col": 6,
+     "bbox": [
+      2274,
+      379,
+      392,
+      392
+     ],
+     "offset": {
+      "x": 0,
+      "y": -392
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "throw_f16.png",
+     "row": 1,
+     "col": 7,
+     "bbox": [
+      2666,
+      370,
+      410,
+      409
+     ],
+     "offset": {
+      "x": 0,
+      "y": -409
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-   ]
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 21,
+    "y": -220,
+    "w": 241,
+    "h": 209
+   },
+   "pivot": {
+    "x": 142,
+    "y": -115
+   },
+   "markers": []
   }
  ],
- "updated": "2026-10-27"
+ "updated": "2026-11-07"
 }
