@@ -13,6 +13,9 @@ import '../combat/attack/primitives/explosion.js'; // registers the 'explosion' 
 import '../combat/attack/primitives/dustZone.js'; // registers the 'dustZone' primitive (toxic cloud)
 import '../combat/attack/macros/index.js'; // registers spawnSplit + molotov (propane fan)
 import { isSpecialType } from '../objects/specialWeapons.js';
+import { fireManual } from '../effects/index.js';
+import { blastFallbackDrawer } from '../effects/spriteBurst.js';
+import { getSpecialSpriteData } from './projectile.js';
 import { getDamageables, getActiveFloorY } from '../world/accessors.js';
 import { projectilePool } from '../objects/projectile.js';
 import { record } from '../stats.js';
@@ -91,6 +94,12 @@ export function handleBarrelDestroyed(barrel) {
       molotov: { arc: 800, bounce: false, ttl: null, fireSegments: 2, team: 'neutral' },
       groundY: floorY,
     }, { attacker: barrel, pools: { projectilePool }, world: { hero: ctx.hero, targets: getDamageables() } });
+    // Pop VFX at the break point: particle burst + bomb explode sheet art
+    // (procedural flash+ring in primitive mode). No damage — the molotovs
+    // ARE the payload; this is pure juice.
+    fireManual({ type: 'explosion', params: { x: cx, y: cy, radius: 40 } });
+    const ex = getSpecialSpriteData('bomb_explode')?.anims.explode;
+    fireManual({ type: 'sprite-burst', params: { x: cx, y: cy, size: 64, duration: 0.5, anim: ex, fallback: blastFallbackDrawer } });
     Effects.fireParticleBurst(cx, cy, 8);   // regular barrel-break particles
     Effects.triggerShake(8);                // smaller kick than a real blast
     // SFX: propane pop
