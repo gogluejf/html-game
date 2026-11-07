@@ -295,9 +295,7 @@ defineMacro('spawnSplit', {
         const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y }, direction: c.angle, speed,
           solidBehavior: 'stop',
-          ...((c.child === 'napalm')
-            ? { fireSegments: bl.fireSegments }
-            : { radius: bl.radius }),
+          ...defined(bl),
           // Do not pass an absent damage override: the payload macro owns its
           // default contact+blast damage (legacy behavior preserved).
           ...(p.damage != null ? { damage: p.damage } : {}),
@@ -356,23 +354,23 @@ defineMacro('spawnSplit', {
     if (handles.length === 0) {
       h._complete({ count: children.length, enemies: enemies.length });
     } else {
-      let remaining = handles.length;
-      const done = () => {
-        remaining -= 1;
-        if (remaining <= 0) h._complete({ count: children.length, enemies: enemies.length });
-      };
-      for (const ch of handles) {
-        // throwEnemy roots stay OPEN while the landed enemy lives — completion
-        // only fires when the enemy is fully gone. Hosts that step the root
-        // (BombAttackHost / theater) keep stepping until then.
-        if (ch.id !== 'throwEnemy') {
-          ch.on('complete', done);
-          ch.on('expire', done);
-          if (ch._completed || ch._cancelled) done();
+      // Expire is a carrier event, NOT completion of its deferred payload.
+      // Read terminal states instead of counting events (expire + complete
+      // from one child must never retire siblings or their live fire zones).
+      const checkComplete = () => {
+        if (handles.every(ch => ch._completed || ch._cancelled)) {
+          h._complete({ count: children.length, enemies: enemies.length });
         }
-      }
-      // No immediate-kill children → nothing to wait for beyond the handles
-      // above; a pure-throwEnemy split stays open by design (host-driven).
+      };
+      for (const ch of handles) ch.on('complete', checkComplete);
+      const stepChildren = h.step;
+      h.step = (dt, targets = []) => {
+        if (h._completed || h._cancelled) return true;
+        stepChildren(dt, targets);
+        checkComplete();
+        return h._completed;
+      };
+      checkComplete();
     }
     return h;
   },

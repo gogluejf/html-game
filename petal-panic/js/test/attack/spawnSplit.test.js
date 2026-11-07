@@ -171,6 +171,31 @@ ok('child=molotov overrides direct bottle look with fireball drawer', () => {
   assert.equal(h.handles[0].entity.drawer, fireballDrawer);
 });
 
+ok('child=napalm forwards nested ttl and fireSegments to the spawned fire', () => {
+  const pool = new Pool(Projectile, 4);
+  const ctx = makeContext(attacker(), { pools: { projectilePool: pool }, groundY: 480 });
+  const h = invoke('spawnSplit', {
+    ...P,
+    child: 'napalm',
+    count: 1,
+    payload: { napalm: { ttl: 0.5 } },
+    blast: { fireSegments: 6 },
+  }, ctx);
+  let finished = false;
+  for (let i = 0; i < 360 && !finished; i++) {
+    pool.updateAll(1 / 60);
+    finished = h.step(1 / 60, []);
+    const fire = h.handles[0].handles?.[0];
+    if (fire && !fire._completed) assert.equal(h._completed, false,
+      'split must remain live and drawable throughout deferred fire');
+  }
+  assert.ok(finished);
+  const napalm = h.handles[0];
+  assert.equal(napalm._params.ttl, 0.5);
+  assert.equal(napalm.handles.length, 1);
+  assert.equal(napalm.handles[0].zone.segs.length, 6);
+});
+
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);
 
 
