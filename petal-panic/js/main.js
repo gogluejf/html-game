@@ -212,7 +212,8 @@ async function boot() {
   const { initBarrelSprites, initCheckpointSprites } = await import('./objects/object.js');
   const { initProjectileSprites } = await import('./objects/projectile.js');
   const { initCoinSprites } = await import('./objects/coin.js');
-  await Promise.all([initBarrelSprites(), initCheckpointSprites(), initProjectileSprites(), initCoinSprites()]);
+  const { initFireSprites } = await import('./combat/attack/primitives/fireArea.js');
+  await Promise.all([initBarrelSprites(), initCheckpointSprites(), initProjectileSprites(), initCoinSprites(), initFireSprites()]);
   const { update } = await import('./systems/update.js');
   const { render } = await import('./systems/render.js');
   // VIRTUAL GAMEPAD option (fullscreen-layout plan): default ON; the pad only

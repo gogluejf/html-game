@@ -28,7 +28,7 @@
 
 import { GRAVITY, MAX_FALL_SPEED } from '../consts.js';
 import { Timers } from './timers.js';
-import { uniformScale } from './spriteData.js';
+import { uniformScale, placeSheetFrame } from './spriteData.js';
 import { SpritePlayer } from './spritePlayer.js';
 import { isHighGraphic } from './renderMode.js';
 
@@ -455,30 +455,18 @@ export class Entity {
     if (!data || !frames || frames.size === 0) return null;
     const frame = data.frames[this.spriteFrameIndex % data.frames.length];
     const img = frames.get(frame.file);
-    if (!img || !(img.complete && img.naturalWidth > 0)) return null;
-    const fsx = frame.scale?.sx ?? 1;
-    const fsy = frame.scale?.sy ?? 1;
-    const w = img.naturalWidth * fsx;
-    const h = img.naturalHeight * fsy;
-    const s = this._spriteScale;
-    // Defensive: no live scale (resetAnim cleared it, setAnim not yet run) or
-    // a sheet without an authored box → primitive fallback, never throw.
-    const cb = data.collisionBox;
-    if (!(s > 0) || !cb) return null;
-    // BOX-CENTER ANCHOR CONTRACT: the collision box is the physics truth and
-    // the transform origin. The world anchor is the box center; mirror/rotate
-    // happen around it, so the box↔art relationship is identical in every aim
-    // direction (a raw-pivot anchor would rotate its own offset into a
-    // different shape per direction — art drifting left/right of the box on
-    // vertical shots). The sheet PIVOT only positions the ART within that
-    // frame: dx/dy = (frameOffset − pivot), exactly as authored in the editor.
-    const pivot = data.pivot ?? { x: cb.x + cb.w / 2, y: cb.y + cb.h / 2 };
+    // Single source of truth for the delta rule (offset − pivot, uniform
+    // scale, untuned fallback): placeSheetFrame(). The helper derives the
+    // scale from a TARGET box height in px; passing this._spriteScale × cb.h
+    // reproduces this._spriteScale exactly (setAnim fit cb.h onto that).
+    // Anchor is the box center (BOX-CENTER ANCHOR CONTRACT) — mirror/rotate
+    // happen around it, so the box↔art relationship never changes shape per
+    // aim direction.
+    const placed = placeSheetFrame(data, frame, img, this._spriteScale * data.collisionBox.h);
+    if (!placed) return null;
+    const { w, h, dx, dy, scale: s } = placed;
     const anchorX = this.x + this.w / 2;
     const anchorY = this.y + this.h / 2;
-    const dx = frame.offset ? frame.offset.x - pivot.x
-      : (this.x + this.w / 2 - anchorX) / s - w / 2;
-    const dy = frame.offset ? frame.offset.y - pivot.y
-      : (this.y + this.h - anchorY) / s - h;
     return {
       img, w, h, dx, dy, scale: s, anchorX, anchorY,
       mirrorX: !!this.mirrorX,

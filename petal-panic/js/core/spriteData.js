@@ -204,3 +204,52 @@ export function uniformScale(animData, targetHeightPx) {
   if (!(ref.h > 0)) throw new Error('uniformScale: zero-height reference box');
   return targetHeightPx / ref.h;
 }
+
+/**
+ * Place ONE sheet frame relative to its animation's collision box — the
+ * single source of truth for the DELTA RULE (§22): the frame's natural size
+ * (× per-frame tuning scale) is positioned by (frameOffset − pivot), and the
+ * uniform scale that fits the authored collision-box height onto `targetBoxH`
+ * is returned so callers can apply it via ctx.scale. Callers anchor the
+ * result at their own box center; this returns the frame rect (w, h) in
+ * UNSCALED (natural × tuning) space and dx/dy in UNSCALED offset space —
+ * matching Entity.spriteFrame()'s contract exactly (drawSprite applies
+ * ctx.scale(s) once for everything).
+ *
+ * This is the same math Entity.spriteFrame() applies — extracted here so
+ * non-Entity consumers (fire segments, sprite bursts, tests) place frames
+ * identically instead of re-implementing the rule.
+ *
+ * Untuned frames (no offset) fall back to bottom-center placement: centered
+ * horizontally, base on the box bottom (feet-planted).
+ *
+ * @param {object} animData AnimData from parseSheet() (needs collisionBox)
+ * @param {object} frame one entry of animData.frames ({file, offset?, scale?})
+ * @param {object} img loaded image (naturalWidth/naturalHeight)
+ * @param {number} targetBoxH collision-box height in target px (e.g. FIRE_UNIT)
+ * @returns {?{img:object, w:number, h:number, dx:number, dy:number, scale:number}}
+ *   null when the image or box is unusable (caller falls back to primitive).
+ */
+export function placeSheetFrame(animData, frame, img, targetBoxH) {
+  const cb = animData.collisionBox;
+  if (!cb || !(img && img.complete && img.naturalWidth > 0)) return null;
+  const s = targetBoxH / cb.h;
+  if (!(s > 0)) return null;
+  const fsx = frame.scale?.sx ?? 1;
+  const fsy = frame.scale?.sy ?? 1;
+  // w/h in UNSCALED space (natural × per-frame tuning) — ctx.scale(s) applies s.
+  const w = img.naturalWidth * fsx;
+  const h = img.naturalHeight * fsy;
+  let dx, dy;
+  if (frame.offset) {
+    // UNSCALED delta rule: dx/dy = offset − pivot (ctx.scale applies s).
+    const pivot = animData.pivot ?? { x: cb.x + cb.w / 2, y: cb.y + cb.h / 2 };
+    dx = frame.offset.x - pivot.x;
+    dy = frame.offset.y - pivot.y;
+  } else {
+    // Legacy untuned placement: centered, bottom on the box bottom.
+    dx = -w / 2;
+    dy = -h;
+  }
+  return { img, w, h, dx, dy, scale: s };
+}

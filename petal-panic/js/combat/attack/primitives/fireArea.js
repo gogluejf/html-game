@@ -24,6 +24,10 @@ import { AttackHandle } from '../engine.js';
 import { HazardZone } from '../../../objects/hazardZone.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../../../combat/hitbox.js';
 import { GRAVITY, LAYER } from '../../../consts.js';
+import { parseSheet, placeSheetFrame } from '../../../core/spriteData.js';
+import { loadFrames } from '../../../core/frameLoader.js';
+import { SpritePlayer } from '../../../core/spritePlayer.js';
+import { isHighGraphic } from '../../../core/renderMode.js';
 
 /** One fire unit in world pixels — the square cell size (width AND height). */
 export const FIRE_UNIT = 48;
@@ -160,6 +164,114 @@ function segmentedFireDrawer(ctx, z) {
   ctx.restore();
 }
 
+// --- Sprite mode (high-graphic) ---------------------------------------------
+// Each fire segment plays ONE randomly picked flame anim (fire_1 / fire_2 /
+// fire_3) from the objects/fire sheets, with a random mirrorX and a random
+// start frame — N segments never play in lockstep. The sheet's authored
+// collision box is SQUARE (48x48, bottom-anchored), so uniformScale() fits the
+// art to exactly one FIRE_UNIT cell; the pivot sits at the box center so the
+// flame is centered on the segment and its bottom edge lands on the box
+// bottom (feet-planted on the surface the segment rests on).
+//
+// Playback uses standalone SpritePlayer instances (one per segment) ticked in
+// h.step() — HazardZone has no Entity.setAnim pipeline of its own, so we drive
+// the players directly. The fade-out contract (last 20% of duration → alpha
+// ramp to 0) is identical to the primitive drawer.
+const FIRE_SPRITE_ANIMS = Object.freeze(['fire_1', 'fire_2', 'fire_3']);
+const fireSpriteData = new Map();   // animName -> parsed AnimData
+const fireSpriteFrames = new Map(); // animName -> Map(file -> img)
+let fireSpriteLoadStarted = false;
+
+/** Boot-time loader for the three flame anims. Idempotent; node-safe.
+ *  file:// support mirrors projectile.js: read the sheet JSON from disk via
+ *  node:fs when the page is opened directly (fetch of local files fails). */
+export function initFireSprites() {
+  if (fireSpriteLoadStarted) return Promise.resolve();
+  fireSpriteLoadStarted = true;
+  const base = new URL('../../../../assets/objects/fire/', import.meta.url).href;
+  const jobs = FIRE_SPRITE_ANIMS.map((anim) => {
+    const file = `${anim}_sheet.json`;
+    const load = base.startsWith('file:')
+      ? readFileJson(new URL(file, base))
+      : fetch(base + file).then((r) => r.json());
+    return load
+      .then((sheet) => {
+        const data = parseSheet(sheet);
+        fireSpriteData.set(anim, data.anims[anim]);
+        return loadFrames(data, base);
+      })
+      .then((imgs) => {
+        if (imgs && imgs.size > 0) fireSpriteFrames.set(anim, imgs);
+      })
+      .catch((e) => console.warn(`[sprite] fire ${anim} sheet failed to load`, e));
+  });
+  return Promise.all(jobs);
+}
+async function readFileJson(url) {
+  const { readFile } = await import('node:fs/promises');
+  const { fileURLToPath } = await import('node:url');
+  return JSON.parse(await readFile(fileURLToPath(url), 'utf8'));
+}
+
+/** True when at least one flame anim has live frames (else fall back to primitive). */
+function fireSpritesReady() {
+  return FIRE_SPRITE_ANIMS.some((a) => fireSpriteFrames.get(a)?.size > 0);
+}
+
+/**
+ * Per-segment sprite state. Built once per zone; each segment rolls its own
+ * anim, mirror and start slot so a row of flames flickers independently.
+ */
+function buildSegmentSprites(segs) {
+  const ready = FIRE_SPRITE_ANIMS.filter((a) => fireSpriteFrames.get(a)?.size > 0);
+  if (ready.length === 0) return null;
+  return segs.map(() => {
+    const animName = ready[Math.floor(Math.random() * ready.length)];
+    const data = fireSpriteData.get(animName);
+    const frames = fireSpriteFrames.get(animName);
+    const player = new SpritePlayer(data, Math.floor(Math.random() * data.frames.length));
+    return { data, frames, player, mirrorX: Math.random() < 0.5 };
+  });
+}
+
+/**
+ * Segmented sprite drawer: one flame image per segment, placed EXACTLY like
+ * Entity.spriteFrame() places sheet frames — the frame's natural size (×
+ * per-frame tuning scale) is positioned by the DELTA RULE (frame.offset −
+ * anim.pivot), uniformly scaled so the authored collision box height fits the
+ * FIRE_UNIT cell, and anchored at the segment's box center. Bottom of the box
+ * (= flame base) stays planted on the surface the segment rests on. Fade-out
+ * over the last 20% of the zone lifetime matches the primitive drawer.
+ */
+function segmentedFireSpriteDrawer(ctx, z) {
+  if (!z.alive || !z.segSprites) return;
+  const frac = 1 - z.t / z.duration;
+  const alpha = frac < 0.2 ? frac / 0.2 : 1;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  for (let i = 0; i < z.segs.length; i++) {
+    const s = z.segs[i];
+    const sp = z.segSprites[i];
+    const data = sp.data;
+    const frame = data.frames[sp.player.frameIndex % data.frames.length];
+    const img = sp.frames.get(frame.file);
+    // Same delta-rule placement as Entity.spriteFrame() — one shared helper.
+    // dx/dy/w/h are UNSCALED; ctx.scale(s) applies the uniform scale once.
+    const placed = placeSheetFrame(data, frame, img, FIRE_UNIT);
+    if (!placed) continue;
+    const cx = s.x + FIRE_UNIT / 2;
+    const cy = s.y + FIRE_HEIGHT / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (sp.mirrorX) ctx.scale(-1, 1);
+    ctx.scale(placed.scale, placed.scale);
+    ctx.drawImage(placed.img, 0, 0, placed.img.naturalWidth, placed.img.naturalHeight,
+      placed.dx, placed.dy, placed.w, placed.h);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
 function declaredEffectsOf(id) {
   const def = getPrimitive(id) ?? getMacro(id);
   return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
@@ -197,7 +309,17 @@ registerPrimitive('fireArea', {
       team: p.team, color: 'rgba(255,120,30,0.35)', label: 'fire',
     });
     zone.setOwner(ctx.attacker);
-    zone.drawer = segmentedFireDrawer;
+    // Sprite mode (high-graphic): per-segment flame anims. Built lazily so a
+    // zone spawned before initFireSprites() resolved still picks them up on
+    // its first step; null → primitive drawer only.
+    zone.segSprites = buildSegmentSprites(segs);
+    zone.drawer = (ctx, z) => {
+      if (isHighGraphic()) {
+        if (!z.segSprites && fireSpritesReady()) z.segSprites = buildSegmentSprites(z.segs);
+        if (z.segSprites) { segmentedFireSpriteDrawer(ctx, z); return; }
+      }
+      segmentedFireDrawer(ctx, z);
+    };
     zone.segs = segs;
     // Per-segment hitboxes: each tracks its OWN segment position so damage
     // follows the fall. A single processHitboxes() call with ALL boxes means
@@ -219,6 +341,10 @@ registerPrimitive('fireArea', {
       const list = targets ?? [];
       const surfaces = fireSurfaces(ctx);
       for (const s of segs) stepSegment(s, dt, ctx, surfaces);
+      // Advance per-segment sprite playback (sprite mode only).
+      if (zone.segSprites) {
+        for (const sp of zone.segSprites) sp.player.tick(dt);
+      }
       // Advance the zone clock manually (t/duration/alive) WITHOUT running its
       // internal damage tick — the union hitbox owns all damage. This avoids
       // the double-damage from zone.update() resetting _hb.active/box.
