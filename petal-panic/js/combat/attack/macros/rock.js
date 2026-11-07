@@ -15,7 +15,7 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 
 const ROCK_DEFAULTS = Object.freeze({
-  speed: 500,            // launch force (px/s)
+  speed: 1200,           // launch force (px/s)
   direction: -0.5,       // radians — up-right throw
   arc: 800,              // gravity px/s² (throw height)
   damage: 40,            // contact damage (rock is heavy)
