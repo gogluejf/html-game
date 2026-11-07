@@ -463,6 +463,8 @@ export function stepBombTerrain(ent, dt, groundY, platforms = [], opts = {}) {
  * @param {AttackHandle} h handle to emit on
  */
 export function stepBomb(ent, p, ctx, h) {
+  if (ent._attackHandle && ent._attackHandle !== h) return true;
+  if (ent._arcRecipe === false) return false;
   if (h._completed || h._cancelled || ent._attackDone) return true;
   if (ent.alive) return false;
 
@@ -523,11 +525,19 @@ function makeImpl(id) {
       h._complete();
       return h;
     }
+    // Both recipes retain their slot until their owning handle finishes.
+    // Otherwise a dead straight shot can be reused for a molotov while its
+    // old registry handle still references it and consumes the new landing.
+    ent._attackHandle = h;
     h.entity = ent;
     h.entities = [ent];
     // Physics remains pool/terrain-owned; the handle bridges terminal events.
     h.step = (dt) => {
       if (h._completed || h._cancelled) return true;
+      if (ent._attackHandle !== h) {
+        h._complete();
+        return true;
+      }
       if (!ent._arcRecipe) return stepProjectile(ent, h);
       if (!ctx.bombTerrainStepped) stepBombTerrain(ent, dt, ctx.groundY, ctx.platforms);
       return stepBomb(ent, params, ctx, h);
