@@ -7,6 +7,9 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
+import { fireDeclared } from '../../../effects/index.js';
+import { blastFallbackDrawer } from '../../../effects/spriteBurst.js';
+import { getSpecialSpriteData } from '../../../objects/projectile.js';
 import '../primitives/fireArea.js';
 import { molotovDrawer } from '../drawers/index.js';
 
@@ -34,7 +37,10 @@ defineMacro('molotov', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Molotov',
-    effects: [],
+    effects: [
+      { type: 'explosion', desc: 'shatter burst where the bottle breaks (particles only, no shake/flash)' },
+      { type: 'sprite-burst', desc: 'bomb explode sheet art at the break point (procedural fallback in primitive mode)' },
+    ],
     desc: 'Thrown bottle → shatters on impact OR flight-fuse expiry → persistent burning area at the death point.',
     params: [
       { key: 'speed', desc: 'launch force (px/s)' },
@@ -60,6 +66,13 @@ defineMacro('molotov', {
         // bottle that runs out of air still breaks into a burning area.
         if (!contact && !h.entity?.ttlExpired) return;
         try {
+          // Shatter VFX at the break point (impact OR fuse expiry) — particles
+          // only: the 'explosion' effect type carries no shake/flash.
+          fireDeclared({ type: 'explosion', params: { x, y, radius: 40 } }, macroH.declaredEffectTypes());
+          // Detonation burst art: bomb explode sheet when loaded (high-graphic),
+          // procedural flash+ring otherwise. No shake/flash — shatter juice only.
+          const ex = getSpecialSpriteData('bomb_explode')?.anims.explode;
+          fireDeclared({ type: 'sprite-burst', params: { x, y, size: 64, duration: 0.5, anim: ex, fallback: blastFallbackDrawer } }, macroH.declaredEffectTypes());
           const targets = new Set();
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
           const aimed = p.target ?? ctx.target;
