@@ -8,7 +8,6 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
 import '../primitives/fireArea.js';
-import { molotovDrawer } from '../drawers/index.js';
 
 const DEFAULTS = Object.freeze({
   speed: 600,           // launch force (px/s)
@@ -97,8 +96,7 @@ defineMacro('molotov', {
       damage: p.damage,
       radius: 0,
       origin: p.origin,
-      specialType: p.specialType ?? 'molotov',
-      drawer: p.drawer ?? molotovDrawer,
+      specialType: 'fireball',
     }, ctx);
 
     if (!carrier?.entity) {

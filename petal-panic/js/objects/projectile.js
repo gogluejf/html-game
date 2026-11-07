@@ -70,6 +70,7 @@ const SPRITE_TARGETS = Object.freeze({
   spread:      { anim: 'shoot' },
   homing:      { anim: 'fly' },
   explosive:   { anim: 'fly' },
+  fireball:    { anim: 'shoot' },
 });
 const spriteData = new Map();   // type → parsed sheet (anims patched)
 const spriteFrames = new Map(); // type → frame image map

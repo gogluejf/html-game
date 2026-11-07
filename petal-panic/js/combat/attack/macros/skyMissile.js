@@ -28,7 +28,6 @@ import { AttackHandle } from '../engine.js';
 import { invokeChild } from '../attackIds.js';
 import { fireDeclared } from '../../../effects/index.js';
 import { VIEW_H } from '../../../core/view.js';
-import { fireballDrawer } from '../drawers/index.js';
 // Ensure payload macros are registered (otherwise only pulled in by the theater).
 import './explosiveProjectile.js';
 import './shockwaveProjectile.js';
@@ -244,10 +243,9 @@ defineMacro('skyMissile', {
         } : {}),
         ...(p.child === 'molotov' ? {
           origin: { x: pt.x, y: spawnY },
-          // Child payloads use the generic fireball visual; direct molotov
+          // Child payloads use the fireball sheet art; direct molotov
           // invocations keep the bottle look.
-          specialType: null,
-          drawer: fireballDrawer,
+          specialType: 'fireball',
           // Absent payload keys inherit molotov's own defaults.
           ...(sub('molotov').ttl !== undefined ? { ttl: sub('molotov').ttl } : (p.mineTtl !== undefined ? { ttl: p.mineTtl } : {})),
           ...(sub('molotov').fireSegments !== undefined ? { fireSegments: sub('molotov').fireSegments } : {}),

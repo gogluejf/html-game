@@ -133,6 +133,23 @@ export const SPECIAL_WEAPONS = [
     spread: null,
     spin: 4,                 // tumble rate rad/s (±50% per bottle)
   },
+  {
+    id: 'fireball',
+    name: 'Fireball',
+    icon: '☄️',
+    color: '#ff4500',
+    speed: 700,
+    damage: 20,
+    lifetime: 1.5,
+    size: 0.4,
+    spriteAnim: 'shoot',
+    fireCooldown: 0.5,
+    gravity: 0,
+    solidBehavior: 'stop',   // detonates on first impact (terrain or enemy)
+    explode: false,
+    radius: 0,
+    spread: null,
+  },
 ];
 
 /** Ordered list of all valid special weapon ids. */

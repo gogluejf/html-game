@@ -3,6 +3,7 @@
  "size": "2170x725",
  "rows": 2,
  "cols": 4,
+ "outline": 0,
  "kind": "animation",
  "description": "animated molten fireball projectile (8 frames)",
  "entities": [

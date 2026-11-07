@@ -163,12 +163,12 @@ ok('child=explosion|shockwave|napalm: fan materializes straight impact carriers'
   }
 });
 
-ok('child=molotov overrides direct bottle look with fireball drawer', () => {
+ok('child=molotov routes carrier to the fireball sheet type', () => {
   const pool = new Pool(Projectile, 4);
   const ctx = makeContext(attacker(), { pools: { projectilePool: pool }, groundY: 480 });
   const h = invoke('spawnSplit', { ...P, child: 'molotov', count: 1 }, ctx);
   assert.equal(h.handles.length, 1);
-  assert.equal(h.handles[0].entity.drawer, fireballDrawer);
+  assert.equal(h.handles[0].entity.type, 'fireball');
 });
 
 ok('child=napalm forwards nested ttl and fireSegments to the spawned fire', () => {
