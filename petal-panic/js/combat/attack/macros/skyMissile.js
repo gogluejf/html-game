@@ -71,7 +71,7 @@ const DEFAULTS = Object.freeze({
   blast: {               // per-payload size params (each payload reads its own key)
     explosionRadius: 60, // explosion blast circle (px)
     shockRadius: 150,    // shockwave ring max radius (px)
-    fireWidth: 96,       // napalm burn zone width (px)
+    fireSegments: 2,    // napalm burn zone width in 48px fire units
   },
 });
 
@@ -136,7 +136,7 @@ defineMacro('skyMissile', {
       { key: 'blinkDuration', desc: 'mine warning seconds' },
       { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
       { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
-      { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
+      { key: 'blast.fireSegments', desc: 'napalm burn zone width in 48px fire units' },
     ],
   },
   impl(params, ctx) {
@@ -193,7 +193,7 @@ defineMacro('skyMissile', {
       // Map our named keys → the param each impact-carrier payload reads:
       //   explosiveProjectile reads `radius`
       //   shockwaveProjectile reads `radius`
-      //   napalm reads `fireWidth`
+      //   napalm reads `fireSegments`
       // Unified contract: the nested payload value is authoritative; the
       // legacy flat blast.* keys FILL ONLY what the payload leaves unset.
       // The carrier macros own their size defaults (single source) — no
@@ -201,7 +201,7 @@ defineMacro('skyMissile', {
       const payloadSize = {
         expl_proj: () => ({ radius: sub('expl_proj').radius ?? blast.explosionRadius }),
         shock_proj: () => ({ radius: sub('shock_proj').radius ?? blast.shockRadius }),
-        napalm: () => ({ fireWidth: sub('napalm').fireWidth ?? blast.fireWidth }),
+        napalm: () => ({ fireSegments: sub('napalm').fireSegments ?? blast.fireSegments }),
         rock: () => ({}), // rock: no zone payload (contact damage only)
       }[p.child === 'shock_proj' ? 'shock_proj' : p.child === 'napalm' ? 'napalm' : p.child === 'rock' ? 'rock' : 'expl_proj']();
       const m = invokeChild(p.child, {
@@ -245,7 +245,7 @@ defineMacro('skyMissile', {
           origin: { x: pt.x, y: spawnY },
           // Absent payload keys inherit molotov's own defaults.
           ...(sub('molotov').ttl !== undefined ? { ttl: sub('molotov').ttl } : (p.mineTtl !== undefined ? { ttl: p.mineTtl } : {})),
-          ...(sub('molotov').fireWidth !== undefined ? { fireWidth: sub('molotov').fireWidth } : {}),
+          ...(sub('molotov').fireSegments !== undefined ? { fireSegments: sub('molotov').fireSegments } : {}),
           ...(sub('molotov').team !== undefined ? { team: sub('molotov').team } : (p.blastTeam !== undefined ? { team: p.blastTeam } : {})),
         } : {}),
         ...(p.child === 'rock' ? {

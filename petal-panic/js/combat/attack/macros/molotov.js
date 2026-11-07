@@ -7,7 +7,7 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
-import { FIRE_HEIGHT } from '../primitives/fireArea.js';
+import '../primitives/fireArea.js';
 import { molotovDrawer } from '../drawers/index.js';
 
 const DEFAULTS = Object.freeze({
@@ -20,7 +20,7 @@ const DEFAULTS = Object.freeze({
   // the zone to the floor below (ghost fire through platforms). Callers
   // cannot arm a fuse: impl() ignores any supplied ttl.
   damage: 12,           // carrier contact damage
-  fireWidth: 96,        // burn area width (px); height fixed at FIRE_HEIGHT
+  fireSegments: 2,     // burn area width in 48px fire units (integer); height fixed at 1 unit
   fireDuration: 3,      // how long the area burns (s)
   fireTickRate: 5,      // damage ticks per second in the area
   fireDamage: 8,        // damage per tick in the area
@@ -45,7 +45,7 @@ defineMacro('molotov', {
       { key: 'arc', desc: 'gravity px/s²' },
       { key: 'bounce', desc: 'reflect off surfaces (default false)' },
       { key: 'damage', desc: 'carrier contact damage' },
-      { key: 'fireWidth', desc: 'burn area width (px); height fixed at 48' },
+      { key: 'fireSegments', desc: 'burn area width in 48px fire units (integer, default 2); height fixed at 1 unit' },
       { key: 'fireDuration', desc: 'how long the area burns (s)' },
       { key: 'fireTickRate', desc: 'ticks per second in the area' },
       { key: 'fireDamage', desc: 'damage per tick in the area' },
@@ -64,12 +64,9 @@ defineMacro('molotov', {
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
           const aimed = p.target ?? ctx.target;
           if (aimed) targets.add(aimed);
-          // Top landings put the fire base on the surface. Side/enemy hits
-          // keep the fire centered at the actual impact, never at the floor.
-          const zoneY = surfaceY != null ? surfaceY - FIRE_HEIGHT / 2 : y;
           const fire = invoke('fireArea', {
-            x, y: zoneY,
-            width: p.fireWidth,
+            x, y, surfaceY,
+            segments: p.fireSegments,
             duration: p.fireDuration,
             tickRate: p.fireTickRate,
             damage: p.fireDamage,

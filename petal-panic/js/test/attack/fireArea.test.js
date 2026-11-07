@@ -4,8 +4,10 @@
 import { strict as assert } from 'node:assert';
 import { fireAreaBox } from '../../combat/attack/primitives/fireArea.js';
 import '../../combat/attack/macros/molotov.js';
+import '../../combat/attack/macros/napalm.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
 import { invoke } from '../../combat/attack/engine.js';
+import { AttackLifecycle } from '../../combat/attack/lifecycle.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { stepBombTerrain } from '../../combat/attack/primitives/projectile.js';
 import { LAYER } from '../../consts.js';
@@ -18,7 +20,7 @@ function ok(name, fn) {
 
 const DT = 1 / 60;
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });
-const P = { x: 400, y: 380, width: 96, duration: 1, tickRate: 5, damage: 6, team: 'ally' };
+const P = { x: 400, y: 380, segments: 2, duration: 1, tickRate: 5, damage: 6, team: 'ally' };
 
 function dummyEnemy(x, y, hp = 100) {
   return {
@@ -36,7 +38,7 @@ ok('box is centered on the given point', () => {
 });
 
 ok('ticks damage while a target stands in the area', () => {
-  const ctx = makeContext(attacker(), {});
+  const ctx = makeContext(attacker(), { groundY: P.y + 24 });
   const enemy = dummyEnemy(390, 370); // inside
   const h = invoke('fireArea', P, ctx);
   const hits = [];
@@ -50,7 +52,7 @@ ok('ticks damage while a target stands in the area', () => {
 });
 
 ok('target outside the area takes nothing', () => {
-  const ctx = makeContext(attacker(), {});
+  const ctx = makeContext(attacker(), { groundY: P.y + 24 });
   const enemy = dummyEnemy(600, 100);
   const h = invoke('fireArea', P, ctx);
   let n = 0;
@@ -61,7 +63,7 @@ ok('target outside the area takes nothing', () => {
 });
 
 ok('a target that walks in only burns while inside', () => {
-  const ctx = makeContext(attacker(), {});
+  const ctx = makeContext(attacker(), { groundY: P.y + 24 });
   const enemy = dummyEnemy(200, 370); // starts left of the area
   const h = invoke('fireArea', P, ctx);
   const hits = [];
@@ -75,7 +77,7 @@ ok('a target that walks in only burns while inside', () => {
 });
 
 ok('completes after duration and stops ticking', () => {
-  const ctx = makeContext(attacker(), {});
+  const ctx = makeContext(attacker(), { groundY: P.y + 24 });
   const enemy = dummyEnemy(390, 370);
   const h = invoke('fireArea', P, ctx);
   let done = null;
@@ -86,7 +88,7 @@ ok('completes after duration and stops ticking', () => {
 });
 
 ok('team routing: foe area skips enemies', () => {
-  const ctx = makeContext(attacker(), {});
+  const ctx = makeContext(attacker(), { groundY: P.y + 24 });
   const enemy = dummyEnemy(390, 370);
   const h = invoke('fireArea', { ...P, team: 'foe' }, ctx);
   let n = 0;
@@ -172,7 +174,8 @@ ok('Molotov side contact uses recorded impact, not floor or carrier center', () 
   assert.equal(h.handles.length, 1);
   const z = h.handles[0].zone;
   assert.equal(z.x + z.w / 2, 420);
-  assert.equal(z.y + z.h / 2, 160);
+  assert.ok(z.y + z.h / 2 > 160, 'side-contact fire starts falling immediately');
+  assert.ok(z.y + z.h < 480, 'does not teleport to the floor');
 });
 ok('One-way platform cannot catch a bottle far above its top', () => {
   const { h } = molotovFixture();
@@ -185,6 +188,84 @@ ok('One-way platform cannot catch a bottle far above its top', () => {
   assert.equal(stepBombTerrain(e, DT, 480,
     [{ x: 350, y: 384, w: 100, oneWay: true }]), true);
   assert.equal(e.y + e.h, 384);
+});
+
+ok('airborne fire falls, sweeps to floor, and moves its damage box', () => {
+  const h = invoke('fireArea', { x: 100, y: 50, segments: 3, duration: 10 }, { groundY: 400 });
+  h.step(0.1);
+  assert.ok(h.zone.y > 26);
+  h.step(1);
+  assert.equal(h.zone.y + h.zone.h, 400);
+  assert.equal(h.zone.w, 144);
+  assert.deepEqual(h.zone._hb.box, { x: h.zone.x, y: h.zone.y, w: 144, h: 48 });
+});
+for (const kind of ['platform', 'block', 'barrel']) {
+  ok(`fire lands on ${kind} and falls after support disappears`, () => {
+    const support = { x: 50, y: 200, w: 100, h: 40, alive: true, layer: LAYER.SOLID };
+    const ctx = { groundY: 400, platforms: kind === 'platform' ? [support] : [],
+      collisionWorld: { entities: new Set(kind === 'platform' ? [] : [support]) } };
+    const h = invoke('fireArea', { x: 100, y: 50, duration: 10 }, ctx);
+    h.step(0.5);
+    assert.equal(h.zone.y + h.zone.h, 200);
+    support.alive = false;
+    h.step(0.5);
+    assert.equal(h.zone.y + h.zone.h, 400);
+  });
+}
+ok('enemies, projectiles and overhead platforms do not retain fire', () => {
+  const ctx = { groundY: 400, platforms: [{ x: 0, y: 10, w: 200, h: 20 }],
+    collisionWorld: { entities: new Set([LAYER.ENEMY, LAYER.PROJ_ALLY].map(layer =>
+      ({ x: 0, y: 200, w: 200, h: 40, alive: true, layer }))) } };
+  const h = invoke('fireArea', { x: 100, y: 50, duration: 10 }, ctx);
+  h.step(1);
+  assert.equal(h.zone.y + h.zone.h, 400);
+});
+ok('napalm expiry creates airborne fire, then gravity lands it', () => {
+  const ctx = { groundY: 400, platforms: [{ x: 0, y: 10, w: 200, h: 10 }],
+    pools: { projectilePool: new Pool(Projectile, 4) } };
+  const h = invoke('napalm', { origin: { x: 100, y: 100 }, speed: 0, ttl: 1 }, ctx);
+  ctx.pools.projectilePool.updateAll(1);
+  h.step(0);
+  assert.equal(h.handles.length, 1);
+  const fire = h.handles[0];
+  assert.equal(fire.zone.y + 24, 100);
+  fire.step(0.1);
+  assert.ok(fire.zone.y > 76);
+  fire.step(1);
+  assert.equal(fire.zone.y + fire.zone.h, 400);
+});
+
+for (const kind of ['ground', 'platform', 'block']) {
+  ok(`bare fire receives live ${kind} terrain through the registry`, () => {
+    AttackLifecycle.clear();
+    const support = { x: 50, y: 200, w: 100, h: 40, alive: true, layer: LAYER.SOLID };
+    const live = { groundY: kind === 'ground' ? 200 : 400,
+      platforms: kind === 'platform' ? [support] : [],
+      collisionWorld: { entities: new Set(kind === 'block' ? [support] : []) } };
+    const h = invoke('fireArea', { x: 100, y: 100, duration: 10 }, { world: { targets: [] } });
+    for (let i = 0; i < 120; i++) AttackLifecycle.stepAll(DT, [], { refreshCtx: () => live });
+    assert.equal(h.zone.y + h.zone.h, 200);
+    if (kind !== 'ground') {
+      support.alive = false;
+      for (let i = 0; i < 60; i++) AttackLifecycle.stepAll(DT, [], { refreshCtx: () => live });
+      assert.equal(h.zone.y + h.zone.h, 400);
+    }
+    AttackLifecycle.clear();
+  });
+}
+ok('bare molotov passes refreshed terrain to its deferred fire', () => {
+  AttackLifecycle.clear();
+  const pool = new Pool(Projectile, 4);
+  const h = invoke('molotov', { origin: { x: 100, y: 100 }, speed: 0, arc: 0 },
+    { pools: { projectilePool: pool }, world: { targets: [] } });
+  h.entity._impactPoint = { x: 100, y: 100 };
+  h.entity._attackHit = true;
+  h.entity.alive = false;
+  for (let i = 0; i < 120; i++) AttackLifecycle.stepAll(DT, [], {
+    refreshCtx: () => ({ groundY: 200, platforms: [] }),
+  });
+  assert.equal(h.handles[0].zone.y + h.handles[0].zone.h, 200);
+  AttackLifecycle.clear();
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

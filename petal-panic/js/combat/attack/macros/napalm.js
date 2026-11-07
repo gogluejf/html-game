@@ -11,8 +11,7 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
-import { FIRE_HEIGHT } from '../primitives/fireArea.js';
-import { resolveImpactPoint } from './skyMissile.js';
+import '../primitives/fireArea.js';
 
 const DEFAULTS = Object.freeze({
   speed: 700,           // px/s
@@ -20,7 +19,7 @@ const DEFAULTS = Object.freeze({
   ttl: 2,               // seconds before auto-cull
   damage: 12,           // carrier contact damage
   // Fire area params (payload)
-  fireWidth: 96,        // burn area width (px); height fixed at FIRE_HEIGHT
+  fireSegments: 2,     // burn area width in 48px fire units (integer); height fixed at 1 unit
   fireDuration: 3,      // how long the area burns (s)
   fireTickRate: 5,      // damage ticks per second in the area
   fireDamage: 8,        // damage per tick in the area
@@ -47,7 +46,7 @@ defineMacro('napalm', {
       { key: 'direction', desc: 'radians (0 = right)' },
       { key: 'ttl', desc: 'seconds before auto-cull' },
       { key: 'damage', desc: 'carrier contact damage' },
-      { key: 'fireWidth', desc: 'burn area width (px); height fixed at 48' },
+      { key: 'fireSegments', desc: 'burn area width in 48px fire units (integer, default 2); height fixed at 1 unit' },
       { key: 'fireDuration', desc: 'how long the area burns (s)' },
       { key: 'fireTickRate', desc: 'damage ticks per second in the area' },
       { key: 'fireDamage', desc: 'damage per tick in the area' },
@@ -69,18 +68,9 @@ defineMacro('napalm', {
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
           const aimed = p.target ?? ctx.target;
           if (aimed) targets.add(aimed);
-          // Ground-anchor the fire on the HIGHEST surface in the impact column
-          // (floor OR platform) — same "highest top" rule as skyMissile's
-          // resolveImpactPoint, so the zone sits ON whatever is actually there.
-          // Straight projectiles carry no terrain info (unlike bombs' surfaceY),
-          // so we resolve it here from ctx.
-          const pt = resolveImpactPoint({ x, groundY: null }, ctx);
-          const zoneY = (pt.y != null && y + FIRE_HEIGHT / 2 > pt.y)
-            ? pt.y - FIRE_HEIGHT / 2
-            : y;
           const fire = invoke('fireArea', {
-            x, y: zoneY,
-            width: p.fireWidth,
+            x, y,
+            segments: p.fireSegments,
             duration: p.fireDuration,
             tickRate: p.fireTickRate,
             damage: p.fireDamage,
@@ -132,11 +122,11 @@ defineMacro('napalm', {
       carrier._emit('detonate', { x, y, contact: true });
     };
     carrier.on('hit', (info) => {
-      fireAtDeath();
+      fireAtDeath(info);
       h._emit('hit', info);
     });
-    carrier.on('expire', () => {
-      fireAtDeath();
+    carrier.on('expire', (info) => {
+      fireAtDeath(info);
       h._emit('expire');
     });
 

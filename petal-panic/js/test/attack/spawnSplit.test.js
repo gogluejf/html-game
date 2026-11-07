@@ -170,7 +170,7 @@ ok('propane molotov fan preserves damage defaults and barrels remain killable', 
   const h = invoke('spawnSplit', {
     x: 100, y: 100, count: 5, centerDirection: -Math.PI / 2,
     angle: Math.PI * 0.7, force: 520, child: 'molotov',
-    molotov: { arc: 800, bounce: false, ttl: null, fireWidth: 96, team: 'neutral' },
+    molotov: { arc: 800, bounce: false, ttl: null, fireSegments: 2, team: 'neutral' },
     groundY: 480,
   }, { attacker: attacker(), pools: { projectilePool: pool },
     groundY: 480, world: { targets: [] } });

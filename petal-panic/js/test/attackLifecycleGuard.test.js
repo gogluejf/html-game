@@ -68,7 +68,7 @@ test('guard: no discarded handles across hero/barrel/enemy entry points', () => 
     const fanRoot = invoke('spawnSplit', {
       x: 200, y: 300, count: 3, centerDirection: -Math.PI / 2, angle: Math.PI * 0.7,
       force: 520, child: 'molotov',
-      molotov: { arc: 800, bounce: false, ttl: 0.4, fireWidth: 96, team: 'neutral' },
+      molotov: { arc: 800, bounce: false, ttl: 0.4, fireSegments: 2, team: 'neutral' },
       groundY: 400,
     }, ctx);
 

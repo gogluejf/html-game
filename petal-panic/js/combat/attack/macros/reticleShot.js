@@ -68,7 +68,7 @@ const DEFAULTS = Object.freeze({
   blast: {             // legacy per-payload size params (fallback)
     explosionRadius: 70, // explosion blast circle (px)
     shockRadius: 150,    // shockwave ring max radius (px)
-    fireWidth: 96,       // napalm burn zone width (px)
+    fireSegments: 2,     // napalm burn zone width in 48px fire units
   },
   // Sub-payload config (M3 completion): keys per the child's CHILD_PARAM_SPECS
   // (attackIds.js). NULL by default — a concrete default object would clobber
@@ -123,7 +123,7 @@ defineMacro('reticleShot', {
       { key: 'damage', desc: 'projectile / contact damage' },
       { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
       { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
-      { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
+      { key: 'blast.fireSegments', desc: 'napalm burn zone width in 48px fire units' },
     ],
   },
   impl(params, ctx) {
@@ -239,7 +239,7 @@ defineMacro('reticleShot', {
         const payloadSize = child === 'shock_proj'
           ? { radius: sub.radius ?? blast.shockRadius }
           : child === 'napalm'
-            ? { fireWidth: sub.fireWidth ?? blast.fireWidth }
+            ? { fireSegments: sub.fireSegments ?? blast.fireSegments }
             : child === 'projectile' || child === 'rock'
               ? {} // rock: no zone payload (contact damage only)
               : { radius: sub.radius ?? blast.explosionRadius };
@@ -273,7 +273,7 @@ defineMacro('reticleShot', {
               radius: pick(sub.radius, MINE_DEFAULTS.radius),
             } : {}),
             ...(child === 'molotov' ? {
-              fireWidth: sub.fireWidth ?? blast.fireWidth,
+              fireSegments: sub.fireSegments ?? blast.fireSegments,
               team: params.blastTeam,
             } : {}),
             ...(child === 'shock_bomb' ? {

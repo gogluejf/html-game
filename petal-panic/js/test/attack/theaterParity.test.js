@@ -176,7 +176,7 @@ for (const strikeCount of [3, 4]) {
 
 ok('molotov parity: identical zone placement across context shapes', () => {
   const params = { direction: -0.5, arc: 800, bounce: false, ttl: 2, damage: 12,
-    fireWidth: 96, fireDuration: 3, fireTickRate: 5, fireDamage: 8 };
+    fireSegments: 2, fireDuration: 3, fireTickRate: 5, fireDamage: 8 };
   const attacker = { x: 140, y: GROUND_Y - 48, w: 32, h: 48, alive: true, layer: LAYER.HERO };
 
   const run = (targets) => {

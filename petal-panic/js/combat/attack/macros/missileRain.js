@@ -64,7 +64,7 @@ const DEFAULTS = Object.freeze({
   blast: {                // per-payload size params (each payload reads its own key)
     explosionRadius: 60,  // explosion blast circle (px)
     shockRadius: 150,     // shockwave ring max radius (px)
-    fireWidth: 96,        // napalm burn zone width (px)
+    fireSegments: 2,     // napalm burn zone width in 48px fire units
   },
 });
 
@@ -151,7 +151,7 @@ defineMacro('missileRain', {
       { key: 'blinkDuration', desc: 'mine warning seconds' },
       { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
       { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
-      { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
+      { key: 'blast.fireSegments', desc: 'napalm burn zone width in 48px fire units' },
     ],
   },
   impl(params, ctx) {

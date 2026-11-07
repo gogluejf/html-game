@@ -180,7 +180,20 @@ export function invoke(id, params = {}, ctx, opts = {}) {
   // through this same call (opts passthrough) — they never re-register or write
   // _registryStepped themselves, so each root gets exactly one owner, stamped
   // once, here.
-  if (depthBefore === 0 && _step.depth === 0) AttackLifecycle.register(result, opts);
+  if (depthBefore === 0 && _step.depth === 0) {
+    // Bare invokes (barrel/enemy attacks) need the same live terrain as
+    // host-spawned attacks. Mutate the shared bag: deferred children capture
+    // this context too. Keep caller-owned targets/effects/pools untouched.
+    if (ctx && !result._ctxRefresh) {
+      result._ctx = ctx;
+      result._ctxRefresh = (live) => {
+        for (const key of ['groundY', 'platforms', 'solids', 'collisionWorld', 'bombTerrainStepped']) {
+          if (key in live) ctx[key] = live[key];
+        }
+      };
+    }
+    AttackLifecycle.register(result, opts);
+  }
   return result;
 }
 

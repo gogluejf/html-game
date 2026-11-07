@@ -123,7 +123,7 @@ export const CHILD_PARAM_SPECS = Object.freeze({
     { key: 'bounce', kind: 'enum', values: [false, true], desc: 'reflect off surfaces before shattering' },
 
     { key: 'damage', kind: 'num', step: 2, desc: 'carrier contact damage' },
-    { key: 'fireWidth', kind: 'num', step: 8, desc: 'burn area width (px)' },
+    { key: 'fireSegments', kind: 'int', step: 1, desc: 'burn area width in 48px fire units' },
     { key: 'fireDuration', kind: 'num', step: 0.5, desc: 'how long the area burns (s)' },
     { key: 'fireTickRate', kind: 'num', step: 1, desc: 'damage ticks per second in the area' },
     { key: 'fireDamage', kind: 'num', step: 2, desc: 'damage per tick in the area' },
@@ -155,7 +155,7 @@ export const CHILD_PARAM_SPECS = Object.freeze({
     { key: 'spin', kind: 'num', step: 0.5, desc: 'tumble rate (rad/s)' },
   ]),
   napalm: Object.freeze([
-    { key: 'fireWidth', kind: 'num', step: 8, desc: 'burn area width (px)' },
+    { key: 'fireSegments', kind: 'int', step: 1, desc: 'burn area width in 48px fire units' },
     { key: 'fireDuration', kind: 'num', step: 0.5, desc: 'how long the area burns (s)' },
   ]),
 });

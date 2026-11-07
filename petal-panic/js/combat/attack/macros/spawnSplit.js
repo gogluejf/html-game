@@ -64,7 +64,7 @@ const DEFAULTS = Object.freeze({
   enemy: { mineType: 'explosion', ttl: null }, // nested throwEnemy config when child='enemy'
   bomb: null,
   projectile: { ttl: 2, damage: 8 },
-  blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 }, // legacy impact-child sizes
+  blast: { explosionRadius: 60, shockRadius: 150, fireSegments: 2 }, // legacy impact-child sizes
   // Sub-payload contract (unified): one nested object, keys per the child's
   // CHILD_PARAM_SPECS (attackIds.js). NULL by default — a concrete default
   // would clobber the caller's flat legacy keys (mine.*, blast.*, ...) at
@@ -140,7 +140,7 @@ defineMacro('spawnSplit', {
       { key: 'bomb', desc: 'legacy: exploding-bomb params (overrides payload.bomb)' },
       { key: 'blast.explosionRadius', desc: 'legacy: blast radius when child=explosion (px)' },
       { key: 'blast.shockRadius', desc: 'legacy: ring radius when child=shockwave (px)' },
-      { key: 'blast.fireWidth', desc: 'legacy: burn width when child=napalm (px)' },
+      { key: 'blast.fireSegments', desc: 'legacy: burn width when child=napalm (48px fire units)' },
     ],
   },
   impl(params, ctx) {
@@ -264,14 +264,14 @@ defineMacro('spawnSplit', {
         // molotov owns ALL fire-lobe defaults (single source).
         const m = cfg('molotov', {
           arc: p.molotov?.arc, bounce: p.molotov?.bounce, ttl: p.molotov?.ttl,
-          damage: p.molotov?.damage, fireWidth: p.molotov?.fireWidth,
+          damage: p.molotov?.damage, fireSegments: p.molotov?.fireSegments,
           fireDuration: p.molotov?.fireDuration, fireTickRate: p.molotov?.fireTickRate,
           fireDamage: p.molotov?.fireDamage, team: p.molotov?.team,
         }, {});
         const child = invokeChild(c.child, defined({
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           arc: m.arc, bounce: m.bounce, ttl: m.ttl,
-          damage: m.damage, fireWidth: m.fireWidth,
+          damage: m.damage, fireSegments: m.fireSegments,
           fireDuration: m.fireDuration, fireTickRate: m.fireTickRate,
           fireDamage: m.fireDamage, team: m.team,
           groundY: p.groundY, platforms: p.platforms,
@@ -287,13 +287,13 @@ defineMacro('spawnSplit', {
         // blast.* fills only what the payload leaves unset.
         const bl = cfg(c.child, {
           radius: c.child === 'shock_proj' ? p.blast?.shockRadius : c.child === 'expl_proj' ? p.blast?.explosionRadius : undefined,
-          fireWidth: c.child === 'napalm' ? p.blast?.fireWidth : undefined,
+          fireSegments: c.child === 'napalm' ? p.blast?.fireSegments : undefined,
         }, {});
         const child = invokeChild(c.child, {
           origin: { x: c.x, y: c.y }, direction: c.angle, speed,
           solidBehavior: 'stop',
           ...((c.child === 'napalm')
-            ? { fireWidth: bl.fireWidth }
+            ? { fireSegments: bl.fireSegments }
             : { radius: bl.radius }),
           // Do not pass an absent damage override: the payload macro owns its
           // default contact+blast damage (legacy behavior preserved).
