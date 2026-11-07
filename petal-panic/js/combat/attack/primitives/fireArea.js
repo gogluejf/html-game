@@ -32,6 +32,15 @@ import { isHighGraphic } from '../../../core/renderMode.js';
 /** One fire unit in world pixels — the square cell size (width AND height). */
 export const FIRE_UNIT = 48;
 
+// Eased-drop feel: segments don't plummet in lockstep. Each rolls a small
+// hover delay (starts falling a beat after its neighbors) and a reduced
+// gravity scale (sinks instead of dropping like a rock). Low gravity gives
+// the ease-in for free — starts slow, accelerates gently. Landing/snapping
+// and damage logic are untouched; only the fall FEEL changes.
+const DROP_DELAY_MAX = 0.15;          // seconds of staggered hover (0 = off)
+const GRAV_SCALE_MIN = 0.4;           // floatiest a segment can fall
+const GRAV_SCALE_MAX = 0.7;           // heaviest a segment can fall
+
 const DEFAULTS = Object.freeze({
   x: 0,               // center x of the area (world coords)
   y: 0,               // center y
@@ -88,8 +97,10 @@ function fireSurfaces(ctx) {
  * not fall through its support between frames.
  */
 function stepSegment(seg, dt, ctx, surfaces) {
+  // Eased-drop: hover for this segment's staggered delay before falling.
+  if (seg.dropDelay > 0) { seg.dropDelay -= dt; return; }
   const bottom = seg.y + FIRE_HEIGHT;
-  seg.vy += GRAVITY * dt;
+  seg.vy += GRAVITY * seg.gravScale * dt;   // floaty weight per segment
   const nextBottom = bottom + seg.vy * dt;
   let landing = Infinity;
   const consider = (y) => {
@@ -133,6 +144,10 @@ function buildSegments(p, ctx) {
       if (Number.isFinite(top)) y = top - FIRE_HEIGHT;
     }
     const seg = { x, y, vy: 0, w: FIRE_UNIT, h: FIRE_HEIGHT };
+    // Eased-drop rolls: unique per segment so a row of flames settles at its
+    // own pace instead of clacking down in sync.
+    seg.dropDelay = Math.random() * DROP_DELAY_MAX;
+    seg.gravScale = GRAV_SCALE_MIN + Math.random() * (GRAV_SCALE_MAX - GRAV_SCALE_MIN);
     segs.push(seg);
   }
   return segs;
