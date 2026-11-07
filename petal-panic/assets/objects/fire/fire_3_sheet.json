@@ -1,0 +1,65 @@
+{
+ "file": "petal-panic/assets/objects/fire/fire_3_sheet.png",
+ "size": "1351x1164",
+ "rows": 3,
+ "cols": 4,
+ "kind": "animation",
+ "description": "fire_3 \u2014 4 frames",
+ "updated": "2026-11-07T03:22:45",
+ "entities": [
+  {
+   "name": "fire",
+   "anim": "fire_3",
+   "frames": [
+    {
+     "file": "fire_3_f1.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      108,
+      842,
+      240,
+      272
+     ]
+    },
+    {
+     "file": "fire_3_f2.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      407,
+      877,
+      226,
+      234
+     ]
+    },
+    {
+     "file": "fire_3_f3.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      699,
+      915,
+      233,
+      197
+     ]
+    },
+    {
+     "file": "fire_3_f4.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      990,
+      951,
+      248,
+      161
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/objects/fire"
+  }
+ ],
+ "crop": {
+  "frames_dir": "petal-panic/assets/objects/fire"
+ }
+}
