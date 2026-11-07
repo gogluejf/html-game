@@ -426,7 +426,9 @@ export function stepBombTerrain(ent, dt, groundY, platforms = [], opts = {}) {
       // Freeze orientation at immobilization: rotation + mirrorX are locked
       // at their last in-flight values and never updated again while settled.
       ent._bombOrientFrozen = true;
-      if (ent._bombRetainOnSettle) ent._bombSettled = true;
+      // Rocks must stay settled: otherwise the next pool update adds gravity
+      // before rendering checks speed, restarting both tumble and animation.
+      if (ent._bombRetainOnSettle || ent._rockTumble) ent._bombSettled = true;
       return false;
     }
     return false;

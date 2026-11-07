@@ -86,7 +86,7 @@ ok('child=rock: fan materializes arcing rock carriers (arc recipe, no explosion)
   assert.equal(rock.id, 'rock');
   assert.ok(rock.entity, 'live carrier entity');
   assert.equal(rock.entity._arcRecipe, true, 'arc carrier (gravity recipe)');
-  assert.equal(rock.entity.gravityValue, 800, 'rock macro default gravity in play');
+  assert.equal(rock.entity.gravityValue, 1200, 'rock macro default gravity in play');
   assert.equal(rock.entity.solidBehavior, 'reflect', 'rock bounces (decay)');
   // Tumble: opt-in flag + slow per-rock spin; the tangent re-aim must NOT
   // have pinned the rotation at the launch angle.

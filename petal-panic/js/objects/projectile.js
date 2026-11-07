@@ -363,8 +363,7 @@ export class Projectile extends Entity {
     // own fuse-forward orientation below (mirrorX + settle ease-back).
     // Rocks opt OUT of the tangent snap: they TUMBLE instead — a slow
     // per-rock spin (random sign/magnitude, set at spawn) integrated on top
-    // of the throw direction. The spin dies with the motion (same speed gate
-    // as the settle logic below) so a landed rock sits still, not twirling.
+    // of the throw direction. The spin dies with the motion (speed gate).
     if (this._rockTumble) {
       if (Math.hypot(this.vx, this.vy) > 1) this.rotation += this._rockSpin * dt;
     } else if (this.type !== 'bomb') this.orientSprite(this.vx, this.vy);
@@ -395,7 +394,10 @@ export class Projectile extends Entity {
       }
     }
 
-    this.tickAnim(dt);
+    // Tumble anim playback: a rock AT REST holds its frame (no twirl on the
+    // looping tumble sheet) — the speed gate is the same one that freezes the
+    // canvas spin above, so look and physics agree on "stopped".
+    if (!(this._rockTumble && Math.hypot(this.vx, this.vy) <= 1)) this.tickAnim(dt);
     // TTL countdown via the shared timer set: the plain 'life' timer.
     // ttlExpired lets hosts (gameplay/theater) distinguish a fuse/
     // lifetime expiry from a contact kill. Gated by _bombFuseDisabled so a
