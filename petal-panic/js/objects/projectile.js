@@ -17,7 +17,7 @@ import { loadFrames } from '../core/frameLoader.js';
 import { spriteOutline } from '../effects/spriteOutline.js';
 import { isHighGraphic } from '../core/renderMode.js';
 import { specialById, isSpecialType } from './specialWeapons.js';
-import { rockDrawer, bombDrawer, explosiveDrawer, homingDrawer, sawDrawer, spreadDrawer } from '../combat/attack/drawers/index.js';
+import { rockDrawer, bombDrawer, explosiveDrawer, homingDrawer, sawDrawer, spreadDrawer, molotovDrawer } from '../combat/attack/drawers/index.js';
 
 /** Primitive-mode look per weapon identity (visual-identity contract): one
  *  drawer file per special under combat/attack/drawers/. No inline branches. */
@@ -27,6 +27,7 @@ const SPECIAL_FALLBACK_DRAWERS = Object.freeze({
   homing: homingDrawer,
   saw: sawDrawer,
   spread: spreadDrawer,
+  molotov: molotovDrawer,
 });
 
 // --- Tunables ----------------------------------------------------------------
@@ -365,7 +366,8 @@ export class Projectile extends Entity {
     // per-rock spin (random sign/magnitude, set at spawn) integrated on top
     // of the throw direction. The spin dies with the motion (speed gate).
     if (this._rockTumble) {
-      if (Math.hypot(this.vx, this.vy) > 1) this.rotation += this._rockSpin * dt;
+      const speed = Math.hypot(this.vx, this.vy);
+      if (speed > 1 && !this._bombSettled) this.rotation += this._rockSpin * dt;
     } else if (this.type !== 'bomb') this.orientSprite(this.vx, this.vy);
 
     // Bomb orientation (sheet art): while flying, the fuse trails the motion —
@@ -397,7 +399,7 @@ export class Projectile extends Entity {
     // Tumble anim playback: a rock AT REST holds its frame (no twirl on the
     // looping tumble sheet) — the speed gate is the same one that freezes the
     // canvas spin above, so look and physics agree on "stopped".
-    if (!(this._rockTumble && Math.hypot(this.vx, this.vy) <= 1)) this.tickAnim(dt);
+    if (!(this._rockTumble && (Math.hypot(this.vx, this.vy) <= 1 || this._bombSettled))) this.tickAnim(dt);
     // TTL countdown via the shared timer set: the plain 'life' timer.
     // ttlExpired lets hosts (gameplay/theater) distinguish a fuse/
     // lifetime expiry from a contact kill. Gated by _bombFuseDisabled so a

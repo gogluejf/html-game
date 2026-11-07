@@ -17,6 +17,7 @@ export { spreadDrawer } from './projectile/spread.js';
 export { rockDrawer } from './ballistic/rock.js';
 export { bombDrawer } from './ballistic/bomb.js';
 export { fireballDrawer } from './ballistic/fireball.js';
+export { molotovDrawer } from './ballistic/molotov.js';
 export { circusBallDrawer } from './ballistic/circusBall.js';
 export { mineDrawer } from './ballistic/mine.js';
 

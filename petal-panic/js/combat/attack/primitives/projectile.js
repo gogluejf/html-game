@@ -157,6 +157,12 @@ function spawnArcing(p, ctx, h) {
   ent._bombRetainOnSettle = p.retainOnSettle;
   ent._bombSettled = false;
   ent.solidBehavior = p.bounce ? 'reflect' : 'stop';
+  if (type && specialById[type]?.spin != null && !ent._rockTumble) {
+    ent._rockTumble = true;
+    ent.rotation = Math.random() * Math.PI * 2;
+    const spin = p.spin ?? specialById[type].spin;
+    ent._rockSpin = (0.5 + Math.random()) * spin * (Math.random() < 0.5 ? -1 : 1);
+  }
   // Explicit collision box (non-square carriers). AABB collision, reflection
   // and drawers all read e.w/e.h, so setting these after spawn is enough.
   if (p.width != null) ent.w = p.width;

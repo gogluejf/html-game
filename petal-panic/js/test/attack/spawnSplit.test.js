@@ -15,6 +15,7 @@ import '../../combat/attack/macros/napalm.js';          // child=napalm
 import { Pool, Projectile } from '../../objects/projectile.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
+import { fireballDrawer } from '../../combat/attack/drawers/ballistic/fireball.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -160,6 +161,14 @@ ok('child=explosion|shockwave|napalm: fan materializes straight impact carriers'
       assert.equal(ch.entity._arcRecipe, false, `child=${child}: straight carrier`);
     }
   }
+});
+
+ok('child=molotov overrides direct bottle look with fireball drawer', () => {
+  const pool = new Pool(Projectile, 4);
+  const ctx = makeContext(attacker(), { pools: { projectilePool: pool }, groundY: 480 });
+  const h = invoke('spawnSplit', { ...P, child: 'molotov', count: 1 }, ctx);
+  assert.equal(h.handles.length, 1);
+  assert.equal(h.handles[0].entity.drawer, fireballDrawer);
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

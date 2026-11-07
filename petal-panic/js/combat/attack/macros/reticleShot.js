@@ -29,6 +29,7 @@ import { invokeChild, CHILD_TARGETS } from '../attackIds.js';
 import { targetCenter } from '../context.js';
 import { fireDeclared } from '../../../effects/index.js';
 import { ballisticAt } from '../../targeting.js';
+import { fireballDrawer } from '../drawers/index.js';
 // Ensure payload macros are registered (otherwise only pulled in by the theater).
 import './explosiveProjectile.js';
 import './shockwaveProjectile.js';
@@ -275,6 +276,8 @@ defineMacro('reticleShot', {
             ...(child === 'molotov' ? {
               fireSegments: sub.fireSegments ?? blast.fireSegments,
               team: params.blastTeam,
+              specialType: null,
+              drawer: fireballDrawer,
             } : {}),
             ...(child === 'shock_bomb' ? {
               radius: sub.radius ?? blast.shockRadius,

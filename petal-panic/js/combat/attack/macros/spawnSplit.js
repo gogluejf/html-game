@@ -28,6 +28,7 @@ import './rock.js'; // ensure registered (spawnSplit child)
 import { ROCK_DEFAULTS } from './rock.js';
 import { defineMacro } from '../defineMacro.js';
 import { AttackHandle } from '../engine.js';
+import { fireballDrawer } from '../drawers/index.js';
 import { invokeChild } from '../attackIds.js';
 import { spreadAngles } from './spreadShot.js';
 import { makeEnemy } from '../../../world/build.js';
@@ -275,6 +276,8 @@ defineMacro('spawnSplit', {
           fireDuration: m.fireDuration, fireTickRate: m.fireTickRate,
           fireDamage: m.fireDamage, team: m.team,
           groundY: p.groundY, platforms: p.platforms,
+          specialType: null,
+          drawer: fireballDrawer,
         }), ctx);
         if (child?.entity) handles.push(child);
       } else if (c.child === 'expl_proj' || c.child === 'shock_proj' || c.child === 'napalm') {

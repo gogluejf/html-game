@@ -11,6 +11,8 @@ import { AttackLifecycle } from '../../combat/attack/lifecycle.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { stepBombTerrain } from '../../combat/attack/primitives/projectile.js';
 import { LAYER } from '../../consts.js';
+import { molotovDrawer } from '../../combat/attack/drawers/ballistic/molotov.js';
+import { fireballDrawer } from '../../combat/attack/drawers/ballistic/fireball.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -297,6 +299,17 @@ ok('bare molotov passes refreshed terrain to its deferred fire', () => {
   });
   for (const s of h.handles[0].zone.segs) assert.equal(s.y + s.h, 200);
   AttackLifecycle.clear();
+});
+
+ok('direct molotov uses bottle drawer and spin; direct napalm keeps fireball', () => {
+  const pool = new Pool(Projectile, 4);
+  const ctx = makeContext(attacker(), { pools: { projectilePool: pool }, groundY: 480 });
+  const m = invoke('molotov', { origin: { x: 100, y: 100 } }, ctx);
+  const n = invoke('napalm', { origin: { x: 200, y: 100 } }, ctx);
+  assert.equal(m.entity.type, 'molotov');
+  assert.equal(m.entity.drawer, molotovDrawer);
+  assert.ok(m.entity._rockTumble && Math.abs(m.entity._rockSpin) > 0);
+  assert.equal(n.entity.drawer, fireballDrawer);
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

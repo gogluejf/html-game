@@ -115,6 +115,24 @@ export const SPECIAL_WEAPONS = [
     radius: 70,
     spread: null,
   },
+  {
+    id: 'molotov',
+    name: 'Molotov',
+    icon: '🔥',
+    color: '#ff7b2d',
+    speed: 600,
+    damage: 12,
+    lifetime: 2,
+    size: 18 / UNIT_PX_Y,
+    spriteAnim: 'shoot',
+    fireCooldown: 1,
+    gravity: 800,
+    solidBehavior: 'reflect',
+    explode: false,
+    radius: 0,
+    spread: null,
+    spin: 4,                 // tumble rate rad/s (±50% per bottle)
+  },
 ];
 
 /** Ordered list of all valid special weapon ids. */
