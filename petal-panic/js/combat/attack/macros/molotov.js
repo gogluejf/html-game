@@ -15,10 +15,7 @@ const DEFAULTS = Object.freeze({
   direction: -0.5,
   arc: 800,             // gravity px/s²
   bounce: false,        // molotovs shatter on first impact
-  // NO ttl — a molotov is contact-only by contract. The bottle carries no
-  // fire until it breaks; a flight fuse would detonate it midair and anchor
-  // the zone to the floor below (ghost fire through platforms). Callers
-  // cannot arm a fuse: impl() ignores any supplied ttl.
+  flightTtl: null,      // optional carrier fuse (s); null = contact only
   damage: 12,           // carrier contact damage
   fireSegments: 2,     // burn area width in 48px fire units (integer); height fixed at 1 unit
   fireDuration: 3,      // how long the area burns (s)
@@ -44,7 +41,7 @@ defineMacro('molotov', {
       { key: 'direction', desc: 'throw direction (radians)' },
       { key: 'arc', desc: 'gravity px/s²' },
       { key: 'bounce', desc: 'reflect off surfaces (default false)' },
-      { key: 'damage', desc: 'carrier contact damage' },
+      { key: 'flightTtl', desc: 'carrier fuse seconds; null = contact only', nullMeans: 'contact' },
       { key: 'fireSegments', desc: 'burn area width in 48px fire units (integer, default 2); height fixed at 1 unit' },
       { key: 'fireDuration', desc: 'how long the area burns (s)' },
       { key: 'fireTickRate', desc: 'ticks per second in the area' },
@@ -88,7 +85,7 @@ defineMacro('molotov', {
       arc: p.arc,
       bounce: p.bounce,
       explodeOnContact: true,
-      ttl: null, // contact-only — molotovs never self-detonate midair (see DEFAULTS)
+      ttl: p.flightTtl ?? null, // explicit null preserves contact-only behavior
       damage: p.damage,
       radius: 0,
       origin: p.origin,

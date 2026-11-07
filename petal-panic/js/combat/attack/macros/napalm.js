@@ -44,7 +44,7 @@ defineMacro('napalm', {
     params: [
       { key: 'speed', desc: 'px/s travel speed' },
       { key: 'direction', desc: 'radians (0 = right)' },
-      { key: 'ttl', desc: 'seconds before auto-cull' },
+      { key: 'ttl', desc: 'seconds before auto-cull; null = contact only', nullMeans: 'contact' },
       { key: 'damage', desc: 'carrier contact damage' },
       { key: 'fireSegments', desc: 'burn area width in 48px fire units (integer, default 2); height fixed at 1 unit' },
       { key: 'fireDuration', desc: 'how long the area burns (s)' },
