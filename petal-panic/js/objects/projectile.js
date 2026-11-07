@@ -17,7 +17,7 @@ import { loadFrames } from '../core/frameLoader.js';
 import { spriteOutline } from '../effects/spriteOutline.js';
 import { isHighGraphic } from '../core/renderMode.js';
 import { specialById, isSpecialType } from './specialWeapons.js';
-import { rockDrawer, bombDrawer, explosiveDrawer, homingDrawer, sawDrawer, spreadDrawer, molotovDrawer } from '../combat/attack/drawers/index.js';
+import { rockDrawer, bombDrawer, explosiveDrawer, homingDrawer, sawDrawer, spreadDrawer, molotovDrawer, fireballDrawer } from '../combat/attack/drawers/index.js';
 
 /** Primitive-mode look per weapon identity (visual-identity contract): one
  *  drawer file per special under combat/attack/drawers/. No inline branches. */
@@ -28,6 +28,7 @@ const SPECIAL_FALLBACK_DRAWERS = Object.freeze({
   saw: sawDrawer,
   spread: spreadDrawer,
   molotov: molotovDrawer,
+  fireball: fireballDrawer,
 });
 
 // --- Tunables ----------------------------------------------------------------
@@ -71,6 +72,7 @@ const SPRITE_TARGETS = Object.freeze({
   homing:      { anim: 'fly' },
   explosive:   { anim: 'fly' },
   fireball:    { anim: 'shoot' },
+  molotov:     { anim: 'throw' },
 });
 const spriteData = new Map();   // type → parsed sheet (anims patched)
 const spriteFrames = new Map(); // type → frame image map
@@ -169,6 +171,8 @@ export class Projectile extends Entity {
 
     invalidateImpactMotion(this);
     this.type = type;
+    this._primitiveRotation = 0;
+    this._primitiveSpin = type === 'molotov' ? 4 : 0;
     // Aim index for dirAngle() consumers (contextualAim, debug). Preserved from
     // the pre-fold Projectile contract.
     this.dir = dir;
@@ -219,7 +223,7 @@ export class Projectile extends Entity {
     const animName = SPRITE_TARGETS[spriteType]?.anim ?? 'shoot';
     // Outline: every shot (thorn, typeless, and special weapons) gets the
     // white contour.
-    const wantOutline = isThorn || type != null;
+    const wantOutline = type !== 'molotov' && (isThorn || type != null);
     const data = spriteData.get(spriteType);
     if (data?.anims[animName]) {
       this.sprite = { anchor: 'center', anims: data.anims };
@@ -336,7 +340,24 @@ export class Projectile extends Entity {
     // every special owns its file under combat/attack/drawers/. Typeless
     // pooled slot → generic rock.
     const drawer = SPECIAL_FALLBACK_DRAWERS[this.type] ?? rockDrawer;
-    drawer(ctx, this);
+    if (this.type === 'molotov') {
+      const rotation = this.rotation;
+      try {
+        this.rotation = this._primitiveRotation;
+        drawer(ctx, this);
+      } finally { this.rotation = rotation; }
+    } else drawer(ctx, this);
+  }
+
+  // The bottle frames already contain the rotation. Suppress flight alignment
+  // only for this sheet render; custom drawers and other sheet types keep it.
+  drawSprite(ctx) {
+    if (this.type !== 'molotov' || this._spriteAnim !== 'throw') return super.drawSprite(ctx);
+    const rotation = this.rotation;
+    try {
+      this.rotation = 0;
+      return super.drawSprite(ctx);
+    } finally { this.rotation = rotation; }
   }
 
   reflectVelocity(box) {
@@ -345,6 +366,7 @@ export class Projectile extends Entity {
   }
 
   update(dt) {
+    if (this._primitiveSpin && !this._bombSettled) this._primitiveRotation += this._primitiveSpin * dt;
     this._impactPrevX = this.x;
     this._impactPrevY = this.y;
     this._impactPoint = null;

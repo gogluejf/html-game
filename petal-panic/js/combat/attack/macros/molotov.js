@@ -11,7 +11,7 @@ import '../primitives/fireArea.js';
 
 const DEFAULTS = Object.freeze({
   speed: 600,           // launch force (px/s)
-  direction: -0.5,
+  direction: -58 * Math.PI / 180, // default launch angle: -58 degrees
   arc: 800,             // gravity px/s²
   bounce: false,        // molotovs shatter on first impact
   flightTtl: null,      // optional carrier fuse (s); null = contact only
@@ -96,7 +96,7 @@ defineMacro('molotov', {
       damage: p.damage,
       radius: 0,
       origin: p.origin,
-      specialType: 'fireball',
+      specialType: p.specialType ?? 'molotov',
     }, ctx);
 
     if (!carrier?.entity) {

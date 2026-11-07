@@ -124,14 +124,14 @@ export const SPECIAL_WEAPONS = [
     damage: 12,
     lifetime: 2,
     size: 18 / UNIT_PX_Y,
-    spriteAnim: 'shoot',
+    spriteAnim: 'throw',
     fireCooldown: 1,
     gravity: 800,
     solidBehavior: 'reflect',
     explode: false,
     radius: 0,
     spread: null,
-    spin: 4,                 // tumble rate rad/s (±50% per bottle)
+    // spin: the throw sheet's 16-frame anim IS the rotation — no extra tumble.
   },
   {
     id: 'fireball',

@@ -301,13 +301,13 @@ ok('bare molotov passes refreshed terrain to its deferred fire', () => {
   AttackLifecycle.clear();
 });
 
-ok('direct molotov uses fireball sheet type and spin; direct napalm routes to fireball', () => {
+ok('direct molotov uses bottle sheet type without tumble; direct napalm routes to fireball', () => {
   const pool = new Pool(Projectile, 4);
   const ctx = makeContext(attacker(), { pools: { projectilePool: pool }, groundY: 480 });
   const m = invoke('molotov', { origin: { x: 100, y: 100 } }, ctx);
   const n = invoke('napalm', { origin: { x: 200, y: 100 } }, ctx);
-  assert.equal(m.entity.type, 'fireball');
-  assert.ok(m.entity._rockTumble && Math.abs(m.entity._rockSpin) > 0);
+  assert.equal(m.entity.type, 'molotov');
+  assert.ok(!m.entity._rockTumble, 'sheet anim owns the rotation — no extra tumble');
   assert.equal(n.entity.type, 'fireball');
 });
 
