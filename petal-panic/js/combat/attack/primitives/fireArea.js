@@ -40,6 +40,13 @@ export const FIRE_UNIT = 48;
 const DROP_DELAY_MAX = 0.15;          // seconds of staggered hover (0 = off)
 const GRAV_SCALE_MIN = 0.4;           // floatiest a segment can fall
 const GRAV_SCALE_MAX = 0.7;           // heaviest a segment can fall
+// Eased fade-out: EVERY segment reaches full fade exactly when the zone ends
+// (total duration unchanged) — only the RAMP start varies per segment: a
+// random point in the last ~35% of the lifetime. Flames burn at FULL strength
+// for at least 65% of their life; early starters ease out slowly, late
+// starters dip quickly, but all reach zero together at the finish line.
+const FADE_START_EARLIEST = 0.65;     // earliest fade start (frac of lifetime)
+const FADE_START_LATEST = 0.85;       // latest fade start
 
 const DEFAULTS = Object.freeze({
   x: 0,               // center x of the area (world coords)
@@ -245,7 +252,10 @@ function buildSegmentSprites(segs) {
     const data = fireSpriteData.get(animName);
     const frames = fireSpriteFrames.get(animName);
     const player = new SpritePlayer(data, Math.floor(Math.random() * data.frames.length));
-    return { data, frames, player, mirrorX: Math.random() < 0.5 };
+    // Eased fade roll: this segment holds FULL alpha until a random point in
+    // the last 35% of the lifetime, then ramps to 0 exactly at zone end.
+    const fadeStart = FADE_START_EARLIEST + Math.random() * (FADE_START_LATEST - FADE_START_EARLIEST);
+    return { data, frames, player, mirrorX: Math.random() < 0.5, fadeStart };
   });
 }
 
@@ -260,13 +270,18 @@ function buildSegmentSprites(segs) {
  */
 function segmentedFireSpriteDrawer(ctx, z) {
   if (!z.alive || !z.segSprites) return;
-  const frac = 1 - z.t / z.duration;
-  const alpha = frac < 0.2 ? frac / 0.2 : 1;
-  ctx.save();
-  ctx.globalAlpha = alpha;
+  const frac = 1 - z.t / z.duration;   // 1 → 0 over the zone lifetime
   for (let i = 0; i < z.segs.length; i++) {
     const s = z.segs[i];
     const sp = z.segSprites[i];
+    // Per-segment eased fade: full alpha until this segment's random fade
+    // start, then linear ramp to 0 that lands EXACTLY at zone end (frac=0).
+    // alpha = frac / (1 - fadeStart): at frac=fadeStart → 1, at frac=0 → 0.
+    let alpha = 1;
+    if (frac < sp.fadeStart) {
+      alpha = Math.min(1, Math.max(0, frac / (1 - sp.fadeStart)));
+    }
+    if (alpha <= 0) continue;
     const data = sp.data;
     const frame = data.frames[sp.player.frameIndex % data.frames.length];
     const img = sp.frames.get(frame.file);
@@ -277,6 +292,7 @@ function segmentedFireSpriteDrawer(ctx, z) {
     const cx = s.x + FIRE_UNIT / 2;
     const cy = s.y + FIRE_HEIGHT / 2;
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.translate(cx, cy);
     if (sp.mirrorX) ctx.scale(-1, 1);
     ctx.scale(placed.scale, placed.scale);
@@ -284,7 +300,6 @@ function segmentedFireSpriteDrawer(ctx, z) {
       placed.dx, placed.dy, placed.w, placed.h);
     ctx.restore();
   }
-  ctx.restore();
 }
 
 function declaredEffectsOf(id) {
