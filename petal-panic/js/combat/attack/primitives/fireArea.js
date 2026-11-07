@@ -31,7 +31,7 @@ export const FIRE_UNIT = 48;
 const DEFAULTS = Object.freeze({
   x: 0,               // center x of the area (world coords)
   y: 0,               // center y
-  segments: 2,        // number of 48px units wide (integer)
+  segments: 3,        // number of 48px units wide (integer)
   duration: 2,        // seconds the area stays active
   tickRate: 5,        // damage ticks per second
   damage: 8,          // damage per tick

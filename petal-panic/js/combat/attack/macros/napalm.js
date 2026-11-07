@@ -22,7 +22,7 @@ const DEFAULTS = Object.freeze({
   ttl: 2,               // seconds before auto-cull
   damage: 12,           // carrier contact damage
   // Fire area params (payload)
-  fireSegments: 2,     // burn area width in 48px fire units (integer); height fixed at 1 unit
+  fireSegments: 3,     // burn area width in 48px fire units (integer); height fixed at 1 unit
   fireDuration: 3,      // how long the area burns (s)
   fireTickRate: 5,      // damage ticks per second in the area
   fireDamage: 8,        // damage per tick in the area

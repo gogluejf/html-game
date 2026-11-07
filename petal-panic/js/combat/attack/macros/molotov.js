@@ -20,7 +20,7 @@ const DEFAULTS = Object.freeze({
   bounce: false,        // molotovs shatter on first impact
   flightTtl: null,      // optional carrier fuse (s); null = contact only
   damage: 12,           // carrier contact damage
-  fireSegments: 2,     // burn area width in 48px fire units (integer); height fixed at 1 unit
+  fireSegments: 3,     // burn area width in 48px fire units (integer); height fixed at 1 unit
   fireDuration: 3,      // how long the area burns (s)
   fireTickRate: 5,      // damage ticks per second in the area
   fireDamage: 8,        // damage per tick in the area
