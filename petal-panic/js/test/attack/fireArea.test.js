@@ -2,7 +2,7 @@
 // Run: node js/test/attack/fireArea.test.js
 
 import { strict as assert } from 'node:assert';
-import { fireAreaBox } from '../../combat/attack/primitives/fireArea.js';
+import { fireAreaBox, FIRE_UNIT, FIRE_HEIGHT } from '../../combat/attack/primitives/fireArea.js';
 import '../../combat/attack/macros/molotov.js';
 import '../../combat/attack/macros/napalm.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
@@ -37,18 +37,29 @@ ok('box is centered on the given point', () => {
   assert.equal(box.h, 48);
 });
 
-ok('ticks damage while a target stands in the area', () => {
+ok('ticks damage while a target stands in ONE segment (no double-dip)', () => {
   const ctx = makeContext(attacker(), { groundY: P.y + 24 });
-  const enemy = dummyEnemy(390, 370); // inside
+  const enemy = dummyEnemy(390, 370); // inside the LEFT segment only
   const h = invoke('fireArea', P, ctx);
   const hits = [];
   h.on('hit', (i) => hits.push(i.dealt));
-  // Run to completion at 5Hz over ~1s → 4–5 ticks of 6 dmg (frame quantization).
+  // One segment under the target → 5Hz over ~1s → 4–5 ticks of 6 dmg.
   let finished = false;
   for (let i = 0; i < 62 && !finished; i++) finished = h.step(DT, [enemy]);
   assert.ok(finished);
   assert.ok(hits.length >= 4 && hits.length <= 5, `got ${hits.length} ticks`);
   assert.equal(enemy.hp, 100 - hits.length * 6);
+});
+
+ok('a target spanning TWO segments takes ONE tick (union box, no double-dip)', () => {
+  const ctx = makeContext(attacker(), { groundY: P.y + 24 });
+  const enemy = dummyEnemy(396, 370, 999); // straddles the seam at x=400
+  const h = invoke('fireArea', P, ctx);
+  const hits = [];
+  h.on('hit', (i) => hits.push(i.dealt));
+  for (let i = 0; i < 30; i++) h.step(DT, [enemy]);
+  // Union box = one hitbox → same tick count as a single-segment target (~2-3 in 0.5s).
+  assert.ok(hits.length >= 2 && hits.length <= 3, `got ${hits.length} ticks`);
 });
 
 ok('target outside the area takes nothing', () => {
@@ -60,20 +71,6 @@ ok('target outside the area takes nothing', () => {
   for (let i = 0; i < 60; i++) h.step(DT, [enemy]);
   assert.equal(n, 0);
   assert.equal(enemy.hp, 100);
-});
-
-ok('a target that walks in only burns while inside', () => {
-  const ctx = makeContext(attacker(), { groundY: P.y + 24 });
-  const enemy = dummyEnemy(200, 370); // starts left of the area
-  const h = invoke('fireArea', P, ctx);
-  const hits = [];
-  h.on('hit', (i) => hits.push(i.dealt));
-  for (let i = 0; i < 60; i++) {
-    h.step(DT, [enemy]);
-    enemy.x += 4 * DT * 60; // walk right at 4px/frame
-  }
-  // It crosses ~96px of the 96px-wide area → several but not all 5 ticks.
-  assert.ok(hits.length >= 2 && hits.length <= 4, `got ${hits.length} ticks`);
 });
 
 ok('completes after duration and stops ticking', () => {
@@ -101,7 +98,7 @@ for (const scenario of [
   { name: 'floor impact', y: 391, surface: 400, impact: true },
   { name: 'platform impact', y: 291, surface: 300, impact: true, platforms: [{ x: 350, y: 300, w: 100 }] },
 ]) {
-  ok(`Molotov ${scenario.name}: rendered fire and damage share the impact box`, () => {
+  ok(`Molotov ${scenario.name}: rendered fire and damage share the impact boxes`, () => {
     const ctx = {
       attacker: attacker(), groundY: 400, platforms: scenario.platforms ?? [],
       pools: { projectilePool: new Pool(Projectile, 4) }, world: { targets: [] },
@@ -114,32 +111,35 @@ for (const scenario of [
     h.step(DT);
     assert.equal(h.handles.length, 1);
     const fire = h.handles[0];
+    const segs = fire.zone.segs;
+    assert.equal(segs.length, 2);
     if (scenario.impact) {
-      assert.equal(fire.zone.y + fire.zone.h, scenario.surface, 'landing: box bottom on the surface');
+      for (const s of segs) {
+        assert.equal(s.y + s.h, scenario.surface, 'landing: segment bottom on the surface');
+      }
     } else {
-      // Midair: anchored near the bottle's break-time position (gravity drift
-      // makes the exact y engine-internal — the invariant is below).
-      assert.ok(fire.zone.y > 0 && fire.zone.y < 400, `midair: box in-bounds (top=${fire.zone.y})`);
+      for (const s of segs) {
+        assert.ok(s.y > 0 && s.y < 400, `midair: segment in-bounds (top=${s.y})`);
+      }
     }
     const rects = [];
     const gradStub = { addColorStop() {} };
     fire.zone.draw({ save() {}, restore() {}, strokeRect() {},
       fillRect(...args) { rects.push(args); },
       createLinearGradient: () => gradStub, createRadialGradient: () => gradStub });
-    // The fire drawer paints the base glow rect PLUS time-based flicker
-    // columns (performance.now()-driven), so assert the glow rect specifically.
-    // The glow rect is the zone box itself (the drawer paints it from z.x/y/w/h).
-    assert.ok(rects.some(r => r[0] === fire.zone.x && r[1] === fire.zone.y && r[2] === fire.zone.w && r[3] === fire.zone.h),
-      `glow rect matches the zone box (zone=${JSON.stringify([fire.zone.x, fire.zone.y, fire.zone.w, fire.zone.h])}, got ${JSON.stringify(rects.slice(0, 3))})`);
-    // Probe INSIDE the actual zone box — if render and damage ever drift,
-    // a target standing in the visible fire stops taking damage (or vice versa).
-    const enemy = dummyEnemy(fire.zone.x + fire.zone.w / 2 - 12, fire.zone.y + fire.zone.h / 2 - 12);
+    // The drawer paints one glow rect PER SEGMENT from its live box.
+    for (const s of segs) {
+      assert.ok(rects.some(r => r[0] === s.x && r[1] === s.y && r[2] === FIRE_UNIT && r[3] === FIRE_HEIGHT),
+        `glow rect matches a segment box (seg=${JSON.stringify([s.x, s.y, s.w, s.h])}, got ${JSON.stringify(rects.slice(0, 4))})`);
+    }
+    // Probe INSIDE the left segment — render/damage lockstep per segment.
+    const left = segs[0];
+    const enemy = dummyEnemy(left.x + left.w / 2 - 12, left.y + left.h / 2 - 12);
     fire.step(0.2, [enemy]);
     assert.equal(enemy.hp, 92, 'one tick (8 dmg) lands on a target inside the visible fire');
-    // The damage box must match the RENDERED zone exactly (see-what-hurts).
-    assert.deepEqual(fire.zone._hb.box,
-      { x: fire.zone.x, y: fire.zone.y, w: fire.zone.w, h: fire.zone.h },
-      'damage box matches the rendered zone');
+    // Per-segment damage boxes must match their rendered segment (see-what-hurts).
+    const leftHb = fire._segHbs[0].box;
+    assert.deepEqual(leftHb, { x: left.x, y: left.y, w: FIRE_UNIT, h: FIRE_HEIGHT });
   });
 }
 
@@ -175,10 +175,11 @@ ok('Molotov side contact uses recorded impact, not floor or carrier center', () 
   h.entity.alive = false;
   h.step(DT);
   assert.equal(h.handles.length, 1);
-  const z = h.handles[0].zone;
-  assert.equal(z.x + z.w / 2, 420);
-  assert.ok(z.y + z.h / 2 > 160, 'side-contact fire starts falling immediately');
-  assert.ok(z.y + z.h < 480, 'does not teleport to the floor');
+  const segs = h.handles[0].zone.segs;
+  const cx = segs[0].x + (segs.length * FIRE_UNIT) / 2;
+  assert.equal(cx, 420);
+  assert.ok(segs[0].y + FIRE_HEIGHT / 2 > 160, 'side-contact fire starts falling immediately');
+  assert.ok(segs[0].y + FIRE_HEIGHT < 480, 'does not teleport to the floor');
 });
 ok('One-way platform cannot catch a bottle far above its top', () => {
   const { h } = molotovFixture();
@@ -193,14 +194,15 @@ ok('One-way platform cannot catch a bottle far above its top', () => {
   assert.equal(e.y + e.h, 384);
 });
 
-ok('airborne fire falls, sweeps to floor, and moves its damage box', () => {
+ok('airborne fire falls, sweeps to floor, and moves its damage boxes', () => {
   const h = invoke('fireArea', { x: 100, y: 50, segments: 3, duration: 10 }, { groundY: 400 });
   h.step(0.1);
-  assert.ok(h.zone.y > 26);
+  assert.ok(h.zone.segs[0].y > 26);
   h.step(1);
-  assert.equal(h.zone.y + h.zone.h, 400);
-  assert.equal(h.zone.w, 144);
-  assert.deepEqual(h.zone._hb.box, { x: h.zone.x, y: h.zone.y, w: 144, h: 48 });
+  for (const s of h.zone.segs) assert.equal(s.y + s.h, 400);
+  assert.equal(h.zone.segs.length * FIRE_UNIT, 144);
+  const hb0 = h._segHbs[0].box;
+  assert.equal(hb0.w, FIRE_UNIT, 'segment hitbox is one unit wide');
 });
 for (const kind of ['platform', 'block', 'barrel']) {
   ok(`fire lands on ${kind} and falls after support disappears`, () => {
@@ -209,10 +211,10 @@ for (const kind of ['platform', 'block', 'barrel']) {
       collisionWorld: { entities: new Set(kind === 'platform' ? [] : [support]) } };
     const h = invoke('fireArea', { x: 100, y: 50, duration: 10 }, ctx);
     h.step(0.5);
-    assert.equal(h.zone.y + h.zone.h, 200);
+    for (const s of h.zone.segs) assert.equal(s.y + s.h, 200);
     support.alive = false;
     h.step(0.5);
-    assert.equal(h.zone.y + h.zone.h, 400);
+    for (const s of h.zone.segs) assert.equal(s.y + s.h, 400);
   });
 }
 ok('enemies, projectiles and overhead platforms do not retain fire', () => {
@@ -221,7 +223,29 @@ ok('enemies, projectiles and overhead platforms do not retain fire', () => {
       ({ x: 0, y: 200, w: 200, h: 40, alive: true, layer }))) } };
   const h = invoke('fireArea', { x: 100, y: 50, duration: 10 }, ctx);
   h.step(1);
-  assert.equal(h.zone.y + h.zone.h, 400);
+  for (const s of h.zone.segs) assert.equal(s.y + s.h, 400);
+});
+ok('segment over a gap falls past a neighbor\'s platform (per-column support)', () => {
+  // Platform spans only the LEFT half of a 2-segment fire (x 50..98, segs at 50..98 and 98..146).
+  const plat = { x: 50, y: 200, w: 48, h: 40, alive: true, layer: LAYER.PLATFORM };
+  const ctx = { groundY: 400, platforms: [plat], collisionWorld: { entities: new Set() } };
+  const h = invoke('fireArea', { x: 98, y: 50, segments: 2, duration: 10 }, ctx);
+  h.step(1);
+  const [left, right] = h.zone.segs;
+  assert.equal(left.y + left.h, 200, 'left segment rests on the platform');
+  assert.equal(right.y + right.h, 400, 'right segment fell through the gap to the floor');
+});
+ok('destroying a support releases ONLY the segments standing on it', () => {
+  const barrel = { x: 98, y: 200, w: 48, h: 40, alive: true, layer: LAYER.SOLID };
+  const ctx = { groundY: 400, platforms: [], collisionWorld: { entities: new Set([barrel]) } };
+  const h = invoke('fireArea', { x: 98, y: 50, segments: 2, duration: 10 }, ctx);
+  h.step(1);
+  const [left, right] = h.zone.segs;
+  assert.equal(left.y + left.h, 400, 'left segment on the floor');
+  assert.equal(right.y + right.h, 200, 'right segment on the barrel');
+  barrel.alive = false;
+  h.step(1);
+  assert.equal(right.y + right.h, 400, 'released segment fell to the floor');
 });
 ok('napalm expiry creates airborne fire, then gravity lands it', () => {
   const ctx = { groundY: 400, platforms: [{ x: 0, y: 10, w: 200, h: 10 }],
@@ -231,11 +255,12 @@ ok('napalm expiry creates airborne fire, then gravity lands it', () => {
   h.step(0);
   assert.equal(h.handles.length, 1);
   const fire = h.handles[0];
-  assert.equal(fire.zone.y + 24, 100);
+  const segs = fire.zone.segs;
+  assert.equal(segs[0].y + FIRE_HEIGHT / 2, 100);
   fire.step(0.1);
-  assert.ok(fire.zone.y > 76);
+  assert.ok(segs[0].y > 76);
   fire.step(1);
-  assert.equal(fire.zone.y + fire.zone.h, 400);
+  for (const s of segs) assert.equal(s.y + s.h, 400);
 });
 
 for (const kind of ['ground', 'platform', 'block']) {
@@ -247,11 +272,11 @@ for (const kind of ['ground', 'platform', 'block']) {
       collisionWorld: { entities: new Set(kind === 'block' ? [support] : []) } };
     const h = invoke('fireArea', { x: 100, y: 100, duration: 10 }, { world: { targets: [] } });
     for (let i = 0; i < 120; i++) AttackLifecycle.stepAll(DT, [], { refreshCtx: () => live });
-    assert.equal(h.zone.y + h.zone.h, 200);
+    for (const s of h.zone.segs) assert.equal(s.y + s.h, 200);
     if (kind !== 'ground') {
       support.alive = false;
       for (let i = 0; i < 60; i++) AttackLifecycle.stepAll(DT, [], { refreshCtx: () => live });
-      assert.equal(h.zone.y + h.zone.h, 400);
+      for (const s of h.zone.segs) assert.equal(s.y + s.h, 400);
     }
     AttackLifecycle.clear();
   });
@@ -267,7 +292,7 @@ ok('bare molotov passes refreshed terrain to its deferred fire', () => {
   for (let i = 0; i < 120; i++) AttackLifecycle.stepAll(DT, [], {
     refreshCtx: () => ({ groundY: 200, platforms: [] }),
   });
-  assert.equal(h.handles[0].zone.y + h.handles[0].zone.h, 200);
+  for (const s of h.handles[0].zone.segs) assert.equal(s.y + s.h, 200);
   AttackLifecycle.clear();
 });
 
