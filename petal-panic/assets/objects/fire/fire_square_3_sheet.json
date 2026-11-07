@@ -1,65 +1,200 @@
 {
  "file": "petal-panic/assets/objects/fire/fire_square_3_sheet.png",
- "size": "1448x1086",
- "rows": 3,
- "cols": 4,
+ "size": "2136x302",
+ "rows": 1,
+ "cols": 8,
  "kind": "animation",
- "description": "fire_square_3 \u2014 4 frames",
- "updated": "2026-11-07T03:22:45",
+ "description": "fire_square_3 \u2014 8 frames (4 poses x original+mirrored)",
  "entities": [
   {
    "name": "fire_square",
    "anim": "fire_square_3",
+   "frames_dir": "petal-panic/assets/objects/fire",
    "frames": [
     {
      "file": "fire_square_3_f1.png",
-     "row": 2,
+     "row": 0,
      "col": 0,
      "bbox": [
-      72,
-      744,
+      0,
+      0,
       266,
       302
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -302
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "fire_square_3_f2.png",
-     "row": 2,
+     "row": 0,
      "col": 1,
      "bbox": [
-      416,
-      803,
       266,
-      243
-     ]
+      0,
+      266,
+      302
+     ],
+     "offset": {
+      "x": 0,
+      "y": -302
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "fire_square_3_f3.png",
-     "row": 2,
+     "row": 0,
      "col": 2,
      "bbox": [
-      760,
-      854,
-      268,
-      192
-     ]
+      532,
+      29,
+      266,
+      243
+     ],
+     "offset": {
+      "x": 0,
+      "y": -243
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "fire_square_3_f4.png",
-     "row": 2,
+     "row": 0,
      "col": 3,
      "bbox": [
-      1106,
-      889,
+      798,
+      29,
+      266,
+      243
+     ],
+     "offset": {
+      "x": 0,
+      "y": -243
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fire_square_3_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1064,
+      55,
+      268,
+      192
+     ],
+     "offset": {
+      "x": 0,
+      "y": -192
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fire_square_3_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1332,
+      55,
+      268,
+      192
+     ],
+     "offset": {
+      "x": 0,
+      "y": -192
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fire_square_3_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1600,
+      72,
       268,
       157
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -157
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "fire_square_3_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1868,
+      72,
+      268,
+      157
+     ],
+     "offset": {
+      "x": 0,
+      "y": -157
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/objects/fire"
+   "fps": 8,
+   "playback": "loop",
+   "direction": "ping_pong",
+   "collision": {
+    "x": 0,
+    "y": -294,
+    "w": 258,
+    "h": 294
+   },
+   "pivot": {
+    "x": 129,
+    "y": -147
+   },
+   "markers": []
   }
  ],
- "crop": {
-  "frames_dir": "petal-panic/assets/objects/fire"
- }
+ "updated": "2026-11-07"
 }
