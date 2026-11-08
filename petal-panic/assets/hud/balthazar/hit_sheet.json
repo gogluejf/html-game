@@ -1,0 +1,120 @@
+{
+ "file": "petal-panic/assets/hud/balthazar/hit_sheet.png",
+ "size": "2172x724",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "balthazar HUD hit",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "hit",
+   "frames_dir": "petal-panic/assets/hud/balthazar",
+   "frames": [
+    {
+     "file": "hit_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      543,
+      724
+     ],
+     "offset": {
+      "x": -271.5,
+      "y": -362
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "hit_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      543,
+      0,
+      543,
+      724
+     ],
+     "offset": {
+      "x": -271.5,
+      "y": -362
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "hit_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1086,
+      0,
+      543,
+      724
+     ],
+     "offset": {
+      "x": -271.5,
+      "y": -362
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "hit_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1629,
+      0,
+      543,
+      724
+     ],
+     "offset": {
+      "x": -271.5,
+      "y": -362
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -267,
+    "y": -343,
+    "w": 535,
+    "h": 622
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-08T13:22:08",
+ "crop": {
+  "frames_dir": "petal-panic/assets/hud/balthazar",
+  "pass": "petal-panic/assets/hud/balthazar"
+ }
+}

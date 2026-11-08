@@ -1,0 +1,436 @@
+{
+  "sheet": "/home/goglue/Downloads/petal-panic/Masked Rose Fighter Sprite Sheet.idle.png",
+  "size": [
+    2172,
+    724
+  ],
+  "orientation": "row",
+  "foreground_pixels": 699010,
+  "components": 16,
+  "axis_bands_measured": 2,
+  "axis_used": 2,
+  "expected_frames": 16,
+  "frames_cropped": 16,
+  "flags": [],
+  "issues": [
+    "idle_f1.png: foreground touches crop edge (possible clip)",
+    "idle_f2.png: foreground touches crop edge (possible clip)",
+    "idle_f3.png: foreground touches crop edge (possible clip)",
+    "idle_f4.png: foreground touches crop edge (possible clip)",
+    "idle_f5.png: foreground touches crop edge (possible clip)",
+    "idle_f6.png: foreground touches crop edge (possible clip)",
+    "idle_f7.png: foreground touches crop edge (possible clip)",
+    "idle_f8.png: foreground touches crop edge (possible clip)",
+    "idle_f9.png: foreground touches crop edge (possible clip)",
+    "idle_f10.png: foreground touches crop edge (possible clip)",
+    "idle_f11.png: foreground touches crop edge (possible clip)",
+    "idle_f12.png: foreground touches crop edge (possible clip)",
+    "idle_f13.png: foreground touches crop edge (possible clip)",
+    "idle_f14.png: foreground touches crop edge (possible clip)",
+    "idle_f15.png: foreground touches crop edge (possible clip)",
+    "idle_f16.png: foreground touches crop edge (possible clip)"
+  ],
+  "frames": [
+    {
+      "file": "idle_f1.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 1,
+      "row": 0,
+      "col": 0,
+      "bbox": [
+        18,
+        6,
+        243,
+        349
+      ],
+      "size": [
+        243,
+        349
+      ],
+      "center": [
+        139,
+        180
+      ],
+      "components": 1,
+      "erased_pixels": 4,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f2.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 2,
+      "row": 0,
+      "col": 1,
+      "bbox": [
+        288,
+        8,
+        246,
+        347
+      ],
+      "size": [
+        246,
+        347
+      ],
+      "center": [
+        411,
+        181
+      ],
+      "components": 1,
+      "erased_pixels": 3,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f3.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 3,
+      "row": 0,
+      "col": 2,
+      "bbox": [
+        559,
+        8,
+        247,
+        347
+      ],
+      "size": [
+        247,
+        347
+      ],
+      "center": [
+        682,
+        181
+      ],
+      "components": 1,
+      "erased_pixels": 2,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f4.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 4,
+      "row": 0,
+      "col": 3,
+      "bbox": [
+        829,
+        7,
+        247,
+        348
+      ],
+      "size": [
+        247,
+        348
+      ],
+      "center": [
+        952,
+        181
+      ],
+      "components": 1,
+      "erased_pixels": 0,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f5.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 5,
+      "row": 0,
+      "col": 4,
+      "bbox": [
+        1100,
+        6,
+        249,
+        348
+      ],
+      "size": [
+        249,
+        348
+      ],
+      "center": [
+        1224,
+        180
+      ],
+      "components": 1,
+      "erased_pixels": 1,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f6.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 6,
+      "row": 0,
+      "col": 5,
+      "bbox": [
+        1373,
+        7,
+        247,
+        347
+      ],
+      "size": [
+        247,
+        347
+      ],
+      "center": [
+        1496,
+        180
+      ],
+      "components": 1,
+      "erased_pixels": 3,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f7.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 7,
+      "row": 0,
+      "col": 6,
+      "bbox": [
+        1645,
+        6,
+        248,
+        349
+      ],
+      "size": [
+        248,
+        349
+      ],
+      "center": [
+        1769,
+        180
+      ],
+      "components": 1,
+      "erased_pixels": 2,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f8.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 8,
+      "row": 0,
+      "col": 7,
+      "bbox": [
+        1919,
+        7,
+        245,
+        348
+      ],
+      "size": [
+        245,
+        348
+      ],
+      "center": [
+        2041,
+        181
+      ],
+      "components": 1,
+      "erased_pixels": 2,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f9.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 9,
+      "row": 1,
+      "col": 0,
+      "bbox": [
+        16,
+        369,
+        247,
+        347
+      ],
+      "size": [
+        247,
+        347
+      ],
+      "center": [
+        139,
+        542
+      ],
+      "components": 1,
+      "erased_pixels": 3,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f10.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 10,
+      "row": 1,
+      "col": 1,
+      "bbox": [
+        287,
+        370,
+        248,
+        346
+      ],
+      "size": [
+        248,
+        346
+      ],
+      "center": [
+        411,
+        543
+      ],
+      "components": 1,
+      "erased_pixels": 3,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f11.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 11,
+      "row": 1,
+      "col": 2,
+      "bbox": [
+        560,
+        371,
+        246,
+        345
+      ],
+      "size": [
+        246,
+        345
+      ],
+      "center": [
+        683,
+        543
+      ],
+      "components": 1,
+      "erased_pixels": 3,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f12.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 12,
+      "row": 1,
+      "col": 3,
+      "bbox": [
+        831,
+        371,
+        246,
+        345
+      ],
+      "size": [
+        246,
+        345
+      ],
+      "center": [
+        954,
+        543
+      ],
+      "components": 1,
+      "erased_pixels": 2,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f13.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 13,
+      "row": 1,
+      "col": 4,
+      "bbox": [
+        1103,
+        371,
+        247,
+        345
+      ],
+      "size": [
+        247,
+        345
+      ],
+      "center": [
+        1226,
+        543
+      ],
+      "components": 1,
+      "erased_pixels": 0,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f14.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 14,
+      "row": 1,
+      "col": 5,
+      "bbox": [
+        1377,
+        371,
+        245,
+        345
+      ],
+      "size": [
+        245,
+        345
+      ],
+      "center": [
+        1499,
+        543
+      ],
+      "components": 1,
+      "erased_pixels": 2,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f15.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 15,
+      "row": 1,
+      "col": 6,
+      "bbox": [
+        1647,
+        370,
+        247,
+        346
+      ],
+      "size": [
+        247,
+        346
+      ],
+      "center": [
+        1770,
+        543
+      ],
+      "components": 1,
+      "erased_pixels": 4,
+      "edge_touching": true
+    },
+    {
+      "file": "idle_f16.png",
+      "entity": "scarlet_vale",
+      "anim": "idle",
+      "frame": 16,
+      "row": 1,
+      "col": 7,
+      "bbox": [
+        1918,
+        371,
+        245,
+        345
+      ],
+      "size": [
+        245,
+        345
+      ],
+      "center": [
+        2040,
+        543
+      ],
+      "components": 1,
+      "erased_pixels": 1,
+      "edge_touching": true
+    }
+  ],
+  "out_dir": "petal-panic/assets/heroes/scarlet_vale"
+}

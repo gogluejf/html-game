@@ -1,0 +1,24 @@
+{
+  "file": "petal-panic/assets/hud/zappy/hit_sheet.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "zappy HUD hit",
+  "entities": [{
+    "name": "zappy",
+    "anim": "hit",
+    "frames_dir": "petal-panic/assets/hud/zappy",
+    "frames": [
+      {"file": "hit_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 543, 658]},
+      {"file": "hit_f2.png", "row": 0, "col": 1, "bbox": [543, 0, 543, 667]},
+      {"file": "hit_f3.png", "row": 0, "col": 2, "bbox": [1086, 0, 543, 651]},
+      {"file": "hit_f4.png", "row": 0, "col": 3, "bbox": [1629, 0, 543, 662]}
+    ]
+  }],
+  "updated": "2026-11-08T13:32:33",
+  "crop": {
+    "frames_dir": "petal-panic/assets/hud/zappy",
+    "pass": "petal-panic/assets/hud/zappy"
+  }
+}

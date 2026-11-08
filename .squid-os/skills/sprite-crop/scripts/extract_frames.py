@@ -18,6 +18,8 @@ Subcommands:
            [--satellite-max-area N] [--satellite-radius N] [--min-comp N]
            [--row-y y0-y1,y0-y1,...] [--col-x row:x1,x2;row:x1,x2]
            [--trace] [--json OUT.json]
+  gif      --src PATH --out DIR [--name ENTITY] [--anim ANIM] [--rows N]
+           [--json OUT.json]
   report   --dir DIR
 
 Orientation is implied by which axis flag you pass:
@@ -701,6 +703,65 @@ def cmd_extract(args):
     return 0 if not issues else 2
 
 
+def cmd_gif(args):
+    """Extract frames from a GIF animation and glue into a sheet."""
+    from PIL import Image
+    import json as _json
+
+    lines = []
+
+    def trace(msg=""):
+        print(msg)
+        lines.append(msg)
+
+    im = Image.open(args.src)
+    n = getattr(im, "n_frames", 1)
+    name = args.name or os.path.splitext(os.path.basename(args.src))[0]
+    anim = args.anim or "anim"
+    rows = args.rows or 4
+    per_row = (n + rows - 1) // rows
+
+    trace(f"[GIF] {args.src}")
+    trace(f"    frames: {n}, size: {im.size[0]}x{im.size[1]}, grid: {rows} rows x {per_row} cols")
+
+    os.makedirs(args.out, exist_ok=True)
+    frames = []
+    for i in range(n):
+        im.seek(i)
+        f = im.convert("RGBA")
+        frames.append(f)
+        fn = f"{name}_{anim}_f{i+1:02d}.png"
+        f.save(os.path.join(args.out, fn))
+
+    # Glue into sheet
+    w, h = frames[0].size
+    sheet = Image.new("RGBA", (w * per_row, h * rows), (0, 0, 0, 0))
+    for i, f in enumerate(frames):
+        r, c = divmod(i, per_row)
+        sheet.paste(f, (c * w, r * h), f)
+    sheet_path = os.path.join(args.out, f"{name}_{anim}_sheet.png")
+    sheet.save(sheet_path)
+
+    trace(f"    saved {n} frames + sheet ({sheet.size[0]}x{sheet.size[1]}) -> {args.out}")
+
+    if args.json:
+        summary = {
+            "src": args.src,
+            "frames": n,
+            "frame_size": [w, h],
+            "grid": [rows, per_row],
+            "sheet": sheet_path,
+            "sheet_size": [sheet.size[0], sheet.size[1]],
+            "out_dir": args.out,
+            "frames_list": [f"{name}_{anim}_f{i+1:02d}.png" for i in range(n)],
+        }
+        with open(args.json, "w") as f:
+            _json.dump(summary, f, indent=2)
+        trace(f"    JSON: {args.json}")
+
+    return 0
+
+
 def cmd_report(args):
     from PIL import Image
     files = sorted(f for f in os.listdir(args.dir) if f.endswith(".png"))
@@ -749,10 +810,17 @@ def main():
                          "across every row instead of resetting to f1 per row. Requires a single "
                          "--names value and a single --anims value shared by all rows.")
     ex.add_argument("--json", help="also write full result JSON here")
+    gp = sub.add_parser("gif", help="extract frames from a GIF and glue into a sheet")
+    gp.add_argument("--src", required=True, help="path to the GIF file")
+    gp.add_argument("--out", required=True, help="output directory for frames + sheet")
+    gp.add_argument("--name", help="entity name prefix (default: filename stem)")
+    gp.add_argument("--anim", help="animation word (default: 'anim')")
+    gp.add_argument("--rows", type=int, default=4, help="rows in output sheet (default: 4)")
+    gp.add_argument("--json", help="also write result JSON here")
     rp = sub.add_parser("report")
     rp.add_argument("--dir", required=True)
     args = p.parse_args()
-    {"extract": cmd_extract, "report": cmd_report}[args.cmd](args)
+    {"extract": cmd_extract, "gif": cmd_gif, "report": cmd_report}[args.cmd](args)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,36 @@
+{
+  "file": "petal-panic/assets/heroes/scarlet_vale/idle_aim_45up_sheet.png",
+  "size": "1320x1188",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "Scarlet idle_aim_45up from Masked Rose Duelist Shooting Animation.idle.shoot.45up.gif",
+  "entities": [{
+    "name": "scarlet_vale",
+    "anim": "idle_aim_45up",
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "frames": [
+      {"file": "idle_aim_45up_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 330, 297]},
+      {"file": "idle_aim_45up_f2.png", "row": 0, "col": 1, "bbox": [330, 0, 330, 297]},
+      {"file": "idle_aim_45up_f3.png", "row": 0, "col": 2, "bbox": [660, 0, 330, 297]},
+      {"file": "idle_aim_45up_f4.png", "row": 0, "col": 3, "bbox": [990, 0, 330, 297]},
+      {"file": "idle_aim_45up_f5.png", "row": 1, "col": 0, "bbox": [0, 297, 330, 297]},
+      {"file": "idle_aim_45up_f6.png", "row": 1, "col": 1, "bbox": [330, 297, 330, 297]},
+      {"file": "idle_aim_45up_f7.png", "row": 1, "col": 2, "bbox": [660, 297, 330, 297]},
+      {"file": "idle_aim_45up_f8.png", "row": 1, "col": 3, "bbox": [990, 297, 330, 297]},
+      {"file": "idle_aim_45up_f9.png", "row": 2, "col": 0, "bbox": [0, 594, 330, 297]},
+      {"file": "idle_aim_45up_f10.png", "row": 2, "col": 1, "bbox": [330, 594, 330, 297]},
+      {"file": "idle_aim_45up_f11.png", "row": 2, "col": 2, "bbox": [660, 594, 330, 297]},
+      {"file": "idle_aim_45up_f12.png", "row": 2, "col": 3, "bbox": [990, 594, 330, 297]},
+      {"file": "idle_aim_45up_f13.png", "row": 3, "col": 0, "bbox": [0, 891, 330, 297]},
+      {"file": "idle_aim_45up_f14.png", "row": 3, "col": 1, "bbox": [330, 891, 330, 297]},
+      {"file": "idle_aim_45up_f15.png", "row": 3, "col": 2, "bbox": [660, 891, 330, 297]},
+      {"file": "idle_aim_45up_f16.png", "row": 3, "col": 3, "bbox": [990, 891, 330, 297]}
+    ]
+  }],
+  "updated": "2026-11-08T04:08:24",
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "pass": "petal-panic/assets/heroes/scarlet_vale"
+  }
+}

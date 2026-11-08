@@ -18,12 +18,12 @@
      "bbox": [
       0,
       0,
-      527,
-      623
+      333,
+      378
      ],
      "offset": {
-      "x": -263.5,
-      "y": -311.5
+      "x": -166.5,
+      "y": -189
      },
      "scale": {
       "sx": 1,
@@ -37,35 +37,14 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      527,
+      333,
       0,
-      525,
-      626
+      339,
+      377
      ],
      "offset": {
-      "x": -262.5,
-      "y": -313
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "idle_f4.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      1052,
-      0,
-      527,
-      623
-     ],
-     "offset": {
-      "x": -262.5,
-      "y": -304
+      "x": -169.5,
+      "y": -188.5
      },
      "scale": {
       "sx": 1,
@@ -77,16 +56,37 @@
     {
      "file": "idle_f3.png",
      "row": 0,
-     "col": 3,
+     "col": 2,
      "bbox": [
-      1579,
+      672,
       0,
-      525,
-      608
+      353,
+      384
      ],
      "offset": {
-      "x": -263.5,
-      "y": -311.5
+      "x": -176.5,
+      "y": -192
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1025,
+      0,
+      368,
+      394
+     ],
+     "offset": {
+      "x": -184,
+      "y": -197
      },
      "scale": {
       "sx": 1,
@@ -100,10 +100,10 @@
    "playback": "once",
    "direction": "ping_pong",
    "collision": {
-    "x": -259.5,
-    "y": -307.5,
-    "w": 519,
-    "h": 615
+    "x": -166,
+    "y": -193,
+    "w": 324,
+    "h": 382
    },
    "pivot": {
     "x": 0,
@@ -112,9 +112,9 @@
    "markers": []
   }
  ],
- "updated": "2026-11-03T02:53:30",
+ "updated": "2026-11-08T13:32:29",
  "crop": {
   "frames_dir": "petal-panic/assets/hud/balthazar",
-  "pass": "/home/goglue/tmp/balthazar-life-v1"
+  "pass": "petal-panic/assets/hud/balthazar"
  }
 }

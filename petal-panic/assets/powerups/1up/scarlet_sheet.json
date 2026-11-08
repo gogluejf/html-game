@@ -1,0 +1,120 @@
+{
+ "file": "petal-panic/assets/powerups/1up/scarlet_sheet.png",
+ "size": "1239x166",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "1UP Scarlet power-up",
+ "entities": [
+  {
+   "name": "1up",
+   "anim": "scarlet",
+   "frames_dir": "petal-panic/assets/powerups/1up",
+   "frames": [
+    {
+     "file": "scarlet_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      311,
+      165
+     ],
+     "offset": {
+      "x": -155.5,
+      "y": -82.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "scarlet_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      311,
+      2,
+      312,
+      161
+     ],
+     "offset": {
+      "x": -156,
+      "y": -80.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "scarlet_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      623,
+      10,
+      304,
+      146
+     ],
+     "offset": {
+      "x": -152,
+      "y": -73
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "scarlet_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      927,
+      0,
+      312,
+      166
+     ],
+     "offset": {
+      "x": -156,
+      "y": -83
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -151.5,
+    "y": -78.5,
+    "w": 303,
+    "h": 157
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-08T12:41:55",
+ "crop": {
+  "frames_dir": "petal-panic/assets/powerups/1up",
+  "pass": "petal-panic/assets/powerups/1up"
+ }
+}

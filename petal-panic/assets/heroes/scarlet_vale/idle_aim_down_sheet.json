@@ -1,0 +1,36 @@
+{
+  "file": "petal-panic/assets/heroes/scarlet_vale/idle_aim_down_sheet.png",
+  "size": "1260x1244",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "Scarlet idle_aim_down from Masked Rose Gunner Animation..idle.shoot.down.gif",
+  "entities": [{
+    "name": "scarlet_vale",
+    "anim": "idle_aim_down",
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "frames": [
+      {"file": "idle_aim_down_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 315, 311]},
+      {"file": "idle_aim_down_f2.png", "row": 0, "col": 1, "bbox": [315, 0, 315, 311]},
+      {"file": "idle_aim_down_f3.png", "row": 0, "col": 2, "bbox": [630, 0, 315, 311]},
+      {"file": "idle_aim_down_f4.png", "row": 0, "col": 3, "bbox": [945, 0, 315, 311]},
+      {"file": "idle_aim_down_f5.png", "row": 1, "col": 0, "bbox": [0, 311, 315, 311]},
+      {"file": "idle_aim_down_f6.png", "row": 1, "col": 1, "bbox": [315, 311, 315, 311]},
+      {"file": "idle_aim_down_f7.png", "row": 1, "col": 2, "bbox": [630, 311, 315, 311]},
+      {"file": "idle_aim_down_f8.png", "row": 1, "col": 3, "bbox": [945, 311, 315, 311]},
+      {"file": "idle_aim_down_f9.png", "row": 2, "col": 0, "bbox": [0, 622, 315, 311]},
+      {"file": "idle_aim_down_f10.png", "row": 2, "col": 1, "bbox": [315, 622, 315, 311]},
+      {"file": "idle_aim_down_f11.png", "row": 2, "col": 2, "bbox": [630, 622, 315, 311]},
+      {"file": "idle_aim_down_f12.png", "row": 2, "col": 3, "bbox": [945, 622, 315, 311]},
+      {"file": "idle_aim_down_f13.png", "row": 3, "col": 0, "bbox": [0, 933, 315, 311]},
+      {"file": "idle_aim_down_f14.png", "row": 3, "col": 1, "bbox": [315, 933, 315, 311]},
+      {"file": "idle_aim_down_f15.png", "row": 3, "col": 2, "bbox": [630, 933, 315, 311]},
+      {"file": "idle_aim_down_f16.png", "row": 3, "col": 3, "bbox": [945, 933, 315, 311]}
+    ]
+  }],
+  "updated": "2026-11-08T04:08:26",
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "pass": "petal-panic/assets/heroes/scarlet_vale"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "file": "petal-panic/assets/heroes/scarlet_vale/run_aim_45down_sheet.png",
+  "size": "1536x1024",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "Scarlet run_aim_45down from Masked Heroine Running and Shooting.run.45deg.down.gif",
+  "entities": [{
+    "name": "scarlet_vale",
+    "anim": "run_aim_45down",
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "frames": [
+      {"file": "run_aim_45down_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 384, 256]},
+      {"file": "run_aim_45down_f2.png", "row": 0, "col": 1, "bbox": [384, 0, 384, 256]},
+      {"file": "run_aim_45down_f3.png", "row": 0, "col": 2, "bbox": [768, 0, 384, 256]},
+      {"file": "run_aim_45down_f4.png", "row": 0, "col": 3, "bbox": [1152, 0, 384, 256]},
+      {"file": "run_aim_45down_f5.png", "row": 1, "col": 0, "bbox": [0, 256, 384, 256]},
+      {"file": "run_aim_45down_f6.png", "row": 1, "col": 1, "bbox": [384, 256, 384, 256]},
+      {"file": "run_aim_45down_f7.png", "row": 1, "col": 2, "bbox": [768, 256, 384, 256]},
+      {"file": "run_aim_45down_f8.png", "row": 1, "col": 3, "bbox": [1152, 256, 384, 256]},
+      {"file": "run_aim_45down_f9.png", "row": 2, "col": 0, "bbox": [0, 512, 384, 256]},
+      {"file": "run_aim_45down_f10.png", "row": 2, "col": 1, "bbox": [384, 512, 384, 256]},
+      {"file": "run_aim_45down_f11.png", "row": 2, "col": 2, "bbox": [768, 512, 384, 256]},
+      {"file": "run_aim_45down_f12.png", "row": 2, "col": 3, "bbox": [1152, 512, 384, 256]},
+      {"file": "run_aim_45down_f13.png", "row": 3, "col": 0, "bbox": [0, 768, 384, 256]},
+      {"file": "run_aim_45down_f14.png", "row": 3, "col": 1, "bbox": [384, 768, 384, 256]},
+      {"file": "run_aim_45down_f15.png", "row": 3, "col": 2, "bbox": [768, 768, 384, 256]},
+      {"file": "run_aim_45down_f16.png", "row": 3, "col": 3, "bbox": [1152, 768, 384, 256]}
+    ]
+  }],
+  "updated": "2026-11-08T04:08:27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "pass": "petal-panic/assets/heroes/scarlet_vale"
+  }
+}

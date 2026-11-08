@@ -1,0 +1,32 @@
+{
+  "file": "petal-panic/assets/heroes/scarlet_vale/run_aim_up_sheet.png",
+  "size": "1083x1448",
+  "rows": 4,
+  "cols": 3,
+  "kind": "animation",
+  "description": "Scarlet run_aim_up from Masked Scarlet Running Animationrun.aiming.up.gif",
+  "entities": [{
+    "name": "scarlet_vale",
+    "anim": "run_aim_up",
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "frames": [
+      {"file": "run_aim_up_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 361, 362]},
+      {"file": "run_aim_up_f2.png", "row": 0, "col": 1, "bbox": [361, 0, 361, 362]},
+      {"file": "run_aim_up_f3.png", "row": 0, "col": 2, "bbox": [722, 0, 361, 362]},
+      {"file": "run_aim_up_f4.png", "row": 1, "col": 0, "bbox": [0, 362, 361, 362]},
+      {"file": "run_aim_up_f5.png", "row": 1, "col": 1, "bbox": [361, 362, 361, 362]},
+      {"file": "run_aim_up_f6.png", "row": 1, "col": 2, "bbox": [722, 362, 361, 362]},
+      {"file": "run_aim_up_f7.png", "row": 2, "col": 0, "bbox": [0, 724, 361, 362]},
+      {"file": "run_aim_up_f8.png", "row": 2, "col": 1, "bbox": [361, 724, 361, 362]},
+      {"file": "run_aim_up_f9.png", "row": 2, "col": 2, "bbox": [722, 724, 361, 362]},
+      {"file": "run_aim_up_f10.png", "row": 3, "col": 0, "bbox": [0, 1086, 361, 362]},
+      {"file": "run_aim_up_f11.png", "row": 3, "col": 1, "bbox": [361, 1086, 361, 362]},
+      {"file": "run_aim_up_f12.png", "row": 3, "col": 2, "bbox": [722, 1086, 361, 362]}
+    ]
+  }],
+  "updated": "2026-11-08T04:08:27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "pass": "petal-panic/assets/heroes/scarlet_vale"
+  }
+}
