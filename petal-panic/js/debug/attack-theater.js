@@ -125,7 +125,7 @@ const SANDBOX_PRESETS = {
   burstShot: { count: 3, interval: 0.12, direction: 0.5, speed: 600, ttl: 2, damage: 10 },
   bodyExplosion: { deathBehavior: 'kill', triggerPayloadFirst: true, payloadDelay: 0.1 },
   bombSpread: { count: 3, direction: -75 * DEG, angle: 15 * DEG, speed: 700, arc: 800, bounce: true, ttl: 2, damage: 40, radius: 60 },
-  molotov: { direction: -0.5, arc: 800, bounce: false, flightTtl: null, damage: 12, fireSegments: 3, fireDuration: 3, fireTickRate: 5, fireDamage: 8 },
+  molotov: { direction: -58 * DEG, arc: 800, bounce: false, flightTtl: null, damage: 12, fireSegments: 3, fireDuration: 3, fireTickRate: 5, fireDamage: 8 },
   napalm: { direction: -30 * DEG, speed: 850, ttl: 0.5, damage: 12, fireSegments: 5, fireDuration: 3, fireTickRate: 5, fireDamage: 8, team: 'ally', blastTeam: 'neutral' },
   clusterBomb: { mineType: 'explosion', direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: 120 * DEG, childDirection: -Math.PI / 2, childForce: 300, childArc: 700, childTtl: 2, childDamage: 15, childRadius: 30 },
   targetedBeam: { duration: 1.2, lockTime: 0.5, color: '#ff5555', radius: 30, tracking: true, beamDuration: 1.0, beamWidth: 36, beamLength: 1000, damage: 15, tickRate: 8, team: 'ally' },
