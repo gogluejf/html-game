@@ -1,36 +1,372 @@
 {
-  "file": "petal-panic/assets/heroes/zappy/run_sheet.png",
-  "size": "1260x1244",
-  "rows": 4,
-  "cols": 4,
-  "kind": "animation",
-  "description": "Zappy run animation from GIF",
-  "entities": [{
-    "name": "zappy",
-    "anim": "run",
-    "frames_dir": "petal-panic/assets/heroes/zappy",
-    "frames": [
-      {"file": "run_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 315, 311]},
-      {"file": "run_f2.png", "row": 0, "col": 1, "bbox": [315, 0, 315, 311]},
-      {"file": "run_f3.png", "row": 0, "col": 2, "bbox": [630, 0, 315, 311]},
-      {"file": "run_f4.png", "row": 0, "col": 3, "bbox": [945, 0, 315, 311]},
-      {"file": "run_f5.png", "row": 1, "col": 0, "bbox": [0, 311, 315, 311]},
-      {"file": "run_f6.png", "row": 1, "col": 1, "bbox": [315, 311, 315, 311]},
-      {"file": "run_f7.png", "row": 1, "col": 2, "bbox": [630, 311, 315, 311]},
-      {"file": "run_f8.png", "row": 1, "col": 3, "bbox": [945, 311, 315, 311]},
-      {"file": "run_f9.png", "row": 2, "col": 0, "bbox": [0, 622, 315, 311]},
-      {"file": "run_f10.png", "row": 2, "col": 1, "bbox": [315, 622, 315, 311]},
-      {"file": "run_f11.png", "row": 2, "col": 2, "bbox": [630, 622, 315, 311]},
-      {"file": "run_f12.png", "row": 2, "col": 3, "bbox": [945, 622, 315, 311]},
-      {"file": "run_f13.png", "row": 3, "col": 0, "bbox": [0, 933, 315, 311]},
-      {"file": "run_f14.png", "row": 3, "col": 1, "bbox": [315, 933, 315, 311]},
-      {"file": "run_f15.png", "row": 3, "col": 2, "bbox": [630, 933, 315, 311]},
-      {"file": "run_f16.png", "row": 3, "col": 3, "bbox": [945, 933, 315, 311]}
-    ]
-  }],
-  "updated": "2026-11-08T03:55:53",
-  "crop": {
-    "frames_dir": "petal-panic/assets/heroes/zappy",
-    "pass": "petal-panic/assets/heroes/zappy"
+ "file": "petal-panic/assets/heroes/zappy/run_sheet.png",
+ "size": "1260x1244",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "Zappy run animation from GIF",
+ "entities": [
+  {
+   "name": "zappy",
+   "anim": "run",
+   "frames_dir": "petal-panic/assets/heroes/zappy",
+   "frames": [
+    {
+     "file": "run_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      315,
+      0,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      630,
+      0,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      945,
+      0,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      311,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      315,
+      311,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      630,
+      311,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      945,
+      311,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      622,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      315,
+      622,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      630,
+      622,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      945,
+      622,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      0,
+      933,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      315,
+      933,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      630,
+      933,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      945,
+      933,
+      315,
+      311
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -311
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 16,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -153.5,
+    "y": -303,
+    "w": 307,
+    "h": 303
+   },
+   "pivot": {
+    "x": 0,
+    "y": -151
+   },
+   "markers": []
   }
+ ],
+ "updated": "2026-11-08T03:55:53",
+ "crop": {
+  "frames_dir": "petal-panic/assets/heroes/zappy",
+  "pass": "petal-panic/assets/heroes/zappy"
+ }
 }
