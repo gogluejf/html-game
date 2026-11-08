@@ -1,0 +1,24 @@
+{
+  "file": "petal-panic/assets/enemies/troop_head/death_sheet.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "troop_head death",
+  "entities": [{
+    "name": "troop_head",
+    "anim": "death",
+    "frames_dir": "petal-panic/assets/enemies/troop_head",
+    "frames": [
+      {"file": "death_f1.png", "row": 0, "col": 0, "bbox": [10, 132, 331, 489]},
+      {"file": "death_f2.png", "row": 0, "col": 1, "bbox": [343, 185, 1065, 452]},
+      {"file": "death_f3.png", "row": 0, "col": 2, "bbox": [1407, 304, 365, 340]},
+      {"file": "death_f4.png", "row": 0, "col": 3, "bbox": [1768, 410, 399, 226]}
+    ]
+  }],
+  "updated": "2026-11-08T16:16:07",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/troop_head",
+    "pass": "petal-panic/assets/enemies/troop_head"
+  }
+}

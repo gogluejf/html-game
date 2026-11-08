@@ -1,77 +1,141 @@
 {
-  "file": "petal-panic/assets/enemies/scorpion/idle_sheet.png",
-  "size": "2138x447",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "scorpion idle (5f)",
-  "entities": [
+ "file": "petal-panic/assets/enemies/scorpion/idle_sheet.png",
+ "size": "2138x447",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "scorpion idle (5f)",
+ "entities": [
+  {
+   "name": "scorpion",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/enemies/scorpion",
+   "frames": [
     {
-      "name": "scorpion",
-      "anim": "idle",
-      "frames_dir": "petal-panic/assets/enemies/scorpion",
-      "frames": [
-        {
-          "file": "idle_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            21,
-            422,
-            405
-          ]
-        },
-        {
-          "file": "idle_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            422,
-            27,
-            435,
-            393
-          ]
-        },
-        {
-          "file": "idle_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            857,
-            0,
-            424,
-            447
-          ]
-        },
-        {
-          "file": "idle_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1281,
-            27,
-            443,
-            392
-          ]
-        },
-        {
-          "file": "idle_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1724,
-            20,
-            414,
-            407
-          ]
-        }
-      ]
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      21,
+      422,
+      405
+     ],
+     "offset": {
+      "x": 0,
+      "y": -405
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      422,
+      27,
+      435,
+      393
+     ],
+     "offset": {
+      "x": 0,
+      "y": -393
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      857,
+      0,
+      424,
+      447
+     ],
+     "offset": {
+      "x": 0,
+      "y": -447
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1281,
+      27,
+      443,
+      392
+     ],
+     "offset": {
+      "x": 0,
+      "y": -392
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1724,
+      20,
+      414,
+      407
+     ],
+     "offset": {
+      "x": 0,
+      "y": -407
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-10-27",
-  "crop": {
-    "frames_dir": "petal-panic/assets/enemies/scorpion",
-    "pass": "re-glued after rename"
+   ],
+   "fps": 5,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -397,
+    "w": 414,
+    "h": 397
+   },
+   "pivot": {
+    "x": 207,
+    "y": -198.5
+   },
+   "markers": []
   }
+ ],
+ "updated": "2026-10-27",
+ "crop": {
+  "frames_dir": "petal-panic/assets/enemies/scorpion",
+  "pass": "re-glued after rename"
+ }
 }

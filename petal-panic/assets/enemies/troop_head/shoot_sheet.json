@@ -1,0 +1,24 @@
+{
+  "file": "petal-panic/assets/enemies/troop_head/shoot_sheet.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "troop_head shoot",
+  "entities": [{
+    "name": "troop_head",
+    "anim": "shoot",
+    "frames_dir": "petal-panic/assets/enemies/troop_head",
+    "frames": [
+      {"file": "shoot_f1.png", "row": 0, "col": 0, "bbox": [15, 174, 1020, 424]},
+      {"file": "shoot_f2.png", "row": 0, "col": 1, "bbox": [1041, 174, 383, 424]},
+      {"file": "shoot_f3.png", "row": 0, "col": 2, "bbox": [1432, 174, 357, 425]},
+      {"file": "shoot_f4.png", "row": 0, "col": 3, "bbox": [1812, 175, 342, 424]}
+    ]
+  }],
+  "updated": "2026-11-08T16:16:06",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/troop_head",
+    "pass": "petal-panic/assets/enemies/troop_head"
+  }
+}

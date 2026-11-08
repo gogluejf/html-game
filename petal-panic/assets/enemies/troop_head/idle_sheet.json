@@ -1,0 +1,24 @@
+{
+  "file": "petal-panic/assets/enemies/troop_head/idle_sheet.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "troop_head idle",
+  "entities": [{
+    "name": "troop_head",
+    "anim": "idle",
+    "frames_dir": "petal-panic/assets/enemies/troop_head",
+    "frames": [
+      {"file": "idle_f1.png", "row": 0, "col": 0, "bbox": [11, 104, 862, 559]},
+      {"file": "idle_f2.png", "row": 0, "col": 1, "bbox": [873, 75, 440, 587]},
+      {"file": "idle_f3.png", "row": 0, "col": 2, "bbox": [1314, 122, 423, 541]},
+      {"file": "idle_f4.png", "row": 0, "col": 3, "bbox": [1736, 138, 432, 526]}
+    ]
+  }],
+  "updated": "2026-11-08T16:16:04",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/troop_head",
+    "pass": "petal-panic/assets/enemies/troop_head"
+  }
+}
