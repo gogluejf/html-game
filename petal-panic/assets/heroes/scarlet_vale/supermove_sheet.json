@@ -1,132 +1,36 @@
 {
- "file": "petal-panic/assets/heroes/scarlet_vale/supermove_sheet.png",
- "size": "1804x815",
- "rows": 2,
- "cols": 5,
- "description": "Scarlet Vale super move full cycle: windup -> spinning rose attacks -> vortex -> recovery",
- "entities": [
-  {
-   "name": "scarlet_vale",
-   "anim": "supermove",
-   "frames": [
-    {
-     "file": "supermove_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      12,
-      292,
-      365
-     ]
-    },
-    {
-     "file": "supermove_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      292,
-      14,
-      374,
-      361
-     ]
-    },
-    {
-     "file": "supermove_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      667,
-      4,
-      363,
-      381
-     ]
-    },
-    {
-     "file": "supermove_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1030,
-      12,
-      381,
-      365
-     ]
-    },
-    {
-     "file": "supermove_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1412,
-      0,
-      390,
-      389
-     ]
-    },
-    {
-     "file": "supermove_f6.png",
-     "row": 1,
-     "col": 0,
-     "bbox": [
-      9,
-      389,
-      274,
-      426
-     ]
-    },
-    {
-     "file": "supermove_f7.png",
-     "row": 1,
-     "col": 1,
-     "bbox": [
-      292,
-      435,
-      375,
-      334
-     ]
-    },
-    {
-     "file": "supermove_f8.png",
-     "row": 1,
-     "col": 2,
-     "bbox": [
-      668,
-      419,
-      361,
-      366
-     ]
-    },
-    {
-     "file": "supermove_f9.png",
-     "row": 1,
-     "col": 3,
-     "bbox": [
-      1041,
-      442,
-      358,
-      320
-     ]
-    },
-    {
-     "file": "supermove_f10.png",
-     "row": 1,
-     "col": 4,
-     "bbox": [
-      1411,
-      450,
-      393,
-      304
-     ]
-    }
-   ],
-   "frames_dir": "petal-panic/assets/heroes/scarlet_vale"
+  "file": "petal-panic/assets/heroes/scarlet_vale/supermove_sheet.png",
+  "size": "1448x1084",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "scarlet_vale supermove",
+  "entities": [{
+    "name": "scarlet_vale",
+    "anim": "supermove",
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "frames": [
+      {"file": "supermove_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 362, 271]},
+      {"file": "supermove_f2.png", "row": 0, "col": 1, "bbox": [362, 0, 362, 271]},
+      {"file": "supermove_f3.png", "row": 0, "col": 2, "bbox": [724, 0, 362, 271]},
+      {"file": "supermove_f4.png", "row": 0, "col": 3, "bbox": [1086, 0, 362, 271]},
+      {"file": "supermove_f5.png", "row": 1, "col": 0, "bbox": [0, 271, 362, 271]},
+      {"file": "supermove_f6.png", "row": 1, "col": 1, "bbox": [362, 271, 362, 271]},
+      {"file": "supermove_f7.png", "row": 1, "col": 2, "bbox": [724, 271, 362, 271]},
+      {"file": "supermove_f8.png", "row": 1, "col": 3, "bbox": [1086, 271, 362, 271]},
+      {"file": "supermove_f9.png", "row": 2, "col": 0, "bbox": [0, 542, 362, 271]},
+      {"file": "supermove_f10.png", "row": 2, "col": 1, "bbox": [362, 542, 362, 271]},
+      {"file": "supermove_f11.png", "row": 2, "col": 2, "bbox": [724, 542, 362, 271]},
+      {"file": "supermove_f12.png", "row": 2, "col": 3, "bbox": [1086, 542, 362, 271]},
+      {"file": "supermove_f13.png", "row": 3, "col": 0, "bbox": [0, 813, 362, 271]},
+      {"file": "supermove_f14.png", "row": 3, "col": 1, "bbox": [362, 813, 362, 271]},
+      {"file": "supermove_f15.png", "row": 3, "col": 2, "bbox": [724, 813, 362, 271]},
+      {"file": "supermove_f16.png", "row": 3, "col": 3, "bbox": [1086, 813, 362, 271]}
+    ]
+  }],
+  "updated": "2026-11-08T15:04:26",
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "pass": "petal-panic/assets/heroes/scarlet_vale"
   }
- ],
- "crop": {
-  "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
-  "pass": "petal-panic/assets/heroes/scarlet_vale"
- },
- "updated": "2026-10-21T19:22:38",
- "kind": "animation"
 }

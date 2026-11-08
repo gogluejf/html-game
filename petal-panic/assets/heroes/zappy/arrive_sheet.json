@@ -1,0 +1,55 @@
+{
+  "file": "petal-panic/assets/heroes/zappy/arrive_sheet.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 3,
+  "kind": "animation",
+  "description": "Zappy arrive/cart, 3 frames",
+  "entities": [
+    {
+      "name": "zappy",
+      "anim": "arrive",
+      "frames_dir": "petal-panic/assets/heroes/zappy",
+      "frames": [
+        {
+          "file": "arrive_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            9,
+            18,
+            686,
+            685
+          ]
+        },
+        {
+          "file": "arrive_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            729,
+            19,
+            692,
+            684
+          ]
+        },
+        {
+          "file": "arrive_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1464,
+            25,
+            704,
+            679
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-11-08T15:21:05",
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/zappy",
+    "pass": "petal-panic/assets/heroes/zappy"
+  }
+}

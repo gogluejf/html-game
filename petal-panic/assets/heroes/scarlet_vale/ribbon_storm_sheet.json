@@ -1,10 +1,10 @@
 {
  "file": "petal-panic/assets/heroes/scarlet_vale/ribbon_storm_sheet.png",
- "size": "4160x552",
- "rows": 1,
- "cols": 8,
+ "size": "2172x724",
+ "rows": 2,
+ "cols": 4,
  "kind": "animation",
- "description": "scarlet vale ribbon storm attack (8 frames)",
+ "description": "scarlet_vale ribbon_storm",
  "entities": [
   {
    "name": "scarlet_vale",
@@ -16,14 +16,14 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      146,
-      46,
-      260,
-      459
+      0,
+      0,
+      219,
+      353
      ],
      "offset": {
-      "x": -130,
-      "y": -459
+      "x": 0,
+      "y": -353
      },
      "scale": {
       "sx": 1,
@@ -37,14 +37,14 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      668,
-      67,
-      255,
-      417
+      219,
+      0,
+      203,
+      329
      ],
      "offset": {
-      "x": -127.5,
-      "y": -417
+      "x": 0,
+      "y": -329
      },
      "scale": {
       "sx": 1,
@@ -58,14 +58,14 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      1186,
-      67,
-      259,
-      417
+      422,
+      0,
+      204,
+      319
      ],
      "offset": {
-      "x": -129.5,
-      "y": -417
+      "x": 0,
+      "y": -319
      },
      "scale": {
       "sx": 1,
@@ -79,14 +79,14 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      1673,
-      23,
-      325,
-      506
+      626,
+      0,
+      263,
+      356
      ],
      "offset": {
-      "x": -162.5,
-      "y": -506
+      "x": 0,
+      "y": -356
      },
      "scale": {
       "sx": 1,
@@ -100,35 +100,35 @@
      "row": 0,
      "col": 4,
      "bbox": [
-      2165,
-      56,
-      382,
-      440
+      889,
+      0,
+      314,
+      337
      ],
      "offset": {
-      "x": -191,
-      "y": -440
+      "x": 0,
+      "y": -337
      },
      "scale": {
       "sx": 1,
       "sy": 1
      },
      "boxes": [],
-     "durUnits": 6
+     "durUnits": 1
     },
     {
      "file": "ribbon_storm_f6.png",
      "row": 0,
      "col": 5,
      "bbox": [
-      2694,
-      63,
-      364,
-      426
+      1203,
+      0,
+      275,
+      325
      ],
      "offset": {
-      "x": -182,
-      "y": -426
+      "x": 0,
+      "y": -325
      },
      "scale": {
       "sx": 1,
@@ -142,14 +142,14 @@
      "row": 0,
      "col": 6,
      "bbox": [
-      3267,
-      57,
-      258,
-      438
+      1478,
+      0,
+      232,
+      339
      ],
      "offset": {
-      "x": -129,
-      "y": -438
+      "x": 0,
+      "y": -339
      },
      "scale": {
       "sx": 1,
@@ -163,14 +163,14 @@
      "row": 0,
      "col": 7,
      "bbox": [
-      3810,
-      53,
-      212,
-      446
+      1710,
+      0,
+      219,
+      353
      ],
      "offset": {
-      "x": -106,
-      "y": -446
+      "x": 0,
+      "y": -353
      },
      "scale": {
       "sx": 1,
@@ -180,20 +180,25 @@
      "durUnits": 1
     }
    ],
-   "playback": "loop",
+   "fps": 6,
+   "playback": "once",
    "direction": "forward",
    "collision": {
-    "x": -126,
-    "y": -451,
-    "w": 252,
-    "h": 451
+    "x": 0,
+    "y": -345,
+    "w": 211,
+    "h": 345
    },
    "pivot": {
-    "x": 0,
-    "y": -225
+    "x": 106,
+    "y": -172
    },
-   "markers": [],
-   "fps": 8
+   "markers": []
   }
- ]
+ ],
+ "updated": "2026-11-08T15:37:45",
+ "crop": {
+  "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+  "pass": "petal-panic/assets/heroes/scarlet_vale"
+ }
 }

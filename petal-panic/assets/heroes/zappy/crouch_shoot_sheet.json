@@ -1,0 +1,36 @@
+{
+  "file": "petal-panic/assets/heroes/zappy/crouch_shoot_sheet.png",
+  "size": "1268x1256",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "zappy crouch_shoot",
+  "entities": [{
+    "name": "zappy",
+    "anim": "crouch_shoot",
+    "frames_dir": "petal-panic/assets/heroes/zappy",
+    "frames": [
+      {"file": "crouch_shoot_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 317, 314]},
+      {"file": "crouch_shoot_f2.png", "row": 0, "col": 1, "bbox": [317, 0, 317, 314]},
+      {"file": "crouch_shoot_f3.png", "row": 0, "col": 2, "bbox": [634, 0, 317, 314]},
+      {"file": "crouch_shoot_f4.png", "row": 0, "col": 3, "bbox": [951, 0, 317, 314]},
+      {"file": "crouch_shoot_f5.png", "row": 1, "col": 0, "bbox": [0, 314, 317, 314]},
+      {"file": "crouch_shoot_f6.png", "row": 1, "col": 1, "bbox": [317, 314, 317, 314]},
+      {"file": "crouch_shoot_f7.png", "row": 1, "col": 2, "bbox": [634, 314, 317, 314]},
+      {"file": "crouch_shoot_f8.png", "row": 1, "col": 3, "bbox": [951, 314, 317, 314]},
+      {"file": "crouch_shoot_f9.png", "row": 2, "col": 0, "bbox": [0, 628, 317, 314]},
+      {"file": "crouch_shoot_f10.png", "row": 2, "col": 1, "bbox": [317, 628, 317, 314]},
+      {"file": "crouch_shoot_f11.png", "row": 2, "col": 2, "bbox": [634, 628, 317, 314]},
+      {"file": "crouch_shoot_f12.png", "row": 2, "col": 3, "bbox": [951, 628, 317, 314]},
+      {"file": "crouch_shoot_f13.png", "row": 3, "col": 0, "bbox": [0, 942, 317, 314]},
+      {"file": "crouch_shoot_f14.png", "row": 3, "col": 1, "bbox": [317, 942, 317, 314]},
+      {"file": "crouch_shoot_f15.png", "row": 3, "col": 2, "bbox": [634, 942, 317, 314]},
+      {"file": "crouch_shoot_f16.png", "row": 3, "col": 3, "bbox": [951, 942, 317, 314]}
+    ]
+  }],
+  "updated": "2026-11-08T15:04:28",
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/zappy",
+    "pass": "petal-panic/assets/heroes/zappy"
+  }
+}
