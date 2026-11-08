@@ -10,13 +10,65 @@
     "anim": "shoot",
     "frames_dir": "petal-panic/assets/enemies/troop_head",
     "frames": [
-      {"file": "shoot_f1.png", "row": 0, "col": 0, "bbox": [15, 174, 1020, 424]},
-      {"file": "shoot_f2.png", "row": 0, "col": 1, "bbox": [1041, 174, 383, 424]},
-      {"file": "shoot_f3.png", "row": 0, "col": 2, "bbox": [1432, 174, 357, 425]},
-      {"file": "shoot_f4.png", "row": 0, "col": 3, "bbox": [1812, 175, 342, 424]}
-    ]
+      {"file": "shoot_f1.png", "row": 0, "col": 0, "bbox": [15, 174, 319, 424], "offset": {
+  "x": -159.5,
+  "y": -424
+}, "scale": {
+  "sx": 1,
+  "sy": 1
+}, "boxes": [], "durUnits": 1},
+      {"file": "shoot_f2.png", "row": 0, "col": 1, "bbox": [340, 175, 337, 422], "offset": {
+  "x": -168.5,
+  "y": -422
+}, "scale": {
+  "sx": 1,
+  "sy": 1
+}, "boxes": [], "durUnits": 1},
+      {"file": "shoot_f3.png", "row": 0, "col": 2, "bbox": [677, 174, 358, 424], "offset": {
+  "x": -179,
+  "y": -424
+}, "scale": {
+  "sx": 1,
+  "sy": 1
+}, "boxes": [], "durUnits": 1},
+      {"file": "shoot_f4.png", "row": 0, "col": 3, "bbox": [1041, 174, 383, 424], "offset": {
+  "x": -191.5,
+  "y": -424
+}, "scale": {
+  "sx": 1,
+  "sy": 1
+}, "boxes": [], "durUnits": 1},
+      {"file": "shoot_f5.png", "row": 0, "col": 4, "bbox": [1432, 174, 357, 425], "offset": {
+  "x": -178.5,
+  "y": -425
+}, "scale": {
+  "sx": 1,
+  "sy": 1
+}, "boxes": [], "durUnits": 1},
+      {"file": "shoot_f6.png", "row": 0, "col": 5, "bbox": [1812, 175, 342, 424], "offset": {
+  "x": -171,
+  "y": -424
+}, "scale": {
+  "sx": 1,
+  "sy": 1
+}, "boxes": [], "durUnits": 1}
+    ],
+    "fps": 8,
+    "playback": "loop",
+    "direction": "forward",
+    "collision": {
+      "x": -155.5,
+      "y": -416,
+      "w": 311,
+      "h": 416
+    },
+    "pivot": {
+      "x": 0,
+      "y": -208
+    },
+    "markers": []
   }],
-  "updated": "2026-11-08T16:16:06",
+  "updated": "2026-11-08T16:40:13",
   "crop": {
     "frames_dir": "petal-panic/assets/enemies/troop_head",
     "pass": "petal-panic/assets/enemies/troop_head"

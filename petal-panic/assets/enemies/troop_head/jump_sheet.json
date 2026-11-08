@@ -1,28 +1,204 @@
 {
-  "file": "petal-panic/assets/enemies/troop_head/jump_sheet.png",
-  "size": "1776x894",
-  "rows": 2,
-  "cols": 4,
-  "kind": "animation",
-  "description": "troop_head jump",
-  "entities": [{
-    "name": "troop_head",
-    "anim": "jump",
-    "frames_dir": "petal-panic/assets/enemies/troop_head",
-    "frames": [
-      {"file": "jump_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 444, 447]},
-      {"file": "jump_f2.png", "row": 0, "col": 1, "bbox": [444, 0, 444, 447]},
-      {"file": "jump_f3.png", "row": 0, "col": 2, "bbox": [888, 0, 444, 447]},
-      {"file": "jump_f4.png", "row": 0, "col": 3, "bbox": [1332, 0, 444, 447]},
-      {"file": "jump_f5.png", "row": 1, "col": 0, "bbox": [0, 447, 444, 447]},
-      {"file": "jump_f6.png", "row": 1, "col": 1, "bbox": [444, 447, 444, 447]},
-      {"file": "jump_f7.png", "row": 1, "col": 2, "bbox": [888, 447, 444, 447]},
-      {"file": "jump_f8.png", "row": 1, "col": 3, "bbox": [1332, 447, 444, 447]}
-    ]
-  }],
-  "updated": "2026-11-08T16:05:15",
-  "crop": {
-    "frames_dir": "petal-panic/assets/enemies/troop_head",
-    "pass": "petal-panic/assets/enemies/troop_head"
+ "file": "petal-panic/assets/enemies/troop_head/jump_sheet.png",
+ "size": "1776x894",
+ "rows": 2,
+ "cols": 4,
+ "kind": "animation",
+ "description": "troop_head jump",
+ "entities": [
+  {
+   "name": "troop_head",
+   "anim": "jump",
+   "frames_dir": "petal-panic/assets/enemies/troop_head",
+   "frames": [
+    {
+     "file": "jump_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      444,
+      447
+     ],
+     "offset": {
+      "x": -222,
+      "y": -223.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      444,
+      0,
+      444,
+      447
+     ],
+     "offset": {
+      "x": -222,
+      "y": -223.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      888,
+      0,
+      444,
+      447
+     ],
+     "offset": {
+      "x": -222,
+      "y": -223.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1332,
+      0,
+      444,
+      447
+     ],
+     "offset": {
+      "x": -222,
+      "y": -223.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      447,
+      444,
+      447
+     ],
+     "offset": {
+      "x": -222,
+      "y": -223.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      444,
+      447,
+      444,
+      447
+     ],
+     "offset": {
+      "x": -222,
+      "y": -223.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      888,
+      447,
+      444,
+      447
+     ],
+     "offset": {
+      "x": -222,
+      "y": -223.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1332,
+      447,
+      444,
+      447
+     ],
+     "offset": {
+      "x": -222,
+      "y": -223.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -149,
+    "y": -174,
+    "w": 298,
+    "h": 334
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
   }
+ ],
+ "updated": "2026-11-08T16:05:15",
+ "crop": {
+  "frames_dir": "petal-panic/assets/enemies/troop_head",
+  "pass": "petal-panic/assets/enemies/troop_head"
+ }
 }

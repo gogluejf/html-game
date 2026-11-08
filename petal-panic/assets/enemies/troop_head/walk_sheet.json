@@ -1,24 +1,162 @@
 {
-  "file": "petal-panic/assets/enemies/troop_head/walk_sheet.png",
-  "size": "2172x724",
-  "rows": 1,
-  "cols": 4,
-  "kind": "animation",
-  "description": "troop_head walk",
-  "entities": [{
-    "name": "troop_head",
-    "anim": "walk",
-    "frames_dir": "petal-panic/assets/enemies/troop_head",
-    "frames": [
-      {"file": "walk_f1.png", "row": 0, "col": 0, "bbox": [23, 115, 351, 524]},
-      {"file": "walk_f2.png", "row": 0, "col": 1, "bbox": [388, 110, 710, 530]},
-      {"file": "walk_f3.png", "row": 0, "col": 2, "bbox": [1109, 104, 345, 535]},
-      {"file": "walk_f4.png", "row": 0, "col": 3, "bbox": [1463, 115, 696, 527]}
-    ]
-  }],
-  "updated": "2026-11-08T16:16:05",
-  "crop": {
-    "frames_dir": "petal-panic/assets/enemies/troop_head",
-    "pass": "petal-panic/assets/enemies/troop_head"
+ "file": "petal-panic/assets/enemies/troop_head/walk_sheet.png",
+ "size": "2172x724",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "troop_head walk",
+ "entities": [
+  {
+   "name": "troop_head",
+   "anim": "walk",
+   "frames_dir": "petal-panic/assets/enemies/troop_head",
+   "frames": [
+    {
+     "file": "walk_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      23,
+      115,
+      351,
+      524
+     ],
+     "offset": {
+      "x": -175.5,
+      "y": -524
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "walk_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      388,
+      114,
+      360,
+      526
+     ],
+     "offset": {
+      "x": -180,
+      "y": -526
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "walk_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      742,
+      110,
+      356,
+      515
+     ],
+     "offset": {
+      "x": -178,
+      "y": -515
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "walk_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1109,
+      104,
+      345,
+      535
+     ],
+     "offset": {
+      "x": -172.5,
+      "y": -535
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "walk_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1463,
+      115,
+      352,
+      527
+     ],
+     "offset": {
+      "x": -176,
+      "y": -527
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "walk_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1815,
+      121,
+      344,
+      521
+     ],
+     "offset": {
+      "x": -172,
+      "y": -521
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -171.5,
+    "y": -516,
+    "w": 343,
+    "h": 516
+   },
+   "pivot": {
+    "x": 0,
+    "y": -258
+   },
+   "markers": []
   }
+ ],
+ "updated": "2026-11-08T16:40:12",
+ "crop": {
+  "frames_dir": "petal-panic/assets/enemies/troop_head",
+  "pass": "petal-panic/assets/enemies/troop_head"
+ }
 }
