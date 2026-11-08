@@ -330,7 +330,7 @@ def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row
     return assignments, flags
 
 
-def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, margin, trace, span=False, col_mode=False, alpha_threshold=16):
+def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, margin, trace, span=False, col_mode=False, alpha_threshold=16, split_fused=False):
     """Build one bounding rect per frame from owned pixels; crop RGBA.
 
     Before saving, erases any foreground pixel whose component is NOT owned

@@ -1,0 +1,372 @@
+{
+ "file": "petal-panic/assets/heroes/zappy/idle_down_sheet.png",
+ "size": "1252x1252",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "Zappy idle_down",
+ "entities": [
+  {
+   "name": "zappy",
+   "anim": "idle_down",
+   "frames_dir": "petal-panic/assets/heroes/zappy",
+   "frames": [
+    {
+     "file": "idle_down_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      313,
+      0,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      626,
+      0,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      939,
+      0,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      313,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      313,
+      313,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      626,
+      313,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      939,
+      313,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      626,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      313,
+      626,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      626,
+      626,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      939,
+      626,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      0,
+      939,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      313,
+      939,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      626,
+      939,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_down_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      939,
+      939,
+      313,
+      313
+     ],
+     "offset": {
+      "x": 0,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 16,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -305,
+    "w": 305,
+    "h": 305
+   },
+   "pivot": {
+    "x": 152.5,
+    "y": -152.5
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-08T14:11:06",
+ "crop": {
+  "frames_dir": "petal-panic/assets/heroes/zappy",
+  "pass": "petal-panic/assets/heroes/zappy"
+ }
+}
