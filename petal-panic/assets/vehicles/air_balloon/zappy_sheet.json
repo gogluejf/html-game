@@ -16,14 +16,14 @@
      "row": 0,
      "col": 0,
      "bbox": [
+      77,
       0,
-      0,
-      693,
-      756
+      424,
+      504
      ],
      "offset": {
-      "x": -346.5,
-      "y": -756
+      "x": -212,
+      "y": -504
      },
      "scale": {
       "sx": 1,
@@ -37,14 +37,14 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      693,
+      541,
       0,
-      693,
-      756
+      436,
+      499
      ],
      "offset": {
-      "x": -346.5,
-      "y": -756
+      "x": -218,
+      "y": -499
      },
      "scale": {
       "sx": 1,
@@ -58,14 +58,77 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      1386,
+      1012,
       0,
-      694,
-      756
+      439,
+      502
      ],
      "offset": {
-      "x": -347,
-      "y": -756
+      "x": -219.5,
+      "y": -502
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "zappy_f4.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      77,
+      505,
+      433,
+      504
+     ],
+     "offset": {
+      "x": -216.5,
+      "y": -504
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "zappy_f5.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      542,
+      505,
+      436,
+      504
+     ],
+     "offset": {
+      "x": -218,
+      "y": -504
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "zappy_f6.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      1017,
+      505,
+      436,
+      504
+     ],
+     "offset": {
+      "x": -218,
+      "y": -504
      },
      "scale": {
       "sx": 1,
@@ -75,7 +138,7 @@
      "durUnits": 1
     }
    ],
-   "fps": 8,
+   "fps": 5,
    "playback": "loop",
    "direction": "forward",
    "collision": {
@@ -91,7 +154,7 @@
    "markers": []
   }
  ],
- "updated": "2026-11-08T16:48:38",
+ "updated": "2026-11-08T17:35:23",
  "crop": {
   "frames_dir": "petal-panic/assets/vehicles/air_balloon",
   "pass": "petal-panic/assets/vehicles/air_balloon"

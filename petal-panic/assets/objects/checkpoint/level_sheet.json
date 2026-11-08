@@ -15,14 +15,119 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      0,
-      0,
-      332,
-      525
+      3,
+      37,
+      361,
+      650
      ],
      "offset": {
-      "x": -166,
-      "y": -525
+      "x": -175,
+      "y": -649
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "level_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      364,
+      37,
+      348,
+      650
+     ],
+     "offset": {
+      "x": -174,
+      "y": -650
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "level_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      728,
+      37,
+      342,
+      650
+     ],
+     "offset": {
+      "x": -171,
+      "y": -650
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "level_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1089,
+      37,
+      341,
+      650
+     ],
+     "offset": {
+      "x": -170.5,
+      "y": -650
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "level_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1452,
+      37,
+      342,
+      650
+     ],
+     "offset": {
+      "x": -171,
+      "y": -650
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "level_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1814,
+      37,
+      342,
+      650
+     ],
+     "offset": {
+      "x": -171,
+      "y": -650
      },
      "scale": {
       "sx": 1,
@@ -34,23 +139,25 @@
    ],
    "frames_dir": "petal-panic/assets/objects/checkpoint",
    "collision": {
-    "x": -166,
-    "y": -525,
-    "w": 332,
-    "h": 498
+    "x": -151,
+    "y": -648,
+    "w": 241,
+    "h": 645
    },
    "playback": "loop",
-   "direction": "forward",
+   "direction": "ping_pong",
    "pivot": {
-    "x": 0,
-    "y": -262
+    "x": -30,
+    "y": -325
    },
    "markers": [],
    "fps": 8
   }
  ],
  "crop": {
-  "pass": "/tmp/redo-single"
+  "frames_dir": "petal-panic/assets/objects/checkpoint",
+  "pass": "petal-panic/assets/objects/checkpoint"
  },
- "kind": "entity_variant"
+ "kind": "entity_variant",
+ "updated": "2026-11-08T17:20:20"
 }

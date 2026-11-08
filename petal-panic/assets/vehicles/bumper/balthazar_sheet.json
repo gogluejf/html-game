@@ -1,99 +1,162 @@
 {
-  "file": "petal-panic/assets/vehicles/bumper/balthazar_sheet.png",
-  "size": "2172x724",
-  "rows": 1,
-  "cols": 3,
-  "kind": "animation",
-  "description": "Bumper vehicle balthazar animation",
-  "entities": [
+ "file": "petal-panic/assets/vehicles/bumper/balthazar_sheet.png",
+ "size": "2172x724",
+ "rows": 1,
+ "cols": 3,
+ "kind": "animation",
+ "description": "Bumper vehicle balthazar animation",
+ "entities": [
+  {
+   "name": "bumper",
+   "anim": "balthazar",
+   "frames_dir": "petal-panic/assets/vehicles/bumper",
+   "frames": [
     {
-      "name": "bumper",
-      "anim": "balthazar",
-      "frames_dir": "petal-panic/assets/vehicles/bumper",
-      "frames": [
-        {
-          "file": "balthazar_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            18,
-            162,
-            710,
-            499
-          ],
-          "offset": {
-            "x": -355,
-            "y": -499
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "balthazar_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            736,
-            179,
-            742,
-            481
-          ],
-          "offset": {
-            "x": -371,
-            "y": -481
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "balthazar_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            1470,
-            179,
-            702,
-            480
-          ],
-          "offset": {
-            "x": -351,
-            "y": -480
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "fps": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -351,
-        "y": -491,
-        "w": 702,
-        "h": 491
-      },
-      "pivot": {
-        "x": 0,
-        "y": -245
-      },
-      "markers": []
+     "file": "balthazar_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      337,
+      12,
+      432,
+      338
+     ],
+     "offset": {
+      "x": -216,
+      "y": -338
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "balthazar_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      840,
+      13,
+      464,
+      337
+     ],
+     "offset": {
+      "x": -232,
+      "y": -337
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "balthazar_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1357,
+      20,
+      491,
+      329
+     ],
+     "offset": {
+      "x": -245.5,
+      "y": -329
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "balthazar_f4.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      300,
+      397,
+      498,
+      313
+     ],
+     "offset": {
+      "x": -249,
+      "y": -313
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "balthazar_f5.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      850,
+      378,
+      466,
+      332
+     ],
+     "offset": {
+      "x": -233,
+      "y": -332
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "balthazar_f6.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      1386,
+      373,
+      458,
+      339
+     ],
+     "offset": {
+      "x": -229,
+      "y": -339
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ],
-  "updated": "2026-11-03T00:42:28",
-  "crop": {
-    "frames_dir": "petal-panic/assets/vehicles/bumper",
-    "pass": "/home/goglue/tmp/baltha-arrive-v1"
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -351,
+    "y": -491,
+    "w": 702,
+    "h": 491
+   },
+   "pivot": {
+    "x": 0,
+    "y": -245
+   },
+   "markers": []
   }
+ ],
+ "updated": "2026-11-08T17:13:48",
+ "crop": {
+  "frames_dir": "petal-panic/assets/vehicles/bumper",
+  "pass": "petal-panic/assets/vehicles/bumper"
+ }
 }
