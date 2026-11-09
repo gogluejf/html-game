@@ -46,7 +46,7 @@ import { record } from '../stats.js';
 import { isGrounded, standingOnOneWay } from '../hero/physics.js';
 import { isLethalFall, getDeathFadeAlpha, finishHeroDeath, DEATH_FADE_DURATION } from '../hero/death.js';
 export { isLethalFall, getDeathFadeAlpha, finishHeroDeath };
-import { makeCheckpoint } from '../objects/object.js';
+import { makeCheckpoint, GameObj } from '../objects/object.js';
 import { ctx } from '../world/context.js';
 import { TUNING } from '../tuning.js';
 
@@ -875,6 +875,13 @@ ctx.barrelSolidBoxes = barrelSolidBoxes;
 ctx.bossZone = bossZone;
 ctx.handleBarrelDestroyed = handleBarrelDestroyed;
 ctx.popSuperCoinHit = popSuperCoinHit;
+// Wire hit-resolution hooks onto GameObj (avoids circular import object.js ↔ barrelSync.js)
+GameObj.prototype.onHit = function (_ctx, result) {
+  if (result.dealt > 0) popSuperCoinHit(this, result.dealt);
+};
+GameObj.prototype.onDestroyed = function (_ctx, _result) {
+  handleBarrelDestroyed(this);
+};
 ctx.coins = coins;
 ctx.projectilePool = projectilePool;
 // Unified pool: specials ARE projectiles now (Special folded into Projectile,

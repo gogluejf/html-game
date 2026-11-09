@@ -41,6 +41,7 @@ export function refreshBarrelSolidBoxes() {
  * @param {GameObj} barrel the destroyed object
  */
 export function handleBarrelDestroyed(barrel) {
+  if (barrel._destroyHandled) return; barrel._destroyHandled = true;
   const hero = ctx.hero;
   const { cx, cy } = { cx: barrel.x + barrel.w / 2, cy: barrel.y + barrel.h / 2 };
 
