@@ -29,7 +29,7 @@ function dummyEnemy(x, y, hp = 30) {
   };
   return t;
 }
-const heroDummy = () => ({ x: 500, y: 300, w: 28, h: 40, alive: true, energy: 100, intangible: false, traceStats: createTrace(), loseSelectedSpecial() {}, takeHit() {} });
+const heroDummy = () => ({ layer: 1, x: 500, y: 300, w: 28, h: 40, alive: true, energy: 100, shield: 0, intangible: false, dying: false, traceStats: createTrace(), loseSelectedSpecial() {}, takeHit() {} });
 
 ok('neutral blast damages enemies in radius, spares those outside', () => {
   const near = dummyEnemy(100, 100);
