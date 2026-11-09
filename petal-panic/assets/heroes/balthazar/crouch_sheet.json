@@ -99,7 +99,8 @@
      ]
     }
    ],
-   "frames_dir": "petal-panic/assets/heroes/balthazar"
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "hScale": 0.5
   }
  ],
  "crop": {
