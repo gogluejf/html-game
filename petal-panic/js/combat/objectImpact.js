@@ -54,14 +54,9 @@ export function applyObjectImpact(proj, target, source = null, hooks = {}) {
     team: Team.ALLY,
     method: 'projectile',
   });
-  const dealt = res.accepted ? res.dealt : 0;
-  if (dealt > 0) {
-    proj.alive = false;
-    hooks.onObjectReward?.(target, dealt);
-    if (res.destroyed) hooks.onObjectDestroyed?.(target);
-  } else {
-    // Hit an already-destroyed solid — still consumed.
-    proj.alive = false;
-  }
+  // Projectile is consumed on impact either way.
+  // Rewards and destruction payloads are owned by the target's own
+  // onHit/onDestroyed hooks (wired via GameObj.prototype in update.js).
+  proj.alive = false;
   if (isSpecialType(proj.type)) explodeSpecial(proj);
 }

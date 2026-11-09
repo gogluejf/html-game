@@ -7,7 +7,7 @@ import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { LAYER } from '../consts.js';
 import { Entity } from '../core/entity.js';
-import { damage } from '../combat/damage.js';
+import { heroDamage as damage } from '../combat/damage.js';
 import { createTrace } from '../stats.js';
 
 let passed = 0;

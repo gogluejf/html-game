@@ -8,7 +8,7 @@ import { HEROES } from '../hero/heroDefs.js';
 import { UNIT_PX_X } from '../world/macros.js';
 import { LAYER } from '../consts.js';
 import { Entity } from '../core/entity.js';
-import { damage } from '../combat/damage.js';
+import { heroDamage as damage } from '../combat/damage.js';
 
 let passed = 0;
 function ok(name, fn) {

@@ -38,7 +38,7 @@ import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
 import { updateEffects, drawEffects, resetEffects, fireManual, CATALOG } from '../effects/index.js';
 import { particles } from '../effects/particles.js';
-import { damage, flashTarget } from '../combat/damage.js';
+import { heroDamage as damage, flashTarget } from '../combat/damage.js';
 import { entryImpactPoint, snapToImpact } from '../combat/entryImpact.js';
 import { explodeSpecial } from '../combat/shooting.js';
 import { isSpecialType } from '../objects/specialWeapons.js';

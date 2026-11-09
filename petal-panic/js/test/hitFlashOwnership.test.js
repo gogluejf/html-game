@@ -5,7 +5,7 @@
 // Run: node js/test/hitFlashOwnership.test.js
 
 import { strict as assert } from 'node:assert';
-import { damage, flashTarget } from '../combat/damage.js';
+import { heroDamage as damage, flashTarget } from '../combat/damage.js';
 import { Enemy } from '../enemies/enemy.js';
 import { GameObj } from '../objects/object.js';
 import { makeHitbox, processHitboxes } from '../combat/hitbox.js';

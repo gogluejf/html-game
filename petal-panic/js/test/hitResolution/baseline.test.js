@@ -14,7 +14,7 @@ const { makeHitbox, resetHitbox, processHitboxes } = await import('../../combat/
 const { applyObjectImpact } = await import('../../combat/objectImpact.js');
 const { resolveExplosion } = await import('../../combat/explosion.js');
 const { makeWoodBarrel } = await import('../../objects/object.js');
-const { damage } = await import('../../combat/damage.js');
+const { heroDamage: damage } = await import('../../combat/damage.js');
 const { resolveStompBlast } = await import('../../combat/attack/macros/stomp.js');
 // SPECIAL_MELEE and SUPER_MOVE use the same hitbox engine as MELEE (different method string, same code path) — covered above.
 test.skip('SHOCKWAVE — requires collisionWorld event bus and effect registry', () => {});
@@ -128,23 +128,24 @@ test('SPIKE — no damage during warning; damage lands once visible', () => {
   assert.ok(enemy.hp < 50, `visible phase damages (hp=${enemy.hp})`);
 });
 
-test('PROJECTILE — impact drains barrel hp, consumes projectile, fires reward', () => {
+test('PROJECTILE — impact drains barrel hp, consumes projectile', () => {
+  const proj = { alive: true, friendly: true, damage: 15 };
   const barrel = makeWoodBarrel(0, 0);
-  let reward = null;
-  applyObjectImpact({ alive: true, friendly: true, damage: 15 }, barrel, null, { onObjectReward: (t, d) => { reward = [t, d]; } });
-  assert.equal(barrel.hp, 25);
-  assert.ok(!barrel.destroyed);
-  assert.deepEqual(reward, [barrel, 15]);
+  applyObjectImpact(proj, barrel, null);
+  assert.equal(barrel.hp, 25, 'hp drained by 15');
+  assert.ok(!barrel.destroyed, 'not yet destroyed');
+  assert.equal(proj.alive, false, 'projectile consumed');
 });
 
-test('PROJECTILE — killing blow latches destroyed and fires onObjectDestroyed once', () => {
+test('PROJECTILE — killing blow latches destroyed, second impact is no-op', () => {
   const barrel = makeWoodBarrel(0, 0);
-  let destroyed = 0;
-  applyObjectImpact({ alive: true, friendly: true, damage: 999 }, barrel, null, { onObjectDestroyed: () => destroyed++ });
-  assert.ok(barrel.destroyed);
-  assert.equal(destroyed, 1);
-  applyObjectImpact({ alive: true, friendly: true, damage: 999 }, barrel, null, { onObjectDestroyed: () => destroyed++ });
-  assert.equal(destroyed, 1, 'no double-fire');
+  applyObjectImpact({ alive: true, friendly: true, damage: 999 }, barrel, null);
+  assert.ok(barrel.destroyed, 'destroy latch set');
+  // Second impact on destroyed target: applyHit rejects, projectile still consumed
+  const proj2 = { alive: true, friendly: true, damage: 999 };
+  applyObjectImpact(proj2, barrel, null);
+  assert.equal(barrel.hp, 0, 'hp unchanged');
+  assert.equal(proj2.alive, false, 'projectile consumed even on dead target');
 });
 
 test('EXPLOSION — ally blast damages enemies in radius, spares hero', () => {

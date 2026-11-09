@@ -4,7 +4,7 @@
 // This is the M2 skeleton; M3 wires real knockback / death pipelines in.
 
 import { Team, TargetClass, AttackProvenance, assertProvenance, getTargetClass } from './targeting.js';
-import { damage } from './damage.js';
+import { heroDamage as damage } from './damage.js';
 
 /** What a given attacker team may legally strike. */
 const ELIGIBLE = {

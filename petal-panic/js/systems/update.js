@@ -28,7 +28,7 @@ import { makeElephant } from '../boss/boss.js';
 import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER } from '../boss/bossZone.js';
 import { particles, coins } from '../effects/particles.js';
 import { applyKnockback } from '../combat/knockback.js';
-import { damage } from '../combat/damage.js';
+import { heroDamage as damage } from '../combat/damage.js';
 import { separateHeroFromBumper } from '../combat/collisionHandlers.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
@@ -877,10 +877,10 @@ ctx.handleBarrelDestroyed = handleBarrelDestroyed;
 ctx.popSuperCoinHit = popSuperCoinHit;
 // Wire hit-resolution hooks onto GameObj (avoids circular import object.js ↔ barrelSync.js)
 GameObj.prototype.onHit = function (_ctx, result) {
-  if (result.dealt > 0) popSuperCoinHit(this, result.dealt);
+  if (result.dealt > 0) ctx.popSuperCoinHit?.(this, result.dealt);
 };
 GameObj.prototype.onDestroyed = function (_ctx, _result) {
-  handleBarrelDestroyed(this);
+  ctx.handleBarrelDestroyed?.(this);
 };
 ctx.coins = coins;
 ctx.projectilePool = projectilePool;
@@ -1269,10 +1269,7 @@ export function update(dt) {
       stepBombTerrain(s, dt, bombGroundY, [...SOLIDS.slice(1), ...barrelSolidBoxes], {
         onSurfaceContact: (ent, surface) => {
           if (!surface.owner?.alive || !ent.friendly) return; // preserve side-hit team eligibility
-          applyObjectImpact(ent, surface.owner, hero, {
-            onObjectReward: (t, dealt) => popSuperCoinHit(t, dealt),
-            onObjectDestroyed: (t) => handleBarrelDestroyed(t),
-          });
+          applyObjectImpact(ent, surface.owner, hero);
         },
       });
     }

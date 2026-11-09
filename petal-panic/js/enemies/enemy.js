@@ -20,7 +20,7 @@
 import { Entity } from '../core/entity.js';
 import { LAYER, GRAVITY, MAX_FALL_SPEED, UNIT_PX_Y } from '../consts.js';
 import { UNIT_PX_X } from '../world/macros.js';
-import { damage, flashTarget } from '../combat/damage.js';
+import { heroDamage as damage, flashTarget } from '../combat/damage.js';
 
 export class Enemy extends Entity {
   /**

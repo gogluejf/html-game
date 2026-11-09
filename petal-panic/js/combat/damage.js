@@ -42,7 +42,7 @@ export function assertDamageAmount(amount, source, target, method) {
   }
 }
 
-export function damage(source, target, amt, method = 'projectile') {
+export function heroDamage(source, target, amt, method = 'projectile') {
   assertDamageAmount(amt, source, target, method);
   if (!target.alive) return 0;
 

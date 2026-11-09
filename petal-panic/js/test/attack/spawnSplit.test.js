@@ -1,4 +1,4 @@
-import { damage } from '../../combat/damage.js';
+import { heroDamage as damage } from '../../combat/damage.js';
 import '../../combat/attack/macros/molotov.js';
 import { GameObj, WOOD_BARREL_DEF } from '../../objects/object.js';
 // Task 1.17 — Spawn / Split primitive tests (pure logic, no DOM).

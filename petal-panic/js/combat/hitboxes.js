@@ -158,10 +158,6 @@ export function processAllHitboxes() {
     if (target.alive === false && target !== h) {
       ctx.collisionWorld.remove(target);
     }
-    // Handle barrel destruction.
-    if (target.destroyed) {
-      ctx.handleBarrelDestroyed(target);
-    }
   });
 }
 

@@ -7,7 +7,7 @@
 import { projectilePool } from '../objects/projectile.js';
 import { specialById, isSpecialType } from '../objects/specialWeapons.js';
 import { dirAngle } from '../core/vec.js';
-import { damage } from './damage.js';
+import { heroDamage as damage } from './damage.js';
 import { record } from '../stats.js';
 import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';

@@ -11,7 +11,7 @@
 
 import { retainBombContact } from './attack/primitives/projectile.js';
 import { LAYER } from '../consts.js';
-import { damage, flashTarget } from './damage.js';
+import { heroDamage as damage, flashTarget } from './damage.js';
 import { applyKnockback } from './knockback.js';
 import { explodeSpecial } from './shooting.js';
 import { isSpecialType } from '../objects/specialWeapons.js';
@@ -164,10 +164,7 @@ export function registerCollisionHandlers(collisionWorld) {
       // arrive from stepBombTerrain's pre-terrain surface contact — both run
       // this exact operation, so top and side behave identically.
       if (target instanceof GameObj) {
-        applyObjectImpact(allyProj, target, hero, {
-          onObjectReward: (t, dealt) => ctx.popSuperCoinHit?.(t, dealt),
-          onObjectDestroyed: (t) => ctx.handleBarrelDestroyed(t),
-        });
+        applyObjectImpact(allyProj, target, hero);
         return;
       }
 

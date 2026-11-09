@@ -27,7 +27,7 @@ import { Enemy } from '../enemies/enemy.js';
 import { LAYER } from '../consts.js';
 import { UNIT_PX_X } from '../world/macros.js';
 import { projectilePool } from '../objects/projectile.js';
-import { damage } from '../combat/damage.js';
+import { heroDamage as damage } from '../combat/damage.js';
 
 import { fireManual } from '../effects/index.js';
 
