@@ -43,7 +43,6 @@ export async function loadHeroSprites(heroId) {
       'run_aim_front', 'run_aim_up', 'run_aim_down',
       'run_aim_45up', 'run_aim_45down',
       'melee', 'super_melee', 'superpower', 'supermove',
-      'super_melee_air',
       'cane_attack', 'jump2', 'run2',
     ];
     const urls = names.map((n) => new URL(`${n}_sheet.json`, base).href);
@@ -123,13 +122,9 @@ export function updateHeroLocomotionAnim(hero, input) {
   // super_melee) plays from f1 at its authored fps. When the swing ends, the
   // next frame falls through to the locomotion switch below and reclaims
   // idle/run/crouch — no per-attack end-of-swing reset needed.
-  // Super melee picks the AIR variant when the swing was started airborne
-  // (hero._specialMeleeAir, captured at trigger): a ground sweep and an air
-  // sweep are different moves with different art.
-  if (hero.specialMeleeActive) {
-    const want = hero._specialMeleeAir && hero.sprite.anims.super_melee_air ? 'super_melee_air' : 'super_melee';
-    if (hero.sprite.anims[want] && hero._spriteAnim !== want) {
-      try { hero.setAnim(want); } catch { /* keep current */ }
+  if (hero.specialMeleeActive && hero.sprite.anims.super_melee) {
+    if (hero._spriteAnim !== 'super_melee') {
+      try { hero.setAnim('super_melee'); } catch { /* keep current */ }
     }
     return;
   }
