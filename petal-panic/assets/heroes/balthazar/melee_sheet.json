@@ -1,28 +1,29 @@
 {
  "file": "petal-panic/assets/heroes/balthazar/melee_sheet.png",
- "size": "1677x320",
+ "size": "3120x552",
  "rows": 1,
- "cols": 5,
+ "cols": 6,
  "kind": "animation",
- "description": "balthazar melee (5 frames) \u2014 reassembled from frames",
+ "description": "balthazar melee strike (cane attack, f1-f6)",
  "entities": [
   {
    "name": "balthazar",
    "anim": "melee",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
    "frames": [
     {
      "file": "melee_f1.png",
      "row": 0,
      "col": 0,
      "bbox": [
-      0,
-      18,
-      329,
-      283
+      106,
+      125,
+      339,
+      301
      ],
      "offset": {
-      "x": -164.5,
-      "y": -283
+      "x": -169.5,
+      "y": -301
      },
      "scale": {
       "sx": 1,
@@ -36,28 +37,20 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      329,
-      10,
-      321,
-      299
+      637,
+      89,
+      317,
+      373
      ],
      "offset": {
-      "x": -160.5,
-      "y": -299
+      "x": -158.5,
+      "y": -373
      },
      "scale": {
       "sx": 1,
       "sy": 1
      },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": -298,
-       "y": -459.5,
-       "w": 347,
-       "h": 182
-      }
-     ],
+     "boxes": [],
      "durUnits": 1
     },
     {
@@ -65,28 +58,20 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      650,
-      16,
-      375,
-      288
+      1119,
+      105,
+      393,
+      341
      ],
      "offset": {
-      "x": -187.5,
-      "y": -288
+      "x": -196.5,
+      "y": -341
      },
      "scale": {
       "sx": 1,
       "sy": 1
      },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": -129,
-       "y": -443,
-       "w": 145,
-       "h": 118
-      }
-     ],
+     "boxes": [],
      "durUnits": 1
     },
     {
@@ -94,28 +79,20 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      1025,
-      18,
-      327,
-      284
+      1615,
+      119,
+      441,
+      314
      ],
      "offset": {
-      "x": -163.5,
-      "y": -284
+      "x": -220.5,
+      "y": -314
      },
      "scale": {
       "sx": 1,
       "sy": 1
      },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": -166,
-       "y": -244,
-       "w": 190,
-       "h": 124
-      }
-     ],
+     "boxes": [],
      "durUnits": 1
     },
     {
@@ -123,14 +100,35 @@
      "row": 0,
      "col": 4,
      "bbox": [
-      1352,
-      0,
-      325,
-      320
+      2127,
+      105,
+      458,
+      342
      ],
      "offset": {
-      "x": -162.5,
-      "y": -320
+      "x": -229,
+      "y": -342
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "melee_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      2671,
+      124,
+      410,
+      304
+     ],
+     "offset": {
+      "x": -205,
+      "y": -304
      },
      "scale": {
       "sx": 1,
@@ -140,22 +138,20 @@
      "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/heroes/balthazar",
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": -160.5,
-    "y": -275,
-    "w": 321,
-    "h": 275
+    "x": -165.5,
+    "y": -293,
+    "w": 331,
+    "h": 293
    },
    "pivot": {
     "x": 0,
-    "y": -137
+    "y": -146
    },
    "markers": [],
    "fps": 8
   }
- ],
- "updated": "2026-10-21"
+ ]
 }

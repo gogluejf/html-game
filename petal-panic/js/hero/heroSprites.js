@@ -43,7 +43,7 @@ export async function loadHeroSprites(heroId) {
       'run_aim_front', 'run_aim_up', 'run_aim_down',
       'run_aim_45up', 'run_aim_45down',
       'melee', 'super_melee', 'superpower', 'supermove',
-      'air_sweep', 'hacker', 'sweep',
+      'air_sweep',
       'cane_attack', 'jump2', 'run2',
     ];
     const urls = names.map((n) => new URL(`${n}_sheet.json`, base).href);

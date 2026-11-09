@@ -1,0 +1,372 @@
+{
+ "file": "petal-panic/assets/heroes/zappy/super_melee_sheet.png",
+ "size": "1272x1256",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "zappy super_melee",
+ "entities": [
+  {
+   "name": "zappy",
+   "anim": "super_melee",
+   "frames_dir": "petal-panic/assets/heroes/zappy",
+   "frames": [
+    {
+     "file": "super_melee_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      318,
+      0,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      636,
+      0,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      954,
+      0,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      314,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      318,
+      314,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      636,
+      314,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      954,
+      314,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      628,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      318,
+      628,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      636,
+      628,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      954,
+      628,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      0,
+      942,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      318,
+      942,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      636,
+      942,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      954,
+      942,
+      318,
+      314
+     ],
+     "offset": {
+      "x": -159,
+      "y": -314
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 16,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -155,
+    "y": -306,
+    "w": 310,
+    "h": 306
+   },
+   "pivot": {
+    "x": 0,
+    "y": -153
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-08T15:04:27",
+ "crop": {
+  "frames_dir": "petal-panic/assets/heroes/zappy",
+  "pass": "petal-panic/assets/heroes/zappy"
+ }
+}
