@@ -427,7 +427,12 @@ export class Hero extends Entity {
     const wasCrouching = this.crouching;
     // §24: during hit-stun, normal player input is temporarily locked — Down
     // must not initiate or cancel crouch while recovery is active.
-    if (!this.hitStunned) {
+    // Committed attacks (melee/specialMelee windup+active) lock crouch too:
+    // shrinking mid-swing would desync the hitbox anchor and let the hero
+    // duck out of a committed move. Recovery stays crouch-eligible so the
+    // shared cancel rule (§16/§19) still works.
+    const attackCommitted = this.combatPhase === 'windup' || this.combatPhase === 'active';
+    if (!this.hitStunned && !attackCommitted) {
       if (this.crouching && (!input.down || input.lockMove)) {
         this.exitCrouch();
       }
