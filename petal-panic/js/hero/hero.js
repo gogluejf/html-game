@@ -197,6 +197,12 @@ export class Hero extends Entity {
     // recovery (§18). Cancellation clears the slot ().
     this.pendingMelee = null;
 
+    // Crouch deferred across a swing's recovery (§11 v2): true/false when a
+    // crouch entry/exit was requested during melee/specialMelee recovery and
+    // must be applied the moment the swing fully ends (the sheet's last frame
+    // is still playing during recovery, so shrinking early would desync it).
+    this._pendingCrouch = null;
+
     // --- Special melee (design §15) ------------------------------------------
     // Down+Melee triggers a per-hero special swing with a self-supplied
     // trajectory (Balthazar advances, Scarlet retreats). Same phase rules as
@@ -429,18 +435,30 @@ export class Hero extends Entity {
     // must not initiate or cancel crouch while recovery is active.
     // Committed attacks (melee/specialMelee windup+active) lock crouch too:
     // shrinking mid-swing would desync the hitbox anchor and let the hero
-    // duck out of a committed move. Recovery stays crouch-eligible so the
-    // shared cancel rule (§16/§19) still works.
+    // duck out of a committed move. During RECOVERY the sheet's last frame is
+    // still playing, so crouching is BUFFERED (_pendingCrouch) and applied
+    // only once the swing has fully ended — otherwise the hero shrinks one
+    // frame before the anim is truly done.
     const attackCommitted = this.combatPhase === 'windup' || this.combatPhase === 'active';
     if (!this.hitStunned && !attackCommitted) {
       if (this.crouching && (!input.down || input.lockMove)) {
-        this.exitCrouch();
+        if (this.meleeActive || this.specialMeleeActive) {
+          // Recovery in progress: defer the exit until the swing ends.
+          this._pendingCrouch = false;
+        } else {
+          this.exitCrouch();
+        }
       }
       if (input.down && !input.lockMove && this.grounded && !this.crouching) {
-        this.crouching = true;
-        // Height comes from the crouch anim's hScale (sheet data) — no code
-        // box swap. Without a sprite/crouch anim the body keeps full height.
-        this.applyCrouchHeight(true);
+        if (this.meleeActive || this.specialMeleeActive) {
+          // Recovery in progress: defer entry until the swing ends.
+          this._pendingCrouch = true;
+        } else {
+          this.crouching = true;
+          // Height comes from the crouch anim's hScale (sheet data) — no code
+          // box swap. Without a sprite/crouch anim the body keeps full height.
+          this.applyCrouchHeight(true);
+        }
       }
     }
 
@@ -865,6 +883,22 @@ export class Hero extends Entity {
     this.meleeActive = false;
     this.meleeFrame = 0;
     this.meleeCooldown = 0;
+    this._flushPendingCrouch();
+  }
+
+  /** Apply a crouch entry/exit that was deferred across a swing's recovery.
+   * Called from endNormalMelee / endSpecialMelee so the height change lands
+   * on the first frame AFTER the sheet has played its final frame. */
+  _flushPendingCrouch() {
+    if (this._pendingCrouch == null) return;
+    const want = this._pendingCrouch;
+    this._pendingCrouch = null;
+    if (want && !this.crouching && this.grounded) {
+      this.crouching = true;
+      this.applyCrouchHeight(true);
+    } else if (!want && this.crouching) {
+      this.exitCrouch();
+    }
   }
 
   /**
@@ -1139,6 +1173,7 @@ export class Hero extends Entity {
     this.specialMeleeFrame = 0;
     // A cancelled swing ends its self-protection immediately (    // "protection clears when the swing ends or is cancelled").
     this._connectProtectFrames = 0;
+    this._flushPendingCrouch();
   }
 
   /**
