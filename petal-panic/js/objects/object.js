@@ -355,7 +355,7 @@ export function makeToxicBarrel(x, y) {
 // respawn point. Triggering latches per-checkpoint so re-walking over it does
 // nothing; a fresh run gets fresh instances.
 
-export const CHECKPOINT_TARGET_H = 1.5; // units (72px) — single source of truth
+export const CHECKPOINT_TARGET_H = 2; // units (96px) — single source of truth
 
 const CHECKPOINT_DEF = {
   id: 'checkpoint',
