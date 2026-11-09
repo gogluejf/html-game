@@ -20,7 +20,16 @@
       0,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -307
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f2.png",
@@ -31,7 +40,16 @@
       0,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -307
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f3.png",
@@ -42,7 +60,16 @@
       0,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -307
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f4.png",
@@ -53,7 +80,16 @@
       0,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -307
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f5.png",
@@ -64,7 +100,16 @@
       272,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -296
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f6.png",
@@ -75,7 +120,16 @@
       272,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -184,
+      "y": -299
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f7.png",
@@ -86,7 +140,16 @@
       272,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -297
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f8.png",
@@ -97,7 +160,16 @@
       272,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -180,
+      "y": -298
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f9.png",
@@ -108,7 +180,16 @@
       544,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -291
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f10.png",
@@ -119,7 +200,16 @@
       544,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -182,
+      "y": -292
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f11.png",
@@ -130,7 +220,16 @@
       544,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -290
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f12.png",
@@ -141,7 +240,16 @@
       544,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -180,
+      "y": -290
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f13.png",
@@ -152,7 +260,16 @@
       816,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -183,
+      "y": -295
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f14.png",
@@ -163,7 +280,16 @@
       816,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -300
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f15.png",
@@ -174,7 +300,16 @@
       816,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -301
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     },
     {
      "file": "super_melee_air_f16.png",
@@ -185,9 +320,28 @@
       816,
       362,
       272
-     ]
+     ],
+     "offset": {
+      "x": -181,
+      "y": -300
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "durUnits": 1
     }
-   ]
+   ],
+   "collision": {
+    "x": -106,
+    "y": -292,
+    "w": 180,
+    "h": 250
+   },
+   "pivot": {
+    "x": -16,
+    "y": -167
+   }
   }
  ],
  "updated": "2026-11-08T15:04:27",
