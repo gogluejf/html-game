@@ -13,13 +13,14 @@ import { renderAll } from './render.js';
 // Commit a game-data mutation. `mutate` runs with the undo snapshot already
 // taken; if it throws, nothing is marked changed and the caller can abort.
 // Ordering matters: markGameDataChanged() MUST run AFTER mutate(). renderAll()
-// is async (draw via requestAnimationFrame), so marking before mutate would
-// persist the PRE-mutation state into the localStorage draft — the classic
-// "panel edits don't save" bug.
+// is deferred to a microtask so syncPanel() reads the POST-mutation state —
+// doing it synchronously here made callers race the panel refresh (fps/scale/
+// paste edits visually "not saving"). Callers that set UI values themselves
+// must do it BEFORE commit(), since the deferred syncPanel overwrites them.
 export function commit(mutate){
-  if (!app.cur || !app.cur.st) return;
+  if (!app.cur || !app.cur.st) return Promise.resolve();
   pushUndo();
   mutate();
   markGameDataChanged();
-  renderAll();
+  return Promise.resolve().then(renderAll);
 }

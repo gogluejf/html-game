@@ -25,6 +25,7 @@ import { pushUndo } from './undo.js';
 import { moveElement } from './rigidbody.js';
 import { buildMeleeBoxList } from './meleeBoxes.js';
 import { buildMarkerList } from './markers.js';
+import { copySelected, pasteClipboard, cutSelected } from './clipboard.js';
 
 // ---------- play/pause toggle (wraps setPlaying with flip semantics) ----------
 function togglePlay(){
@@ -159,6 +160,24 @@ function initKeyboard(){
     if ((e.ctrlKey||e.metaKey) && e.code==='KeyS'){
       e.preventDefault();
       saveToDisk();
+      return;
+    }
+    // ctrl+C / ctrl+V -> copy / paste the selected element (sprite, collision,
+    // hit box, marker). Plain C/V stay the element-select shortcuts.
+    if ((e.ctrlKey||e.metaKey) && e.code==='KeyC'){
+      e.preventDefault();
+      copySelected();
+      return;
+    }
+    if ((e.ctrlKey||e.metaKey) && e.code==='KeyV'){
+      e.preventDefault();
+      pasteClipboard();
+      return;
+    }
+    // ctrl+X -> cut (copy + delete) the selected element
+    if ((e.ctrlKey||e.metaKey) && e.code==='KeyX'){
+      e.preventDefault();
+      cutSelected();
       return;
     }
     // ctrl+0 -> reset zoom to 100% (centered on origin)
