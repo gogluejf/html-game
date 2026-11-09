@@ -1007,6 +1007,10 @@ export class Hero extends Entity {
     this.specialMeleeActive = true;
     this.specialMeleePhase = 'windup';
     this.specialMeleeFrame = 0;
+    // Air vs ground variant: captured ONCE at trigger (the swing is committed
+    // — a mid-swing landing/takeoff must not swap the art). The sprite layer
+    // plays `super_melee_air` when this is true and that sheet exists.
+    this._specialMeleeAir = !this.grounded;
     // Resolved movement direction: toward facing (+1 for the unified sweep).
     // Captured ONCE at trigger — it cannot be reversed mid-attack.
     this.specialMeleeDir = this.facing * cfg.direction;
