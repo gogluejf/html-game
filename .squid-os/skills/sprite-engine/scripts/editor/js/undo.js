@@ -2,7 +2,7 @@
 import { app } from './state.js';
 import { $ } from './viewport.js';
 import { selectEntity } from './sidebar.js';
-import { saveState } from './save.js';
+import { saveState, markGameDataChanged } from './save.js';
 import { renderAll } from './render.js';
 
 function snap(){ return { name: app.cur.name, st: JSON.stringify(app.cur.st), fi: app.cur.st.frameIdx }; }
@@ -23,6 +23,10 @@ async function restore(entry){
   app.cur.st = JSON.parse(entry.st);
   app.cur.st.frameIdx = entry.fi % app.cur.st.frames.length;
   app._selectedBox = null;
+  // Re-store the draft from the RESTORED state. Without this, the localStorage
+  // draft keeps the pre-undo values while the screen shows the restored ones —
+  // Save then writes what you don't see (fps/scale "edits not saving").
+  markGameDataChanged();
   renderAll();
 }
 

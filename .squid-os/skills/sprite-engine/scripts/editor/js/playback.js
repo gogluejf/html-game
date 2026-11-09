@@ -4,11 +4,12 @@ import { app, ROT_MAX_VEL, ROT_ACCEL, ROT_DECEL } from './state.js';
 import { $ } from './viewport.js';
 import { curFrameIdx, editingLocked } from './geometry.js';
 import { draw } from './draw.js';
-import { syncPanel, setRotSpeed } from './panel.js';
+import { syncPanel } from './panel.js';
 import { buildTimingTable } from './timing.js';
-import { saveState, markGameDataChanged } from './save.js';
+import { saveState } from './save.js';
 import { syncToggles } from './tools.js';
 import { pushUndo } from './undo.js';
+import { commit } from './commit.js';
 import { syncFilmFocus } from './filmstrip.js';
 
 export function startPlayback(){
@@ -83,7 +84,12 @@ export function setPlaying(p){
 
 export function stepFrame(d){ if(!app.cur||!app.cur.st)return; const st=app.cur.st; seekSequence(st, (st.frameIdx+d+st.frames.length)%st.frames.length); app.acc=0; app._selectedBox=null; syncPanel(); draw(); syncFilmFocus(); }
 
-export function setSpeed(v){ if(!app.cur||!app.cur.st)return; app.cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = app.cur.st.speed+' fps'; $('p_speed').value = app.cur.st.speed; markGameDataChanged(); buildTimingTable(); }
+// FPS change is a game-data mutation: route through commit() so it gets an
+// undo snapshot AND the localStorage draft is re-stored from the POST-mutation
+// state. (Previously setSpeed saved the draft without pushing undo — Ctrl+Z
+// then restored a stale st while the draft kept the new fps, and Save wrote
+// the old value.)
+export function setSpeed(v){ if(!app.cur||!app.cur.st)return; commit(()=>{ app.cur.st.speed = Math.max(1, Math.min(60, v|0)); }); buildTimingTable(); }
 
 // Enable/disable side-panel inputs: locked while animating
 const PANEL_EDITABLE = ['p_speed','p_ox','p_oy','p_sx','p_sy','p_kx','p_ky','p_kw','p_kh','p_px','p_py','p_rspeed'];

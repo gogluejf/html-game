@@ -194,7 +194,7 @@ export async function selectEntity(li, ei, opts){
   const gd = readGameData(`${en.char}_${en.anim}`);   // null when no draft / corrupt
   if (gd && Array.isArray(gd.frames) && gd.frames.length === st.frames.length){
     Object.assign(st, {
-      fps: gd.fps ?? st.speed,
+      speed: gd.fps ?? st.speed,   // draft key is "fps"; live state field is "speed"
       playback: gd.playback || st.playback,
       direction: gd.direction || 'forward',
       collision: gd.collision || st.collision,
