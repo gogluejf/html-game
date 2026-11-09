@@ -135,23 +135,14 @@ export function updateHeroLocomotionAnim(hero, input) {
     return;
   }
 
-  // Crouch owns its own height (applyCrouchHeight + crouch anim) — it must
-  // win over the run/idle switch or setAnim('idle') would restore full height.
+  // Crouch owns its own height (applyCrouchHeight + CROUCH_HEIGHT_SCALE) — it
+  // must win over the run/idle switch. setAnim() no longer touches _targetHScale,
+  // so crouched height is preserved automatically across anim switches.
   if (hero.crouching) {
     const want = (shooting && hero.sprite.anims.crouch_shoot) ? 'crouch_shoot' : 'crouch';
     if (hero._spriteAnim !== want) {
       try {
-        // Preserve the crouch height scale across crouch-family switches:
-        // setAnim() resets _targetHScale from the NEW anim's hScale (absent on
-        // crouch_shoot → 1), which would stand the hero back up mid-crouch.
-        const prevHScale = hero._targetHScale;
         hero.setAnim(want);
-        if (prevHScale !== 1) {
-          const prevH = hero.h;
-          hero._targetHScale = prevHScale;
-          const newH = hero.h;
-          if (newH !== prevH) hero.y += prevH - newH;
-        }
       } catch { /* keep current */ }
     }
     // setAnim() fits the sheet onto this.h at SWITCH time, but the crouch

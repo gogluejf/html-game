@@ -180,7 +180,7 @@
      "durUnits": 1
     }
    ],
-   "fps": 30,
+   "fps": 8,
    "playback": "loop",
    "direction": "forward",
    "collision": {

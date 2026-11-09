@@ -238,7 +238,7 @@ ok('non-Down directions pass through untouched (up/right etc.)', () => {
 });
 
 console.log('bodyCenter — active-box origin (AC #2)');
-ok('crouched body center is lower than standing, derived from hScale', () => {
+ok('crouched body center is lower than standing, derived from CROUCH_HEIGHT_SCALE', () => {
   const h = makeHero();
   h.setGrounded(true);
   const stand = h.bodyCenter();
@@ -305,7 +305,7 @@ ok('pipeline: grounded crouch + shoot fires horizontally toward facing (not down
   release('KeyD'); U.processInput();
   assert.equal(hero.facing, 1, 'should face right');
   // Crouch + shoot: press Down first, run one frame so crouch commits
-  // (height scaled by the crouch anim's hScale), THEN press Shoot —
+  // (height scaled by CROUCH_HEIGHT_SCALE), THEN press Shoot —
   // bodyCenter() must be the crouched center.
   press('KeyS'); U.processInput();
   for (let i = 0; i < 3; i++) U.update(DT); // settle: let crouch commit + floor resolve
@@ -320,12 +320,11 @@ ok('pipeline: grounded crouch + shoot fires horizontally toward facing (not down
   assert.ok(Math.abs(Math.sin(angle)) < 1e-9, `shot must be horizontal, angle=${angle}`);
   assert.ok(Math.cos(angle) > 0, `shot must go right (facing), cos=${Math.cos(angle)}`);
   // Spawn origin must come from the CROUCHED body center (lower than standing).
-  // heroYAtSpawn is the crouched top-left y (h already scaled by hScale), so
+  // heroYAtSpawn is the crouched top-left y (h already scaled by CROUCH_HEIGHT_SCALE), so
   // the crouch center is y + h/2; the standing center of the SAME feet line is
-  // feet - standH/2, where standH = crouch h / hScale (derived, not hardcoded).
-  const crouchData = hero.sprite?.anims?.crouch;
-  const hScale = Number.isFinite(Number(crouchData?.hScale)) && Number(crouchData.hScale) > 0 ? Number(crouchData.hScale) : 0.6;
-  const standH = hero.h / hScale;
+  // feet - standH/2, where standH = crouch h / CROUCH_HEIGHT_SCALE (derived, not hardcoded).
+  const { CROUCH_HEIGHT_SCALE } = HeroMod;
+  const standH = hero.h / CROUCH_HEIGHT_SCALE;
   const standCenterY = heroYAtSpawn + hero.h - standH / 2;
   const crouchCenterY = heroYAtSpawn + hero.h / 2;
   const spawnY = p.y + p.h / 2; // box top-left → center

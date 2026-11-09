@@ -12,7 +12,7 @@ import json
 import os
 import sys
 
-ANIM_FIELDS = ("fps", "playback", "direction", "collision", "pivot", "markers", "hScale")
+ANIM_FIELDS = ("fps", "playback", "direction", "collision", "pivot", "markers")
 FRAME_FIELDS = ("offset", "scale", "boxes", "durUnits")
 
 SCHEMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),

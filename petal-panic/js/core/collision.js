@@ -115,7 +115,7 @@ export function resolve(entity, solids, opts = {}) {
       // "push out": snap the box's bottom to the platform top and zero vy.
       // Compute the box bottom's distance from entity.y and set entity.y so
       // that bottom lands exactly on s.y — this works for standing AND
-      // crouching heights alike (crouch shrinks h via the anim's hScale),
+      // crouching heights alike (crouch shrinks h via CROUCH_HEIGHT_SCALE),
       // so a crouched hero still rests its feet on the surface.
       const boxBottomOffset = b.y - entity.y + b.h;
       entity.y = s.y - boxBottomOffset;

@@ -70,10 +70,9 @@ export class Entity {
     }
     this._baseW = opts.baseW ?? (opts.w != null ? opts.w : null);
 
-    // Per-anim height scale (sheet field `hScale`, default 1). The ACTIVE
-    // anim's value multiplies the entity height: crouch sheets author 0.6 so
-    // the hitbox shrinks with the pose — pure data, no code-side box swaps.
-    // setAnim() applies it feet-planted (y adjusts so the bottom stays put).
+    // Per-anim height scale (default 1). The hero's crouch system overrides
+    // this via applyCrouchHeight() using CROUCH_HEIGHT_SCALE — setAnim never
+    // reads a sheet field for it.
     this._targetHScale = 1;
 
     // Size-owner guard (sprites.md contract): a sprite-based entity must be
@@ -145,7 +144,7 @@ export class Entity {
   // --- Size getters (single derivation, no stored duplication) ---------------
 
   /** Height in world px for the ACTIVE pose. Non-transposed: targetH × 48 ×
-   *  hScale (per-anim box height — crouch sheets shrink it). Transposed
+   *  _targetHScale (crouch system sets it to CROUCH_HEIGHT_SCALE). Transposed
    *  (vertical-flight pose): the sheet box's width dim becomes the vertical
    *  extent so the AABB matches the rotated art. */
   get h() {
@@ -314,11 +313,11 @@ export class Entity {
     // the sheet only provides scale + repeat art.
     if (this.sprite.boxFromSheet !== false) this._baseW = null;
     this._spriteAnim = name;
-    // Per-anim height scale: apply feet-planted so the box bottom (and the
-    // hero's feet) stay on the surface when an anim shrinks/grows the body.
+    // Height scale is NOT read from sheet data — the hero's crouch system
+    // (applyCrouchHeight) owns _targetHScale exclusively. setAnim preserves
+    // whatever value is already set (1 for standing, CROUCH_HEIGHT_SCALE for
+    // crouched) so switching anims mid-crouch doesn't restore full height.
     const prevH = this.h;
-    const hs = Number(data.hScale);
-    this._targetHScale = Number.isFinite(hs) && hs > 0 ? hs : 1;
     const newH = this.h;
     if (newH !== prevH) this.y += prevH - newH;
     // §4: target height in Y-units → px. Scale fits the sheet's collision box
@@ -381,7 +380,7 @@ export class Entity {
   resetAnim() {
     this._spriteAnim = null;
     this._player = null;
-    // Restore full height (hScale default) — feet stay planted.
+    // Restore full height (default scale) — feet stay planted.
     const prevH = this.h;
     this._targetHScale = 1;
     const newH = this.h;

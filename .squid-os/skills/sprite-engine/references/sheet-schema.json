@@ -76,6 +76,14 @@
       "default": 1,
       "description": "Future-proofing version tag for the manifest format."
     },
+    "outline": {
+      "description": "Optional sheet-level outline/contour data (e.g. silhouette path or flag). Forward-compatible: any shape allowed.",
+      "type": ["boolean", "object", "array", "string", "number"]
+    },
+    "updated": {
+      "type": "string",
+      "description": "Last-write timestamp (ISO-ish string), maintained by writers."
+    },
     "entities": {
       "type": "array",
       "minItems": 1,
@@ -159,6 +167,10 @@
           "required": ["x", "y", "w", "h"],
           "description": "Collision box relative to the frame origin."
         },
+        "collisionBox": {
+          "$ref": "#/$defs/entity/properties/collision",
+          "description": "Legacy alias of `collision` (older sheets); parser accepts both, `collision` wins."
+        },
         "pivot": {
           "type": "object",
           "properties": {
@@ -171,6 +183,13 @@
         "markers": {
           "type": "array",
           "description": "Named marker points (e.g. weapon muzzle, feet)."
+        },
+        "startFrame": {
+          "description": "Playback start slot (tuning domain): integer slot index, or 'random' to re-roll per setAnim call (pooled entities avoid lockstep). Absent = authored start (0).",
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "const": "random" }
+          ]
         }
       }
     },
@@ -227,6 +246,20 @@
           "type": "integer",
           "minimum": 1,
           "description": "Duration of this frame in time units (overrides global speed)."
+        },
+        "center": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "number" },
+          "description": "Optional per-frame center point [x, y] in source pixels."
+        },
+        "size": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "number" },
+          "description": "Optional per-frame art size [w, h] in source pixels."
         }
       }
     }

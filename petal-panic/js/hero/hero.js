@@ -2,8 +2,9 @@
 // Wraps a hero definition (see heroDefs.js) and drives run/jump/crouch/slide,
 // gravity, ground friction, facing + mirrorX, and crouch height shrink.
 // Collision model note: the hero's collision box is worldBox() (x, y, w, h).
-// Crouching shrinks h via the crouch anim's `hScale` sheet field (per-anim
-// height scale, applied feet-planted by applyCrouchHeight()).
+// Crouching shrinks h via CROUCH_HEIGHT_SCALE (a code constant — pure pose
+// transform, generic for every hero). Sheets carry art only; no per-anim
+// height data lives in sheet JSON.
 
 import { Entity } from '../core/entity.js';
 import { isHighGraphic } from '../core/renderMode.js';
@@ -20,6 +21,11 @@ const JUMP_CUT_VY = 0.45;       // vy scale when jump released early (variable h
 const SLIDE_DECEL = 480;        // px/s^2 — crouch skid: ~0.5s / ~65px from full run
 const COYOTE_TIME = 0.08;       // grace window after leaving a ledge (s)
 const JUMP_BUFFER = 0.12;       // pre-land jump input window (s)
+// Crouch height as a fraction of standing targetH (pure code, generic for
+// every hero): crouched h = targetH × CROUCH_HEIGHT_SCALE. NOT sheet data —
+// sheets carry art only; the pose transform lives here so no hero can be
+// left with a missing/mismatched value.
+export const CROUCH_HEIGHT_SCALE = 0.5;
 // One-way platform drop-through (design §13): Down+Jump while standing on a
 // one-way platform temporarily ignores that platform long enough to clear it,
 // instead of consuming the press as an upward jump. Named constant — the value
@@ -223,8 +229,7 @@ export class Hero extends Entity {
     // projectiles never touch this field.
     this._connectProtectFrames = 0;
 
-    // Crouch height is per-anim data (sheet `hScale`, applied via
-    // applyCrouchHeight) — no code-side box objects.
+    // Crouch height is a code constant (CROUCH_HEIGHT_SCALE) — no sheet data.
 
     // --- Super move (design §22-§23) ------------------------------------------
     // Charges over time; when full the hero can dash forward. Triggered by the
@@ -455,8 +460,7 @@ export class Hero extends Entity {
           this._pendingCrouch = true;
         } else {
           this.crouching = true;
-          // Height comes from the crouch anim's hScale (sheet data) — no code
-          // box swap. Without a sprite/crouch anim the body keeps full height.
+          // Height is a pure code transform (CROUCH_HEIGHT_SCALE × targetH).
           this.applyCrouchHeight(true);
         }
       }
@@ -1252,15 +1256,13 @@ export class Hero extends Entity {
   }
 
   /**
-   * Apply/clear the per-anim crouch height (sheet `hScale` on the 'crouch'
-   * anim). Feet stay planted: y adjusts by the height delta. When no sprite
-   * or crouch anim is loaded (tests, pre-boot), falls back to the legacy 0.6
-   * factor so crouch still shrinks the box.
+   * Apply/clear crouch height. Pure code transform: crouched h = targetH ×
+   * CROUCH_HEIGHT_SCALE. Feet stay planted: y adjusts by the height delta.
+   * Works for ANY hero with no per-sheet data.
    * @param {boolean} crouching
    */
   applyCrouchHeight(crouching) {
-    const data = this.sprite?.anims?.['crouch'];
-    const hs = crouching ? (Number.isFinite(Number(data?.hScale)) && Number(data?.hScale) > 0 ? Number(data.hScale) : 0.6) : 1;
+    const hs = crouching ? CROUCH_HEIGHT_SCALE : 1;
     if (hs === this._targetHScale) return;
     const prevH = this.h;
     this._targetHScale = hs;

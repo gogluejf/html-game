@@ -41,7 +41,13 @@ Top-level fields:
 
 Entity fields: `name`, `anim`, `frames_dir`, and after cropping
 `frames[{file,row,col,bbox}]`. With `--span`, an entity also carries `row` as an
-array of grid rows.
+array of grid rows. Tuning fields (written by record_tuning.py / editor):
+`fps` (legacy alias `speed` is auto-migrated on read), `playback`, `direction`,
+`collision`, `pivot`, `markers`, `startFrame`.
+
+**`startFrame`** (playback start slot): integer slot index, or `"random"` to
+re-roll per `setAnim()` call so pooled entities (coins, projectiles) don't play
+in lockstep. Absent = authored start (0).
 
 **`kind` values:** `animation` (a playable anim), `tile_variant` (style/size
 variant tiles), `entity_variant` (per-entity variant). These are the only values
@@ -67,7 +73,8 @@ metadata, and it must validate all referenced frames before replacing the file.
 
 **Tuning data** — written ONLY by @skill:sprite-engine `record_tuning.py`
 (the sprite editor's save backend):
-- per anim (entity): `speed`, `playback`, `direction`, `collision`, `pivot`, `markers`
+- per anim (entity): `fps` (legacy alias `speed`), `playback`, `direction`,
+  `collision`, `pivot`, `markers`, `startFrame`
 - per frame: `offset`, `scale`, `boxes`, `durUnits`
 
 Sheet-level visual fields (`file`, `size`, `rows`, `cols`, `kind`,
