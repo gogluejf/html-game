@@ -113,7 +113,7 @@ export const HEROES = {
     id: 'balthazar',
     name: 'Balthazhar',
     specialName: 'Earthquake',
-    targetH: 104 / UNIT_PX_Y,     // Y-units (104px ≈ 2.167u); width is sheet-owned
+    targetH: 2,                  // Y-units (2 = 96px); width is sheet-owned — same standard as scarlet
     stats: {
       weight: 1.3,
       speed: 180 / UNIT_PX_X,  // X-units/s (exactly 180 px/s at the current grid)
