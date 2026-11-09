@@ -348,7 +348,7 @@
      "durUnits": 1
     }
    ],
-   "fps": 16,
+   "fps": 11,
    "playback": "loop",
    "direction": "forward",
    "collision": {
