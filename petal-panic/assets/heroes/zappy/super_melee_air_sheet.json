@@ -1,0 +1,198 @@
+{
+ "file": "petal-panic/assets/heroes/zappy/super_melee_air_sheet.png",
+ "size": "1268x1248",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "zappy super_melee_air",
+ "entities": [
+  {
+   "name": "zappy",
+   "anim": "super_melee_air",
+   "frames_dir": "petal-panic/assets/heroes/zappy",
+   "frames": [
+    {
+     "file": "super_melee_air_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      317,
+      0,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      634,
+      0,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      951,
+      0,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      312,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      317,
+      312,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      634,
+      312,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      951,
+      312,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      624,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      317,
+      624,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      634,
+      624,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      951,
+      624,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      0,
+      936,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      317,
+      936,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      634,
+      936,
+      317,
+      312
+     ]
+    },
+    {
+     "file": "super_melee_air_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      951,
+      936,
+      317,
+      312
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-08T15:04:27",
+ "crop": {
+  "frames_dir": "petal-panic/assets/heroes/zappy",
+  "pass": "petal-panic/assets/heroes/zappy"
+ }
+}
