@@ -5,12 +5,14 @@
 // FRAMES/all-frames ghost toggle is on).
 //
 // Paste semantics per element type:
-//   sprite     → overwrites the frame's offset + scale (one per frame)
+//   sprite     → overwrites the frame's offset + scale (one per frame),
+//                pixel-exact across differing frame dimensions
 //   collision  → overwrites x/y/w/h (one per entity); pivot re-centered to the
 //                new box center so the anchor follows the body
-//   hit box    → label match in target frame → position/size overwritten in
-//                place; no match → appended as a NEW box with that label
-//   marker     → same label-match rule as hit boxes (markers are per-entity)
+//   hit box    → ALWAYS appends a NEW box (like the + button). Label collision
+//                → unique suffix _2, _3, ...; position collision → shifted by
+//                the same cascade step addMeleeBox() uses (+20, -20)
+//   marker     → same append/unique-label/shift rule as hit boxes
 
 import { app, COLL_PAD } from './state.js';
 import { curFrameIdx, targetFrames } from './geometry.js';
@@ -82,39 +84,60 @@ export function pasteClipboard(){
     } else if (c.kind === 'box'){
       targets.forEach(f => {
         const boxes = f.boxes || (f.boxes = []);
-        const existing = boxes.find(b => b.label === c.data.label);
-        if (existing){
-          // Same label already here → overwrite position/size in place.
-          existing.x = c.data.x; existing.y = c.data.y;
-          existing.w = c.data.w; existing.h = c.data.h;
-        } else {
-          // No such label in this frame → create it (easy multi-frame paste).
-          boxes.push({ ...c.data });
+        // PASTE ALWAYS ADDS A NEW BOX (like the + button) — never overwrites an
+        // existing one. Label collision → unique suffix _2, _3, ... exactly like
+        // nextBoxLabel(). Position collision with an existing box → shift x/y by
+        // the same step addMeleeBox() uses, so double-pastes fan out visibly.
+        let label = c.data.label;
+        const labels = new Set(boxes.map(b => b.label));
+        if (labels.has(label)){
+          let n = 2;
+          while (labels.has(`${label}_${n}`)) n++;
+          label = `${label}_${n}`;
         }
+        let x = c.data.x, y = c.data.y;
+        // Position collision → cascade off the LAST box's position, exactly like
+        // nextBoxPosition() does for the + button (+20, -20 per step).
+        const overlaps = boxes.some(b =>
+          Math.abs(b.x - x) < 1 && Math.abs(b.y - y) < 1);
+        if (overlaps && boxes.length){
+          const last = boxes[boxes.length - 1];
+          x = last.x + 20; y = last.y - 20;
+        }
+        boxes.push({ ...c.data, label, x, y });
       });
     } else if (c.kind === 'marker'){
       const markers = st.markers || (st.markers = []);
-      const existing = markers.find(m => m.label === c.data.label);
-      if (existing){
-        Object.assign(existing, c.data);
-      } else {
-        markers.push({ ...c.data });
+      // Same rule as hit boxes: always append, unique label, shift on overlap.
+      let label = c.data.label;
+      const labels = new Set(markers.map(m => m.label));
+      if (labels.has(label)){
+        let n = 2;
+        while (labels.has(`${label}_${n}`)) n++;
+        label = `${label}_${n}`;
       }
+      let x = c.data.x, y = c.data.y;
+      const overlaps = markers.some(m =>
+        Math.abs(m.x - x) < 1 && Math.abs(m.y - y) < 1);
+      if (overlaps && markers.length){
+        const last = markers[markers.length - 1];
+        x = last.x + 20; y = last.y - 20;   // same cascade as nextMarkerPosition
+      }
+      markers.push({ ...c.data, label, x, y });
     }
   });
 
-  // Select the pasted element so it's immediately grabbable.
+  // Select the pasted element so it's immediately grabbable. Boxes/markers are
+  // ALWAYS appended (never overwritten), so the new one is the LAST entry.
   if (c.kind === 'sprite') app._selectedBox = 'sprite';
   else if (c.kind === 'collision') app._selectedBox = 'collision';
   else if (c.kind === 'box'){
     const boxes = st.frames[curFrameIdx()].boxes || [];
-    const idx = boxes.findIndex(b => b.label === c.data.label);
-    if (idx >= 0) app._selectedBox = 'box_' + idx;
+    if (boxes.length) app._selectedBox = 'box_' + (boxes.length - 1);
   }
   else if (c.kind === 'marker'){
     const markers = st.markers || [];
-    const idx = markers.findIndex(m => m.label === c.data.label);
-    if (idx >= 0) app._selectedBox = 'marker_' + idx;
+    if (markers.length) app._selectedBox = 'marker_' + (markers.length - 1);
   }
   const n = targets.length > 1 ? ` → ${targets.length} frames` : '';
   showToast(`Pasted ${c.data.label ?? c.kind}${n}`, 'success');
