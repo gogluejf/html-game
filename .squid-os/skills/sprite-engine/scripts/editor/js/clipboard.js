@@ -26,7 +26,16 @@ export function copySelected(){
   let kind = null, data = null;
   if (sel === 'sprite'){
     kind = 'sprite';
-    data = { offset: { ...f.offset }, scale: { ...f.scale } };
+    // PIXEL-SPACE CAPTURE: scale is a ratio of each frame's own image size, so
+    // copying raw sx/sy loses shape info when destination frames have different
+    // dimensions (395×394 → 677×317). Capture the ABSOLUTE rendered w/h + top-
+    // left offset instead; paste converts back using the destination's dims.
+    const im = app.cur.imgs[fi];
+    data = {
+      offset: { ...f.offset },
+      w: Math.round(im.naturalWidth * f.scale.sx),
+      h: Math.round(im.naturalHeight * f.scale.sy),
+    };
   } else if (sel === 'collision'){
     kind = 'collision';
     data = { ...st.collision };
@@ -56,8 +65,13 @@ export function pasteClipboard(){
   commit(() => {
     if (c.kind === 'sprite'){
       targets.forEach(f => {
+        const im = app.cur.imgs[st.frames.indexOf(f)];
+        // PIXEL-SPACE PASTE: the clipboard holds absolute rendered w/h from the
+        // source frame. Derive this frame's sx/sy from ITS OWN image dims so the
+        // sprite renders at the same pixel size regardless of frame dimensions.
         f.offset = { ...c.data.offset };
-        f.scale = { ...c.data.scale };
+        f.scale.sx = Math.max(.05, c.data.w / im.naturalWidth);
+        f.scale.sy = Math.max(.05, c.data.h / im.naturalHeight);
       });
     } else if (c.kind === 'collision'){
       st.collision = { ...c.data };
