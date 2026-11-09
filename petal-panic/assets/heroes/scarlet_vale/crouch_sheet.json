@@ -185,15 +185,16 @@
    "direction": "forward",
    "collision": {
     "x": -119,
-    "y": -295,
+    "y": -242,
     "w": 238,
-    "h": 295
+    "h": 215
    },
    "pivot": {
     "x": 0,
-    "y": -147
+    "y": -134
    },
-   "markers": []
+   "markers": [],
+   "hScale": 0.5
   }
  ],
  "crop": {

@@ -11,10 +11,12 @@ import { input } from '../core/input.js';
 import { VIEW_W } from '../core/view.js';
 import { SolidBox } from '../core/solidBox.js';
 import { GRAVITY, MAX_FALL_SPEED } from '../consts.js';
+import { UNIT_PX_Y } from '../world/macros.js';
 import { CollisionWorld, resolve, aabbOverlap } from '../core/collision.js';
 import { Camera } from '../core/camera.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { Hero } from '../hero/hero.js';
+import { updateHeroLocomotionAnim, attachHeroSprites, HERO_SPRITE_DIRS } from '../hero/heroSprites.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { projectilePool } from '../objects/projectile.js';
 import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
@@ -291,9 +293,14 @@ export function fallingBarrelImpact(b) {
 // Real Hero wrapping the Scarlet Vale definition; run/jump/crouch/slide,
 // gravity, ground friction, facing+mirrorX, and crouch-box shrink all live in
 // js/hero.js. `let` because setHeroRef() reassigns it on new game / swap.
-let hero = new Hero(HEROES.scarlet, ZONE_ENTRY_X, ZONE_GROUND_Y - HEROES.scarlet.h);
+let hero = new Hero(HEROES.scarlet, ZONE_ENTRY_X, ZONE_GROUND_Y - (HEROES.scarlet.targetH ?? 1) * UNIT_PX_Y);
 /** Rebind the module-level hero reference (used by debug hero-swap / new game). */
-function setHeroRef(h) { hero = h; ctx.hero = h; setMenuHero(h); }
+function setHeroRef(h) {
+  // Debug hero-swaps and any non-startGame rebuilds bypass makeHero() — attach
+  // sheet sprites here so every live hero gets the sprite pipeline.
+  attachHeroSprites(h, HERO_SPRITE_DIRS[h.heroDef?.id] ?? h.heroDef?.id);
+  hero = h; ctx.hero = h; setMenuHero(h);
+}
 
 // thorn fire state. Cooldown is in seconds; rapid powerup halves it.
 hero.fireCooldown = 0;
@@ -1037,6 +1044,9 @@ export function update(dt) {
   // so this is exactly "standing on a one-way platform right now".
   intent.onOneWay = standingOnOneWay();
   hero.update(dt, intent);
+  // Sheet-sprite locomotion binding (idle ↔ run). Runs after physics so vx and
+  // grounded are current; no-op when the hero has no sprite data attached.
+  updateHeroLocomotionAnim(hero);
 
   // 1a. energy / death / respawn / gameover flow.
   //     Trigger: if energy hit 0 (and no death already running) start the

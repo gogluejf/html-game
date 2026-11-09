@@ -28,6 +28,7 @@ import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../world/level.js';
 import { getLevelConfig, LEVEL_CONFIGS, AREA_BOSS } from '../world/levelConfigs.js';
 import { getLastWorldSeed } from '../world/build.js';
 import { Hero, WEAPON_THORN } from '../hero/hero.js';
+import { attachHeroSprites, HERO_SPRITE_DIRS } from '../hero/heroSprites.js';
 import {createTrace, record, beginLife, beginContinue, calculateScore} from '../stats.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { tryTransition, getState, setState, S } from '../core/state.js';
@@ -143,6 +144,9 @@ export function makeHero(heroDef) {
     ['#555555', '#888888', '#aaaaaa', '#ffffff', '#666666'].map(c => makeTestFrame(h.w, h.h, c)),
     { speed: 80, loop: false },
   );
+  // Sheet sprites (idle/run binding v1): no-op when the hero's sheets are not
+  // loaded yet (node tests, pre-boot placeholder) — primitive path stays.
+  attachHeroSprites(h, HERO_SPRITE_DIRS[heroDef.id] ?? heroDef.id);
   return h;
 }
 

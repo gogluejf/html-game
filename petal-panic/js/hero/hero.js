@@ -85,8 +85,10 @@ export class Hero extends Entity {
   constructor(heroDef, x = 0, y = 0) {
     super({
       x, y,
-      w: heroDef.w ?? 32,
-      h: heroDef.h ?? 48,
+      // New size API: targetH in Y-units. Width is NOT pinned — sheet anims
+      // own it via their collision-box aspect (setAnim hands over ownership);
+      // pre-sprite fallback is targetH × 48 (square).
+      targetH: heroDef.targetH ?? (heroDef.h != null ? heroDef.h / UNIT_PX_Y : 1),
       gravity: 1,
       layer: LAYER.HERO,
       facing: 1,
@@ -628,6 +630,9 @@ export class Hero extends Entity {
 
     // --- Anim tick ----------------------------------------------------------
     if (this.anim) this.anim.tick(dt);
+    // Sheet-sprite playback (SpritePlayer): Hero overrides update() without
+    // super, so the shared Entity.tickAnim never runs — advance it here.
+    this.tickAnim(dt);
   }
 
   /**
@@ -1382,6 +1387,16 @@ export class Hero extends Entity {
     // High-graphic: try sheet sprite first.
     if (isHighGraphic() && this.drawSprite(ctx)) return;
     this.drawPrimitive(ctx);
+    // Sheet-sprite debug aid: while the sheet path is being brought up, a
+    // missing frame (data not attached / image not loaded) is INVISIBLE —
+    // an empty hero. Draw a thin red box so that state is visible in game.
+    if (isHighGraphic() && !this.spriteFrame()) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,0,0,0.8)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(this.x + 0.5, this.y + 0.5, this.w - 1, this.h - 1);
+      ctx.restore();
+    }
   }
 
   /** Hero primitive: rect at the live collision box (crouch height comes

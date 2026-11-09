@@ -213,7 +213,16 @@ async function boot() {
   const { initProjectileSprites } = await import('./objects/projectile.js');
   const { initCoinSprites } = await import('./objects/coin.js');
   const { initFireSprites } = await import('./combat/attack/primitives/fireArea.js');
-  await Promise.all([initBarrelSprites(), initCheckpointSprites(), initProjectileSprites(), initCoinSprites(), initFireSprites()]);
+  const { loadHeroSprites } = await import('./hero/heroSprites.js');
+  await Promise.all([initBarrelSprites(), initCheckpointSprites(), initProjectileSprites(), initCoinSprites(), initFireSprites(),
+    loadHeroSprites('scarlet_vale'), loadHeroSprites('balthazar')]);
+  // Boot visibility: log exactly what the hero sprite pipeline has so a
+  // silent "green square" regression is one console glance away.
+  try {
+    const { getHero } = await import('./systems/update.js');
+    const h = getHero();
+    console.info(`[sprite] hero boot: anims=${h.sprite ? Object.keys(h.sprite.anims).length : 0}, frames=${h.sprite?.frames?.size ?? 0}, active=${h._spriteAnim ?? 'none'}`);
+  } catch { /* update.js not ready yet */ }
   const { update } = await import('./systems/update.js');
   const { render } = await import('./systems/render.js');
   // VIRTUAL GAMEPAD option (fullscreen-layout plan): default ON; the pad only

@@ -235,9 +235,11 @@ export function render(ctx) {
           const phase = Math.floor(frac * IFRAME_BLINK_CYCLES) % 2 === 0;
           ctx.globalAlpha = phase ? IFRAME_BLINK_ALPHA_ON : IFRAME_BLINK_ALPHA_OFF;
         }
-        ctx.fillStyle = h.debugColor;
+        // Hero body: sheet sprite when high-graphic (Hero.draw handles the
+        // primitive fallback itself). The old unconditional debugColor rect
+        // here painted a solid green block OVER the sprite — removed.
         const hb = h.worldBox();
-        ctx.fillRect(hb.x, hb.y, hb.w, hb.h);
+        h.draw(ctx);
         // Shield pulse: breathing disc around the hero. Base radius scales
         // with current shield (0 → invisible, full → maxR). A sine pulse
         // (1.5 Hz) adds ±12% radius oscillation for a living feel. Flash
