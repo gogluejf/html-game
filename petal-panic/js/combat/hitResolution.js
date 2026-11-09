@@ -36,11 +36,17 @@ export function applyHit(context) {
     return { accepted: false, dealt: 0, destroyed: false, rejectReason: 'self-exclusion' };
   }
 
-  // --- Eligibility (3x3 team matrix) --------------------------------------
+  // --- Eligibility (3x3 team matrix + provenance exclusions) ---------------
   const tClass = getTargetClass(target);
   const allowed = ELIGIBLE[team] ?? ELIGIBLE[Team.NEUTRAL];
   if (!allowed.has(tClass)) {
     return { accepted: false, dealt: 0, destroyed: false, rejectReason: `team ${team} cannot hit ${tClass}` };
+  }
+  // Provenance-specific target restrictions (design doc §behavior-preservation):
+  // Toxic dust affects living targets only — never destructibles/objects.
+  if (provenance === AttackProvenance.HAZARD_DUST &&
+      (tClass === TargetClass.DESTRUCTIBLE || tClass === TargetClass.OTHER)) {
+    return { accepted: false, dealt: 0, destroyed: false, rejectReason: 'dust does not affect destructibles' };
   }
 
   // --- Route by target class ----------------------------------------------
