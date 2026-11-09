@@ -146,13 +146,14 @@ ok('supermove hitbox resolves with its knockback setting (both heroes)', () => {
   }
 });
 
-ok('normal melee hitbox resolves WITHOUT knockback', () => {
+ok('normal melee hitbox resolves WITH the small burst knockback (knockback.md §11)', () => {
   for (const id of ['scarlet', 'balthazar']) {
     const h = makeHero(id);
     setSwingFrame(h, 3); // active frame per MELEE_HITBOX_FRAMES
     const box = h.attackHitboxWorld(ATTACK_MELEE);
     assert.ok(box, 'active-frame melee must resolve a box');
-    assert.equal(box.knockback, undefined, 'melee box must carry no knockback');
+    assert.deepEqual(box.knockback, HEROES[id].attacks[ATTACK_MELEE].knockback,
+      `${id} melee box must carry the def's burst knockback`);
   }
 });
 

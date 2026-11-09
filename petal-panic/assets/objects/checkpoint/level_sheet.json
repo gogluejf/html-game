@@ -139,16 +139,16 @@
    ],
    "frames_dir": "petal-panic/assets/objects/checkpoint",
    "collision": {
-    "x": -151,
-    "y": -648,
+    "x": -167,
+    "y": -625,
     "w": 241,
-    "h": 645
+    "h": 595
    },
    "playback": "loop",
    "direction": "ping_pong",
    "pivot": {
-    "x": -30,
-    "y": -325
+    "x": -46,
+    "y": -327
    },
    "markers": [],
    "fps": 8

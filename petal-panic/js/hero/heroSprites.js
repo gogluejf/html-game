@@ -98,19 +98,45 @@ const RUN_SPEED_THRESHOLD = 20;
 /** heroDef.id → assets/heroes/ folder name (single source of truth). */
 export const HERO_SPRITE_DIRS = { scarlet: 'scarlet_vale' };
 
+// Aim → sheet suffix table. The 8-way index (DIR_ANGLES order in core/vec.js):
+//   0 right, 1 up-right, 2 up, 3 up-left, 4 left, 5 down-left, 6 down, 7 down-right.
+// Sheets exist for 5 directions (front/up/down/45up/45down); left aims reuse
+// the same art mirrored (mirrorX already flips it). No sheet → plain base anim.
+const AIM_SUFFIX = { 0: 'front', 1: '45up', 2: 'up', 3: '45up', 4: 'front', 5: '45down', 6: 'down', 7: '45down' };
+
 /**
- * Bind the active locomotion anim from live hero state. Call once per frame
- * after physics/input (hero.update). No-op when no sprite data is attached.
- * Only switches anims on actual change — setAnim() re-fits scale each call,
- * so steady-state frames must not churn it.
+ * Bind the active locomotion + aim anim from live hero state. Call once per
+ * frame after physics/input/shooting (hero.update + tryFire). No-op when no
+ * sprite data is attached. Only switches anims on actual change — setAnim()
+ * re-fits scale each call, so steady-state frames must not churn it.
+ *
+ * Anim resolution (most specific wins):
+ *   crouching        → crouch_shoot while shooting, else crouch
+ *   grounded+shooting→ {idle|run}_aim_{dir} when a sheet exists, else idle/run
+ *   grounded         → run | idle
  */
-export function updateHeroLocomotionAnim(hero) {
+export function updateHeroLocomotionAnim(hero, input) {
   if (!hero.sprite?.anims) return;
+  const shooting = !!(input && input.shoot);
+
   // Crouch owns its own height (applyCrouchHeight + crouch anim) — it must
   // win over the run/idle switch or setAnim('idle') would restore full height.
   if (hero.crouching) {
-    if (hero._spriteAnim !== 'crouch' && hero.sprite.anims.crouch) {
-      try { hero.setAnim('crouch'); } catch { /* keep current */ }
+    const want = (shooting && hero.sprite.anims.crouch_shoot) ? 'crouch_shoot' : 'crouch';
+    if (hero._spriteAnim !== want) {
+      try {
+        // Preserve the crouch height scale across crouch-family switches:
+        // setAnim() resets _targetHScale from the NEW anim's hScale (absent on
+        // crouch_shoot → 1), which would stand the hero back up mid-crouch.
+        const prevHScale = hero._targetHScale;
+        hero.setAnim(want);
+        if (prevHScale !== 1) {
+          const prevH = hero.h;
+          hero._targetHScale = prevHScale;
+          const newH = hero.h;
+          if (newH !== prevH) hero.y += prevH - newH;
+        }
+      } catch { /* keep current */ }
     }
     // setAnim() fits the sheet onto this.h at SWITCH time, but the crouch
     // height change happens in a separate step (applyCrouchHeight) — re-derive
@@ -125,8 +151,16 @@ export function updateHeroLocomotionAnim(hero) {
     }
     return;
   }
+
   const running = hero.grounded && Math.abs(hero.vx) > RUN_SPEED_THRESHOLD;
-  const want = running ? 'run' : 'idle';
+  const base = running ? 'run' : 'idle';
+  let want = base;
+  if (shooting && hero.grounded) {
+    const dir = hero.resolveAim(input);
+    const suffix = AIM_SUFFIX[dir];
+    const aimName = `${base}_aim_${suffix}`;
+    if (hero.sprite.anims[aimName]) want = aimName;
+  }
   if (hero._spriteAnim !== want) {
     try {
       hero.setAnim(want);

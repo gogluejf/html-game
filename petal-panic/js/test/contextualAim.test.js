@@ -322,8 +322,11 @@ ok('pipeline: grounded crouch + shoot fires horizontally toward facing (not down
   // Spawn origin must come from the CROUCHED body center (lower than standing).
   // heroYAtSpawn is the crouched top-left y (h already scaled by hScale), so
   // the crouch center is y + h/2; the standing center of the SAME feet line is
-  // feet - 24 = y + h - 24.
-  const standCenterY = heroYAtSpawn + hero.h - 24;
+  // feet - standH/2, where standH = crouch h / hScale (derived, not hardcoded).
+  const crouchData = hero.sprite?.anims?.crouch;
+  const hScale = Number.isFinite(Number(crouchData?.hScale)) && Number(crouchData.hScale) > 0 ? Number(crouchData.hScale) : 0.6;
+  const standH = hero.h / hScale;
+  const standCenterY = heroYAtSpawn + hero.h - standH / 2;
   const crouchCenterY = heroYAtSpawn + hero.h / 2;
   const spawnY = p.y + p.h / 2; // box top-left → center
   // Tolerance: heroYAtSpawn is captured on the frame the projectile appears,

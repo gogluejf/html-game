@@ -142,10 +142,10 @@
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": 0,
-    "y": -386,
-    "w": 387,
-    "h": 386
+    "x": 90,
+    "y": -322,
+    "w": 226,
+    "h": 302
    },
    "pivot": {
     "x": 193.5,

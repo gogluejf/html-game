@@ -227,9 +227,11 @@ ok('target outside the radius is untouched', () => {
 // ============================================================================
 ok('hero knocked back via takeHit("explosion") profile (strength 380, rec 0.30, iFrames 0.60)', () => {
   const hero = mkHero();
-  // Hero center (16,24); blast center (116, 24) → dirX=-100, dirY=0 → normal (-1,0).
-  // The blast is to the RIGHT of the hero, so it shoves the hero LEFT.
-  const exp = { cx: 116, cy: 24, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
+  // Hero box is targetH×48 tall and square pre-sprite; center = (w/2, h/2).
+  // Place the blast at the SAME y as the hero center so dirY = 0 exactly:
+  // dirX < 0 → normal (-1, 0) → pure horizontal shove of 380.
+  const hc = { x: hero.x + hero.w / 2, y: hero.y + hero.h / 2 };
+  const exp = { cx: hc.x + 100, cy: hc.y, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   resolveExplosion(exp, [hero]);
   assert.ok(close(hero.vx, -380), `vx=${hero.vx}, expected -380`);
   assert.ok(close(hero.vy, 0), `vy=${hero.vy}, expected 0`);

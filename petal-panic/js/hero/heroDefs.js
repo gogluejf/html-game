@@ -71,7 +71,7 @@ export const HEROES = {
     id: 'scarlet',
     name: 'Scarlet Vale',
     specialName: 'Cartwheel',
-    targetH: 1,                  // Y-units (1 = 48px); width is sheet-owned
+    targetH: 2,                  // Y-units (2 = 96px); width is sheet-owned
     stats: {
       weight: 1,
       speed: 250 / UNIT_PX_X,  // X-units/s (exactly 250 px/s at the current grid)
@@ -103,7 +103,7 @@ export const HEROES = {
     id: 'balthazar',
     name: 'Balthazhar',
     specialName: 'Leg Sweep',
-    targetH: 52 / UNIT_PX_Y,      // Y-units (52px ≈ 1.083u); width is sheet-owned
+    targetH: 104 / UNIT_PX_Y,     // Y-units (104px ≈ 2.167u); width is sheet-owned
     stats: {
       weight: 1.3,
       speed: 180 / UNIT_PX_X,  // X-units/s (exactly 180 px/s at the current grid)

@@ -1044,9 +1044,10 @@ export function update(dt) {
   // so this is exactly "standing on a one-way platform right now".
   intent.onOneWay = standingOnOneWay();
   hero.update(dt, intent);
-  // Sheet-sprite locomotion binding (idle ↔ run). Runs after physics so vx and
-  // grounded are current; no-op when the hero has no sprite data attached.
-  updateHeroLocomotionAnim(hero);
+  // Sheet-sprite locomotion + aim binding (idle/run/crouch × 5 aim dirs).
+  // Runs after physics + shooting so vx, grounded and shoot intent are current;
+  // no-op when the hero has no sprite data attached.
+  updateHeroLocomotionAnim(hero, intent);
 
   // 1a. energy / death / respawn / gameover flow.
   //     Trigger: if energy hit 0 (and no death already running) start the
