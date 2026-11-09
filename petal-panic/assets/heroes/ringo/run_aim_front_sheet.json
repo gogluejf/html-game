@@ -1,0 +1,149 @@
+{
+  "file": "petal-panic/assets/heroes/ringo/run_aim_front_sheet.png",
+  "size": "1320x1029",
+  "rows": 3,
+  "cols": 4,
+  "kind": "animation",
+  "description": "ringo run_aim_front (12 frames from GIF)",
+  "entities": [
+    {
+      "name": "ringo",
+      "anim": "run_aim_front",
+      "frames_dir": "petal-panic/assets/heroes/ringo",
+      "frames": [
+        {
+          "file": "run_aim_front_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            4,
+            0,
+            288,
+            347
+          ]
+        },
+        {
+          "file": "run_aim_front_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            297,
+            2,
+            347,
+            343
+          ]
+        },
+        {
+          "file": "run_aim_front_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            668,
+            4,
+            289,
+            338
+          ]
+        },
+        {
+          "file": "run_aim_front_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            981,
+            3,
+            339,
+            341
+          ]
+        },
+        {
+          "file": "run_aim_front_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            351,
+            297,
+            332
+          ]
+        },
+        {
+          "file": "run_aim_front_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            328,
+            347,
+            284,
+            341
+          ]
+        },
+        {
+          "file": "run_aim_front_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            644,
+            349,
+            337,
+            336
+          ]
+        },
+        {
+          "file": "run_aim_front_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1008,
+            352,
+            285,
+            331
+          ]
+        },
+        {
+          "file": "run_aim_front_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            0,
+            691,
+            297,
+            335
+          ]
+        },
+        {
+          "file": "run_aim_front_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            305,
+            689,
+            331,
+            339
+          ]
+        },
+        {
+          "file": "run_aim_front_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            668,
+            688,
+            289,
+            341
+          ]
+        },
+        {
+          "file": "run_aim_front_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            986,
+            688,
+            328,
+            341
+          ]
+        }
+      ]
+    }
+  ]
+}

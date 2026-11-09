@@ -1,0 +1,105 @@
+{
+  "file": "petal-panic/assets/heroes/ringo/idle_aim_down_sheet.png",
+  "size": "1338x834",
+  "rows": 2,
+  "cols": 4,
+  "kind": "animation",
+  "description": "ringo idle_aim_down (8 frames from GIF)",
+  "entities": [
+    {
+      "name": "ringo",
+      "anim": "idle_aim_down",
+      "frames_dir": "petal-panic/assets/heroes/ringo",
+      "frames": [
+        {
+          "file": "idle_aim_down_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            339,
+            415
+          ]
+        },
+        {
+          "file": "idle_aim_down_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            339,
+            1,
+            335,
+            412
+          ]
+        },
+        {
+          "file": "idle_aim_down_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            674,
+            7,
+            332,
+            400
+          ]
+        },
+        {
+          "file": "idle_aim_down_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1006,
+            11,
+            332,
+            393
+          ]
+        },
+        {
+          "file": "idle_aim_down_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            3,
+            421,
+            332,
+            407
+          ]
+        },
+        {
+          "file": "idle_aim_down_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            341,
+            418,
+            331,
+            413
+          ]
+        },
+        {
+          "file": "idle_aim_down_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            674,
+            416,
+            332,
+            417
+          ]
+        },
+        {
+          "file": "idle_aim_down_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1006,
+            415,
+            332,
+            419
+          ]
+        }
+      ]
+    }
+  ]
+}

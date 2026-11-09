@@ -1,0 +1,367 @@
+{
+ "file": "petal-panic/assets/heroes/ringo/superpower_sheet.png",
+ "size": "942x1146",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "ringo superpower (16 frames from GIF)",
+ "entities": [
+  {
+   "name": "ringo",
+   "anim": "superpower",
+   "frames_dir": "petal-panic/assets/heroes/ringo",
+   "frames": [
+    {
+     "file": "superpower_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      10,
+      0,
+      196,
+      297
+     ],
+     "offset": {
+      "x": -98,
+      "y": -297
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      228,
+      0,
+      202,
+      296
+     ],
+     "offset": {
+      "x": -101,
+      "y": -296
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      462,
+      0,
+      194,
+      296
+     ],
+     "offset": {
+      "x": -97,
+      "y": -296
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      708,
+      0,
+      201,
+      297
+     ],
+     "offset": {
+      "x": -100.5,
+      "y": -297
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      299,
+      217,
+      298
+     ],
+     "offset": {
+      "x": -108.5,
+      "y": -298
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      217,
+      297,
+      225,
+      303
+     ],
+     "offset": {
+      "x": -112.5,
+      "y": -303
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      443,
+      298,
+      231,
+      300
+     ],
+     "offset": {
+      "x": -115.5,
+      "y": -300
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      706,
+      322,
+      206,
+      252
+     ],
+     "offset": {
+      "x": -103,
+      "y": -252
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      10,
+      601,
+      196,
+      251
+     ],
+     "offset": {
+      "x": -98,
+      "y": -251
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      226,
+      601,
+      207,
+      252
+     ],
+     "offset": {
+      "x": -103.5,
+      "y": -252
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      458,
+      600,
+      202,
+      253
+     ],
+     "offset": {
+      "x": -101,
+      "y": -253
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      710,
+      600,
+      197,
+      254
+     ],
+     "offset": {
+      "x": -98.5,
+      "y": -254
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      7,
+      869,
+      202,
+      261
+     ],
+     "offset": {
+      "x": -101,
+      "y": -261
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      223,
+      867,
+      213,
+      266
+     ],
+     "offset": {
+      "x": -106.5,
+      "y": -266
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      442,
+      864,
+      234,
+      272
+     ],
+     "offset": {
+      "x": -117,
+      "y": -272
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "superpower_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      676,
+      854,
+      266,
+      292
+     ],
+     "offset": {
+      "x": -133,
+      "y": -292
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "once",
+   "direction": "forward",
+   "collision": {
+    "x": -94,
+    "y": -289,
+    "w": 188,
+    "h": 289
+   },
+   "pivot": {
+    "x": 0,
+    "y": -144
+   },
+   "markers": []
+  }
+ ]
+}

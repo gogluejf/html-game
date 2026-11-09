@@ -1,0 +1,193 @@
+{
+  "file": "petal-panic/assets/heroes/ringo/run_sheet.png",
+  "size": "933x1184",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "ringo run (16 frames from GIF)",
+  "entities": [
+    {
+      "name": "ringo",
+      "anim": "run",
+      "frames_dir": "petal-panic/assets/heroes/ringo",
+      "frames": [
+        {
+          "file": "run_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            240,
+            297
+          ]
+        },
+        {
+          "file": "run_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            240,
+            0,
+            229,
+            297
+          ]
+        },
+        {
+          "file": "run_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            469,
+            7,
+            234,
+            283
+          ]
+        },
+        {
+          "file": "run_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            704,
+            0,
+            227,
+            297
+          ]
+        },
+        {
+          "file": "run_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            9,
+            297,
+            221,
+            298
+          ]
+        },
+        {
+          "file": "run_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            243,
+            298,
+            223,
+            295
+          ]
+        },
+        {
+          "file": "run_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            472,
+            297,
+            228,
+            298
+          ]
+        },
+        {
+          "file": "run_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            703,
+            298,
+            230,
+            295
+          ]
+        },
+        {
+          "file": "run_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            6,
+            595,
+            228,
+            295
+          ]
+        },
+        {
+          "file": "run_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            240,
+            597,
+            229,
+            291
+          ]
+        },
+        {
+          "file": "run_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            473,
+            596,
+            225,
+            292
+          ]
+        },
+        {
+          "file": "run_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            708,
+            598,
+            220,
+            289
+          ]
+        },
+        {
+          "file": "run_f13.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            9,
+            894,
+            221,
+            285
+          ]
+        },
+        {
+          "file": "run_f14.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            244,
+            893,
+            220,
+            288
+          ]
+        },
+        {
+          "file": "run_f15.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            472,
+            892,
+            228,
+            290
+          ]
+        },
+        {
+          "file": "run_f16.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            705,
+            890,
+            225,
+            294
+          ]
+        }
+      ]
+    }
+  ]
+}

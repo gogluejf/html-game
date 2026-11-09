@@ -1,0 +1,193 @@
+{
+  "file": "petal-panic/assets/heroes/ringo/super_melee_sheet.png",
+  "size": "1196x1111",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "ringo super_melee (16 frames from GIF)",
+  "entities": [
+    {
+      "name": "ringo",
+      "anim": "super_melee",
+      "frames_dir": "petal-panic/assets/heroes/ringo",
+      "frames": [
+        {
+          "file": "super_melee_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            35,
+            0,
+            233,
+            308
+          ]
+        },
+        {
+          "file": "super_melee_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            311,
+            9,
+            258,
+            290
+          ]
+        },
+        {
+          "file": "super_melee_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            597,
+            22,
+            259,
+            264
+          ]
+        },
+        {
+          "file": "super_melee_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            894,
+            38,
+            284,
+            232
+          ]
+        },
+        {
+          "file": "super_melee_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            9,
+            308,
+            285,
+            236
+          ]
+        },
+        {
+          "file": "super_melee_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            303,
+            311,
+            275,
+            230
+          ]
+        },
+        {
+          "file": "super_melee_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            578,
+            312,
+            298,
+            227
+          ]
+        },
+        {
+          "file": "super_melee_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            876,
+            315,
+            320,
+            222
+          ]
+        },
+        {
+          "file": "super_melee_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            0,
+            559,
+            303,
+            229
+          ]
+        },
+        {
+          "file": "super_melee_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            303,
+            556,
+            274,
+            234
+          ]
+        },
+        {
+          "file": "super_melee_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            601,
+            549,
+            252,
+            248
+          ]
+        },
+        {
+          "file": "super_melee_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            914,
+            544,
+            243,
+            259
+          ]
+        },
+        {
+          "file": "super_melee_f13.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            32,
+            808,
+            239,
+            298
+          ]
+        },
+        {
+          "file": "super_melee_f14.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            317,
+            807,
+            247,
+            299
+          ]
+        },
+        {
+          "file": "super_melee_f15.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            614,
+            803,
+            225,
+            307
+          ]
+        },
+        {
+          "file": "super_melee_f16.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            919,
+            803,
+            233,
+            308
+          ]
+        }
+      ]
+    }
+  ]
+}
