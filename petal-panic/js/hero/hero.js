@@ -208,7 +208,7 @@ export class Hero extends Entity {
     // clean hit during its active phase. Decays one frame per tick in
     // updateSpecialMelee and is cleared by endSpecialMelee(). While > 0 the
     // contact-damage handler treats the hero as invulnerable — the follow-
-    // through of a landed sweep/cartwheel cannot clip the hero. A whiffed
+    // through of a landed sweep cannot clip the hero. A whiffed
     // swing never sets it, so the hero stays fully exposed. Normal melee and
     // projectiles never touch this field.
     this._connectProtectFrames = 0;
@@ -728,7 +728,7 @@ export class Hero extends Entity {
     this.meleeActive = true;
     this.meleeCooldown = this.MELEE_TOTAL_FRAMES * this.MELEE_FRAME_DURATION;
     // Jump the attack anim to frame 0 so it plays from the windup.
-    if (this.anims.attack) this.anims.attack.reset();
+    if (this.anims.melee) this.anims.melee.reset();
   }
 
   /**
@@ -816,9 +816,9 @@ export class Hero extends Entity {
       // active → full natural recovery — without any re-press. Buffering did
       // not shorten the swing: this tick happened on the original schedule.
       this.executePendingMelee();
-    } else if (this.anims.attack) {
+    } else if (this.anims.melee) {
       // Keep the visible attack frame aligned with the logical frame index.
-      this.anims.attack.pickFrame(Math.floor(this.meleeFrame));
+      this.anims.melee.pickFrame(Math.floor(this.meleeFrame));
     }
     this._prevMeleeJumpHeld = !!(input && input.jump);
   }
@@ -942,9 +942,9 @@ export class Hero extends Entity {
    * Start a special melee swing (design §15). Edge-triggered by the update
    * system on Down+Melee. The trajectory is self-supplied and COMMITTED once
    * started: windup+active own vx at travelSpeed in the resolved direction
-   * (facing * config.direction — Balthazar advances, Scarlet retreats).
-   * Facing/mirrorX are never flipped here, so Scarlet's sprite keeps its
-   * original orientation through the cartwheel.
+   * (facing * config.direction — the unified sweep advances toward facing).
+   * Facing/mirrorX are never flipped here. The `super_melee` sheet plays via
+   * updateHeroLocomotionAnim while specialMeleeActive is set.
    */
   startSpecialMelee() {
     if (this.specialMeleeActive || this.meleeActive) return;
@@ -952,11 +952,9 @@ export class Hero extends Entity {
     this.specialMeleeActive = true;
     this.specialMeleePhase = 'windup';
     this.specialMeleeFrame = 0;
-    // Resolved movement direction: toward facing for balthazar (+1), away for
-    // scarlet (-1). Captured ONCE at trigger — it cannot be reversed mid-attack.
+    // Resolved movement direction: toward facing (+1 for the unified sweep).
+    // Captured ONCE at trigger — it cannot be reversed mid-attack.
     this.specialMeleeDir = this.facing * cfg.direction;
-    // Jump the attack anim to frame 0 so it plays from the windup.
-    if (this.anims.attack) this.anims.attack.reset();
   }
 
   /** Total frames of the special swing (windup + active + recovery). */
@@ -967,7 +965,7 @@ export class Hero extends Entity {
 
   /**
    * True while the hero is protected by a clean special-melee connect
-   * (knockback.md ): a sweep/cartwheel that landed during its
+   * (knockback.md ): a sweep that landed during its
    * active phase keeps the hero immune to contact damage until that swing's
    * active+recovery phases end. Whiffs grant nothing; normal melee and
    * projectiles never set this window.
@@ -1074,8 +1072,8 @@ export class Hero extends Entity {
       this.vx = this.specialMeleeDir * cfg.travelSpeed * UNIT_PX_X; // X-units/s → px/s
     }
 
-    if (this.anims.attack) {
-      this.anims.attack.pickFrame(Math.min(f, this.MELEE_TOTAL_FRAMES - 1));
+    if (this.anims.melee) {
+      this.anims.melee.pickFrame(Math.min(f, this.MELEE_TOTAL_FRAMES - 1));
     }
 
     // Refresh the dedicated jump-edge tracker AFTER all consumers have run,

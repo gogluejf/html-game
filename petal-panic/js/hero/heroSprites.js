@@ -42,8 +42,8 @@ export async function loadHeroSprites(heroId) {
       'idle_aim_45up', 'idle_aim_45down',
       'run_aim_front', 'run_aim_up', 'run_aim_down',
       'run_aim_45up', 'run_aim_45down',
-      'attack', 'supermove', 'air_sweep', 'hacker', 'sweep',
-      'cartwheel', 'ribbon_attack', 'ribbon_storm', 'earthquake',
+      'melee', 'super_melee', 'superpower', 'supermove',
+      'air_sweep', 'hacker', 'sweep',
       'cane_attack', 'jump2', 'run2',
     ];
     const urls = names.map((n) => new URL(`${n}_sheet.json`, base).href);
@@ -118,6 +118,23 @@ const AIM_SUFFIX = { 0: 'front', 1: '45up', 2: 'up', 3: '45up', 4: 'front', 5: '
 export function updateHeroLocomotionAnim(hero, input) {
   if (!hero.sprite?.anims) return;
   const shooting = !!(input && input.shoot);
+
+  // Attack anims own their window: while a swing runs, the sheet (melee /
+  // super_melee) plays from f1 at its authored fps. When the swing ends, the
+  // next frame falls through to the locomotion switch below and reclaims
+  // idle/run/crouch — no per-attack end-of-swing reset needed.
+  if (hero.specialMeleeActive && hero.sprite.anims.super_melee) {
+    if (hero._spriteAnim !== 'super_melee') {
+      try { hero.setAnim('super_melee'); } catch { /* keep current */ }
+    }
+    return;
+  }
+  if (hero.meleeActive && hero.sprite.anims.melee) {
+    if (hero._spriteAnim !== 'melee') {
+      try { hero.setAnim('melee'); } catch { /* keep current */ }
+    }
+    return;
+  }
 
   // Crouch owns its own height (applyCrouchHeight + crouch anim) — it must
   // win over the run/idle switch or setAnim('idle') would restore full height.

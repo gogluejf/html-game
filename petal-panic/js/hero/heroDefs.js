@@ -66,11 +66,29 @@ const SUPERMOVE_HITBOX = { ox: 20, oy: 0, bw: 16, bh: 'body' };
 // 150 rocket). The strongest of the three committed attacks.
 const SUPERMOVE_KNOCKBACK = { base: 360, scaleBySpeed: 0.3, hitstun: 0.30, dirMode: 'alongVelocity', pop: 90 };
 
+/**
+ * §15 Special melee (Down+Melee): the ADVANCING LEG SWEEP — one shared attack
+ * for both heroes (unified; no per-hero branches). Travels TOWARD facing; the
+ * sprite plays the per-hero `super_melee` sheet while the trajectory commits.
+ * Shallow-spread per hero below so runtime code can never alias/mutate a
+ * shared config object.
+ */
+const SWEEP = {
+  direction: 1,          // +1 = toward facing (advancing sweep, both heroes)
+  travelSpeed: 300 / UNIT_PX_X, // X-units/s self-supplied horizontal movement (exactly 300 px/s at the current grid)
+  frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
+  hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over the body
+  // Knockback (knockback.md §11): aggressive forward pushback along the
+  // lunge velocity — clears the path ahead of the advancing sweep.
+  // pop: 40 px/s upward (§5) — a small hop; lighter than the supermove loft.
+  knockback: { base: 320, scaleBySpeed: 0.4, hitstun: 0.28, dirMode: 'alongVelocity', pop: 40 },
+};
+
 export const HEROES = {
   scarlet: {
     id: 'scarlet',
     name: 'Scarlet Vale',
-    specialName: 'Cartwheel',
+    specialName: 'Ribbon Storm',
     targetH: 2,                  // Y-units (2 = 96px); width is sheet-owned
     stats: {
       weight: 1,
@@ -81,18 +99,10 @@ export const HEROES = {
       jump: 511 / UNIT_PX_Y,   // Y-units/s impulse (exactly 511 px/s at the current grid)
       projectile_freq: 8,   // shots per second (default weapon only)
     },
-    // §15 Special melee (Down+Melee): retreating cartwheel — travels AWAY from
-    // facing while the sprite keeps its original orientation. Tuning lives here.
-    specialMelee: {
-      direction: -1,        // -1 = away from facing (scarlet's cartwheel)
-      travelSpeed: 300 / UNIT_PX_X, // X-units/s self-supplied horizontal movement (exactly 300 px/s at the current grid)
-      frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
-      hitbox: { ox: 0, oy: 0, bw: 32, bh: 48 },       // full-body overlay (cartwheel)
-      // Knockback (knockback.md §11): strong escape shove AWAY from the hero —
-      // pushes the enemy back to create escape space behind the retreat.
-      // pop: 50 px/s upward (§5) — a small hop, weaker than the supermove loft.
-      knockback: { base: 360, scaleBySpeed: 0.4, hitstun: 0.30, dirMode: 'fromAttacker', pop: 50 },
-    },
+    // §15 Special melee (Down+Melee): the shared advancing leg sweep — same
+    // behavior as Balthazar's (travels TOWARD facing, sprite plays her
+    // `super_melee` sheet). Shallow copy: per-hero ownership, shared values.
+    specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockback: { ...SWEEP.knockback }, frames: { ...SWEEP.frames } },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
       [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockback: MELEE_KNOCKBACK },
@@ -102,7 +112,7 @@ export const HEROES = {
   balthazar: {
     id: 'balthazar',
     name: 'Balthazhar',
-    specialName: 'Leg Sweep',
+    specialName: 'Earthquake',
     targetH: 104 / UNIT_PX_Y,     // Y-units (104px ≈ 2.167u); width is sheet-owned
     stats: {
       weight: 1.3,
@@ -113,17 +123,9 @@ export const HEROES = {
       jump: 456 / UNIT_PX_Y,   // Y-units/s impulse (exactly 456 px/s at the current grid)
       projectile_freq: 10,   // shots per second (default weapon only)
     },
-    // §15 Special melee (Down+Melee): advancing sweep — travels TOWARD facing.
-    specialMelee: {
-      direction: 1,         // +1 = toward facing (balthazar's sweep)
-      travelSpeed: 300 / UNIT_PX_X, // X-units/s self-supplied horizontal movement (exactly 300 px/s at the current grid)
-      frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
-      hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over his body
-      // Knockback (knockback.md §11): aggressive forward pushback along the
-      // lunge velocity — clears the path ahead of the advancing sweep.
-      // pop: 40 px/s upward (§5) — a small hop; v1 tuning, final feel in 2.3.
-      knockback: { base: 320, scaleBySpeed: 0.4, hitstun: 0.28, dirMode: 'alongVelocity', pop: 40 },
-    },
+    // §15 Special melee (Down+Melee): the shared advancing leg sweep
+    // (travels TOWARD facing; sprite plays the `super_melee` sheet).
+    specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockback: { ...SWEEP.knockback }, frames: { ...SWEEP.frames } },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
       [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockback: MELEE_KNOCKBACK },

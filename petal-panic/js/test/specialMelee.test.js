@@ -52,9 +52,9 @@ ok('both heroes carry specialMelee config', () => {
     assert.ok(cfg.hitbox.bw > 0 && cfg.hitbox.bh > 0);
   }
 });
-ok('directions contrast: balthazar toward, scarlet away', () => {
+ok('unified sweep: both heroes advance toward facing', () => {
   assert.equal(HEROES.balthazar.specialMelee.direction, 1);
-  assert.equal(HEROES.scarlet.specialMelee.direction, -1);
+  assert.equal(HEROES.scarlet.specialMelee.direction, 1);
 });
 
 console.log('Acceptance #1 — Down+Melee triggers special, plain Melee normal');
@@ -132,29 +132,29 @@ ok('balthazar moves forward across the full committed window', () => {
   assert.ok(allLocked, 'vx must stay locked at travelSpeed every committed frame');
 });
 
-console.log('Acceptance #3 — Scarlet retreats but keeps orientation');
-ok('scarlet vx = -travelSpeed (opposite facing) while facing unchanged', () => {
+console.log('Acceptance #3 — Scarlet advances with the unified sweep, keeps orientation');
+ok('scarlet vx = +travelSpeed (toward facing) while facing unchanged', () => {
   const h = makeHero('scarlet');
   h.facing = 1;
   h.startSpecialMelee();
-  assert.equal(h.specialMeleeDir, -1);
+  assert.equal(h.specialMeleeDir, 1);
   const speed = HEROES.scarlet.specialMelee.travelSpeed * UNIT_PX_X; // def is unit-native (audit Tier 2)
   h.update(DT, noInput());
-  assert.ok(approx(h.vx, -speed), `vx=${h.vx}`);
+  assert.ok(approx(h.vx, speed), `vx=${h.vx}`);
   // Orientation preserved through the whole committed window.
   for (let i = 0; i < 8; i++) h.update(DT, noInput());
   assert.equal(h.facing, 1, 'facing must stay original');
   assert.equal(h.mirrorX, false, 'mirrorX must stay original');
 });
-ok('scarlet facing left retreats right (+vx), sprite still faces left', () => {
+ok('scarlet facing left advances left (-vx), sprite still faces left', () => {
   const h = makeHero('scarlet');
   h.facing = -1;
   h.syncMirror();
   h.startSpecialMelee();
-  assert.equal(h.specialMeleeDir, 1); // -1 * -1
+  assert.equal(h.specialMeleeDir, -1); // -1 * 1
   const speed = HEROES.scarlet.specialMelee.travelSpeed * UNIT_PX_X; // def is unit-native (audit Tier 2)
   h.update(DT, noInput());
-  assert.ok(approx(h.vx, speed), `vx=${h.vx}`);
+  assert.ok(approx(h.vx, -speed), `vx=${h.vx}`);
   assert.equal(h.facing, -1);
   assert.equal(h.mirrorX, true);
 });
@@ -303,16 +303,16 @@ ok('holding opposite direction does not steer the committed sweep', () => {
     }
   }
 });
-ok('scarlet retreat cannot be pushed back by held input', () => {
+ok('scarlet sweep cannot be steered by held input', () => {
   const h = makeHero('scarlet');
   h.facing = 1; h.syncMirror();
   h.grounded = true;
   h.startSpecialMelee();
   const speed = HEROES.scarlet.specialMelee.travelSpeed * UNIT_PX_X; // def is unit-native (audit Tier 2)
   for (let i = 0; i < 7; i++) {
-    h.update(DT, { ...noInput(), right: true });
+    h.update(DT, { ...noInput(), left: true });
     if (h.specialMeleePhase !== 'recovery') {
-      assert.ok(approx(h.vx, -speed), `frame ${i}: vx=${h.vx} (held right)`);
+      assert.ok(approx(h.vx, speed), `frame ${i}: vx=${h.vx} (held left)`);
     }
   }
 });

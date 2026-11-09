@@ -496,7 +496,7 @@ function swapHero() {
     ['#2ecc71', '#27ae60', '#1abc9c'].map(c => makeTestFrame(nh.w, nh.h, c)),
     { speed: 200, loop: true },
   );
-  nh.anims.attack = new Anim(
+  nh.anims.melee = new Anim(
     ['#555555', '#888888', '#aaaaaa', '#ffffff', '#666666'].map(c => makeTestFrame(nh.w, nh.h, c)),
     { speed: 80, loop: false },
   );

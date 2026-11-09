@@ -49,13 +49,13 @@ ok('balthazar sweep carries aggressive forward pushback', () => {
   assert.equal(kb.dirMode, 'alongVelocity'); // shove along the lunge velocity
 });
 
-ok('scarlet cartwheel carries strong escape shove away', () => {
+ok('scarlet sweep carries the same aggressive forward pushback', () => {
   const kb = HEROES.scarlet.specialMelee.knockback;
-  assert.ok(kb, 'cartwheel must expose a non-null knockback setting');
-  assert.equal(kb.base, 360);
+  assert.ok(kb, 'sweep must expose a non-null knockback setting');
+  assert.equal(kb.base, 320);
   assert.equal(kb.scaleBySpeed, 0.4);
-  assert.equal(kb.hitstun, 0.30);
-  assert.equal(kb.dirMode, 'fromAttacker'); // shove away from the hero
+  assert.equal(kb.hitstun, 0.28);
+  assert.equal(kb.dirMode, 'alongVelocity'); // shove along the lunge velocity
 });
 
 ok('supermove (both heroes) carries the strongest launch', () => {
@@ -70,12 +70,12 @@ ok('supermove (both heroes) carries the strongest launch', () => {
   }
 });
 
-ok('sweep and cartwheel carry a smaller pop than the supermove (§5)', () => {
+ok('sweeps carry a smaller pop than the supermove (§5)', () => {
   const sweepPop = HEROES.balthazar.specialMelee.knockback.pop;
-  const cartwheelPop = HEROES.scarlet.specialMelee.knockback.pop;
+  const scarletPop = HEROES.scarlet.specialMelee.knockback.pop;
   const superPop = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockback.pop;
-  assert.ok(sweepPop > 0 && cartwheelPop > 0, 'special melee pops must be positive');
-  assert.ok(superPop > cartwheelPop, `super pop (${superPop}) must exceed cartwheel pop (${cartwheelPop})`);
+  assert.ok(sweepPop > 0 && scarletPop > 0, 'special melee pops must be positive');
+  assert.ok(superPop > scarletPop, `super pop (${superPop}) must exceed scarlet sweep pop (${scarletPop})`);
   assert.ok(superPop > sweepPop, `super pop (${superPop}) must exceed sweep pop (${sweepPop})`);
 });
 
@@ -108,14 +108,15 @@ ok('thorn / special projectile definitions carry NO knockback', () => {
   }
 });
 
-ok('strength ordering: super base >= cartwheel base > sweep base', () => {
+ok('strength ordering: super base >= sweep base (unified, both heroes tie)', () => {
   const superBase = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockback.base;
-  const cartwheelBase = HEROES.scarlet.specialMelee.knockback.base;
-  const sweepBase = HEROES.balthazar.specialMelee.knockback.base;
-  // Supermove was tuned down to 60% of its original heft, so it now ties the
-  // cartwheel on base (360) and is distinguished by pop/scale instead.
-  assert.ok(superBase >= cartwheelBase, `super (${superBase}) must not be weaker than cartwheel (${cartwheelBase})`);
-  assert.ok(cartwheelBase > sweepBase, `cartwheel (${cartwheelBase}) must exceed sweep (${sweepBase})`);
+  const scarletSweepBase = HEROES.scarlet.specialMelee.knockback.base;
+  const balthazarSweepBase = HEROES.balthazar.specialMelee.knockback.base;
+  // Unified sweep: both heroes share the same base (320); supermove stays
+  // the stronger committed attack.
+  assert.ok(superBase >= scarletSweepBase, `super (${superBase}) must not be weaker than scarlet sweep (${scarletSweepBase})`);
+  assert.ok(superBase >= balthazarSweepBase, `super (${superBase}) must not be weaker than balthazar sweep (${balthazarSweepBase})`);
+  assert.equal(scarletSweepBase, balthazarSweepBase, 'unified sweep: identical base for both heroes');
 });
 
 console.log('Resolved world box exposes knockback (hb.knockback source)');
@@ -128,11 +129,11 @@ ok('sweep hitbox resolves with its knockback setting', () => {
   assert.deepEqual(box.knockback, HEROES.balthazar.specialMelee.knockback);
 });
 
-ok('cartwheel hitbox resolves with its knockback setting', () => {
+ok('scarlet sweep hitbox resolves with its knockback setting', () => {
   const h = makeHero('scarlet');
   setSpecialActive(h);
   const box = h.attackHitboxWorld(ATTACK_SPECIAL_MELEE);
-  assert.ok(box, 'active-phase cartwheel must resolve a box');
+  assert.ok(box, 'active-phase sweep must resolve a box');
   assert.deepEqual(box.knockback, HEROES.scarlet.specialMelee.knockback);
 });
 

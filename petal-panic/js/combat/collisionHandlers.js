@@ -309,8 +309,8 @@ export function registerCollisionHandlers(collisionWorld) {
       separateHeroFromBumper(heroEnt, source);
       return;
     }
-    // Self-protection on connect (knockback.md ): a clean sweep or
-    // cartwheel connect keeps the hero immune to contact damage until that
+    // Self-protection on connect (knockback.md ): a clean sweep connect
+    // keeps the hero immune to contact damage until that
     // swing's active+recovery end. The flag is set by the unified hitbox
     // system on first connect and cleared by endSpecialMelee(); whiffs never
     // set it, so a missed swing leaves the hero fully exposed here.

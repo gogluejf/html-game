@@ -140,7 +140,7 @@ export function makeHero(heroDef) {
     ['#2ecc71', '#27ae60', '#1abc9c'].map(c => makeTestFrame(h.w, h.h, c)),
     { speed: 200, loop: true },
   );
-  h.anims.attack = new Anim(
+  h.anims.melee = new Anim(
     ['#555555', '#888888', '#aaaaaa', '#ffffff', '#666666'].map(c => makeTestFrame(h.w, h.h, c)),
     { speed: 80, loop: false },
   );

@@ -6,7 +6,7 @@
 // connect), and assert the connectProtected window's lifecycle.
 //
 // Contract under test:
-//   • A clean sweep/cartwheel connect makes the hero immune to contact damage
+//   • A clean sweep connect makes the hero immune to contact damage
 //     for the rest of that swing (active + recovery).
 //   • A whiffed swing grants NO protection — the hero stays exposed.
 //   • Protection clears when the swing ends naturally or is cancelled.
