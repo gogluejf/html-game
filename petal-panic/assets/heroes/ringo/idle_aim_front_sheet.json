@@ -1,0 +1,204 @@
+{
+ "file": "petal-panic/assets/heroes/ringo/idle_aim_front_sheet.png",
+ "size": "1784x888",
+ "rows": 2,
+ "cols": 4,
+ "kind": "animation",
+ "description": "ringo idle aim front",
+ "entities": [
+  {
+   "name": "ringo",
+   "anim": "idle_aim_front",
+   "frames_dir": "petal-panic/assets/heroes/ringo",
+   "frames": [
+    {
+     "file": "idle_aim_front_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      446,
+      444
+     ],
+     "offset": {
+      "x": -223,
+      "y": -444
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      446,
+      0,
+      446,
+      444
+     ],
+     "offset": {
+      "x": -223,
+      "y": -444
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      892,
+      0,
+      446,
+      444
+     ],
+     "offset": {
+      "x": -223,
+      "y": -444
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1338,
+      0,
+      446,
+      444
+     ],
+     "offset": {
+      "x": -223,
+      "y": -444
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      444,
+      446,
+      444
+     ],
+     "offset": {
+      "x": -223,
+      "y": -444
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      446,
+      444,
+      446,
+      444
+     ],
+     "offset": {
+      "x": -223,
+      "y": -444
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      892,
+      444,
+      446,
+      444
+     ],
+     "offset": {
+      "x": -223,
+      "y": -444
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1338,
+      444,
+      446,
+      444
+     ],
+     "offset": {
+      "x": -223,
+      "y": -444
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -219,
+    "y": -436,
+    "w": 438,
+    "h": 436
+   },
+   "pivot": {
+    "x": 0,
+    "y": -218
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-08T20:01:52",
+ "crop": {
+  "frames_dir": "petal-panic/assets/heroes/ringo",
+  "pass": "petal-panic/assets/heroes/ringo"
+ }
+}

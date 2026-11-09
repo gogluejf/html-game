@@ -2,10 +2,47 @@
 
 **Date:** 2026-11-03
 **Updated:** 2026-11-05 — confirmed team rules and generic destructibles
-**Status:** ready to execute; this document does not mean implementation is complete
-**Scope:** one targeting policy and one public damage entry point. Preserve
+**Status:** design finalized for plan generation — implementation not started
+**Scope:** one hit-resolution contract: attack team + target team + target class + attack provenance + target state → hit effects. Preserve
 per-class HP/energy math, death pipelines, impact reactions, and destruction
 payloads while making every damage path reach the appropriate lifecycle.
+
+## Known field bugs (observed 2026-11-05)
+
+Concrete reproduction cases found in playtesting that this plan must fix. Each
+one is a symptom of aftermath/reward logic being duplicated per call site
+instead of owned by a single router:
+
+1. **Melee on super-coin barrel pops no coins.** Per-hit popcorn
+   (`popSuperCoinHit`) is only wired into the projectile side-hit path
+   (`collisionHandlers.js`) and the bomb top-landing path (`update.js`). The
+   melee path (`processAllHitboxes` → `processHitboxes`) calls `t.hit()`
+   directly and never fires any reward hook — non-killing melee hits pop
+   nothing even though the def declares `hitCoins`.
+2. **Dust zone kills propane barrel → no molotov fan.** `HazardZone.update()`
+   routes ticks through `processHitboxes` with a callback that only records
+   hits — it never checks `target.destroyed` / calls `handleBarrelDestroyed`.
+   The barrel's HP drains correctly and `destroyed` latches, but the payload
+   pipeline (molotov spawnSplit, VFX, collision-world removal) never runs.
+   Fire zones (`fireArea.js` per-segment hitboxes) have the identical hole.
+3. **Some explosive/hazard attacks kill propane without its molotov fan**
+   (user report; dust path explained above; exact explosive variant still needs
+   reproduction). Do not assume all blasts deal zero damage: ally blast filters
+   exclude ordinary objects, whereas an eligible fallback `damage()` CAN drain
+   object HP but bypass `GameObj.hit()` / destruction aftermath.
+4. **Scattered aftermath ownership** (code finding): projectile side/top hits
+   and gameplay melee explicitly run destruction handling; zone callbacks do
+   not. Engine hitboxes and raw-damage paths require an exhaustive caller audit.
+
+Correction to earlier discussion: `getDamageables()` includes live barrels.
+Dust can damage and destroy propane; it is the payload handling that is missing.
+The absence of a contact callback in `carrierMacro` alone does NOT prove carrier
+object impacts are broken: gameplay also runs the shared top/side impact paths.
+Carrier contact remains a regression case, not a confirmed additional bug.
+
+Acceptance: reproduce the reported cases, then verify per-hit rewards and
+exactly-once destruction payloads through production paths. Do not fix these by
+adding manual barrel aftermath calls to each attack.
 
 ## Problem
 
@@ -53,19 +90,234 @@ handled; team chooses whom an attack can hurt. Never infer team eligibility from
   removed. Any future attack-specific immunity must be explicit, separately
   designed, and must not masquerade as a team rule.
 
-## Goal
+## Goal — complete hit resolution, not only damage routing
 
 ```text
-applyHit(target, source, amount, options) — only public damage entry
-  1. Validate damage and targeting inputs
-  2. Exclude self, dead/destroyed targets and applicable protected states
-  3. Apply attack-team versus target-team matrix
-  4. Route through the target class's proper damage/death lifecycle
-  5. Preserve exactly-once destruction aftermath through shared host hooks
+attack team + target team + target class + attack provenance + target state
+                             ↓
+                      resolved hit effects
 ```
 
-New destructibles use the generic `GameObj` contract, not a list of barrel IDs.
-Hero/enemy/boss/destructible classifications must not override team membership.
+One public entry accepts all required hit context, decides the outcome, and
+orchestrates specialized executors. Callers must not independently remember
+knockback, rewards, or destruction aftermath. Exact API signature is pending
+joint validation; the previous amount/options signature is not final.
+
+Inputs to declare explicitly:
+- Attack and target affiliation, independently of their classes.
+- Target class and target-specific behavior/configuration (e.g. supercoin rewards).
+- Attack provenance: melee, super move, projectile, explosion, hazard, etc.
+  These are examples, NOT an approved exhaustive enum. Provenance is a real
+  behavior input, not merely a telemetry label.
+- Target state: life/destruction state, protection, resources, resistance.
+- Damage and reaction settings, source identity, and necessary contact geometry
+  or motion context. Numeric tuning is data, not an enum.
+
+Outputs/effects resolved together:
+- Accepted/rejected hit and reason; HP/shield/energy changes.
+- Knockback, stun, protection and other applicable impact reactions.
+- Hit flash/visual feedback and per-hit rewards (including supercoin popcorn).
+- Death/destruction transition, payload, rewards and world removal exactly once.
+- Applicable carrier contact outcome, coordinated with its lifecycle owner
+  (retain/consume/detonate/fizzle are examples requiring validation).
+
+Central resolution does NOT mean putting physics, rendering, coins and attack
+spawning in one giant function. Existing specialized executors can remain;
+the resolver owns the decision and reliable orchestration, not each caller.
+New destructibles use a generic contract, not a hardcoded barrel-ID routing list.
+
+## Routing declarations — finalized for implementation planning
+
+| Declaration | Decision |
+|---|---|
+| Teams | `Team` enum; preserve the confirmed matrix above |
+| Target classes | `TargetClass` enum with explicit registration and an `OTHER` fallback policy |
+| Attack provenance | Full 14-value candidate set below; add values only when distinct behavior is needed |
+| Target state | Existing life/destruction/protection/resource/resistance fields, normalized into context |
+| Hit/reaction configuration | Caller supplies requested damage/reactions; target state modifies them; resolver produces final result |
+| Impact policy and result | Attack/carrier lifecycle owns impact behavior; resolver reports accepted hit and resolved target effects |
+| Behavior matrix | Preserve existing code behavior as baseline; inventory cells as keep / fix / undefined rather than inventing a full table |
+
+### Finalized initial enums
+
+```js
+Team = { ALLY: 'ALLY', FOE: 'FOE', NEUTRAL: 'NEUTRAL' }
+
+TargetClass = {
+  HERO: 'HERO',
+  ENEMY: 'ENEMY',
+  BOSS: 'BOSS',
+  DESTRUCTIBLE: 'DESTRUCTIBLE',
+  OTHER: 'OTHER',
+}
+
+AttackProvenance = {
+  MELEE: 'MELEE',
+  SPECIAL_MELEE: 'SPECIAL_MELEE',
+  SUPER_MOVE: 'SUPER_MOVE',
+  PROJECTILE: 'PROJECTILE',
+  EXPLOSION: 'EXPLOSION',
+  HAZARD_FIRE: 'HAZARD_FIRE',
+  HAZARD_DUST: 'HAZARD_DUST',
+  SPIKE: 'SPIKE',
+  CONTACT: 'CONTACT',
+  DASH: 'DASH',
+  STOMP: 'STOMP',
+  BEAM: 'BEAM',
+  SHOCKWAVE: 'SHOCKWAVE',
+  OBJECT_IMPACT: 'OBJECT_IMPACT',
+}
+```
+
+Fire, dust and spike may share a hazard family while retaining distinct values.
+The provenance list is extensible; do not infer behavior from collision layer or
+method-name heuristics. Invalid/missing required inputs must fail before mutation.
+
+### Proposed effect taxonomy
+
+```js
+HitEffect = {
+  RESOURCE_LOSS,
+  KNOCKBACK,
+  STUN,
+  PROTECTION,
+  FEEDBACK,       // flash, sparkles, sound, shake
+  REWARD,         // target-specific hit reward such as supercoin coins
+  DEATH,
+  DESTRUCTION_PAYLOAD,
+  WORLD_REMOVAL,
+}
+```
+
+This taxonomy describes effect ownership, not exact tuning values. Impact
+behavior is intentionally not a fixed enum: an attack may disappear, explode,
+spawn children, create zones, bounce, detonate later, fizzle or transform. The
+attack/carrier lifecycle owns that policy and consumes `HitResult` as input.
+
+### Confirmed dependency direction
+
+- **Caller/router decides eligibility and requested effects.**
+- **Target implements its own reaction behavior through hooks/configuration.**
+- **Resolver resolves the final outcome and orchestrates specialized executors.**
+
+The old model (“when I perform this attack, manually apply every world effect”)
+is replaced by “this resolved hit happened; the target responds according to its
+own contract.” This prevents forgotten per-caller rewards and destruction payloads.
+
+### Confirmed behavior-preservation rule
+
+Use current production behavior as the default baseline. The migration must
+preserve existing working cases and only change explicitly confirmed gaps:
+- Fire can damage destructibles for now; toxic dust affects living targets only.
+  Spike behavior remains separately inventoried. Use “destructible” rather than
+  “barrel” because future non-barrel objects will use the same contract.
+- Melee on supercoin must trigger configured per-hit rewards.
+- Any eligible attack that destroys propane must run its molotov payload exactly once.
+- Existing knockback, resistance, i-frame and death-motion behavior is preserved
+  unless a specific case is explicitly changed.
+
+Task 0 becomes a behavior inventory marking each relevant cell **keep**, **fix**,
+or **undefined**. Do not hand-author a complete theoretical matrix.
+
+## Unified hit context and result schema
+
+Proposed field names are finalized enough for planning; validate naming during
+implementation, but do not reopen architecture.
+
+```js
+HitContext = {
+  source,
+  target,
+  attackTeam,
+  targetTeam,
+  targetClass,
+  provenance,
+  damage,
+  reaction: {
+    knockback,
+    stun,
+    protection,   // recovery protection requested for the target, e.g. i-frames
+  },
+  impactPosition,
+  direction,      // unit push direction
+  motion,         // attacker velocity used for speed-based knockback
+}
+
+HitResult = {
+  accepted,
+  reason,
+  resourceLoss,   // HP/shield/energy breakdown
+  appliedKnockback,
+  stun,
+  protectionGained, // actual recovery protection applied after modifiers
+  feedback,
+  rewards,
+  destroyed,
+}
+```
+
+**Reaction semantics:** caller defines intent; target resistance/state modifies it;
+resolver records the final applied value. `direction` is where the push goes;
+`motion` is how fast the attacker was moving into the target. `protectionGained`
+belongs to the target’s recovery state.
+
+Rejected hits do not invoke target callbacks and must not produce reactions.
+Zero-damage accepted hits preserve current reward behavior for now: rewards that
+scale by actual damage remain unchanged, and the inventory must record any path
+that currently rewards on contact regardless of damage before changing it.
+
+## Target callback contract
+
+Proposed API names; final field schemas/enums remain subject to joint validation:
+
+```js
+target.onHit(hitContext, hitResult)
+target.onDestroyed(hitContext, hitResult)
+```
+
+Both receive the same unified context and resolved outcome for the triggering hit.
+
+**hitContext — what caused it:** source and target identity; attack team, target
+team/class; attack provenance; requested damage/reaction settings; applicable
+impact position, direction and motion context.
+
+**hitResult — what happened:** acceptance/rejection and reason; actual
+HP/shield/energy loss; resolved knockback/stun and shared reactions; whether this
+hit caused destruction. Rejected hits do not invoke these callbacks.
+
+**Ownership:**
+- Resolver owns eligibility, resource changes and shared-effect orchestration.
+  Existing specialized executors may implement those effects.
+- `onHit` runs once per accepted hit, including lethal hits. Target-specific
+  effects such as supercoin popcorn belong here.
+- `onDestroyed` runs once per target destruction, after that hit's `onHit`.
+  Propane molotovs and final coin bursts belong here.
+- Hooks do not repeat team checks, subtract HP again, or reapply shared
+  knockback/flash. Each effect has one owner; attack callers never manually
+  invoke target aftermath hooks.
+- Host services may implement payloads/world removal; entity callbacks need not
+  directly depend on rendering, pools or global world state.
+- Establish destruction/aftermath guards before callbacks can trigger nested
+  chain reactions. Preserve the triggering context/result through pool reuse.
+- Callback order does not require knockback after death: retain Task 0's explicit
+  ordering decision and lethal-hit motion requirements.
+
+**Still to validate together:** accepted zero-damage hit/reward behavior, final
+field names, reward scaling (actual damage versus requested/overkill), service
+wiring and callback failure policy. Do not silently change supercoin scaling.
+
+Regression tests must verify shared context, onHit-before-onDestroyed order,
+no callbacks for rejected hits, no duplicate effects, and exactly-once destruction
+under nested chain reactions. Include nonlethal and lethal supercoin hits and
+propane destroyed by dust/fire/blasts.
+
+## Task 0 — Behavior inventory (blocking)
+
+Inventory existing teams/classes/provenance, reaction owners and impact policies.
+Mark each relevant current behavior **keep**, **fix**, or **undefined**, with file/
+call-site evidence. Confirm fire/destructible and dust/living-only rules, zero-
+damage reward paths, effect ordering, lethal-hit motion, and carrier impact owners.
+Do not invent a complete theoretical matrix; use production behavior as baseline.
 
 ## Task 1 — Explicit affiliation and shared targeting
 
@@ -80,7 +332,7 @@ export const TEAM_TARGETS = Object.freeze({
 });
 ```
 
-- Target classes: `hero`, `enemy`, `boss`, `destructible`, `other`.
+- Target classes: use the declarations approved in Task 0; earlier examples are not final enums.
 - Establish explicit affiliation at entity creation: player/allies → ally,
   enemies/bosses → foe, ordinary destructible objects → neutral. Allow explicit
   affiliation overrides for future allied/enemy objects and characters.
@@ -96,12 +348,13 @@ export const TEAM_TARGETS = Object.freeze({
   prevent valid foe-versus-destructible or neutral-versus-character candidates
   from reaching the shared targeting policy.
 
-## Task 2 — One public damage router
+## Task 2 — One public hit resolver
 
-Implement `applyHit(target, source, amount, options)` in `js/combat/damage.js`.
-Options carry explicit attack team plus method/kind for telemetry and behavior.
-Resolve any omitted team through one documented policy; do not silently treat
-all omitted teams as neutral. Migrate callers to explicit attack affiliation.
+Implement the public hit contract approved in Task 0 (working name `applyHit`).
+Validate all required team/class/provenance/state/configuration inputs before
+mutation. Resolve eligibility and the provenance/target behavior profile, then
+coordinate resource changes, reactions, rewards and lifecycle effects. No
+independent caller-owned aftermath decisions. Reuse specialized executors.
 
 - Preserve `assertDamageAmount`: reject undefined, null, NaN, infinity, strings,
   and negative damage BEFORE mutation. Errors identify source, target, method.
@@ -113,8 +366,10 @@ all omitted teams as neutral. Migrate callers to explicit attack affiliation.
 - Internal names can become `heroDamage`, `enemyDamage`, `objectDamage`;
   `applyHit` is the only public caller-facing entry. Avoid recursive routing
   when existing enemy damage methods call the current `damage()` core.
-- Keep impact reactions (i-frames, knockback, special loss) at their existing
-  owners and trigger them only after actual damage.
+- Centralize reaction selection and orchestration, reusing existing executors.
+  Use Task 0-approved ordering, including lethal-hit motion and zero-damage rules.
+  Target class alone must not determine all reactions; provenance/configuration
+  also participates. Avoid duplicate flash, knockback, rewards or contact effects.
 - Ensure per-hit rewards and destruction payloads/world removal run exactly
   once for direct hits, blasts and zones. Reuse shared host orchestration rather
   than copying barrel-specific branches into each attack.
@@ -122,6 +377,11 @@ all omitted teams as neutral. Migrate callers to explicit attack affiliation.
   remove them once all callers migrate.
 
 ## Task 3 — Migrate every damage path
+
+- Audit ALL direct HP mutations and reaction calls, including shockwave,
+  surfaceWave, beam, spike, dashCombo, fireArea and engine hitboxes. Each path
+  supplies the approved hit context; remove duplicate caller effects only once
+  the resolver owns them. Collision geometry and physics remain specialized.
 
 - `processHitboxes`: replace hardcoded layer/team filtering and per-target
   method selection with shared eligibility and `applyHit`.
@@ -143,6 +403,15 @@ all omitted teams as neutral. Migrate callers to explicit attack affiliation.
   neutral even if the player destroyed the barrel).
 
 ## Task 4 — Tests and regression gates
+
+- Cover the approved provenance × target-class/configuration behavior matrix,
+  combined with team and protection gates; not just the 3×3 team truth table.
+- Reproduce melee supercoin per-hit rewards and dust-killed propane molotovs.
+  Test fire and explosive variants through actual production call paths.
+- Assert configured knockback/no-knockback differences, resistance, lethal-hit
+  motion, feedback, rewards and payloads; each intended effect runs once.
+- Test invalid required enum/context inputs before mutation and approved
+  zero-damage/contact policies.
 
 - Exhaustive 3×3 attack-team/target-team truth table, including neutral→neutral
   and self-exclusion for every team.
@@ -191,7 +460,10 @@ all omitted teams as neutral. Migrate callers to explicit attack affiliation.
 
 ## Risk
 
-Medium: this is a targeting/lifecycle correction, not merely a rename.
+Reassess scope after Task 0: full hit resolution is broader than a damage-only
+router and touches reaction/contact owners beyond the core combat files.
+
+Original assessment — Medium: this is a targeting/lifecycle correction, not merely a rename.
 Primary risks are missed collision candidates, duplicate chain reactions,
 recursion through legacy damage wrappers, and affiliation defaults that alter
 friendly-fire rules. Mitigate with explicit team initialization, shared routing,
@@ -199,5 +471,5 @@ exactly-once destruction hooks, and production-path regression tests.
 
 ## Execution order
 
-1 → 2 → 3 → 4 (test gate) → 5 → 6.
+0 (joint validation; blocking) → 1 → 2 → 3 → 4 (test gate) → 5 → 6.
 No automatic commits or pushes. Each commit needs explicit user instruction.

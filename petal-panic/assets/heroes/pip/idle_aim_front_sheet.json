@@ -1,0 +1,204 @@
+{
+ "file": "petal-panic/assets/heroes/pip/idle_aim_front_sheet.png",
+ "size": "1772x886",
+ "rows": 2,
+ "cols": 4,
+ "kind": "animation",
+ "description": "pip idle aim front",
+ "entities": [
+  {
+   "name": "pip",
+   "anim": "idle_aim_front",
+   "frames_dir": "petal-panic/assets/heroes/pip",
+   "frames": [
+    {
+     "file": "idle_aim_front_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      443,
+      443
+     ],
+     "offset": {
+      "x": -221.5,
+      "y": -443
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      443,
+      0,
+      443,
+      443
+     ],
+     "offset": {
+      "x": -221.5,
+      "y": -443
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      886,
+      0,
+      443,
+      443
+     ],
+     "offset": {
+      "x": -221.5,
+      "y": -443
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1329,
+      0,
+      443,
+      443
+     ],
+     "offset": {
+      "x": -221.5,
+      "y": -443
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      443,
+      443,
+      443
+     ],
+     "offset": {
+      "x": -221.5,
+      "y": -443
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      443,
+      443,
+      443,
+      443
+     ],
+     "offset": {
+      "x": -221.5,
+      "y": -443
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      886,
+      443,
+      443,
+      443
+     ],
+     "offset": {
+      "x": -221.5,
+      "y": -443
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_aim_front_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1329,
+      443,
+      443,
+      443
+     ],
+     "offset": {
+      "x": -221.5,
+      "y": -443
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -217.5,
+    "y": -435,
+    "w": 435,
+    "h": 435
+   },
+   "pivot": {
+    "x": 0,
+    "y": -217
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-08T20:01:53",
+ "crop": {
+  "frames_dir": "petal-panic/assets/heroes/pip",
+  "pass": "petal-panic/assets/heroes/pip"
+ }
+}

@@ -1,0 +1,162 @@
+{
+ "file": "petal-panic/assets/vehicles/air_balloon/empty_sheet.png",
+ "size": "1536x1024",
+ "rows": 2,
+ "cols": 3,
+ "kind": "animation",
+ "description": "air balloon empty idle",
+ "entities": [
+  {
+   "name": "air_balloon",
+   "anim": "empty",
+   "frames_dir": "petal-panic/assets/vehicles/air_balloon",
+   "frames": [
+    {
+     "file": "empty_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      61,
+      2,
+      406,
+      478
+     ],
+     "offset": {
+      "x": -203,
+      "y": -478
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "empty_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      563,
+      3,
+      407,
+      477
+     ],
+     "offset": {
+      "x": -203.5,
+      "y": -477
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "empty_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1068,
+      2,
+      406,
+      478
+     ],
+     "offset": {
+      "x": -203,
+      "y": -478
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "empty_f4.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      60,
+      515,
+      407,
+      479
+     ],
+     "offset": {
+      "x": -203.5,
+      "y": -479
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "empty_f5.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      563,
+      515,
+      407,
+      479
+     ],
+     "offset": {
+      "x": -203.5,
+      "y": -479
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "empty_f6.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      1068,
+      515,
+      406,
+      479
+     ],
+     "offset": {
+      "x": -203,
+      "y": -479
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -197,
+    "y": -464,
+    "w": 394,
+    "h": 464
+   },
+   "pivot": {
+    "x": 0,
+    "y": -232
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-08T17:51:51",
+ "crop": {
+  "frames_dir": "petal-panic/assets/vehicles/air_balloon",
+  "pass": "petal-panic/assets/vehicles/air_balloon"
+ }
+}

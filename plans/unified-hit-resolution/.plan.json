@@ -1,0 +1,251 @@
+{
+  "plan_name": "unified-hit-resolution",
+  "title": "Unified Hit Resolution",
+  "why": "Combat effects are scattered across damage entry points and callers, causing missing rewards, silent destruction, inconsistent knockback, and fragile new attacks.",
+  "outcomes": "One validated hit contract; target-owned reactions; exactly-once destruction payloads; behavior-preserving migration with regression coverage.",
+  "milestones": [
+    {
+      "number": "1",
+      "name": "Behavior Inventory",
+      "pattern": [
+        "Characterization testing / strangler migration"
+      ],
+      "objective": "Capture current production behavior for every damaging or impact path before changing routing.",
+      "success": "Every listed path has file/call-site evidence and a keep, fix, or undefined decision; no theoretical matrix is invented.",
+      "diagram": "graph TD\n  A[Current combat paths] --> B[Inventory damage and impact owners]\n  B --> C{Behavior correct?}\n  C -->|yes| D[Mark keep]\n  C -->|confirmed bug| E[Mark fix]\n  C -->|no evidence| F[Mark undefined]\n  D --> G[Migration baseline]\n  E --> G\n  F --> G",
+      "tasks": [
+        {
+          "number": "1.1",
+          "name": "Record behavior baseline",
+          "type": "test",
+          "what": "Add characterization tests for current damage, reward, knockback, destruction and carrier-impact behavior across the approved 14-path inventory.",
+          "why": "Freezes working behavior so migration can distinguish intended fixes from regressions.",
+          "files": [
+            "+ petal-panic/js/test/hitResolution/baseline.test.js",
+            "~ petal-panic/js/combat/hitboxes.js",
+            "~ petal-panic/js/combat/collisionHandlers.js",
+            "~ petal-panic/js/combat/explosion.js",
+            "~ petal-panic/js/objects/hazardZone.js"
+          ],
+          "snippet": [
+            "\n// Inventory: MELEE, SPECIAL_MELEE, SUPER_MOVE, PROJECTILE, EXPLOSION,\n// HAZARD_FIRE, HAZARD_DUST, SPIKE, CONTACT, DASH, STOMP, BEAM, SHOCKWAVE, OBJECT_IMPACT.\n// Each case records target class/team, resource loss, reactions, rewards,\n// destruction payload count and carrier impact outcome.\ndescribe('hit resolution baseline', () => {\n  test('melee on supercoin currently omits per-hit reward', () => {});\n  test('dust currently affects destructibles but should affect living targets only', () => {});\n});\n"
+          ],
+          "acceptance": [
+            "Covers all 14 provenance paths that exist in production; nonexistent combinations are explicitly marked undefined rather than tested as requirements.",
+            "Marks each observed behavior keep, fix or undefined with source call-site evidence.",
+            "Records current zero-damage reward scaling without changing it."
+          ],
+          "verify": [
+            "cd petal-panic && node --test js/test/hitResolution/baseline.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "2",
+      "name": "Hit Contract",
+      "pattern": [
+        "Domain model / port and adapter"
+      ],
+      "objective": "Introduce explicit enums, context/result schemas, target hooks and a resolver boundary without changing gameplay behavior.",
+      "success": "All combat callers can construct one validated HitContext and receive one HitResult; existing paths still pass through adapters.",
+      "diagram": "classDiagram\n  class HitContext {\n    source\n    target\n    attackTeam\n    targetTeam\n    targetClass\n    provenance\n    damage\n    reaction\n    impactPosition\n    direction\n    motion\n  }\n  class HitResult {\n    accepted\n    reason\n    resourceLoss\n    appliedKnockback\n    stun\n    protectionGained\n    feedback\n    rewards\n    destroyed\n  }\n  class Target {\n    onHit(context,result)\n    onDestroyed(context,result)\n  }\n  class HitResolver {\n    resolve(context) HitResult\n  }\n  HitResolver --> HitContext : validates\n  HitResolver --> HitResult : produces\n  Target <.. HitResolver : invokes once\n",
+      "tasks": [
+        {
+          "number": "2.1",
+          "name": "Add targeting declarations",
+          "type": "feature",
+          "what": "Create shared Team, TargetClass and AttackProvenance enums plus affiliation/class accessors in js/combat/targeting.js.",
+          "why": "Gives every hit path one validated vocabulary instead of layer/method heuristics.",
+          "files": [
+            "+ petal-panic/js/combat/targeting.js"
+          ],
+          "snippet": [
+            "\nexport const Team = Object.freeze({ ALLY:'ALLY', FOE:'FOE', NEUTRAL:'NEUTRAL' });\nexport const TargetClass = Object.freeze({ HERO:'HERO', ENEMY:'ENEMY', BOSS:'BOSS', DESTRUCTIBLE:'DESTRUCTIBLE', OTHER:'OTHER' });\nexport const AttackProvenance = Object.freeze({ MELEE:'MELEE', SPECIAL_MELEE:'SPECIAL_MELEE', SUPER_MOVE:'SUPER_MOVE', PROJECTILE:'PROJECTILE', EXPLOSION:'EXPLOSION', HAZARD_FIRE:'HAZARD_FIRE', HAZARD_DUST:'HAZARD_DUST', SPIKE:'SPIKE', CONTACT:'CONTACT', DASH:'DASH', STOMP:'STOMP', BEAM:'BEAM', SHOCKWAVE:'SHOCKWAVE', OBJECT_IMPACT:'OBJECT_IMPACT' });\n\n// Resolve target team independently from class; invalid values throw.\nexport function getTargetTeam(target) {}\nexport function getTargetClass(target) {}\nexport function canHit(attackTeam, targetTeam, source, target) {}\n"
+          ],
+          "acceptance": [
+            "Preserves the confirmed 3x3 team matrix, including neutral to neutral and self exclusion.",
+            "Classifies hero, enemy, boss and generic GameObj/destructible targets explicitly.",
+            "Rejects unknown teams/classes/provenance before mutation."
+          ],
+          "verify": [
+            "cd petal-panic && node --test js/test/hitResolution/targeting.test.js"
+          ]
+        },
+        {
+          "number": "2.2",
+          "name": "Implement hit resolver and target hooks",
+          "type": "feature",
+          "what": "Add applyHit() with HitContext/HitResult schemas and exactly-once onHit/onDestroyed orchestration in js/combat/damage.js.",
+          "why": "Makes one entry point own eligibility, resource changes, reactions, rewards and destruction payload dispatch.",
+          "files": [
+            "~ petal-panic/js/combat/damage.js",
+            "+ petal-panic/js/combat/hitResolution.js"
+          ],
+          "snippet": [
+            "\n// Validate context before mutation. Resolve team/class/provenance behavior.\nexport function applyHit(context) {\n  // return rejected result without invoking callbacks or side effects\n  // route hero/enemy/boss/destructible lifecycle\n  // apply requested reaction modified by target state\n  // invoke target.onHit once for accepted hits\n  // latch destruction before invoking target.onDestroyed once\n}\n\n// Target adapters implement only target-specific effects:\n// supercoin per-hit reward; propane molotov payload; final coin burst.\ntarget.onHit = (context, result) => {};\ntarget.onDestroyed = (context, result) => {};\n"
+          ],
+          "acceptance": [
+            "Hero shield/energy, enemy/boss death pipelines and GameObj HP/latch semantics remain intact.",
+            "Rejected hits produce no damage, feedback, knockback, rewards or callbacks.",
+            "onHit runs once per accepted hit, including lethal hits; onDestroyed runs once after onHit.",
+            "Chain reactions cannot trigger the same target's destruction payload twice.",
+            "Zero-damage accepted hits preserve current actual-damage reward scaling."
+          ],
+          "verify": [
+            "cd petal-panic && node --test js/test/hitResolution/resolver.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "3",
+      "name": "Combat Path Migration",
+      "pattern": [
+        "Strangler fig / adapter migration"
+      ],
+      "objective": "Migrate every existing damaging or impact path to applyHit() while preserving current behavior except confirmed fixes.",
+      "success": "No production combat path mutates HP, grants protection, spawns destruction payloads or rewards through a separate routing decision.",
+      "diagram": "graph TD\n  A[Melee and hitboxes] --> R[applyHit]\n  B[Projectiles and object impacts] --> R\n  C[Explosions and shockwaves] --> R\n  D[Fire dust spike zones] --> R\n  E[Carrier macros] --> R\n  R --> T{Target lifecycle}\n  T --> H[Hero reaction]\n  T --> E2[Enemy death pipeline]\n  T --> D2[Destructible payload once]\n",
+      "tasks": [
+        {
+          "number": "3.1",
+          "name": "Migrate direct hitbox and projectile paths",
+          "type": "refactor",
+          "what": "Route hero/enemy melee, special melee, super move, projectile and object-impact paths through applyHit() with explicit provenance and reaction settings.",
+          "why": "Fixes missing supercoin rewards and centralizes contact/damage decisions for the most common paths.",
+          "files": [
+            "~ petal-panic/js/combat/hitboxes.js",
+            "~ petal-panic/js/combat/collisionHandlers.js",
+            "~ petal-panic/js/combat/objectImpact.js"
+          ],
+          "snippet": [
+            "\n// Build one context per candidate:\n// { source, target, attackTeam, targetTeam, targetClass,\n//   provenance: AttackProvenance.MELEE, damage, reaction, impactPosition, direction, motion }\nconst result = applyHit(context);\n// Carrier lifecycle reads result.accepted/destroyed and owns consume/detonate/retain behavior.\n"
+          ],
+          "acceptance": [
+            "Melee, special melee and super move trigger configured supercoin per-hit rewards.",
+            "Projectile top and side object impacts remain behaviorally identical except confirmed reward/destruction fixes.",
+            "Existing knockback values, resistance and lethal-hit motion are preserved.",
+            "Carrier impact behavior remains owned by its macro/primitive; resolver does not impose a fixed contact enum."
+          ],
+          "verify": [
+            "cd petal-panic && node --test js/test/hitResolution/migrationDirect.test.js"
+          ]
+        },
+        {
+          "number": "3.2",
+          "name": "Migrate zone and area attacks",
+          "type": "bug",
+          "what": "Route fire, dust, spike, beam, shockwave, stomp and dash damage through applyHit(), with dust restricted to living targets and fire allowed to damage destructibles.",
+          "why": "Prevents silent destruction and applies exactly-once payloads for area/hazard kills.",
+          "files": [
+            "~ petal-panic/js/objects/hazardZone.js",
+            "~ petal-panic/js/combat/attack/primitives/fireArea.js",
+            "~ petal-panic/js/combat/attack/primitives/spike.js",
+            "~ petal-panic/js/combat/attack/primitives/beam.js",
+            "~ petal-panic/js/combat/attack/primitives/shockwave.js",
+            "~ petal-panic/js/combat/attack/primitives/surfaceWave.js",
+            "~ petal-panic/js/combat/attack/macros/dashCombo.js"
+          ],
+          "snippet": [
+            "\n// Each zone tick is one hit attempt per eligible target.\n// Dust context: provenance HAZARD_DUST, living-target eligibility only.\n// Fire context: provenance HAZARD_FIRE, current fire eligibility including destructibles.\n// Area primitives keep geometry/timing; resolver owns damage/reaction/destruction dispatch.\n"
+          ],
+          "acceptance": [
+            "Dust does not damage or destroy destructibles.",
+            "Fire can damage destructibles and runs their destruction payload exactly once when lethal.",
+            "Spike, beam, shockwave, stomp and dash preserve baseline reactions except inventory-marked fixes.",
+            "A propane destructible destroyed by an eligible area attack spawns its molotov payload exactly once."
+          ],
+          "verify": [
+            "cd petal-panic && node --test js/test/hitResolution/migrationZones.test.js"
+          ]
+        },
+        {
+          "number": "3.3",
+          "name": "Migrate explosions and carrier impacts",
+          "type": "refactor",
+          "what": "Route explosion damage and carrier object contact through applyHit(), while carrier macros retain ownership of detonation, child spawning, bounce and delayed impact policies.",
+          "why": "Ensures blasts can resolve destructible lifecycles correctly without turning every macro into a fixed contact enum.",
+          "files": [
+            "~ petal-panic/js/combat/explosion.js",
+            "~ petal-panic/js/combat/attack/primitives/explosion.js",
+            "~ petal-panic/js/combat/attack/carrierMacro.js",
+            "~ petal-panic/js/systems/update.js"
+          ],
+          "snippet": [
+            "\n// Explosion context: provenance EXPLOSION, blast team, radial reaction, source exclusion.\n// Carrier contact: resolve target hit first; then macro decides detonate/spawn/bounce/retain.\n// Destruction payload is dispatched by resolver/target adapter, not repeated by caller.\n"
+          ],
+          "acceptance": [
+            "Explosions preserve radius, self exclusion, team rules and knockback character.",
+            "Eligible explosion damage routes destructibles through the proper HP/destruction lifecycle.",
+            "Bombs, molotovs, mines and other carriers keep existing contact/delay/bounce behavior.",
+            "Destructible payloads triggered by chain reactions run exactly once."
+          ],
+          "verify": [
+            "cd petal-panic && node --test js/test/hitResolution/migrationExplosions.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "4",
+      "name": "Regression Gate and Cleanup",
+      "pattern": [
+        "Test-driven cleanup / dead code removal"
+      ],
+      "objective": "Prove the unified resolver preserves baseline behavior and removes duplicated routing/adapters.",
+      "success": "Full relevant test suite passes, known field bugs are fixed, and no production path bypasses applyHit() for damage or destruction effects.",
+      "diagram": "graph TD\n  A[Run baseline tests] --> B{All expected keep cases pass?}\n  B -->|yes| C[Verify confirmed fixes]\n  B -->|no| D[Fix migration regression]\n  C --> E[Remove obsolete adapters]\n  E --> F[Update docs and plan status]\n",
+      "tasks": [
+        {
+          "number": "4.1",
+          "name": "Verify unified hit behavior matrix",
+          "type": "test",
+          "what": "Add production-path regression tests for the approved inventory cases, team matrix, target hooks and exactly-once destruction.",
+          "why": "Turns today's field bugs and preserved baseline behaviors into enforceable gates.",
+          "files": [
+            "+ petal-panic/js/test/hitResolution/regression.test.js"
+          ],
+          "snippet": [
+            "\n// Test through real call paths, not resolver unit isolation only:\n// melee supercoin reward; dust living-only; fire destructible kill;\n// explosion chain reaction; carrier contact policy; rejected hits; zero damage.\n"
+          ],
+          "acceptance": [
+            "Melee on supercoin yields configured per-hit coins.",
+            "Dust does not affect destructibles while fire still can.",
+            "Propane destroyed by any eligible attack spawns molotovs exactly once.",
+            "No duplicate flash, knockback, reward or destruction payload occurs under chain reactions.",
+            "Invalid context inputs throw before mutation and leave resources unchanged."
+          ],
+          "verify": [
+            "cd petal-panic && node --test js/test/hitResolution/"
+          ]
+        },
+        {
+          "number": "4.2",
+          "name": "Remove obsolete routing adapters",
+          "type": "chore",
+          "what": "Delete duplicated team predicates, caller-owned barrel aftermath calls and temporary damage adapters once all production paths use applyHit().",
+          "why": "Prevents future bypasses and makes the resolver the single source of truth.",
+          "files": [
+            "~ petal-panic/js/combat/damage.js",
+            "~ petal-panic/js/combat/hitbox.js",
+            "~ petal-panic/js/combat/explosion.js",
+            "~ petal-panic/js/objects/barrelSync.js"
+          ],
+          "snippet": [
+            "\n// Keep specialized executors: flashTarget, applyKnockback, coin services,\n// attack spawning. Remove only duplicate routing decisions and manual\n// handleBarrelDestroyed calls that bypass the resolver.\n"
+          ],
+          "acceptance": [
+            "No production combat path directly chooses takeDamage/hit/damage as a routing policy.",
+            "handleBarrelDestroyed or equivalent payload service is invoked only through the resolver/target adapter exactly once.",
+            "Existing public APIs required by unmigrated systems are explicitly documented as temporary if any remain."
+          ],
+          "verify": [
+            "cd petal-panic && rg -n \"takeDamage\\(|\\.hit\\(|damage\\(\" js/combat js/systems js/objects",
+            "cd petal-panic && node --test js/test/"
+          ]
+        }
+      ]
+    }
+  ]
+}
