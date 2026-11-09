@@ -1,0 +1,105 @@
+{
+  "file": "petal-panic/assets/heroes/bruno/crouch_sheet.png",
+  "size": "1675x433",
+  "rows": 2,
+  "cols": 4,
+  "kind": "animation",
+  "description": "bruno crouch (prone aim breathing cycle, 8 frames from GIF)",
+  "entities": [
+    {
+      "name": "bruno",
+      "anim": "crouch",
+      "frames_dir": "petal-panic/assets/heroes/bruno",
+      "frames": [
+        {
+          "file": "crouch_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            8,
+            420,
+            199
+          ]
+        },
+        {
+          "file": "crouch_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            420,
+            6,
+            418,
+            203
+          ]
+        },
+        {
+          "file": "crouch_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            838,
+            4,
+            418,
+            206
+          ]
+        },
+        {
+          "file": "crouch_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1258,
+            0,
+            415,
+            215
+          ]
+        },
+        {
+          "file": "crouch_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            1,
+            215,
+            417,
+            218
+          ]
+        },
+        {
+          "file": "crouch_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            420,
+            217,
+            418,
+            213
+          ]
+        },
+        {
+          "file": "crouch_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            838,
+            226,
+            419,
+            195
+          ]
+        },
+        {
+          "file": "crouch_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1257,
+            225,
+            418,
+            197
+          ]
+        }
+      ]
+    }
+  ]
+}

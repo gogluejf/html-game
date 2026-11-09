@@ -1,36 +1,105 @@
 {
   "file": "petal-panic/assets/heroes/zappy/crouch_sheet.png",
-  "size": "1260x1244",
-  "rows": 4,
+  "size": "1679x541",
+  "rows": 2,
   "cols": 4,
   "kind": "animation",
-  "description": "zappy crouch",
-  "entities": [{
-    "name": "zappy",
-    "anim": "crouch",
-    "frames_dir": "petal-panic/assets/heroes/zappy",
-    "frames": [
-      {"file": "crouch_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 315, 311]},
-      {"file": "crouch_f2.png", "row": 0, "col": 1, "bbox": [315, 0, 315, 311]},
-      {"file": "crouch_f3.png", "row": 0, "col": 2, "bbox": [630, 0, 315, 311]},
-      {"file": "crouch_f4.png", "row": 0, "col": 3, "bbox": [945, 0, 315, 311]},
-      {"file": "crouch_f5.png", "row": 1, "col": 0, "bbox": [0, 311, 315, 311]},
-      {"file": "crouch_f6.png", "row": 1, "col": 1, "bbox": [315, 311, 315, 311]},
-      {"file": "crouch_f7.png", "row": 1, "col": 2, "bbox": [630, 311, 315, 311]},
-      {"file": "crouch_f8.png", "row": 1, "col": 3, "bbox": [945, 311, 315, 311]},
-      {"file": "crouch_f9.png", "row": 2, "col": 0, "bbox": [0, 622, 315, 311]},
-      {"file": "crouch_f10.png", "row": 2, "col": 1, "bbox": [315, 622, 315, 311]},
-      {"file": "crouch_f11.png", "row": 2, "col": 2, "bbox": [630, 622, 315, 311]},
-      {"file": "crouch_f12.png", "row": 2, "col": 3, "bbox": [945, 622, 315, 311]},
-      {"file": "crouch_f13.png", "row": 3, "col": 0, "bbox": [0, 933, 315, 311]},
-      {"file": "crouch_f14.png", "row": 3, "col": 1, "bbox": [315, 933, 315, 311]},
-      {"file": "crouch_f15.png", "row": 3, "col": 2, "bbox": [630, 933, 315, 311]},
-      {"file": "crouch_f16.png", "row": 3, "col": 3, "bbox": [945, 933, 315, 311]}
-    ]
-  }],
-  "updated": "2026-11-08T15:04:28",
-  "crop": {
-    "frames_dir": "petal-panic/assets/heroes/zappy",
-    "pass": "petal-panic/assets/heroes/zappy"
-  }
+  "description": "zappy crouch (prone aim breathing cycle, 8 frames from GIF)",
+  "entities": [
+    {
+      "name": "zappy",
+      "anim": "crouch",
+      "frames_dir": "petal-panic/assets/heroes/zappy",
+      "frames": [
+        {
+          "file": "crouch_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            9,
+            421,
+            251
+          ]
+        },
+        {
+          "file": "crouch_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            421,
+            7,
+            419,
+            255
+          ]
+        },
+        {
+          "file": "crouch_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            840,
+            4,
+            419,
+            260
+          ]
+        },
+        {
+          "file": "crouch_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1259,
+            0,
+            420,
+            269
+          ]
+        },
+        {
+          "file": "crouch_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            269,
+            420,
+            272
+          ]
+        },
+        {
+          "file": "crouch_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            421,
+            276,
+            419,
+            257
+          ]
+        },
+        {
+          "file": "crouch_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            840,
+            280,
+            419,
+            249
+          ]
+        },
+        {
+          "file": "crouch_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1259,
+            281,
+            420,
+            247
+          ]
+        }
+      ]
+    }
+  ]
 }

@@ -1,14 +1,15 @@
 {
- "label": "heroes",
  "file": "petal-panic/assets/heroes/balthazar/crouch_sheet.png",
- "rows": 1,
- "cols": 8,
- "size": "2223x440",
- "description": "Balthazar tiger ringmaster hero sheet 3, crouch x 8 frames",
+ "size": "1728x453",
+ "rows": 2,
+ "cols": 4,
+ "kind": "animation",
+ "description": "balthazar crouch (prone aim breathing cycle, 8 frames from GIF)",
  "entities": [
   {
    "name": "balthazar",
    "anim": "crouch",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
    "frames": [
     {
      "file": "crouch_f1.png",
@@ -16,95 +17,183 @@
      "col": 0,
      "bbox": [
       0,
-      1,
-      268,
-      437
-     ]
+      2,
+      433,
+      222
+     ],
+     "offset": {
+      "x": -216.5,
+      "y": -222
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "crouch_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
-      268,
-      16,
-      294,
-      407
-     ]
+      433,
+      1,
+      432,
+      223
+     ],
+     "offset": {
+      "x": -216,
+      "y": -223
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "crouch_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
-      562,
-      55,
-      290,
-      329
-     ]
+      866,
+      0,
+      428,
+      226
+     ],
+     "offset": {
+      "x": -214,
+      "y": -226
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "crouch_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
-      852,
-      81,
-      278,
-      278
-     ]
+      1298,
+      0,
+      428,
+      225
+     ],
+     "offset": {
+      "x": -214,
+      "y": -225
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "crouch_f5.png",
-     "row": 0,
-     "col": 4,
+     "row": 1,
+     "col": 0,
      "bbox": [
-      1130,
-      79,
-      275,
-      281
-     ]
+      2,
+      226,
+      428,
+      227
+     ],
+     "offset": {
+      "x": -214,
+      "y": -227
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "crouch_f6.png",
-     "row": 0,
-     "col": 5,
+     "row": 1,
+     "col": 1,
      "bbox": [
-      1405,
-      53,
-      267,
-      333
-     ]
+      434,
+      228,
+      430,
+      223
+     ],
+     "offset": {
+      "x": -215,
+      "y": -223
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "crouch_f7.png",
-     "row": 0,
-     "col": 6,
+     "row": 1,
+     "col": 2,
      "bbox": [
-      1672,
-      16,
-      289,
-      407
-     ]
+      865,
+      228,
+      431,
+      222
+     ],
+     "offset": {
+      "x": -215.5,
+      "y": -222
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "crouch_f8.png",
-     "row": 0,
-     "col": 7,
+     "row": 1,
+     "col": 3,
      "bbox": [
-      1961,
-      0,
-      262,
-      440
-     ]
+      1296,
+      228,
+      432,
+      222
+     ],
+     "offset": {
+      "x": -216,
+      "y": -222
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/heroes/balthazar",
-   "hScale": 0.5
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -198,
+    "y": -208,
+    "w": 396,
+    "h": 192
+   },
+   "pivot": {
+    "x": 0,
+    "y": -112
+   },
+   "markers": []
   }
- ],
- "crop": {
-  "pass": "/tmp/redo-balthazar-s3-v1"
- },
- "kind": "animation"
+ ]
 }
