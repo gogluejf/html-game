@@ -4,7 +4,6 @@
 // This is the M2 skeleton; M3 wires real knockback / death pipelines in.
 
 import { Team, TargetClass, AttackProvenance, assertProvenance, getTargetClass } from './targeting.js';
-import { heroDamage as damage } from './damage.js';
 
 /** What a given attacker team may legally strike. */
 const ELIGIBLE = {
@@ -46,14 +45,12 @@ export function applyHit(context) {
 
   // --- Route by target class ----------------------------------------------
   const method = context.method ?? provenance.toLowerCase();
-  let dealt;
-  if (tClass === TargetClass.HERO) {
-    dealt = damage(source, target, rawAmt, method);
-  } else if (tClass === TargetClass.ENEMY || tClass === TargetClass.BOSS) {
-    dealt = typeof target.takeDamage === 'function' ? target.takeDamage(rawAmt, source, method) : drainHp(target, rawAmt);
-  } else {
-    dealt = typeof target.hit === 'function' ? target.hit(rawAmt, source, method) : drainHp(target, rawAmt);
-  }
+  // Uniform interface: every target class exposes takeDamage(amt, source, method).
+  // Hero → heroDamage (shield/energy), Enemy/Boss → HP + death pipeline,
+  // Destructible/Other → HP + destruction latch.
+  const dealt = typeof target.takeDamage === 'function'
+    ? target.takeDamage(rawAmt, source, method)
+    : drainHp(target, rawAmt);
 
   const destroyed = !!(target.destroyed || target.alive === false);
 

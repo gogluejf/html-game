@@ -12,6 +12,7 @@ import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from '../objects/projecti
 import { SPECIAL_TYPES } from '../objects/specialWeapons.js';
 import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats } from './heroDefs.js';
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
+import { heroDamage } from '../combat/damage.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
@@ -256,6 +257,15 @@ export class Hero extends Entity {
     // terrain (floor / barrels) is never affected — they carry no oneWay flag.
     this._dropTimer = 0;
   }
+  /**
+   * Unified damage entry point (same interface as Enemy.takeDamage / GameObj.takeDamage).
+   * Routes through heroDamage() for shield-first energy drain + defense.
+   * @returns {number} actual damage dealt
+   */
+  takeDamage(amt, source, method = 'contact') {
+    return heroDamage(source, this, amt, method);
+  }
+
 
   /** True while the drop-through window is active (one-way solids ignored). */
   get droppingThrough() { return this._dropTimer > 0; }

@@ -259,7 +259,7 @@ export class GameObj extends Entity {
    * @param {string} [method='projectile'] 'projectile' | 'melee' | 'bomb' | ...
    * @returns {number} damage actually applied (clamped to remaining HP)
    */
-  hit(dmg, _source, _method = 'projectile') {
+  takeDamage(dmg, _source, _method = 'projectile') {
     assertDamageAmount(dmg, _source, this, _method);
     if (!this.alive || this.destroyed) return 0;
     const applied = Math.min(this.hp, dmg);
@@ -271,6 +271,8 @@ export class GameObj extends Entity {
     }
     return applied;
   }
+  /** @deprecated Use takeDamage(). Kept for callers not yet migrated. */
+  hit(dmg, source, method) { return this.takeDamage(dmg, source, method); }
 
   /**
    * Destroy the object. Latches `destroyed` so it fires exactly once even if
