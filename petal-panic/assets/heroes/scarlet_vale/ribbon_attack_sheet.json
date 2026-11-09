@@ -1,0 +1,162 @@
+{
+ "file": "petal-panic/assets/heroes/scarlet_vale/ribbon_attack_sheet.png",
+ "size": "1774x887",
+ "rows": 2,
+ "cols": 3,
+ "kind": "animation",
+ "description": "scarlet_vale ribbon_attack",
+ "entities": [
+  {
+   "name": "scarlet_vale",
+   "anim": "ribbon_attack",
+   "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+   "frames": [
+    {
+     "file": "ribbon_attack_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      84,
+      39,
+      395,
+      394
+     ],
+     "offset": {
+      "x": 0,
+      "y": -394
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_attack_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      669,
+      45,
+      424,
+      388
+     ],
+     "offset": {
+      "x": 0,
+      "y": -388
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_attack_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1271,
+      79,
+      479,
+      354
+     ],
+     "offset": {
+      "x": 18,
+      "y": -353
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_attack_f4.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      36,
+      506,
+      555,
+      336
+     ],
+     "offset": {
+      "x": 0,
+      "y": -349.62701462734367
+     },
+     "scale": {
+      "sx": 1.0299390363274215,
+      "sy": 1.0405565911528085
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_attack_f5.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      619,
+      525,
+      677,
+      317
+     ],
+     "offset": {
+      "x": 38,
+      "y": -332.27961817348626
+     },
+     "scale": {
+      "sx": 1.0338948439095388,
+      "sy": 1.0482006882444361
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ribbon_attack_f6.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      1327,
+      515,
+      403,
+      327
+     ],
+     "offset": {
+      "x": 14,
+      "y": -338.40222629726554
+     },
+     "scale": {
+      "sx": 1.0519589530258902,
+      "sy": 1.0348691935696195
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 10,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 90,
+    "y": -322,
+    "w": 226,
+    "h": 302
+   },
+   "pivot": {
+    "x": 193.5,
+    "y": -193
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-08T15:43:36",
+ "crop": {
+  "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+  "pass": "/tmp/ribbon-attack-fix"
+ }
+}

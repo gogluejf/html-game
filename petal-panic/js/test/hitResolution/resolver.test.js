@@ -59,3 +59,22 @@ test('applyHit non-lethal: onHit once, onDestroyed NOT called', () => {
   assert.equal(hits, 1);
   assert.equal(destroyed, 0);
 });
+
+// --- Undefined/NaN damage must never corrupt target state -------------------
+test('applyHit rejects undefined damage before touching the target', () => {
+  const enemy = enemyFake();
+  assert.throws(
+    () => applyHit({ provenance: AttackProvenance.MELEE, source: {}, target: enemy, damage: undefined, team: 'ALLY' }),
+    TypeError,
+  );
+  assert.equal(enemy.hp, 50, 'hp untouched after rejected invalid damage');
+});
+
+test('applyHit rejects NaN damage before touching the target', () => {
+  const enemy = enemyFake();
+  assert.throws(
+    () => applyHit({ provenance: AttackProvenance.PROJECTILE, source: {}, target: enemy, damage: NaN, team: 'ALLY' }),
+    TypeError,
+  );
+  assert.equal(enemy.hp, 50, 'hp untouched after rejected NaN damage');
+});

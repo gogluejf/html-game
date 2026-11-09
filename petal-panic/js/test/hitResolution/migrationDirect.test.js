@@ -32,16 +32,17 @@ test('MELEE (post-migration) — ally hitbox drains enemy hp and applies knockba
 
 test('PROJECTILE (post-migration) — object impact drains barrel hp and fires destroy callback via applyHit()', () => {
   const barrel = makeWoodBarrel(0, 0); // hp 40
-  let reward = null;
-  let destroyed = 0;
+  // Rewards/destruction are owned by the target's own hooks (GameObj.prototype
+  // onHit/onDestroyed wired in update.js), not external callbacks.
+  let hitFired = 0, destroyedFired = 0;
+  const oh = barrel.onHit, od = barrel.onDestroyed;
+  barrel.onHit = (...a) => { hitFired++; if (oh) return oh(...a); };
+  barrel.onDestroyed = (...a) => { destroyedFired++; if (od) return od(...a); };
   const proj = { alive: true, friendly: true, damage: 999 };
-  applyObjectImpact(proj, barrel, null, {
-    onObjectReward: (t, d) => { reward = [t, d]; },
-    onObjectDestroyed: () => { destroyed++; },
-  });
+  applyObjectImpact(proj, barrel, null);
   assert.equal(barrel.hp, 0, 'barrel hp drained to 0');
   assert.ok(barrel.destroyed, 'destroyed latched');
   assert.equal(proj.alive, false, 'projectile consumed');
-  assert.deepEqual(reward, [barrel, 40], 'reward fired with clamped dealt amount');
-  assert.equal(destroyed, 1, 'onObjectDestroyed fired exactly once');
+  assert.equal(hitFired, 1, 'target onHit fired exactly once');
+  assert.equal(destroyedFired, 1, 'target onDestroyed fired exactly once');
 });

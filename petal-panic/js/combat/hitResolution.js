@@ -12,11 +12,14 @@ const ELIGIBLE = {
   [Team.NEUTRAL]: new Set([TargetClass.HERO, TargetClass.ENEMY, TargetClass.BOSS, TargetClass.DESTRUCTIBLE]),
 };
 
-/** Drain hp directly when a target has no dedicated damage method. */
+/** Drain hp directly when a target has no dedicated damage method.
+ *  Guard: only mutate targets that actually carry a numeric hp pool. A
+ *  placeholder/anim box with no hp must not end up with `hp: NaN`. */
 function drainHp(target, amt) {
+  if (typeof target.hp !== 'number' || !Number.isFinite(target.hp)) return 0;
   target.hp -= amt;
   if (target.hp <= 0) target.alive = false;
-  return amt;
+  return Math.min(amt, target.hp + amt);
 }
 
 /**
@@ -31,6 +34,14 @@ export function applyHit(context) {
   // --- Validate -----------------------------------------------------------
   if (!target || target.destroyed || target.alive === false) {
     return { accepted: false, dealt: 0, destroyed: false, rejectReason: 'target invalid or dead' };
+  }
+  // Damage must be a finite number BEFORE any mutation or callback. A missing
+  // or undefined damage value (bad def, unmerged params) must never reach the
+  // target's takeDamage()/drainHp — that is how `hp: NaN` / `undefined - n`
+  // corruption spreads through the world state.
+  if (typeof rawAmt !== 'number' || !Number.isFinite(rawAmt)) {
+    const id = (e) => e?.type ?? e?.id ?? e?.constructor?.name ?? 'unknown';
+    throw new TypeError(`applyHit: invalid damage ${String(rawAmt)} (${typeof rawAmt}); provenance=${provenance}; source=${id(source)}; target=${id(target)}`);
   }
   if (source === target) {
     return { accepted: false, dealt: 0, destroyed: false, rejectReason: 'self-exclusion' };
