@@ -1,18 +1,18 @@
 {
- "file": "petal-panic/assets/heroes/scarlet_vale/ribbon_storm_sheet.png",
- "size": "2172x724",
- "rows": 2,
- "cols": 4,
+ "file": "petal-panic/assets/heroes/scarlet_vale/superpower_sheet.png",
+ "size": "1929x356",
+ "rows": 1,
+ "cols": 8,
  "kind": "animation",
- "description": "scarlet_vale ribbon_storm",
+ "description": "scarlet_vale superpower",
  "entities": [
   {
    "name": "scarlet_vale",
-   "anim": "ribbon_storm",
+   "anim": "superpower",
    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
    "frames": [
     {
-     "file": "ribbon_storm_f1.png",
+     "file": "superpower_f1.png",
      "row": 0,
      "col": 0,
      "bbox": [
@@ -22,7 +22,7 @@
       353
      ],
      "offset": {
-      "x": 0,
+      "x": -109.5,
       "y": -353
      },
      "scale": {
@@ -33,7 +33,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_storm_f2.png",
+     "file": "superpower_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
@@ -43,7 +43,7 @@
       329
      ],
      "offset": {
-      "x": 0,
+      "x": -101.5,
       "y": -329
      },
      "scale": {
@@ -54,7 +54,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_storm_f3.png",
+     "file": "superpower_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
@@ -64,7 +64,7 @@
       319
      ],
      "offset": {
-      "x": 0,
+      "x": -102,
       "y": -319
      },
      "scale": {
@@ -75,7 +75,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_storm_f4.png",
+     "file": "superpower_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
@@ -85,7 +85,7 @@
       356
      ],
      "offset": {
-      "x": 0,
+      "x": -131.5,
       "y": -356
      },
      "scale": {
@@ -96,7 +96,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_storm_f5.png",
+     "file": "superpower_f5.png",
      "row": 0,
      "col": 4,
      "bbox": [
@@ -106,7 +106,7 @@
       337
      ],
      "offset": {
-      "x": 0,
+      "x": -157,
       "y": -337
      },
      "scale": {
@@ -117,7 +117,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_storm_f6.png",
+     "file": "superpower_f6.png",
      "row": 0,
      "col": 5,
      "bbox": [
@@ -127,7 +127,7 @@
       325
      ],
      "offset": {
-      "x": 0,
+      "x": -137.5,
       "y": -325
      },
      "scale": {
@@ -138,7 +138,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_storm_f7.png",
+     "file": "superpower_f7.png",
      "row": 0,
      "col": 6,
      "bbox": [
@@ -148,7 +148,7 @@
       339
      ],
      "offset": {
-      "x": 0,
+      "x": -116,
       "y": -339
      },
      "scale": {
@@ -159,7 +159,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_storm_f8.png",
+     "file": "superpower_f8.png",
      "row": 0,
      "col": 7,
      "bbox": [
@@ -169,7 +169,7 @@
       353
      ],
      "offset": {
-      "x": 0,
+      "x": -109.5,
       "y": -353
      },
      "scale": {
@@ -184,13 +184,13 @@
    "playback": "once",
    "direction": "forward",
    "collision": {
-    "x": 0,
+    "x": -105,
     "y": -345,
     "w": 211,
-    "h": 345
+    "h": 336
    },
    "pivot": {
-    "x": 106,
+    "x": 0,
     "y": -172
    },
    "markers": []

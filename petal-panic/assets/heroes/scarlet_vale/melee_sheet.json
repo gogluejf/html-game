@@ -1,18 +1,18 @@
 {
- "file": "petal-panic/assets/heroes/scarlet_vale/ribbon_attack_sheet.png",
+ "file": "petal-panic/assets/heroes/scarlet_vale/melee_sheet.png",
  "size": "1774x887",
  "rows": 2,
  "cols": 3,
  "kind": "animation",
- "description": "scarlet_vale ribbon_attack",
+ "description": "scarlet_vale melee",
  "entities": [
   {
    "name": "scarlet_vale",
-   "anim": "ribbon_attack",
+   "anim": "melee",
    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
    "frames": [
     {
-     "file": "ribbon_attack_f1.png",
+     "file": "melee_f1.png",
      "row": 0,
      "col": 0,
      "bbox": [
@@ -33,7 +33,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_attack_f2.png",
+     "file": "melee_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
@@ -54,7 +54,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_attack_f3.png",
+     "file": "melee_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
@@ -75,7 +75,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_attack_f4.png",
+     "file": "melee_f4.png",
      "row": 1,
      "col": 0,
      "bbox": [
@@ -96,7 +96,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_attack_f5.png",
+     "file": "melee_f5.png",
      "row": 1,
      "col": 1,
      "bbox": [
@@ -117,7 +117,7 @@
      "durUnits": 1
     },
     {
-     "file": "ribbon_attack_f6.png",
+     "file": "melee_f6.png",
      "row": 1,
      "col": 2,
      "bbox": [
