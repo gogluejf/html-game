@@ -368,7 +368,7 @@ export class Checkpoint extends Entity {
    * @param {number} x spawn x (top-left of box)
    * @param {number} y spawn y (top-left of box)
    */
-  constructor(id, x, y) {
+  constructor(id, x, y, extra = {}) {
     super({
       x, y,
       targetH: CHECKPOINT_TARGET_H,
@@ -380,6 +380,7 @@ export class Checkpoint extends Entity {
     this.type = 'checkpoint';
     this.checkpointId = id;
     this.triggered = false;
+    this.appearance = extra.appearance ?? 'entry';
     this._outline = null; // spriteOutline instance (persistent)
     this._tint = null;    // spriteColorPulse instance (idle or captured)
 
@@ -391,18 +392,22 @@ export class Checkpoint extends Entity {
       this.sprite = { anchor: 'bottom-center', anims: spriteData.anims };
       Object.defineProperty(this.sprite, 'frames', { get: () => checkpointFrames });
       setAnimSafe(this, 'level');
+      // Entry flags start with the cloth raised (last frame of the ping-pong
+      // order); exit flags start lowered and raise on trigger.
+      if (this._player && this.appearance === 'entry') this._player.setProgress(1);
     }
     // Persistent 2px black outline (follows silhouette + any shake/rotation).
     this._outline = spriteOutline({ color: '#000000', thickness: 3, opacity: 1.0 }, this);
-    // Idle tint: infinite yellow pulse (transparent → 0.8 yellow → transparent).
+    // Idle tint: infinite yellow pulse (transparent → full bright yellow → transparent).
     this._tint = spriteColorPulse({
-      colorA: 'transparent', colorB: '#ffe600',
-      duration: 1.3, cycles: -1, opacity: 0.8, easing: 'easeInOut',
+      colorA: 'transparent', colorB: '#fff176',
+      duration: 1.3, cycles: -1, opacity: 1.0, easing: 'easeInOut',
     }, this);
   }
 
   /** Per-frame step: advance effects. */
   update(dt) {
+    this.tickAnim(dt); // advance the flag cloth animation (6-frame ping-pong)
     if (this._tint && !this._tint.done) this._tint.update(dt);
   }
 
@@ -421,9 +426,11 @@ export class Checkpoint extends Entity {
     hero.checkpoint = this.spawnPos ?? { x: this.x, y: this.y };
     // Swap idle pulse for a solid yellow tint (colorA === colorB = no fade).
     this._tint = spriteColorPulse({
-      colorA: '#ffe600', colorB: '#ffe600',
-      duration: 1, cycles: -1, opacity: 0.8, easing: 'linear',
+      colorA: '#fff176', colorB: '#fff176',
+      duration: 1, cycles: -1, opacity: 1.0, easing: 'linear',
     }, this);
+    // Exit flags raise the cloth when triggered; entry flags stay raised.
+    if (this.appearance !== 'entry' && this._player) this._player.setProgress(1);
     // SFX: checkpoint
     return true;
   }
@@ -457,14 +464,14 @@ export class Checkpoint extends Entity {
  *   kind ('entry' | 'exit' | 'boss-checkpoint').
  */
 export function makeCheckpoint(id, x, y, extra = {}) {
-  const c = new Checkpoint(id, x, y);
+  const c = new Checkpoint(id, x, y, extra);
   c.isEntry = extra.isEntry ?? false;
   c.appearance = extra.appearance ?? 'entry';
   // Entry flags are ALWAYS activated (the hero starts there) — solid tint,
   // not the idle pulse.
   if (c.isEntry && c._tint) {
     c._tint = spriteColorPulse({
-      colorA: '#ffe600', colorB: '#ffe600',
+      colorA: '#fff176', colorB: '#fff176',
       duration: 1, cycles: -1, opacity: 0.8, easing: 'linear',
     }, c);
   }
