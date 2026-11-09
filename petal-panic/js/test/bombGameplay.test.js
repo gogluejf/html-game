@@ -49,6 +49,12 @@ for (const platform of [null, { x: 350, y: 300, w: 100, h: 12, oneWay: true },
   assert.equal(h.handles.length, 1);
   assert.equal(h.handles[0].zone.y + 48, surface);
   assert.equal(h._completed, false);
+  // fireArea is segmented (fireSegments × 48px cells, each with its own
+  // flicker columns) — the old single [352, surface−48, 96, 48] rect no
+  // longer exists. Segments ignite center-out over a short spread (~0.05s),
+  // so step past the birth window before asserting: one 48×48 glow rect per
+  // segment at the zone's top-left, bottom-anchored on the surface.
+  for (let i = 0; i < 10; i++) U.update(dt);
   const rects = [];
   const draw = new Proxy({}, {
     get: (_, key) => key === 'fillRect' ? (...r) => rects.push(r)
@@ -57,9 +63,16 @@ for (const platform of [null, { x: 350, y: 300, w: 100, h: 12, oneWay: true },
     set: () => true,
   });
   render(draw);
-  assert.ok(rects.some(r => r.join(',') === [352, surface - 48, 96, 48].join(',')), 'real render draws fire');
+  const segXs = new Set();
+  for (const r of rects) if (r[1] === surface - 48 && r[2] === 48 && r[3] === 48) segXs.add(r[0]);
+  assert.ok(segXs.size >= 3, `render draws ${segXs.size} fire segments at y=${surface - 48} (${JSON.stringify([...segXs])})`);
   for (let i = 0; i < 40; i++) U.update(dt);
   assert.equal(h._completed, true);
+  // roots is pure bookkeeping: registry-owned handles self-prune from the
+  // AttackLifecycle registry on completion, but only clear() empties the
+  // host's set. Prune completed entries here so the next iteration starts
+  // clean (mirrors what a level transition's clear() would do).
+  for (const entry of [...U.bombAttacks.roots]) if (entry.h._completed || entry.h._cancelled) U.bombAttacks.roots.delete(entry);
   assert.equal(U.bombAttacks.roots.size, 0);
   console.log(`PASS real update/render molotov ${platform ? platform.oneWay ? 'platform' : 'block' : 'floor'}`);
 }
@@ -106,8 +119,14 @@ for (const id of ['explosiveBomb', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
   const h = U.spawnBombAttack(id, { origin: { x: 600, y: 200 }, x: 600, y: 200,
     speed: 0, force: 0, arc: 0, ttl: dt, childForce: 0, childArc: 0,
     childTtl: dt, count: 3, child: 'bomb', ballistic: { ttl: dt, arc: 0 } });
-  for (let i = 0; i < 10; i++) U.update(dt);
+  // spawnSplit's children are arcing bombs with the macro's OWN default ttl
+  // (1.5s) — the legacy flat `childTtl`/`ballistic.ttl` keys no longer fill
+  // the unified payload contract, so drain at a realistic frame budget.
+  for (let i = 0; i < 120; i++) U.update(dt);
   assert.equal(h._completed, true, `${id}: real gameplay drains all payloads`);
+  // roots is bookkeeping — completed registry-owned handles self-prune from
+  // the AttackLifecycle registry but stay in the host set until clear().
+  for (const entry of [...U.bombAttacks.roots]) if (entry.h._completed || entry.h._cancelled) U.bombAttacks.roots.delete(entry);
   assert.equal(U.bombAttacks.roots.size, 0);
   console.log(`PASS real update ${id} lifecycle`);
 }

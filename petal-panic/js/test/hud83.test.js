@@ -146,7 +146,8 @@ ok('coins + lives: count text drawn in badge circles (top-right)', async () => {
   drawHUD(ctx, hero, cam, levelDef);
   const texts = ctx.texts.map(t => t.t);
   assert.ok(texts.includes('200'), `coin count rendered (${texts})`);
-  assert.ok(texts.includes('3'), `lives count rendered`);
+  // HUD shows SPARES (lives - 1) since the current life is in play — d793812e.
+  assert.ok(texts.includes('2'), `lives spares rendered (${texts})`);
 });
 
 ok('top-right badges: coin + lives count circles drawn in the right corner', async () => {

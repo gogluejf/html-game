@@ -38,16 +38,35 @@ for (const [name, mode, scale, ox, oy, expected] of [
 }
 
 test('HUD anchors to full surface edges without scaling its widgets', async () => {
-  const { drawHUD } = await import('../systems/hud.js');
+  const hud = await import('../systems/hud.js');
+  // The coin badge's art (sheet JSON + frames) loads asynchronously on first
+  // draw; settle the microtask queue so the count badge is reachable.
+  class FakeImg { constructor() { this.complete = true; this.naturalWidth = 32; this.naturalHeight = 32; } }
+  globalThis.Image = FakeImg;
   for (const [ox, oy] of [[320, 0], [0, 530]]) {
     setLayoutMode('fullscreen'); setFitState(ox, oy, 1);
     const rects = [], texts = [];
-    const ctx = { save() {}, restore() {}, strokeRect() {},
-      fillRect(...a) { rects.push(a); }, fillText(...a) { texts.push(a); } };
-    drawHUD(ctx, { energy: 100, maxEnergy: 100, shield: 0,
+    const ctx = new Proxy({ save() {}, restore() {}, strokeRect() {},
+      fillRect(...a) { rects.push(a); }, fillText(...a) { texts.push(a); } },
+      // hud.js draws rounded-rect paths, arcs and dashes — the mock context
+      // accepts any path op; this test only asserts rect/text anchoring.
+      { get(t, k) { return k in t ? t[k] : () => {}; }, set() { return true; } });
+    hud.drawHUD(ctx, { energy: 100, maxEnergy: 100, shield: 0,
       supermoveMeter: 0, SUPERMOVE_MAX: 100, coins: 3, lives: 2 }, null, {});
-    assert.deepEqual(rects[0], [12 - ox, 12 - oy, 200, 16]);
-    assert.deepEqual(texts.find(a => a[0] === '💰 3'), ['💰 3', 948 + ox, 28 - oy]);
+    await new Promise(r => setTimeout(r, 25));
+    hud.drawHUD(ctx, { energy: 100, maxEnergy: 100, shield: 0,
+      supermoveMeter: 0, SUPERMOVE_MAX: 100, coins: 3, lives: 2 }, null, {});
+    // X anchors to the physical surface edge (ox shifts it); Y anchors to the
+    // gameplay zone top (hudY = 0) so portrait fullscreen doesn't float the
+    // HUD into the black strip above the view.
+    assert.deepEqual(rects[0], [12 - ox, 12, 200, 16]);
+    // Coin count is drawn by drawCountBadge at the coin tile's bottom-left
+    // corner (surface right edge − PAD − BADGE + 2), not as a '💰 N' label.
+    const badge = texts.find(a => a[0] === '3');
+    assert.ok(badge, `coin count rendered (${JSON.stringify(texts)})`);
+    assert.equal(badge[1], 948 + ox - 44 + 2);
+    // Badge circle center: tile top (hudY + PAD) + BADGE − 2.
+    assert.ok(Math.abs(badge[2] - (0 + 12 + 44 - 2)) < 1, `badge anchored to gameplay strip y=${badge[2]}`);
   }
   setLayoutMode('fit'); setFitState(0, 0, 1);
 });

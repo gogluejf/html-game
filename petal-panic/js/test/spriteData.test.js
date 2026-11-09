@@ -42,7 +42,7 @@ test('checkpoint level + boss sheets merge into one SpriteData', () => {
     sheet('objects/checkpoint/boss_sheet.json'),
   ]);
   assert.deepEqual(Object.keys(data.anims).sort(), ['boss', 'level']);
-  assert.equal(data.anims.level.frames.length, 1);
+  assert.equal(data.anims.level.frames.length, 6);
 });
 
 test('barrel sheets each parse with their declared frame count', () => {

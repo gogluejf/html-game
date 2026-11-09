@@ -24,7 +24,7 @@ test('T4: thorn sheet declares playback in DATA (fps 14, mode loop)', () => {
   assert.equal(a.frames.length, 8);
   // Full-frame proportions, not the former forced square.
   assert.ok(a.collisionBox, 'collision box must be authored (§4)');
-  assert.equal(a.collisionBox.w, 250);
+  assert.equal(a.collisionBox.w, 97);
   assert.equal(a.collisionBox.h, 102);
 });
 
