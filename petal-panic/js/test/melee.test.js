@@ -40,11 +40,14 @@ ok('default: no active swing, zero cooldown', () => {
   assert.equal(h.meleeCooldown, 0);
   assert.equal(h.meleeHitboxWorld, null);
 });
-ok('swing constants per spec', () => {
+ok('swing constants per spec (sheet-driven duration)', () => {
   const h = makeHero();
   assert.equal(h.MELEE_TOTAL_FRAMES, 5);
   assert.equal(h.MELEE_ACTIVE_FRAME, 3);
-  assert.ok(approx(h.MELEE_FRAME_DURATION, 0.08));
+  // §30 v2: no sheet attached in node tests → legacy 0.4s fallback; with a
+  // sheet the getter returns the live cycleDuration instead.
+  assert.ok(approx(h.MELEE_DURATION, 0.4));
+  assert.ok(approx(h.MELEE_FRAME_DURATION, 0.4 / h.MELEE_TOTAL_FRAMES));
   assert.deepEqual(h.meleeHitbox, { ox: 20, oy: 0, bw: 40, bh: 40 });
 });
 
@@ -53,7 +56,7 @@ ok('tryMelee starts a swing and sets full cooldown', () => {
   const h = makeHero();
   h.tryMelee();
   assert.equal(h.meleeActive, true);
-  assert.ok(approx(h.meleeCooldown, 5 * 0.08), `cd=${h.meleeCooldown}`);
+  assert.ok(approx(h.meleeCooldown, h.MELEE_DURATION), `cd=${h.meleeCooldown}`);
 });
 ok('cannot re-swing while active (no spam)', () => {
   const h = makeHero();
@@ -67,7 +70,7 @@ ok('cooldown decrements over time via updateMelee', () => {
   const h = makeHero();
   h.tryMelee();
   h.updateMelee(0.1);
-  assert.ok(h.meleeCooldown < 0.4 && h.meleeCooldown > 0);
+  assert.ok(h.meleeCooldown < h.MELEE_DURATION && h.meleeCooldown > 0);
 });
 
 console.log('active-frame window (acceptance #1)');
@@ -113,7 +116,7 @@ ok('hitbox null when not swinging at all', () => {
 ok('updateMelee ends the swing after total frames', () => {
   const h = makeHero();
   h.tryMelee();
-  h.updateMelee(5 * 0.08 + 0.01); // run past the end
+  h.updateMelee(h.MELEE_DURATION + 0.01); // run past the end (sheet-driven duration)
   assert.equal(h.meleeActive, false);
   assert.equal(h.meleeFrame, 0);
   assert.equal(h.meleeHitboxWorld, null);

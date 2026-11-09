@@ -54,6 +54,7 @@ export class SpritePlayer {
     // spent in that slot's frame). startSlot lets the caller enter the loop
     // mid-cycle (random phase for pooled entities); clamped to a valid slot.
     this._pos = Math.max(0, Math.min(Math.floor(startSlot) || 0, this._order.length - 1));
+    this._entryPos = this._pos; // entry point for remainingDuration() wrap math
     this.done = false;
   }
 
@@ -84,6 +85,56 @@ export class SpritePlayer {
   /** Duration (s) of the frame currently occupying traversal slot i. */
   _slotDuration(i) {
     return this._dur[this._order[i % this._order.length]];
+  }
+
+  /**
+   * Friendly timing queries — single source of truth for "how long does this
+   * anim take". Gameplay should read these instead of recomputing from fps /
+   * frame counts by hand. All values are SECONDS and account for:
+   *   - base frame duration 1/fps
+   *   - per-frame `duration` overrides (frame freezes / holds in the sheet)
+   *   - direction (ping_pong traverses 2n-2 slots; reverse/forward n slots)
+   */
+
+  /** Base duration (s) of stored frame i (override or 1/fps). */
+  getFrameDuration(i) {
+    return this._dur[((i % this._n) + this._n) % this._n];
+  }
+
+  /** Duration (s) of one full traversal of the current direction.
+   * forward/reverse = n frames; ping_pong = 2n-2 slots (no endpoint dup). */
+  get cycleDuration() {
+    let total = 0;
+    for (let i = 0; i < this._order.length; i++) total += this._slotDuration(i);
+    return total;
+  }
+
+  /** Duration (s) from the CURRENT position to the end of this traversal.
+   * For 'loop' anims this wraps at most once (returns ≤ cycleDuration). */
+  get remainingDuration() {
+    const L = this._order.length;
+    if (L === 0) return 0;
+    const slot = Math.floor(this._pos);
+    const frac = this._pos - slot; // time already spent inside the current slot
+    let total = (1 - frac) * this._slotDuration(slot);
+    for (let i = slot + 1; i < L && !this.done; i++) total += this._slotDuration(i);
+    if (this._mode === 'loop') {
+      // Wrap back to the entry point so a mid-loop query still answers
+      // "time until I'm back where I started" without an infinite sum.
+      const entry = Math.min(Math.max(Math.floor(this._entryPos) || 0, 0), L - 1);
+      for (let i = 0; i <= entry && !this.done; i++) total += this._slotDuration(i);
+    }
+    return total;
+  }
+
+  /** Normalized progress [0,1] through the current traversal (0 = entry
+   * point, 1 = terminal frame reached). Inverse of setProgress(). */
+  get progress() {
+    const L = this._order.length;
+    if (L <= 1) return this.done ? 1 : 0;
+    const slot = Math.floor(this._pos);
+    const frac = this._pos - slot;
+    return Math.min(1, (slot + frac) / (L - 1));
   }
 
   /**

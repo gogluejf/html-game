@@ -176,7 +176,11 @@ export class Hero extends Entity {
     this.meleeFrame = 0;             // float frame position within the swing
     this.MELEE_TOTAL_FRAMES = 5;     // windup(0-2) + active(3) + recovery(4)
     this.MELEE_ACTIVE_FRAME = 3;     // 0-indexed peak frame (the hitbox window)
-    this.MELEE_FRAME_DURATION = 0.08;// seconds per frame → 0.4s total swing
+    // Sheet-driven duration (§30 v2): the swing lasts one full cycle of the
+    // hero's `melee` sheet — see the MELEE_DURATION getter (live, so it picks
+    // up the sheet once sprites attach). Per-hero override via
+    // heroDef.meleeTiming.duration (optional tuning).
+    this.MELEE_FRAME_FRACTIONS = this.heroDef.meleeTiming?.frameFractions ?? [0, 0.4, 0.8];
     // §30: melee hitbox geometry is DATA — one entry per swing frame index in
     // the hero's attacks table (heroDefs.js). null entries expose no box; the
     // single attackHitboxWorld() resolver turns the active entry into a
@@ -713,8 +717,7 @@ export class Hero extends Entity {
     this.selectedWeapon = options[(cur + 1) % options.length];
   }
 
-  /**
-   * Start a melee swing if one is not already in progress. Edge-triggered:
+  /** Start a melee swing if one is not already in progress. Edge-triggered:
    * call once per J press (the update system does this). While a swing is
    * active — or during the cooldown tail — further calls are ignored, which
    * is what prevents spamming.
@@ -727,8 +730,19 @@ export class Hero extends Entity {
     this.meleeFrame = 0;
     this.meleeActive = true;
     this.meleeCooldown = this.MELEE_TOTAL_FRAMES * this.MELEE_FRAME_DURATION;
-    // Jump the attack anim to frame 0 so it plays from the windup.
-    if (this.anims.melee) this.anims.melee.reset();
+    // Jump the attack anim to frame 0 so it plays from the windup. The sheet
+    // player is time-driven (SpritePlayer), so rewind it via setProgress(0);
+    // updateMelee then maps each logical swing frame onto it every tick.
+    this._meleeAnimProgress(0);
+  }
+
+  /** Map a logical swing frame (0..MELEE_TOTAL_FRAMES-1) onto the active
+   * melee/super_melee sheet player. Progress-based so the art follows the
+   * slide regardless of how many frames the sheet has. No-op when no sheet
+   * is attached (primitive path / node tests). */
+  _meleeAnimProgress(p) {
+    const name = this.specialMeleeActive ? 'super_melee' : 'melee';
+    if (this._spriteAnim === name && this._player) this.setProgress(p);
   }
 
   /**
@@ -816,9 +830,11 @@ export class Hero extends Entity {
       // active → full natural recovery — without any re-press. Buffering did
       // not shorten the swing: this tick happened on the original schedule.
       this.executePendingMelee();
-    } else if (this.anims.melee) {
-      // Keep the visible attack frame aligned with the logical frame index.
-      this.anims.melee.pickFrame(Math.floor(this.meleeFrame));
+    } else {
+      // Keep the visible attack frame aligned with the logical frame index:
+      // map the swing's normalized progress onto the sheet player so the art
+      // spans the WHOLE swing duration (sheet fps is irrelevant).
+      this._meleeAnimProgress(this.meleeFrame / (this.MELEE_TOTAL_FRAMES - 1));
     }
     this._prevMeleeJumpHeld = !!(input && input.jump);
   }
@@ -957,10 +973,39 @@ export class Hero extends Entity {
     this.specialMeleeDir = this.facing * cfg.direction;
   }
 
+  /** Duration (s) of one normal melee swing. Sheet-driven (§30 v2): the
+   * heroDef override wins when present; otherwise ONE FULL CYCLE of the
+   * active `melee` sheet is read live from the SpritePlayer (accounts for
+   * fps + per-frame freezes + ping-pong). No sheet attached (node tests /
+   * primitive path) → legacy 0.4s fallback. */
+  get MELEE_DURATION() {
+    const d = this.heroDef.meleeTiming?.duration;
+    if (d != null && Number.isFinite(d)) return d;
+    if (this._spriteAnim === 'melee' && this._player) return this._player.cycleDuration;
+    return 0.4;
+  }
+
+  /** Seconds per logical swing frame (derived — keeps the 5-frame clock,
+   * cooldown and anim mapping in lockstep with the sheet cycle). */
+  get MELEE_FRAME_DURATION() {
+    return this.MELEE_DURATION / this.MELEE_TOTAL_FRAMES;
+  }
+
   /** Total frames of the special swing (windup + active + recovery). */
   get specialMeleeTotalFrames() {
     const f = this.heroDef.specialMelee.frames;
     return f.windup + f.active + f.recovery;
+  }
+
+  /** Duration (s) of one special swing. Sheet-driven (§30 v2): defaults to
+   * one full cycle of the hero's `super_melee` sheet when the player exists;
+   * falls back to the frame count at 60fps for node tests without sprites.
+   * Per-hero override via heroDef.specialMelee.duration. */
+  get specialMeleeDuration() {
+    const cfg = this.heroDef.specialMelee;
+    if (cfg.duration != null && Number.isFinite(cfg.duration)) return cfg.duration;
+    if (this._spriteAnim === 'super_melee' && this._player) return this._player.cycleDuration;
+    return this.specialMeleeTotalFrames / 60; // 60fps fallback (no sheet attached)
   }
 
   /**
@@ -1051,7 +1096,7 @@ export class Hero extends Entity {
       return;
     }
 
-    this.specialMeleeFrame += dt / Hero.SPECIAL_MELEE_FRAME_DURATION;
+    this.specialMeleeFrame += dt / (this.specialMeleeDuration / total);
 
     // Self-protection on connect (knockback.md ): the window is
     // counted in swing frames, so it decays one frame per tick while the
@@ -1072,9 +1117,10 @@ export class Hero extends Entity {
       this.vx = this.specialMeleeDir * cfg.travelSpeed * UNIT_PX_X; // X-units/s → px/s
     }
 
-    if (this.anims.melee) {
-      this.anims.melee.pickFrame(Math.min(f, this.MELEE_TOTAL_FRAMES - 1));
-    }
+    // Keep the visible super_melee frame aligned with the logical swing frame:
+    // map normalized progress onto the sheet player so the art spans the whole
+    // slide duration (sheet fps is irrelevant). No-op when no sheet is attached.
+    this._meleeAnimProgress(f / (total - 1));
 
     // Refresh the dedicated jump-edge tracker AFTER all consumers have run,
     // so next frame's fresh-press check compares against THIS frame's state.
@@ -1287,6 +1333,10 @@ export class Hero extends Entity {
       this._supermoveElapsed += dt;
       const f = Math.min(1, this._supermoveElapsed / SUPERMOVE_DUR); // 0→1 across the whole dash
       this.vx = dir * (SUPERMOVE_SPEED + (SUPERMOVE_RESIDUAL - SUPERMOVE_SPEED) * f);
+      // Drive the supermove sheet on the dash clock: map normalized elapsed
+      // time onto the sheet player so the art spans the WHOLE dash duration
+      // (sheet fps is irrelevant). No-op when no sheet is attached.
+      if (this._spriteAnim === 'supermove' && this._player) this.setProgress(f);
       if (this.supermovePhase === 'burst') {
         // Committed: no gravity (handled by the gate in update()).
         this.vy = 0;
@@ -1428,8 +1478,8 @@ export class Hero extends Entity {
 // tests can read it without instantiating a hero.
 Hero.RESPAWN_IFRAMES = 1.0;
 
-// Special melee frame duration (design §15): the per-hero frame counts in
-// heroDefs are defined at 60fps, so one special-melee frame is exactly 1/60s.
-// This is deliberately NOT the normal swing's MELEE_FRAME_DURATION (0.08s) —
-// mixing the two clocks made phase boundaries drift by a frame every tick.
+// Special melee frame duration (design §15): FALLBACK for node tests / heroes
+// without an attached super_melee sheet. With a sheet, the swing clock is
+// sheet-driven: Hero.specialMeleeDuration = one full cycle of the `super_melee`
+// sheet (see updateSpecialMelee), so the art spans exactly the slide duration.
 Hero.SPECIAL_MELEE_FRAME_DURATION = 1 / 60;
