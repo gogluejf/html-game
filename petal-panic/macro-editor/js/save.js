@@ -22,9 +22,12 @@ export const draftKey = id => LS_PREFIX + id;
 // (mirrors the sprite editor's `active`). Separate from the per-macro drafts.
 const LS_ACTIVE = 'macro-editor-active-v1-';
 // Fingerprint of the canonical file as loaded (for external-change detection).
-// Keyed by macro id. Compared against disk-at-save-time, NOT against the draft
-// (the draft is *supposed* to differ from disk when dirty).
-const baseFingerprint = {};   // id -> JSON string of canonical at load
+// Keyed by macro id. MUST be the raw disk text fetched at boot — never a
+// re-serialization of in-memory objects, which localStorage drafts can poison
+// and which can drift from the server's write format. Compared against
+// disk-at-save-time, NOT against the draft (the draft is *supposed* to differ
+// from disk when dirty).
+const baseFingerprint = {};   // id -> raw JSON text of the file at load
 
 export function hasDraft(id){ try { return !!localStorage.getItem(draftKey(id)); } catch(e){ return false; } }
 function storeDraft(id, data){ try { localStorage.setItem(draftKey(id), JSON.stringify(data)); } catch(e){} }
@@ -173,7 +176,12 @@ export async function saveToDisk(){
   const prevEl = app.macros[id]._el;
   app.macros[id] = JSON.parse(JSON.stringify(data));
   if (prevEl) app.macros[id]._el = prevEl;
-  baseFingerprint[id] = JSON.stringify(data, null, 2) + '\n';   // matches server write format
+  // Baseline = the actual bytes the server wrote, not a client-side guess at
+  // its serialization format.
+  try{
+    const r2 = await fetch(`../macros/levels/${id}.json`, { cache: 'no-store' });
+    if (r2.ok) baseFingerprint[id] = await r2.text();
+  }catch(e){ /* keep previous baseline; worst case one spurious warning */ }
   updateSaveButton();
   updateDirtyDots();
 
@@ -205,9 +213,13 @@ export function discardDraft(){
 
 // Capture the canonical fingerprint for every macro at boot (called after
 // app.macros is populated). This is the baseline the external-change guard uses.
-export function captureBaselines(){
-  for (const id of Object.keys(app.macros || {})){
-    baseFingerprint[id] = JSON.stringify(app.macros[id], null, 2) + '\n';
+// Baselines are the RAW file texts fetched by loadMacros() — NOT re-serialized
+// in-memory objects, which localStorage drafts have already merged over and
+// which would make the guard fire on the user's own unsaved work.
+export function captureBaselines(diskTexts){
+  if (!diskTexts) return;
+  for (const [id, text] of Object.entries(diskTexts)){
+    baseFingerprint[id] = text;
   }
 }
 
@@ -363,8 +375,11 @@ export async function renameCurrentMacro(){
       showToast('Disk rename failed', 'error');
       return;
     }
-    // Refresh the fingerprint to the server's write format.
-    baseFingerprint[newId] = JSON.stringify({ ...st }, null, 2) + '\n';
+    // Refresh the baseline from the actual renamed file on disk.
+    try{
+      const r2 = await fetch(`../macros/levels/${newId}.json`, { cache: 'no-store' });
+      if (r2.ok) baseFingerprint[newId] = await r2.text();
+    }catch(e){ /* keep previous baseline */ }
     showToast(`Renamed ${oldId} → ${newId} (file renamed on disk)`, 'success');
   } else {
     showToast(`Renamed ${oldId} → ${newId}`, 'success');
@@ -408,7 +423,11 @@ export async function duplicateCurrentMacro(){
         showToast(`Duplicated in editor; disk save failed (${msg}) — press Ctrl+S`, 'error');
         return;
       }
-      baseFingerprint[newId] = JSON.stringify({ ...st }, null, 2) + '\n';
+      // Baseline = the actual bytes the server wrote for the copy.
+      try{
+        const r2 = await fetch(`../macros/levels/${newId}.json`, { cache: 'no-store' });
+        if (r2.ok) baseFingerprint[newId] = await r2.text();
+      }catch(e){ /* keep previous baseline */ }
       showToast(`Duplicated ${src.id} → ${newId}`, 'success');
     }catch(e){
       showToast(`Duplicated in editor; disk save failed — press Ctrl+S`, 'error');

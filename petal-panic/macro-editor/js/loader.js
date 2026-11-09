@@ -52,14 +52,22 @@ export async function loadMacros(){
   const entries = await Promise.all(files.map(async file => {
     const r = await fetch(`${MACRO_DIR}${file}`);
     if (!r.ok) throw new Error(`failed to fetch ${file} (HTTP ${res.status})`);
-    const macro = await r.json();
+    // Keep the RAW disk text: it is the external-change baseline. Re-serializing
+    // in-memory objects later would diverge from disk format and, worse, drafts
+    // merged into app.macros would poison the snapshot.
+    const text = await r.text();
+    const macro = JSON.parse(text);
     const id = file.replace(/\.json$/, '');
     assertMacroSchema(macro, { expectedId: id });
-    return [id, macro];
+    return [id, macro, text];
   }));
 
   const macros = {};
-  for (const [id, macro] of entries) macros[id] = macro;
+  const diskTexts = {};   // id -> raw file text at boot (external-change guard)
+  for (const [id, macro, text] of entries){
+    macros[id] = macro;
+    diskTexts[id] = text;
+  }
 
   // Merge localStorage drafts: any draft whose id has no disk file is a
   // draft-only macro. If the id DOES have a disk file, the draft takes
@@ -88,5 +96,5 @@ export async function loadMacros(){
     }
   }catch(e){ /* localStorage unavailable */ }
 
-  return macros;
+  return { macros, diskTexts };
 }

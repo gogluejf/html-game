@@ -333,7 +333,8 @@ async function boot(){
   app.consts = await loadGameConstants();
   setConstants(app.consts);
 
-  app.macros = await loadMacros();
+  const { macros, diskTexts } = await loadMacros();
+  app.macros = macros;
   console.info(`[macro-editor] loaded ${Object.keys(app.macros).length} macros`);
   // Debug: log each macro's orientation + unit count so a stale-cache mismatch is obvious.
   for (const [id, m] of Object.entries(app.macros)){
@@ -342,7 +343,7 @@ async function boot(){
     console.info(`  ${id}: ${m.orientation} · ${blocks}B ${plats}P · ${(m.placements||[]).length} slots`);
   }
 
-  captureBaselines();   // fingerprint canonical files for external-change guard
+  captureBaselines(diskTexts);   // raw disk texts — external-change guard baseline
   restoreDrafts();
   buildSidebar(app.macros);
   initConfirmDialog();
