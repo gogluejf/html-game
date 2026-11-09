@@ -382,16 +382,16 @@ function drawCoinBadge(ctx, hero, x, y, now) {
 
 /** Lives badge: hero life avatar in a glass tile. Playback driven by
  *  SpritePlayer (fps, mode, direction all from idle_sheet.json). On damage the
- *  badge plays the 'angry' expression sheet for ANGRY_HIT_MS, then returns to
- *  the idle loop. */
+ *  badge plays the 'hit' expression sheet for HIT_ANIM_MS, then returns to the
+ *  idle loop. */
 const _livesPlayers = new Map(); // heroId → { player, frames: [file,...] }
-const _angryPlayers = new Map(); // heroId → { player, frames: [file,...] }
+const _hitPlayers = new Map();   // heroId → { player, frames: [file,...] }
 let _lastLivesNow = 0;
-const ANGRY_HIT_MS = 700;        // how long the angry face holds after a hit
-async function loadAngryPlayer(heroId) {
-  if (_angryPlayers.has(heroId)) return;
+const HIT_ANIM_MS = 700;         // how long the hit face holds after a hit
+async function loadHitPlayer(heroId) {
+  if (_hitPlayers.has(heroId)) return;
   try {
-    const url = new URL(`../../assets/hud/${heroId}/angry_sheet.json`, import.meta.url);
+    const url = new URL(`../../assets/hud/${heroId}/hit_sheet.json`, import.meta.url);
     let json;
     if (url.protocol === 'file:') {
       const { readFile } = await import('node:fs/promises');
@@ -409,8 +409,8 @@ async function loadAngryPlayer(heroId) {
       frames: (ent.frames ?? []).map(f => f.file),
     };
     const player = new SpritePlayer(animData);
-    _angryPlayers.set(heroId, { player, frames: animData.frames });
-  } catch { /* no angry sheet — badge just stays on idle */ }
+    _hitPlayers.set(heroId, { player, frames: animData.frames });
+  } catch { /* no hit sheet — badge just stays on idle */ }
 }
 async function loadLivesPlayer(heroId) {
   if (_livesPlayers.has(heroId)) return;
@@ -442,25 +442,25 @@ function drawLivesBadge(ctx, hero, x, y, now) {
   drawGlassTile(ctx, x, y, BADGE, false);
 
   const heroId = hero.heroDef?.id === 'balthazar' ? 'balthazar' : 'scarlet';
-  // Kick off async loads on first call (idle + angry).
+  // Kick off async loads on first call (idle + hit).
   if (!_livesPlayers.has(heroId)) loadLivesPlayer(heroId);
-  if (!_angryPlayers.has(heroId)) loadAngryPlayer(heroId);
+  if (!_hitPlayers.has(heroId)) loadHitPlayer(heroId);
   const entry = _livesPlayers.get(heroId);
   const dt = _lastLivesNow > 0 ? Math.min((now - _lastLivesNow) / 1000, 0.1) : 0;
   _lastLivesNow = now;
 
-  // Damage reaction: while within ANGRY_HIT_MS of the last landed hit, play the
-  // 'angry' expression instead of the idle loop.
+  // Damage reaction: while within HIT_ANIM_MS of the last landed hit, play the
+  // 'hit' expression instead of the idle loop.
   const hitAge = hero.lastHitAt ? now - hero.lastHitAt : Infinity;
-  const angryEntry = _angryPlayers.get(heroId);
-  const showingAngry = hitAge < ANGRY_HIT_MS && angryEntry;
+  const hitEntry = _hitPlayers.get(heroId);
+  const showingHit = hitAge < HIT_ANIM_MS && hitEntry;
 
-  if (showingAngry) {
-    const ap = angryEntry.player;
-    if (ap.isDone) ap.reset();          // restart from f1 each time we enter angry
+  if (showingHit) {
+    const ap = hitEntry.player;
+    if (ap.isDone) ap.reset();          // restart from f1 each time we enter hit
     if (dt > 0) ap.tick(dt);
-    const aidx = Math.min(ap.frameIndex, angryEntry.frames.length - 1);
-    const aimg = loadHudImg(`angry_${heroId}_${aidx + 1}`, `../../assets/hud/${heroId}/angry_f${aidx + 1}.png`);
+    const aidx = Math.min(ap.frameIndex, hitEntry.frames.length - 1);
+    const aimg = loadHudImg(`hit_${heroId}_${aidx + 1}`, `../../assets/hud/${heroId}/hit_f${aidx + 1}.png`);
     if (aimg) drawIconCentered(ctx, aimg, x, y, BADGE, BADGE_ICON_FRAC);
     drawCountBadge(ctx, x, y, Math.max(0, (hero.lives ?? 1) - 1), '#ff5b5b'); // SPARES: lives left after the current one
     ctx.restore();

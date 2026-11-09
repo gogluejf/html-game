@@ -156,7 +156,7 @@ export class Hero extends Entity {
     this.hitstunTimer = 0;
     this.iFrameTimer = 0;
     // Wall-clock (ms) of the last landed hit — read by the HUD to play the
-    // 'angry' expression on the lives badge for a short window after damage.
+    // 'hit' expression on the lives badge for a short window after damage.
     this.lastHitAt = 0;
 
     // Movement state.
@@ -393,7 +393,7 @@ export class Hero extends Entity {
     // the render blink (which reads the timer's remaining fraction).
     this.intangible = true;
     this.timers.set('intangible', Math.max(this.timers.get('intangible'), profile.iFrames));
-    // Stamp the hit time so the HUD can play the 'angry' expression briefly.
+    // Stamp the hit time so the HUD can play the 'hit' expression briefly.
     this.lastHitAt = performance.now();
     return true;
   }
