@@ -15,8 +15,9 @@
 // summary, leaving VFX / screen shake / telemetry / world removal to the caller.
 // That keeps the acceptance criteria unit-testable in node without a DOM.
 
-import { damage } from './damage.js';
 import { applyKnockback } from './knockback.js';
+import { applyHit } from './hitResolution.js';
+import { AttackProvenance } from './targeting.js';
 
 // --- Alignment (explosion.md §2) --------------------------------------------
 // Which side does the blast hurt? This is the single field that decides target
@@ -165,9 +166,8 @@ export function resolveExplosion(explosion, targets) {
     // Damage: real enemies run their own death pipeline via takeDamage(); others
     // use central damage(). Source is the detonator (explosion.self) for telemetry.
     const source = explosion.self ?? null;
-    const dealt = typeof t.takeDamage === 'function'
-      ? t.takeDamage(dmg, source, 'explosion')
-      : damage(source, t, dmg, 'explosion');
+    const res = applyHit({ provenance: AttackProvenance.EXPLOSION, source, target: t, damage: dmg, team });
+    const dealt = res.dealt;
     if (dealt <= 0) continue;
 
     hit.push(t);

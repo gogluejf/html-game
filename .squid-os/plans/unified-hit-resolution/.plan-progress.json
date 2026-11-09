@@ -1,0 +1,60 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "done",
+      "name": "Record behavior baseline",
+      "milestone": "Behavior Inventory",
+      "milestone_number": "1"
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "done",
+      "name": "Add targeting declarations",
+      "milestone": "Hit Contract",
+      "milestone_number": "2"
+    },
+    "2.2": {
+      "number": "2.2",
+      "status": "done",
+      "name": "Implement hit resolver and target hooks",
+      "milestone": "Hit Contract",
+      "milestone_number": "2"
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "done",
+      "name": "Migrate direct hitbox and projectile paths",
+      "milestone": "Combat Path Migration",
+      "milestone_number": "3"
+    },
+    "3.2": {
+      "number": "3.2",
+      "status": "done",
+      "name": "Migrate zone and area attacks",
+      "milestone": "Combat Path Migration",
+      "milestone_number": "3"
+    },
+    "3.3": {
+      "number": "3.3",
+      "status": "done",
+      "name": "Migrate explosions and carrier impacts",
+      "milestone": "Combat Path Migration",
+      "milestone_number": "3"
+    },
+    "4.1": {
+      "number": "4.1",
+      "status": "done",
+      "name": "Verify unified hit behavior matrix",
+      "milestone": "Regression Gate and Cleanup",
+      "milestone_number": "4"
+    },
+    "4.2": {
+      "number": "4.2",
+      "status": "done",
+      "name": "Remove obsolete routing adapters",
+      "milestone": "Regression Gate and Cleanup",
+      "milestone_number": "4"
+    }
+  }
+}

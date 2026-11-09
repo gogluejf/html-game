@@ -1,4 +1,57 @@
-// Petal Panic — Targeting toolbox (shared aim math).
+// Petal Panic — Targeting declarations (unified hit-resolution plan §2.1).
+// Central vocabulary for who attacks whom: teams, target classes, and the 14
+// provenance paths a damage event can arrive through. Pure data + two tiny
+// classifiers; no engine state, no side effects.
+import { LAYER } from '../consts.js';
+
+export const Team = Object.freeze({ ALLY: 'ALLY', FOE: 'FOE', NEUTRAL: 'NEUTRAL' });
+
+export const TargetClass = Object.freeze({
+  HERO: 'HERO', ENEMY: 'ENEMY', BOSS: 'BOSS', DESTRUCTIBLE: 'DESTRUCTIBLE', OTHER: 'OTHER',
+});
+
+/** The 14 ways a hit can originate (telemetry / routing labels). */
+export const AttackProvenance = Object.freeze({
+  MELEE: 'MELEE', SPECIAL_MELEE: 'SPECIAL_MELEE', SUPER_MOVE: 'SUPER_MOVE',
+  PROJECTILE: 'PROJECTILE', EXPLOSION: 'EXPLOSION', HAZARD_FIRE: 'HAZARD_FIRE',
+  HAZARD_DUST: 'HAZARD_DUST', SPIKE: 'SPIKE', CONTACT: 'CONTACT', DASH: 'DASH',
+  STOMP: 'STOMP', BEAM: 'BEAM', SHOCKWAVE: 'SHOCKWAVE', OBJECT_IMPACT: 'OBJECT_IMPACT',
+});
+
+const TEAM_VALUES = new Set(Object.values(Team));
+const PROVENANCE_VALUES = new Set(Object.values(AttackProvenance));
+
+/** Classify an entity's team: explicit team first, then collision layer bits. */
+export function getTeam(entity) {
+  if (!entity) return Team.NEUTRAL;
+  if (entity.team !== undefined) {
+    if (!TEAM_VALUES.has(entity.team)) throw new Error(`getTeam: invalid team ${JSON.stringify(entity.team)}`);
+    return entity.team;
+  }
+  const l = entity.layer ?? 0;
+  if (l & (LAYER.HERO | LAYER.PROJ_ALLY)) return Team.ALLY;
+  if (l & (LAYER.ENEMY | LAYER.BOSS | LAYER.PROJ_FOE)) return Team.FOE;
+  return Team.NEUTRAL;
+}
+
+/** Validate a provenance label (throws on unknown values). */
+export function assertProvenance(provenance) {
+  if (!PROVENANCE_VALUES.has(provenance)) throw new Error(`unknown attack provenance ${JSON.stringify(provenance)}`);
+  return provenance;
+}
+
+/** Classify what kind of thing an entity is (for targeting filters). */
+export function getTargetClass(entity) {
+  const l = entity?.layer ?? 0;
+  if (l & LAYER.BOSS) return TargetClass.BOSS;
+  if (l & LAYER.ENEMY) return TargetClass.ENEMY;
+  if (l & LAYER.HERO) return TargetClass.HERO;
+  if (Number.isFinite(entity?.hp)) return TargetClass.DESTRUCTIBLE;
+  return TargetClass.OTHER;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Aim math toolbox (shared by AI, hero input, and the attack library).
 //
 // WHO USES THIS: AI and hero input code — the layers that OWN targeting
 // (Design contract rule 9: macros never target; they take a finished

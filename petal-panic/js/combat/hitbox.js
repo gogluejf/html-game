@@ -16,11 +16,34 @@
 
 import { LAYER } from '../consts.js';
 import { Effects } from '../effects.js';
-import { damage } from './damage.js';
 import { applyKnockback } from './knockback.js';
+import { applyHit } from './hitResolution.js';
+import { Team, AttackProvenance } from './targeting.js';
 
 /** Methods whose connect deals blood (melee-family strikes). */
 const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
+
+/**
+ * Map a hitbox's method label to an AttackProvenance value for the unified
+ * resolver. The three melee-family methods each carry their own provenance so
+ * telemetry can tell a normal swing from a special swing from a supermove dash.
+ */
+const METHOD_PROVENANCE = {
+  melee: AttackProvenance.MELEE,
+  specialMelee: AttackProvenance.SPECIAL_MELEE,
+  super: AttackProvenance.SUPER_MOVE,
+};
+
+/**
+ * Map a hitbox's team label to a Team constant for the unified resolver.
+ * Falls back to NEUTRAL for unknown labels (matches TEAM_TARGETS behaviour —
+ * those teams simply have no target mask and are skipped upstream anyway).
+ */
+const TEAM_CONST = {
+  ally: Team.ALLY,
+  foe: Team.FOE,
+  neutral: Team.NEUTRAL,
+};
 
 /** Target layer masks per team. */
 const TEAM_TARGETS = {
@@ -115,20 +138,26 @@ export function processHitboxes(hitboxes, targets, onHit) {
         applyKnockback(t, hb.owner, kb, { x: nx, y: ny });
       }
 
-      // Route damage: prefer takeDamage (enemies run death pipeline, set their
-      // own flash), fall back to .hit() (objects/barrels, same). The HERO has
-      // neither — like the blast path (explosion.js) it routes through central
-      // damage(), which drains energy/shield and flags death. Without this
-      // branch the hero fell into a 0-damage fallback and zones never hurt it.
-      let dealt = 0;
+      // Route damage through the unified resolver (unified-hit-resolution §3).
+      // applyHit() validates, checks team eligibility, routes by target class
+      // (takeDamage → hit → central damage()), and fires target.onHit(context,
+      // result) — that callback is the hook reward logic (e.g. popSuperCoinHit)
+      // hangs off. The hero has neither takeDamage nor hit, so it falls through
+      // to central damage(), which drains energy/shield and flags death — same
+      // as before this migration. Knockback + i-frames + VFX juice stay owned
+      // here (see below) so the reaction timing is unchanged.
+      const provenance = METHOD_PROVENANCE[hb.method] ?? AttackProvenance.MELEE;
       const pipeline = typeof t.takeDamage === 'function' || typeof t.hit === 'function';
-      if (typeof t.takeDamage === 'function') {
-        dealt = t.takeDamage(hb.damage, hb.owner, hb.method);
-      } else if (typeof t.hit === 'function') {
-        dealt = t.hit(hb.damage, hb.owner, hb.method);
-      } else {
-        dealt = damage(hb.owner, t, hb.damage, hb.method);
-      }
+      const res = applyHit({
+        provenance,
+        source: hb.owner,
+        target: t,
+        damage: hb.damage,
+        team: TEAM_CONST[hb.team] ?? Team.NEUTRAL,
+        knockback: null, // handled explicitly below (dirMode-aware)
+        method: hb.method,
+      });
+      const dealt = res.accepted ? res.dealt : 0;
 
       if (dealt > 0) {
         hb.hitSet.add(t);

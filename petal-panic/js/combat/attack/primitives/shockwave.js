@@ -15,6 +15,8 @@ import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { fireDeclared } from '../../../effects/index.js';
 import { VIEW_W, VIEW_H } from '../../../core/view.js';
+import { applyHit } from '../../hitResolution.js';
+import { AttackProvenance, Team } from '../../targeting.js';
 
 const DEFAULTS = Object.freeze({
   x: 0,               // ring center (world coords)
@@ -123,12 +125,7 @@ registerPrimitive('shockwave', {
         if (dist <= curRadius && dist > prevRadius) {
           hitSet.add(ent);
           // Apply damage
-          if (typeof ent.takeDamage === 'function') {
-            ent.takeDamage(dmg, { source: ctx.attacker ?? null, kind: 'shockwave' });
-          } else if (typeof ent.hp !== 'undefined') {
-            ent.hp -= dmg;
-            if (ent.hp <= 0) ent.alive = false;
-          }
+          applyHit({ provenance: AttackProvenance.SHOCKWAVE, source: ctx.attacker ?? null, target: ent, damage: dmg, team: Team.NEUTRAL });
           // Radial knockback: push away from center
           const angle = Math.atan2(ey - cy, ex - cx);
           const kx = Math.cos(angle) * kbInt;

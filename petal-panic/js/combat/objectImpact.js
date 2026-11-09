@@ -14,6 +14,8 @@
 import { entryImpactPoint } from './entryImpact.js';
 import { explodeSpecial } from './shooting.js';
 import { isSpecialType } from '../objects/specialWeapons.js';
+import { applyHit } from './hitResolution.js';
+import { Team, AttackProvenance } from './targeting.js';
 
 /**
  * Apply one projectile impact to a destructible object.
@@ -22,8 +24,8 @@ import { isSpecialType } from '../objects/specialWeapons.js';
  * must behave identically):
  *  - arcing carriers record `_attackHit` + the entry-edge `_impactPoint`
  *    (tunneling correction for detonation placement);
- *  - `target.hit(dmg, source, 'projectile')` drains HP and latches
- *    `destroyed` at 0;
+ *  - damage is routed through the unified resolver (applyHit), which calls
+ *    `target.hit(dmg, source, 'projectile')` for DESTRUCTIBLE targets;
  *  - the projectile is consumed on impact either way;
  *  - `onObjectReward(target, dealt)` fires when damage landed (host-owned
  *    per-hit rewards, e.g. super-coin popcorn);
@@ -44,11 +46,19 @@ export function applyObjectImpact(proj, target, source = null, hooks = {}) {
     proj._attackHit = true;
     proj._impactPoint = entryImpactPoint(proj, target.worldBox());
   }
-  const dealt = target.hit(proj.damage, source, 'projectile');
+  const res = applyHit({
+    provenance: AttackProvenance.PROJECTILE,
+    source,
+    target,
+    damage: proj.damage,
+    team: Team.ALLY,
+    method: 'projectile',
+  });
+  const dealt = res.accepted ? res.dealt : 0;
   if (dealt > 0) {
     proj.alive = false;
     hooks.onObjectReward?.(target, dealt);
-    if (target.destroyed) hooks.onObjectDestroyed?.(target);
+    if (res.destroyed) hooks.onObjectDestroyed?.(target);
   } else {
     // Hit an already-destroyed solid — still consumed.
     proj.alive = false;
