@@ -61,11 +61,13 @@ test('REGRESSION — zero-damage hit deals nothing, no crash / negative hp', () 
   assert.equal(res.destroyed, false, 'zero-damage cannot destroy');
 });
 
-test('REGRESSION — dustZone destroys a low-hp barrel', () => {
+test('REGRESSION — dustZone does NOT damage destructibles (design doc rule)', () => {
   const barrel = makeBarrel(0, 0);
   barrel.hp = 5;
+  const enemy = makeEnemy(0, 0);
   const ctx = makeContext({ x: -100, y: -100, w: 32, h: 48 });
   const h = invoke('dustZone', { x: 15, y: 20, width: 60, height: 80, duration: 2, tickRate: 5, damage: 10 }, ctx);
-  for (let i = 0; i < 60 && !h.state.done; i++) h.step(1 / 60, [barrel]);
-  assert.ok(barrel.destroyed === true || barrel.hp === 0, `barrel destroyed or hp 0 (destroyed=${barrel.destroyed}, hp=${barrel.hp})`);
+  for (let i = 0; i < 60 && !h.state.done; i++) h.step(1 / 60, [barrel, enemy]);
+  assert.equal(barrel.hp, 5, 'barrel untouched by dust');
+  assert.ok(enemy.hp < 50, 'enemy still takes dust damage');
 });

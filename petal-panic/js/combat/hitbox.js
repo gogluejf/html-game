@@ -32,6 +32,16 @@ const METHOD_PROVENANCE = {
   melee: AttackProvenance.MELEE,
   specialMelee: AttackProvenance.SPECIAL_MELEE,
   super: AttackProvenance.SUPER_MOVE,
+  fire: AttackProvenance.HAZARD_FIRE,
+  dust: AttackProvenance.HAZARD_DUST,
+  spike: AttackProvenance.SPIKE,
+  beam: AttackProvenance.BEAM,
+  shockwave: AttackProvenance.SHOCKWAVE,
+  stomp: AttackProvenance.STOMP,
+  dash: AttackProvenance.DASH,
+  projectile: AttackProvenance.PROJECTILE,
+  explosion: AttackProvenance.EXPLOSION,
+  contact: AttackProvenance.CONTACT,
 };
 
 /**
