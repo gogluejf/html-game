@@ -14,7 +14,6 @@
 
 import { Entity } from '../core/entity.js';
 import { spriteColorPulse } from '../effects/spriteColorPulse.js';
-import { spriteOutline } from '../effects/spriteOutline.js';
 import { isHighGraphic } from '../core/renderMode.js';
 import { LAYER } from '../consts.js';
 import { BARREL_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
@@ -381,7 +380,6 @@ export class Checkpoint extends Entity {
     this.checkpointId = id;
     this.triggered = false;
     this.appearance = extra.appearance ?? 'entry';
-    this._outline = null; // spriteOutline instance (persistent)
     this._tint = null;    // spriteColorPulse instance (idle or captured)
 
     // Sprite data (v1): level vs boss flag art, scaled from the collision box (§4).
@@ -396,12 +394,10 @@ export class Checkpoint extends Entity {
       // order); exit flags start lowered and raise on trigger.
       if (this._player && this.appearance === 'entry') this._player.setProgress(1);
     }
-    // Persistent 2px black outline (follows silhouette + any shake/rotation).
-    this._outline = spriteOutline({ color: '#000000', thickness: 3, opacity: 1.0 }, this);
-    // Idle tint: infinite yellow pulse (transparent → full bright yellow → transparent).
+    // Idle tint: infinite two-color pulse (darker gold → bright lemon).
     this._tint = spriteColorPulse({
-      colorA: 'transparent', colorB: '#fff176',
-      duration: 1.3, cycles: -1, opacity: 1.0, easing: 'easeInOut',
+      colorA: '#c9a227', colorB: '#fff176',
+      duration: 1.3, cycles: -1, opacity: 0.7, easing: 'easeInOut',
     }, this);
   }
 
@@ -427,7 +423,7 @@ export class Checkpoint extends Entity {
     // Swap idle pulse for a solid yellow tint (colorA === colorB = no fade).
     this._tint = spriteColorPulse({
       colorA: '#fff176', colorB: '#fff176',
-      duration: 1, cycles: -1, opacity: 1.0, easing: 'linear',
+      duration: 1, cycles: -1, opacity: 0.7, easing: 'linear',
     }, this);
     // Exit flags raise the cloth when triggered; entry flags stay raised.
     if (this.appearance !== 'entry' && this._player) this._player.setProgress(1);
@@ -447,7 +443,6 @@ export class Checkpoint extends Entity {
     super.draw(ctx);
     // Silhouette effects only in high-graphic mode (primitive/debug shows plain rect).
     if (!isHighGraphic()) return;
-    if (this._outline && !this._outline.done) this._outline.render(ctx);
     if (this._tint && !this._tint.done) this._tint.render(ctx);
   }
 }
@@ -472,7 +467,7 @@ export function makeCheckpoint(id, x, y, extra = {}) {
   if (c.isEntry && c._tint) {
     c._tint = spriteColorPulse({
       colorA: '#fff176', colorB: '#fff176',
-      duration: 1, cycles: -1, opacity: 0.8, easing: 'linear',
+      duration: 1, cycles: -1, opacity: 0.7, easing: 'linear',
     }, c);
   }
   // Boss-zone flags use the boss flag art (2-anim dict: level/boss).
