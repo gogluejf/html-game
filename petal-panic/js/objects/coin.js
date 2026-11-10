@@ -483,18 +483,8 @@ export class CoinPool {
       // Solid block reflect (side/bottom collision with walls, barrels, etc.)
       for (const s of platforms) {
         if (s.oneWay) continue; // one-way platforms don't block sides
-        // AABB overlap check
         if (c.x < s.x + s.w && c.x + c.w > s.x && c.y < s.y + s.h && c.y + c.h > s.y) {
-          // Determine penetration axis (minimum overlap)
-          const overlapL = (c.x + c.w) - s.x;   // push left
-          const overlapR = (s.x + s.w) - c.x;   // push right
-          const overlapT = (c.y + c.h) - s.y;   // push up
-          const overlapB = (s.y + s.h) - c.y;   // push down
-          const minO = Math.min(overlapL, overlapR, overlapT, overlapB);
-          if (minO === overlapL) { c.x = s.x - c.w; c.vx = c.vx > 0 ? -Math.abs(c.vx) * BOUNCE_RESTITUTION : c.vx; }
-          else if (minO === overlapR) { c.x = s.x + s.w; c.vx = c.vx < 0 ? Math.abs(c.vx) * BOUNCE_RESTITUTION : c.vx; }
-          else if (minO === overlapT) { c.y = s.y - c.h; c.vy = c.vy > 0 ? -Math.abs(c.vy) * BOUNCE_RESTITUTION : c.vy; }
-          else { c.y = s.y + s.h; c.vy = c.vy < 0 ? Math.abs(c.vy) * BOUNCE_RESTITUTION : c.vy; }
+          c.reflectVelocity(s);
           break; // one solid per frame
         }
       }
