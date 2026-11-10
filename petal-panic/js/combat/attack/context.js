@@ -85,20 +85,30 @@ export function resolveMarker(ctx, label) {
   const m = list.find((mk) => mk.label === label);
   if (!m) return null;
 
-  // Get sprite scale and pivot from the active anim
   const scale = a._spriteScale ?? 1;
-  const anim = a.sprite?.anims?.[a._spriteAnim];
-  const pivot = anim?.pivot ?? { x: 0, y: 0 };
 
-  // Offset from pivot, scaled
-  let dx = (m.x - pivot.x) * scale;
-  const dy = (m.y - pivot.y) * scale;
+  // The game anchors the sprite so the collision box bottom-center lands on
+  // the hero's (x + w/2, y + h). Markers are in the same sprite-space as the
+  // collision box, so we offset from the collision box bottom-center.
+  const cb = animData?.collisionBox;
+  let anchorX, anchorY;
+  if (cb) {
+    anchorX = cb.x + cb.w / 2;   // collision box horizontal center
+    anchorY = cb.y + cb.h;       // collision box bottom edge
+  } else {
+    anchorX = 0;
+    anchorY = 0;
+  }
+
+  // Offset from anchor, scaled
+  let dx = (m.x - anchorX) * scale;
+  const dy = (m.y - anchorY) * scale;
 
   // Mirror X when facing left
   const facing = a.facing ?? 1;
   if (facing < 0) dx = -dx;
 
-  // Anchor: hero bottom-center is (a.x + a.w/2, a.y + a.h)
+  // World position: hero bottom-center is (a.x + a.w/2, a.y + a.h)
   return {
     x: a.x + (a.w ?? 0) / 2 + dx,
     y: a.y + (a.h ?? 0) + dy,
