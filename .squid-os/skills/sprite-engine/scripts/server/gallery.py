@@ -228,8 +228,8 @@ function startAnimPreview(frames) {{
   }}
   canvas.style.display = 'block';
   const n = frames.length;
-  const frameDur = 1000 / n; // normalize to 1 second total
-  info.textContent = n + ' frames \\u2192 ' + Math.round(frameDur) + 'ms/frame (normalized 1s loop)';
+  const frameDur = 100; // fixed 100ms per frame (10fps) — absolute, not normalized
+  info.textContent = n + ' frames \\u00d7 100ms/frame (' + (n * 0.1).toFixed(1) + 's total)';
 
   const imgs = [];
   let loaded = 0;
