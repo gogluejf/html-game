@@ -109,7 +109,15 @@
    "fps": 8,
    "playback": "loop",
    "direction": "forward",
-   "markers": []
+   "markers": [
+    {
+     "label": "AI Trigger",
+     "x": 267,
+     "y": -275,
+     "radiusOn": true,
+     "radius": 115
+    }
+   ]
   }
  ],
  "updated": "2026-11-08T14:39:15",

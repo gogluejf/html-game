@@ -361,7 +361,15 @@
     "x": 180,
     "y": -111
    },
-   "markers": []
+   "markers": [
+    {
+     "label": "AI Trigger",
+     "x": 236,
+     "y": -31,
+     "radiusOn": true,
+     "radius": 115
+    }
+   ]
   }
  ],
  "updated": "2026-11-08T04:08:28",
