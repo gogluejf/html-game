@@ -18,7 +18,7 @@ import { heroDamage } from '../combat/damage.js';
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
 const JUMP_CUT_VY = 0.45;       // vy scale when jump released early (variable height)
-const SLIDE_DECEL = 480;        // px/s^2 — crouch skid: ~0.5s / ~65px from full run
+const SLIDE_DECEL = 312;        // px/s^2 — crouch skid: ~0.75s / ~98px from full run (35% more slide)
 const COYOTE_TIME = 0.08;       // grace window after leaving a ledge (s)
 const JUMP_BUFFER = 0.12;       // pre-land jump input window (s)
 // Crouch height as a fraction of standing targetH (pure code, generic for

@@ -92,7 +92,7 @@ export const HEROES = {
     targetH: 2,                  // Y-units (2 = 96px); width is sheet-owned
     stats: {
       weight: 1,
-      speed: 250 / UNIT_PX_X,  // X-units/s (exactly 250 px/s at the current grid)
+      speed: 375 / UNIT_PX_X,  // X-units/s (exactly 375 px/s at the current grid)
       attack: 10,
       defense: 2,
       stamina: 100,
@@ -116,7 +116,7 @@ export const HEROES = {
     targetH: 2,                  // Y-units (2 = 96px); width is sheet-owned — same standard as scarlet
     stats: {
       weight: 1.3,
-      speed: 180 / UNIT_PX_X,  // X-units/s (exactly 180 px/s at the current grid)
+      speed: 270 / UNIT_PX_X,  // X-units/s (exactly 270 px/s at the current grid)
       attack: 20,
       defense: 5,
       stamina: 70,
