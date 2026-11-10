@@ -278,7 +278,9 @@ export class Hero extends Entity {
    * @returns {number} actual damage dealt
    */
   takeDamage(amt, source, method = 'contact') {
-    return heroDamage(source, this, amt, method);
+    const dealt = heroDamage(source, this, amt, method);
+    if (dealt > 0) this.loseSelectedSpecial();
+    return dealt;
   }
 
 
