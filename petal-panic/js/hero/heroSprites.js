@@ -230,16 +230,11 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
 
   const running = hero.grounded && Math.abs(hero.vx) > RUN_SPEED_THRESHOLD;
 
-  // Idle pattern: N cycles of `idle`, then M cycles of `idle_special` (if the
-  // sheet exists), looping. When standing still with no aim override AND an
-  // idle_special sheet exists, THIS block is the single owner of _spriteAnim —
-  // the generic run/idle switch below must NOT also write it, or the two fight
-  // every frame (generic wants 'idle', pattern wants 'idle_special'), each
-  // setAnim() resetting the SpritePlayer to frame 0 → the special appears
-  // frozen on its first frame. A shared clock advanced by dt is read against
-  // the engine's own cycleDuration values so the 3:1 window holds even though
-  // the two sheets have different per-cycle lengths. setAnim() fires only on
-  // an actual phase change.
+  // Idle pattern clock: while standing still with no aim override and an
+  // idle_special sheet exists, alternate 3× idle → 1× idle_special. It only
+  // sets a PHASE FLAG — the actual anim binding happens in the generic switch
+  // below, exactly like any other anim. Leaving idle (running/aiming) resets
+  // the clock + phase so the next stand-still starts fresh on `idle`.
   if (!running && !shooting && hero.sprite.anims.idle_special) {
     const idleDur = new SpritePlayer(hero.sprite.anims.idle).cycleDuration * IDLE_CYCLE_COUNT;
     const specialDur = new SpritePlayer(hero.sprite.anims.idle_special).cycleDuration * IDLE_SPECIAL_CYCLE_COUNT;
@@ -247,16 +242,16 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
     if (hero._idlePatternClock == null) hero._idlePatternClock = 0;
     hero._idlePatternClock += dt;
     const phase = hero._idlePatternClock % total;
-    const wantIdle = phase < idleDur ? 'idle' : 'idle_special';
-    if (hero._spriteAnim !== wantIdle) {
-      try { hero.setAnim(wantIdle); } catch { /* keep current */ }
-    }
-    return; // pattern owns the anim this frame — skip the generic switch.
+    hero._idleSpecialPhase = phase < idleDur ? 'idle' : 'special';
+  } else {
+    hero._idleSpecialPhase = 'idle';
+    delete hero._idlePatternClock;
   }
 
-  // Generic locomotion switch (run | idle | aim variants). Only reached when
-  // the idle pattern above did not claim the frame.
-  const base = running ? 'run' : 'idle';
+  // Generic locomotion switch (run | idle | idle_special | aim variants).
+  // ONE setAnim path for everything — idle_special is just another base anim,
+  // picked from the phase flag above. No separate owner, no second binding.
+  const base = running ? 'run' : (hero._idleSpecialPhase === 'special' ? 'idle_special' : 'idle');
   let want = base;
   if (shooting && hero.grounded) {
     const dir = hero.resolveAim(input);
@@ -269,10 +264,4 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
       hero.setAnim(want);
     } catch { /* anim missing for this hero — keep current */ }
   }
-  // Left the idle state (running / aiming) — restart the pattern from the top
-  // next time we stand still. The pattern block above returns early when it
-  // owns the frame, so reaching here means we are NOT in the idle pattern this
-  // frame (we're running or aiming). Clear the clock so the next stand-still
-  // begins a fresh 3×idle cycle instead of resuming mid-pattern.
-  delete hero._idlePatternClock;
 }

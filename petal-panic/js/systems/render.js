@@ -602,7 +602,10 @@ export function heroAnimName(h) {
     case 'jump': return 'jump';
     case 'fall': return 'fall';
     case 'run': return 'run';
-    default: return 'idle';
+    // Standing still: the idle PATTERN may have bound idle_special (3× idle →
+    // 1× special). Report what is ACTUALLY bound, not what the state implies —
+    // the label must match the pixels.
+    default: return h._spriteAnim === 'idle_special' ? 'idle_special' : 'idle';
   }
 }
 
