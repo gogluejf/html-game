@@ -132,6 +132,10 @@ def build_html(sheets):
   #frames .fr img {{ max-width:200px; max-height:220px; object-fit:contain;
     background:repeating-conic-gradient(#222 0% 25%, #1a1a1a 0% 50%) 0 0/16px 16px; border:1px solid #333; border-radius:4px; }}
   #frames .fr span {{ font:11px monospace; color:#7c9; }}
+  #anim-preview {{ margin-top:18px; text-align:center; }}
+  #anim-preview canvas {{ background:repeating-conic-gradient(#222 0% 25%, #1a1a1a 0% 50%) 0 0/16px 16px;
+    border:1px solid #444; border-radius:6px; }}
+  #anim-info {{ font:11px monospace; color:#8ac; margin-top:6px; }}
 </style></head><body>
 <h1>sheets — <span id="count"></span> (click to enlarge)</h1>
 <div class="filters">
@@ -144,6 +148,7 @@ def build_html(sheets):
 <div id="overlay" onclick="closeOverlay()">
   <div id="opath"></div>
   <img id="obig" src="">
+  <div id="anim-preview"><canvas id="animCanvas" width="500" height="400"></canvas><div id="anim-info"></div></div>
   <div id="frames"></div>
 </div>
 <script>
@@ -207,8 +212,72 @@ function view(i){{
   fr.innerHTML = (s.frames||[]).map(f =>
     '<div class="fr"><img src="'+f+'" alt=""><span>'+f.split('/').pop()+'</span></div>'
   ).join('');
+  startAnimPreview(s.frames || []);
   document.getElementById('overlay').style.display = 'flex';
   history.pushState({{view:i}}, '');
+}}
+
+let animRAF = null;
+function startAnimPreview(frames) {{
+  if (animRAF) {{ cancelAnimationFrame(animRAF); animRAF = null; }}
+  const canvas = document.getElementById('animCanvas');
+  const ctx = canvas.getContext('2d');
+  const info = document.getElementById('anim-info');
+  if (!frames || frames.length === 0) {{
+    canvas.style.display = 'none'; info.textContent = ''; return;
+  }}
+  canvas.style.display = 'block';
+  const n = frames.length;
+  const frameDur = 1000 / n; // normalize to 1 second total
+  info.textContent = n + ' frames \\u2192 ' + Math.round(frameDur) + 'ms/frame (normalized 1s loop)';
+
+  const imgs = [];
+  let loaded = 0;
+  let t0 = performance.now();
+  let started = false;
+
+  function drawFrame(idx) {{
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const img = imgs[idx];
+    if (!img || !img.complete || !img.naturalWidth) return;
+    const pad = 20;
+    const availW = canvas.width - pad * 2;
+    const availH = canvas.height - pad * 2;
+    const scale = Math.min(availW / img.width, availH / img.height, 1);
+    const dw = img.width * scale;
+    const dh = img.height * scale;
+    const dx = (canvas.width - dw) / 2;
+    const dy = (canvas.height - dh) / 2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }}
+
+  function tick(now) {{
+    const elapsed = now - t0;
+    const frameIdx = Math.floor(elapsed / frameDur) % n;
+    drawFrame(frameIdx);
+    animRAF = requestAnimationFrame(tick);
+  }}
+
+  function tryStart() {{
+    loaded++;
+    if (loaded === n && !started) {{
+      started = true;
+      t0 = performance.now();
+      animRAF = requestAnimationFrame(tick);
+    }}
+  }}
+
+  frames.forEach((url, idx) => {{
+    const img = new Image();
+    img.src = url;
+    imgs[idx] = img;
+    if (img.complete && img.naturalWidth) {{
+      tryStart();
+    }} else {{
+      img.onload = tryStart;
+      img.onerror = tryStart; // don't block on broken frames
+    }}
+  }});
 }}
 window.addEventListener('popstate', () => {{
   document.getElementById('overlay').style.display = 'none';
@@ -216,6 +285,7 @@ window.addEventListener('popstate', () => {{
 function closeOverlay(){{
   const ov = document.getElementById('overlay');
   if (ov.style.display === 'flex') {{
+    if (animRAF) {{ cancelAnimationFrame(animRAF); animRAF = null; }}
     // If we pushed a history entry for this view, go back; otherwise just hide.
     if (history.state && history.state.view !== undefined) history.back();
     else ov.style.display = 'none';
