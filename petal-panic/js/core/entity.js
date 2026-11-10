@@ -71,7 +71,7 @@ export class Entity {
     this._baseW = opts.baseW ?? (opts.w != null ? opts.w : null);
 
     // Per-anim height scale (default 1). The hero's crouch system overrides
-    // this via applyCrouchHeight() using CROUCH_HEIGHT_SCALE — setAnim never
+    // this via applyPoseHeight() (per-frame derivation from crouch/jump state)
     // reads a sheet field for it.
     this._targetHScale = 1;
 
@@ -313,19 +313,21 @@ export class Entity {
     // the sheet only provides scale + repeat art.
     if (this.sprite.boxFromSheet !== false) this._baseW = null;
     this._spriteAnim = name;
-    // Height scale is NOT read from sheet data — the hero's crouch system
-    // (applyCrouchHeight) owns _targetHScale exclusively. setAnim preserves
-    // whatever value is already set (1 for standing, CROUCH_HEIGHT_SCALE for
-    // crouched) so switching anims mid-crouch doesn't restore full height.
+    // Height scale is NOT set here — it's a per-frame DERIVED value from pose
+    // state (crouch/jump), computed in updateHeroLocomotionAnim and applied via
+    // applyPoseHeight(). setAnim() leaves _targetHScale untouched so switching
+    // sheets mid-pose preserves the current height; the next frame re-derives
+    // it from authoritative flags, so a pose can never leak into another state.
     const prevH = this.h;
     const newH = this.h;
     if (newH !== prevH) this.y += prevH - newH;
     // §4: target height in Y-units → px. Scale fits the sheet's collision box
-    // height onto targetH × UNIT_PX. Width is derived by the getter:
-    //   - baseW set → fixed width (constructor-owned, art scales to fit)
-    //   - no baseW  → sheet aspect ratio × scale (sheet-owned)
-    const targetUnits = this._targetH;
-    this._spriteScale = uniformScale(data, targetUnits * UNIT_PX);
+    // height onto the CURRENT posed height (this.h), which already reflects any
+    // active pose transform (_targetHScale: crouch/jump = 0.5, standing = 1.0).
+    // Fitting to this.h — not raw targetH — keeps width proportional to the
+    // posed height so crouched/jumped art isn't stretched. Width is derived by
+    // the getter: baseW set → fixed; no baseW → sheet aspect × scale.
+    this._spriteScale = uniformScale(data, this.h);
     // Playback (T3.2): build a SpritePlayer ONLY for anims that declare a
     // playback mode. mode 'none' = frame POOL (terrain tiles etc.) — frames
     // are picked externally via _tileFrame, never played on a clock.

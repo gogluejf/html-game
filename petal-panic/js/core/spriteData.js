@@ -83,6 +83,11 @@ export function parseSheet(sheetJson) {
         // (today's behavior; authored start pose for hero/enemy anims).
         startFrame: ent.startFrame === 'random' ? 'random'
           : (Number.isInteger(ent.startFrame) && ent.startFrame >= 0 ? ent.startFrame : 0),
+        // Optional per-anim height scale (pose transform): crouch/crouch_shoot/
+        // jump declare 0.5 so the body tucks to half standing height; absent =
+        // 1.0 (full height). Declarative — setAnim() applies it, so no shared
+        // mutable scalar can leak across states (the old _targetHScale bug).
+        hScale: numIn(ent.hScale, 0.05, 4, 'hScale') ?? 1,
         frames,
         // Optional richer geometry (Animation Studio revision): per-anim
         // collision box + pivot in source coordinates. Null until exported.
