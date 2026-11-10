@@ -483,6 +483,7 @@ export class CoinPool {
       // Solid block reflect (side/bottom collision with walls, barrels, etc.)
       for (const s of platforms) {
         if (s.oneWay) continue; // one-way platforms don't block sides
+        if (s.kind === 'floor') continue; // floor is owned by c.bounce(floorTop) above
         if (c.x < s.x + s.w && c.x + c.w > s.x && c.y < s.y + s.h && c.y + c.h > s.y) {
           c.reflectVelocity(s);
           break; // one solid per frame
