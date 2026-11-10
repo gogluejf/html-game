@@ -1,212 +1,212 @@
 {
- "file": "petal-panic/assets/heroes/scarlet_vale/crouch_shoot_sheet.png",
- "size": "885x1777",
- "rows": 4,
- "cols": 2,
- "kind": "animation",
- "description": "Scarlet crouch shoot, eight frames",
- "entities": [
-  {
-   "name": "scarlet_vale",
-   "anim": "crouch_shoot",
-   "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
-   "frames": [
+  "file": "petal-panic/assets/heroes/scarlet_vale/crouch_shoot_sheet.png",
+  "size": "885x1777",
+  "rows": 4,
+  "cols": 2,
+  "kind": "animation",
+  "description": "Scarlet crouch shoot, eight frames",
+  "entities": [
     {
-     "file": "crouch_shoot_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      9,
-      100,
-      425,
-      264
-     ],
-     "offset": {
-      "x": 0,
-      "y": -264
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "crouch_shoot_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      451,
-      100,
-      426,
-      263
-     ],
-     "offset": {
-      "x": 0,
-      "y": -263
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "crouch_shoot_f3.png",
-     "row": 1,
-     "col": 0,
-     "bbox": [
-      9,
-      541,
-      421,
-      267
-     ],
-     "offset": {
-      "x": 0,
-      "y": -267
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "crouch_shoot_f4.png",
-     "row": 1,
-     "col": 1,
-     "bbox": [
-      451,
-      541,
-      434,
-      268
-     ],
-     "offset": {
-      "x": 0,
-      "y": -268
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "crouch_shoot_f5.png",
-     "row": 2,
-     "col": 0,
-     "bbox": [
-      9,
-      986,
-      424,
-      266
-     ],
-     "offset": {
-      "x": 0,
-      "y": -266
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "crouch_shoot_f6.png",
-     "row": 2,
-     "col": 1,
-     "bbox": [
-      451,
-      992,
-      425,
-      260
-     ],
-     "offset": {
-      "x": 0,
-      "y": -260
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "crouch_shoot_f7.png",
-     "row": 3,
-     "col": 0,
-     "bbox": [
-      9,
-      1432,
-      425,
-      264
-     ],
-     "offset": {
-      "x": 0,
-      "y": -264
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "crouch_shoot_f8.png",
-     "row": 3,
-     "col": 1,
-     "bbox": [
-      451,
-      1433,
-      426,
-      263
-     ],
-     "offset": {
-      "x": 0,
-      "y": -263
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
+      "name": "scarlet_vale",
+      "anim": "crouch_shoot",
+      "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+      "frames": [
+        {
+          "file": "crouch_shoot_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            9,
+            100,
+            425,
+            264
+          ],
+          "offset": {
+            "x": 0,
+            "y": -264
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            451,
+            100,
+            426,
+            263
+          ],
+          "offset": {
+            "x": 0,
+            "y": -263
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f3.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            9,
+            541,
+            421,
+            267
+          ],
+          "offset": {
+            "x": 0,
+            "y": -267
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f4.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            451,
+            541,
+            434,
+            268
+          ],
+          "offset": {
+            "x": 0,
+            "y": -268
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f5.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            9,
+            986,
+            424,
+            266
+          ],
+          "offset": {
+            "x": 0,
+            "y": -266
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f6.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            451,
+            992,
+            425,
+            260
+          ],
+          "offset": {
+            "x": 0,
+            "y": -260
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f7.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            9,
+            1432,
+            425,
+            264
+          ],
+          "offset": {
+            "x": 0,
+            "y": -264
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f8.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            451,
+            1433,
+            426,
+            263
+          ],
+          "offset": {
+            "x": 0,
+            "y": -263
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "fps": 30,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 20,
+        "y": -228,
+        "w": 352,
+        "h": 210
+      },
+      "pivot": {
+        "x": 196,
+        "y": -123
+      },
+      "markers": [
+        {
+          "label": "muzzle",
+          "x": 417,
+          "y": -92,
+          "radiusOn": true,
+          "radius": 115
+        }
+      ]
     }
-   ],
-   "fps": 30,
-   "playback": "loop",
-   "direction": "forward",
-   "collision": {
-    "x": 20,
-    "y": -228,
-    "w": 352,
-    "h": 210
-   },
-   "pivot": {
-    "x": 196,
-    "y": -123
-   },
-   "markers": [
-    {
-     "label": "AI Trigger",
-     "x": 417,
-     "y": -92,
-     "radiusOn": true,
-     "radius": 115
-    }
-   ]
+  ],
+  "updated": "2026-11-08T03:51:37",
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "pass": "petal-panic/assets/heroes/scarlet_vale"
   }
- ],
- "updated": "2026-11-08T03:51:37",
- "crop": {
-  "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
-  "pass": "petal-panic/assets/heroes/scarlet_vale"
- }
 }
