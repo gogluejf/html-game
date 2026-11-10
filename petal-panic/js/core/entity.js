@@ -71,7 +71,7 @@ export class Entity {
     this._baseW = opts.baseW ?? (opts.w != null ? opts.w : null);
 
     // Per-anim height scale (default 1). The hero's crouch system overrides
-    // this via applyPoseHeight() (per-frame derivation from crouch/jump state)
+    // this via applyCrouchHeight() using CROUCH_HEIGHT_SCALE — setAnim never
     // reads a sheet field for it.
     this._targetHScale = 1;
 
@@ -313,21 +313,19 @@ export class Entity {
     // the sheet only provides scale + repeat art.
     if (this.sprite.boxFromSheet !== false) this._baseW = null;
     this._spriteAnim = name;
-    // Height scale is NOT set here — it's a per-frame DERIVED value from pose
-    // state (crouch/jump), computed in updateHeroLocomotionAnim and applied via
-    // applyPoseHeight(). setAnim() leaves _targetHScale untouched so switching
-    // sheets mid-pose preserves the current height; the next frame re-derives
-    // it from authoritative flags, so a pose can never leak into another state.
+    // Height scale is NOT read from sheet data — the hero's crouch system
+    // (applyCrouchHeight) owns _targetHScale exclusively. setAnim preserves
+    // whatever value is already set (1 for standing, CROUCH_HEIGHT_SCALE for
+    // crouched) so switching anims mid-crouch doesn't restore full height.
     const prevH = this.h;
     const newH = this.h;
     if (newH !== prevH) this.y += prevH - newH;
     // §4: target height in Y-units → px. Scale fits the sheet's collision box
-    // height onto the CURRENT posed height (this.h), which already reflects any
-    // active pose transform (_targetHScale: crouch/jump = 0.5, standing = 1.0).
-    // Fitting to this.h — not raw targetH — keeps width proportional to the
-    // posed height so crouched/jumped art isn't stretched. Width is derived by
-    // the getter: baseW set → fixed; no baseW → sheet aspect × scale.
-    this._spriteScale = uniformScale(data, this.h);
+    // height onto targetH × UNIT_PX. Width is derived by the getter:
+    //   - baseW set → fixed width (constructor-owned, art scales to fit)
+    //   - no baseW  → sheet aspect ratio × scale (sheet-owned)
+    const targetUnits = this._targetH;
+    this._spriteScale = uniformScale(data, targetUnits * UNIT_PX);
     // Playback (T3.2): build a SpritePlayer ONLY for anims that declare a
     // playback mode. mode 'none' = frame POOL (terrain tiles etc.) — frames
     // are picked externally via _tileFrame, never played on a clock.
@@ -529,11 +527,17 @@ export class Entity {
 
   /**
    * Reflect velocity off a solid AABB — the shared physics primitive behind
-   * the 'reflect' solidBehavior (projectiles). Minimum-penetration axis is
-   * flipped with a small energy loss and the entity is nudged out of the
-   * surface so it doesn't re-collide next frame. BEHAVIOR POLICY (who bounces
-   * vs absorbs vs passes) is DATA on the entity (`solidBehavior`), consumed by
-   * the collision handler — this method is pure geometry.
+   * the 'reflect' solidBehavior (projectiles, coins). Minimum-penetration axis
+   * is flipped with a small energy loss and the entity is nudged out of the
+   * surface so it doesn't re-collide next frame.
+   *
+   * DIRECTION-AWARE: the velocity component only flips when actually moving
+   * INTO the face being resolved. A body resting against a surface (moving
+   * away or parallel) gets pushed out but keeps its velocity untouched —
+   * unconditional flipping would re-energize resting bodies every frame
+   * (the coin "ice slide" bug). BEHAVIOR POLICY (who bounces vs absorbs vs
+   * passes) is DATA on the entity (`solidBehavior`), consumed by the
+   * collision handler — this method is pure geometry.
    * @param {{x:number,y:number,w:number,h:number}} box world-space solid AABB
    */
   reflectVelocity(box) {
@@ -546,10 +550,14 @@ export class Entity {
     // they ping-pong at exact speed until ttl. Legacy entities keep 0.8.
     const rest = this.bounceHeight != null ? 1.0 : 0.8;
     if (ox < oy) {
-      this.vx = -this.vx * rest;
+      // Horizontal face: coin center left of box center → hit the LEFT face.
+      const intoFace = cx < bx ? this.vx > 0 : this.vx < 0;
+      if (intoFace) this.vx = -this.vx * rest;
       this.x += (cx < bx ? -ox : ox);
     } else {
-      this.vy = -this.vy * rest;
+      // Vertical face: coin center above box center → hit the TOP face.
+      const intoFace = cy < by ? this.vy > 0 : this.vy < 0;
+      if (intoFace) this.vy = -this.vy * rest;
       this.y += (cy < by ? -oy : oy);
     }
   }

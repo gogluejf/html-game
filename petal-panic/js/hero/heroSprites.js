@@ -147,6 +147,11 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // idle/run/crouch — no per-attack end-of-swing reset needed.
   if (hero.specialMeleeActive && hero.sprite.anims.super_melee) {
     delete hero._idlePatternClock; // left idle — restart pattern next stand-still
+    // If we landed mid-swing, the airborne jump-tuck (JUMP_HEIGHT_SCALE) must
+    // not persist into the grounded attack — restore full standing height so
+    // the super_melee art + hitbox render at correct size for the rest of the
+    // swing. No-op while genuinely airborne (applyJumpHeight is idempotent).
+    if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
     if (hero._spriteAnim !== 'super_melee') {
       try { hero.setAnim('super_melee'); } catch { /* keep current */ }
     }
@@ -154,14 +159,16 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   }
   if (hero.meleeActive && hero.sprite.anims.melee) {
     delete hero._idlePatternClock;
+    if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
     if (hero._spriteAnim !== 'melee') {
       try { hero.setAnim('melee'); } catch { /* keep current */ }
     }
     return;
   }
 
-  // Crouch owns its anim choice; height is derived per-frame by applyPoseHeight()
-  // from the crouching flag, so no manual scale/width re-fit is needed here.
+  // Crouch owns its own height (applyCrouchHeight + CROUCH_HEIGHT_SCALE) — it
+  // must win over the run/idle switch. setAnim() no longer touches _targetHScale,
+  // so crouched height is preserved automatically across anim switches.
   if (hero.crouching) {
     delete hero._idlePatternClock;
     const want = (shooting && hero.sprite.anims.crouch_shoot) ? 'crouch_shoot' : 'crouch';
@@ -170,21 +177,56 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
         hero.setAnim(want);
       } catch { /* keep current */ }
     }
+    // setAnim() fits the sheet onto this.h at SWITCH time, but the crouch
+    // height change happens in a separate step (applyCrouchHeight) — re-derive
+    // scale + width from the active sheet + CURRENT h so both axes follow the
+    // sheet aspect at the crouched height (same rule as setAnim, re-run).
+    const cb = hero.sprite?.anims?.[hero._spriteAnim]?.collisionBox;
+    if (cb) {
+      try {
+        hero._spriteScale = uniformScale(hero.sprite.anims[hero._spriteAnim], hero.h);
+        hero.w = cb.w * hero._spriteScale;
+      } catch { /* keep current */ }
+    }
     return;
   }
 
   // Airborne jump pose: while NOT grounded (and not mid-attack/crouch above),
-  // play the `jump` anim. Height tuck is derived per-frame by applyPoseHeight()
-  // from the grounded flag — no manual transform here.
+  // play the `jump` anim and tuck the body to half height — the same pure-code
+  // transform as crouch (JUMP_HEIGHT_SCALE × targetH), so the collision box +
+  // art shrink together for the whole air time. Landing (grounded again) is
+  // handled by the grounded branch below restoring full height via setAnim's
+  // preserved _targetHScale — we explicitly reset it here on the land frame so
+  // a hero who was tucked in the air snaps back to standing height immediately.
   if (!hero.grounded) {
     delete hero._idlePatternClock; // airborne — restart pattern on landing+stand
+    // Restore full height the moment we're no longer tucked (covers the
+    // land frame: last air frame had JUMP_HEIGHT_SCALE, now grounded).
+    if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
     if (hero.sprite.anims.jump) {
       if (hero._spriteAnim !== 'jump') {
         try { hero.setAnim('jump'); } catch { /* keep current */ }
       }
+      // Tucked half-height for the duration of the air (feet stay planted via
+      // the y adjust inside applyJumpHeight, same rule as crouch).
+      hero.applyJumpHeight(true);
+      // setAnim() fit the jump sheet onto FULL targetH, but we just tucked the
+      // body to half height — re-derive scale + width from the CURRENT h so the
+      // art matches the tucked box (same re-fit the crouch branch does). Without
+      // this the jump art renders at full size over a half-height box.
+      const cb = hero.sprite?.anims?.[hero._spriteAnim]?.collisionBox;
+      if (cb) {
+        try {
+          hero._spriteScale = uniformScale(hero.sprite.anims[hero._spriteAnim], hero.h);
+          hero.w = cb.w * hero._spriteScale;
+        } catch { /* keep current */ }
+      }
     }
     return;
   }
+  // Just landed: make sure we're at full standing height (the air branch sets
+  // this every air frame; this guards against any path that left us tucked).
+  if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
 
   const running = hero.grounded && Math.abs(hero.vx) > RUN_SPEED_THRESHOLD;
 

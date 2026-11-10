@@ -15,7 +15,6 @@ import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats 
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { heroDamage } from '../combat/damage.js';
 import { JUMP_HEIGHT_SCALE } from './heroSprites.js';
-import { uniformScale } from '../core/spriteData.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
@@ -464,8 +463,8 @@ export class Hero extends Entity {
           this._pendingCrouch = true;
         } else {
           this.crouching = true;
-          // Height re-derives from state via applyPoseHeight().
-          this.applyPoseHeight();
+          // Height is a pure code transform (CROUCH_HEIGHT_SCALE × targetH).
+          this.applyCrouchHeight(true);
         }
       }
     }
@@ -672,13 +671,6 @@ export class Hero extends Entity {
 
     // --- Super move charge + dash -------------------------------------------
     this.updateSupermove(dt, input);
-
-    // --- Pose height (per-frame derivation) ---------------------------------
-    // Derive _targetHScale FRESH from authoritative flags (crouching /
-    // grounded). Single source of truth — no other code writes it, so a pose
-    // can never leak into another state. Runs after crouch/attack/jump state
-    // has updated this frame, before the anim binding reads h.
-    this.applyPoseHeight();
 
     // --- Anim tick ----------------------------------------------------------
     if (this.anim) this.anim.tick(dt);
@@ -910,7 +902,7 @@ export class Hero extends Entity {
     this._pendingCrouch = null;
     if (want && !this.crouching && this.grounded) {
       this.crouching = true;
-      this.applyPoseHeight();
+      this.applyCrouchHeight(true);
     } else if (!want && this.crouching) {
       this.exitCrouch();
     }
@@ -1266,46 +1258,40 @@ export class Hero extends Entity {
   exitCrouch() {
     this.crouching = false;
     this.sliding = false;
-    // Height re-derives next frame via applyPoseHeight(); restore now so the
-    // stand-up is atomic (hitbox + art transition together, §11).
-    this.applyPoseHeight();
+    this.applyCrouchHeight(false);
   }
 
   /**
-   * Derive the pose height scale FRESH from authoritative state flags each
-   * frame and apply it. This is the single source of truth for hero height —
-   * nothing else writes _targetHScale, so a pose can never leak into another
-   * state (the old "stuck at 0.5" bug came from crouch/jump/attack all writing
-   * one shared scalar and some path forgetting to clear it).
-   *
-   * Priority: crouch (0.5) > airborne jump-tuck (0.5) > standing (1.0).
-   * Crouch wins over air because you can't be crouched while airborne anyway
-   * (crouch requires grounded), but the ordering keeps the rule explicit.
-   * Feet stay planted via the y-delta adjust. Call once per frame after
-   * physics + attack/crouch state has updated.
+   * Apply/clear crouch height. Pure code transform: crouched h = targetH ×
+   * CROUCH_HEIGHT_SCALE. Feet stay planted: y adjusts by the height delta.
+   * Works for ANY hero with no per-sheet data.
+   * @param {boolean} crouching
    */
-  applyPoseHeight() {
-    let hs = 1;
-    if (this.crouching) hs = CROUCH_HEIGHT_SCALE;
-    else if (!this.grounded) hs = JUMP_HEIGHT_SCALE;
+  applyCrouchHeight(crouching) {
+    const hs = crouching ? CROUCH_HEIGHT_SCALE : 1;
     if (hs === this._targetHScale) return;
     const prevH = this.h;
     this._targetHScale = hs;
     const newH = this.h;
     if (newH !== prevH) this.y += prevH - newH;
-    // Re-fit the sheet scale + width to the NEW posed height so both axes
-    // follow the collision-box aspect at the crouched/jumped size. Without
-    // this, setAnim()'s full-targetH fit leaves the art at standing width over
-    // a half-height box → stretched shape. Same rule as setAnim, re-run at the
-    // current h. No-op when no sheet anim is active (primitive path).
-    const data = this.spriteAnimData;
-    const cb = data?.collisionBox;
-    if (data && cb) {
-      try {
-        this._spriteScale = uniformScale(data, this.h);
-        this.w = cb.w * this._spriteScale;
-      } catch { /* keep current */ }
-    }
+  }
+
+  /**
+   * Apply/clear the airborne jump pose height. Same pure-code transform as
+   * crouch but driven by the JUMP state (JUMP_HEIGHT_SCALE): while airborne in
+   * the jump/djump/fall phase the body tucks to half height, and landing
+   * restores full height. Feet stay planted via the same y-delta adjust.
+   * Kept separate from applyCrouchHeight so the two poses can be tuned
+   * independently (both currently 0.5).
+   * @param {boolean} airborne
+   */
+  applyJumpHeight(airborne) {
+    const hs = airborne ? JUMP_HEIGHT_SCALE : 1;
+    if (hs === this._targetHScale) return;
+    const prevH = this.h;
+    this._targetHScale = hs;
+    const newH = this.h;
+    if (newH !== prevH) this.y += prevH - newH;
   }
 
   /**
