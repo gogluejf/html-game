@@ -138,6 +138,20 @@ export function registerCollisionHandlers(collisionWorld) {
     const boss = ctx.boss;
     const bossZone = ctx.bossZone;
 
+    // --- Coins vs TERRAIN (COIN×SOLID rule). Same policy contract as
+    // projectiles: solidBehavior is DATA on the entity. 'reflect' → bounce
+    // off the surface via the shared reflectVelocity primitive. The floor
+    // SolidBox is included here ON PURPOSE — this replaces the old hand-
+    // rolled solid loop in CoinPool.updateAll (single engine path).
+    const coinEnt = a.layer === LAYER.COIN ? a : (b.layer === LAYER.COIN ? b : null);
+    if (coinEnt && coinEnt.solidBehavior === 'reflect') {
+      const solid = coinEnt === a ? b : a;
+      if (solid instanceof SolidBox) {
+        coinEnt.reflectVelocity(solid.worldBox());
+      }
+      return;
+    }
+
     // --- Friendly thorns (hero → enemy/barrel) --------------------------------
     const allyProj = a.layer === LAYER.PROJ_ALLY ? a : (b.layer === LAYER.PROJ_ALLY ? b : null);
     if (allyProj && allyProj.friendly) {

@@ -131,6 +131,7 @@ export class Coin extends Entity {
     this.value = def.value;
     this.weight = def.weight;               // scales gravity (heavier = faster fall)
     this.bounceRestitution = BOUNCE_RESTITUTION;
+    this.solidBehavior = 'reflect';         // terrain policy: coins bounce off solids
     this.collected = false;                 // latched on collect (prevents double-credit)
     this.spinAngle = 0;                     // visual spin (radians)
     this.settled = false;                   // true once velocity has damped out
@@ -480,15 +481,10 @@ export class CoinPool {
         c.vx *= -BOUNCE_RESTITUTION;
       }
 
-      // Solid block reflect (side/bottom collision with walls, barrels, etc.)
-      for (const s of platforms) {
-        if (s.oneWay) continue; // one-way platforms don't block sides
-        if (s.kind === 'floor') continue; // floor is owned by c.bounce(floorTop) above
-        if (c.x < s.x + s.w && c.x + c.w > s.x && c.y < s.y + s.h && c.y + c.h > s.y) {
-          c.reflectVelocity(s);
-          break; // one solid per frame
-        }
-      }
+      // Solid block reflect (walls, barrels, blocks): owned by the collision
+      // world — COIN×SOLID rule → 'hit' handler reads solidBehavior:'reflect'
+      // and calls the shared Entity.reflectVelocity primitive. Same single
+      // engine path as projectiles; no hand-rolled loop here.
 
       // Platform-top bounces: only when falling onto the top face (not when
       // hitting a side/bottom — those are handled by the collision world if a

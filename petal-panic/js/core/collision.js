@@ -247,6 +247,7 @@ export const COLLISION_RULES = [
   { a: LAYER.PROJ_ALLY, b: LAYER.HERO,        action: 'hit'        }, // neutral mine contact (retainBombContact guards)
   { a: LAYER.HERO,      b: LAYER.PICKUP,      action: 'pickup'     },
   { a: LAYER.HERO,      b: LAYER.COIN,        action: 'collect'    },
+  { a: LAYER.COIN,      b: LAYER.SOLID,       action: 'hit'        }, // coin terrain bounce via solidBehavior
   { a: LAYER.HERO,      b: LAYER.CHECKPOINT,  action: 'checkpoint' },
   { a: LAYER.HERO,      b: LAYER.ENEMY,       action: 'contact'    },
   { a: LAYER.HERO,      b: LAYER.HAZARD,      action: 'damage'     },

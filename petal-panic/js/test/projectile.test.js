@@ -179,6 +179,8 @@ ok('shared projectilePool is pre-allocated once', () => {
 ok('bomb bounce reflects horizontal velocity with energy loss', () => {
   const b = new Projectile(0, 0, 0, true, 'bomb');
   assert.equal(b.solidBehavior, 'reflect', 'bomb data declares reflect');
+  // Bomb center (69, 59) vs wall center (60, 50): moving RIGHT into the
+  // wall's right face — direction-aware reflect flips vx with 0.8 restitution.
   b.x = 60; b.y = 50; b.vx = 300; b.vy = -100;
   const box = { x: 50, y: 0, w: 20, h: 100 }; // right edge at x=70 = bomb center
   b.reflectVelocity(box);
