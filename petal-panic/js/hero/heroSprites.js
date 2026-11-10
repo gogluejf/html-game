@@ -13,6 +13,7 @@
 import { parseSheet } from '../core/spriteData.js';
 import { loadFrames } from '../core/frameLoader.js';
 import { uniformScale } from '../core/spriteData.js';
+import { SpritePlayer } from '../core/spritePlayer.js';
 
 /** Module-level cache: heroId → { data, frames }. */
 const heroSpriteCache = new Map();
@@ -38,6 +39,7 @@ export async function loadHeroSprites(heroId) {
     // instead of readdir.
     const names = [
       'idle', 'run', 'jump', 'crouch', 'crouch_shoot',
+      'idle_special',
       'idle_aim_front', 'idle_aim_up', 'idle_aim_down',
       'idle_aim_45up', 'idle_aim_45down',
       'run_aim_front', 'run_aim_up', 'run_aim_down',
@@ -102,7 +104,16 @@ export const JUMP_HEIGHT_SCALE = 0.5;
 
 // Idle playback pattern: while standing still, play the `idle` anim for this
 // many full cycles, then (if an `idle_special` sheet exists) the special idle
-// for that many cycles — then repeat. Pure code constant; no sheet data.
+// for that many cycles — then repeat.
+//
+// Why a shared clock instead of counting each anim's own cycles: the two
+// sheets have DIFFERENT cycle lengths (idle 16f@9fps ≈ 1.78s, idle_special
+// 8f@7fps ≈ 1.14s). Counting "N cycles of whichever anim is active" can't
+// hold a stable ratio — the shorter special wraps back almost immediately.
+// A single monotonic clock measured against the engine's own cycleDuration
+// values gives a deterministic 3:1 window regardless of per-sheet length.
+// cycleDuration comes from SpritePlayer (per-frame duration overrides + fps),
+// so no manual timing math here. Pure code constants; no sheet data.
 export const IDLE_CYCLE_COUNT = 3;
 export const IDLE_SPECIAL_CYCLE_COUNT = 1;
 
@@ -208,6 +219,33 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
 
   const running = hero.grounded && Math.abs(hero.vx) > RUN_SPEED_THRESHOLD;
+
+  // Idle pattern: N cycles of `idle`, then M cycles of `idle_special` (if the
+  // sheet exists), looping. When standing still with no aim override AND an
+  // idle_special sheet exists, THIS block is the single owner of _spriteAnim —
+  // the generic run/idle switch below must NOT also write it, or the two fight
+  // every frame (generic wants 'idle', pattern wants 'idle_special'), each
+  // setAnim() resetting the SpritePlayer to frame 0 → the special appears
+  // frozen on its first frame. A shared clock advanced by dt is read against
+  // the engine's own cycleDuration values so the 3:1 window holds even though
+  // the two sheets have different per-cycle lengths. setAnim() fires only on
+  // an actual phase change.
+  if (!running && !shooting && hero.sprite.anims.idle_special) {
+    const idleDur = new SpritePlayer(hero.sprite.anims.idle).cycleDuration * IDLE_CYCLE_COUNT;
+    const specialDur = new SpritePlayer(hero.sprite.anims.idle_special).cycleDuration * IDLE_SPECIAL_CYCLE_COUNT;
+    const total = idleDur + specialDur;
+    if (hero._idlePatternClock == null) hero._idlePatternClock = 0;
+    hero._idlePatternClock += dt;
+    const phase = hero._idlePatternClock % total;
+    const wantIdle = phase < idleDur ? 'idle' : 'idle_special';
+    if (hero._spriteAnim !== wantIdle) {
+      try { hero.setAnim(wantIdle); } catch { /* keep current */ }
+    }
+    return; // pattern owns the anim this frame — skip the generic switch.
+  }
+
+  // Generic locomotion switch (run | idle | aim variants). Only reached when
+  // the idle pattern above did not claim the frame.
   const base = running ? 'run' : 'idle';
   let want = base;
   if (shooting && hero.grounded) {
@@ -221,23 +259,9 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
       hero.setAnim(want);
     } catch { /* anim missing for this hero — keep current */ }
   }
-
-  // Idle pattern: N cycles of `idle`, then M cycles of `idle_special` (if the
-  // sheet exists), looping. Driven by wall-clock time so it survives setAnim()
-  // re-creations (which reset the SpritePlayer). Only active while standing
-  // still with no aim override — run/aim/crouch/air own their anims above.
-  if (!running && !shooting && hero._spriteAnim === 'idle' && hero.sprite.anims.idle_special) {
-    const idleDur = hero.sprite.anims.idle.cycleDuration * IDLE_CYCLE_COUNT;
-    const specialDur = hero.sprite.anims.idle_special.cycleDuration * IDLE_SPECIAL_CYCLE_COUNT;
-    const t = (hero._idlePatternT || 0) + dt;
-    hero._idlePatternT = t % (idleDur + specialDur);
-    const wantIdle = hero._idlePatternT < idleDur ? 'idle' : 'idle_special';
-    if (hero._spriteAnim !== wantIdle) {
-      try { hero.setAnim(wantIdle); } catch { /* keep current */ }
-    }
-  } else if (hero._spriteAnim !== 'idle') {
-    // Left the idle state (run/jump/crouch/aim…) — restart the pattern from
-    // the top next time we stand still.
-    delete hero._idlePatternT;
+  // Left the idle state (run/jump/crouch/aim…) — restart the pattern from the
+  // top next time we stand still.
+  if (hero._spriteAnim === 'idle' || hero._spriteAnim === 'idle_special') {
+    delete hero._idlePatternClock;
   }
 }

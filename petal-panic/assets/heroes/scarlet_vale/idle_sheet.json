@@ -348,18 +348,18 @@
     }
    ],
    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
-   "fps": 11,
+   "fps": 9,
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": -56,
-    "y": -310,
-    "w": 146,
-    "h": 301
+    "x": -61,
+    "y": -298,
+    "w": 144,
+    "h": 287
    },
    "pivot": {
-    "x": 3,
-    "y": -159
+    "x": 11,
+    "y": -157
    },
    "markers": []
   }

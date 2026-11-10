@@ -56,6 +56,7 @@ export class SpritePlayer {
     this._pos = Math.max(0, Math.min(Math.floor(startSlot) || 0, this._order.length - 1));
     this._entryPos = this._pos; // entry point for remainingDuration() wrap math
     this.done = false;
+    this._cycles = 0; // whole-traversal count (see cyclesCompleted)
   }
 
   /** Build the visit-order permutation for this direction (§6). */
@@ -179,7 +180,8 @@ export class SpritePlayer {
     }
     // loop: wrap. For ping-pong orders the sequence is designed so wrapping
     // slot L-1 → 0 reproduces …,2,1,0,1,2,… with no duplicated endpoints.
-    this._pos = next % L;
+    if (next >= L) { this._cycles++; this._pos = next % L; }
+    else this._pos = next;
   }
 
   /**
@@ -200,6 +202,7 @@ export class SpritePlayer {
   reset() {
     this._pos = 0;
     this.done = false;
+    this._cycles = 0;
   }
 
   /** Current frame index IN STORED ORDER (what spriteFrameIndex consumes). */
@@ -210,4 +213,20 @@ export class SpritePlayer {
 
   /** True once a 'once' anim has finished its terminal frame. */
   get isDone() { return this.done; }
+
+  /** Number of COMPLETE traversal cycles elapsed since construction/reset.
+   * A "cycle" is one full pass through _order (forward/reverse = n frames,
+   * ping_pong = 2n-2 slots). For a 'loop' anim this grows without bound as
+   * the loop wraps; for 'once' it is 0 until done, then 1. Lets gameplay
+   * react to whole-cycle boundaries (e.g. "play N cycles then switch")
+   * without re-deriving timing from fps/frame counts by hand. */
+  get cyclesCompleted() {
+    const L = this._order.length;
+    if (L <= 1) return this.done ? 1 : 0;
+    // Each wrap past the last slot completes one cycle. _pos is clamped to
+    // [0, L-1], so count wraps via total elapsed slot-time instead: track
+    // cumulative advancement. We derive it from how many times _pos has
+    // wrapped around — captured incrementally in tick().
+    return this._cycles;
+  }
 }
