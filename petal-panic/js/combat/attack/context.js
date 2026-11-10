@@ -66,20 +66,43 @@ export function targetCenter(e) {
  * Markers come from the sprite-crop editor schema:
  *   st.markers = [{ label, x, y, radiusOn, radius }] per animation.
  *
- * Coordinates are relative to the entity's anchor; the caller adds the
- * entity position if needed (primitives decide their own convention —
- * see each primitive's doc). Returns null when no marker matches so
- * primitives can fall back to the entity center.
+ * Returns world-space coordinates with full transform applied:
+ *   sheet → pivot-relative → scaled → mirrored (facing) → hero anchor.
+ * The hero's bottom-center is the anchor (same as sprite draw).
  *
  * @param {AttackContext} ctx
  * @param {string} label marker label (e.g. 'muzzle', 'chest')
  * @returns {{x:number,y:number}|null}
  */
 export function resolveMarker(ctx, label) {
-  const list = ctx.markers ?? ctx.attacker?.markers;
-  if (!list) return null;
+  const a = ctx.attacker;
+  if (!a) return null;
+
+  // Get markers from the active anim's parsed data
+  const animData = a.sprite?.anims?.[a._spriteAnim];
+  const list = animData?.markers ?? ctx.markers ?? a.markers;
+  if (!list || list.length === 0) return null;
   const m = list.find((mk) => mk.label === label);
-  return m ? { x: m.x, y: m.y } : null;
+  if (!m) return null;
+
+  // Get sprite scale and pivot from the active anim
+  const scale = a._spriteScale ?? 1;
+  const anim = a.sprite?.anims?.[a._spriteAnim];
+  const pivot = anim?.pivot ?? { x: 0, y: 0 };
+
+  // Offset from pivot, scaled
+  let dx = (m.x - pivot.x) * scale;
+  const dy = (m.y - pivot.y) * scale;
+
+  // Mirror X when facing left
+  const facing = a.facing ?? 1;
+  if (facing < 0) dx = -dx;
+
+  // Anchor: hero bottom-center is (a.x + a.w/2, a.y + a.h)
+  return {
+    x: a.x + (a.w ?? 0) / 2 + dx,
+    y: a.y + (a.h ?? 0) + dy,
+  };
 }
 
 /**

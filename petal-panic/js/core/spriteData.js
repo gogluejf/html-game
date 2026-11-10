@@ -88,6 +88,7 @@ export function parseSheet(sheetJson) {
         // collision box + pivot in source coordinates. Null until exported.
         collisionBox: parseBox(ent.collision) ?? parseBox(ent.collisionBox),
         pivot: parsePoint(ent.pivot),
+        markers: Array.isArray(ent.markers) ? ent.markers : [],
         // Per-frame optional extras (duration overrides, typed boxes,
         // point/radius markers) — carried through verbatim when present.
         framesMeta: ent.frames?.map((f) => ({

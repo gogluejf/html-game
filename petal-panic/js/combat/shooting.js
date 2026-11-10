@@ -48,14 +48,9 @@ function fireThorn(h, input, dt) {
 
   const dir = h.resolveAim(input);
   const angle = dirAngle(dir);
-  const { x: cx, y: cy } = h.bodyCenter();
-  // Muzzle point: 16px out along the aim from the body center (matches the old
-  // offset). The primitive centers the shot's box on this exact point.
-  const ox = Math.cos(angle) * 16;
-  const oy = Math.sin(angle) * 16;
 
   const shot = invoke('projectile', {
-    origin: { x: cx + ox, y: cy + oy },
+    origin: 'muzzle',     // resolved from the active anim's marker (world-space)
     direction: angle,      // radians (the engine expects radians, NOT an 8-way index)
     speed: 600,            // PROJECTILE_SPEED
     damage: 10,            // PROJECTILE_DAMAGE
