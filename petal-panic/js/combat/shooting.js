@@ -12,6 +12,7 @@ import { record } from '../stats.js';
 import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
 import { invoke } from './attack/engine.js';
+import { resolveMarker } from './attack/context.js';
 import { getDamageables } from '../world/accessors.js';
 import '../combat/attack/primitives/projectile.js'; // registers the 'projectile' primitive
 
@@ -123,17 +124,14 @@ function fireSpecial(h, input) {
 
   const meta = specialById[type];
   const dir = h.resolveAim(input);
-  const { x: cx, y: cy } = h.bodyCenter();
   const baseAngle = dirAngle(dir);
-  const ox = Math.cos(baseAngle) * 20;
-  const oy = Math.sin(baseAngle) * 20;
 
   // M4 Step B (Task 4.3): all specials spawn through the engine's projectile
   // primitive with specialType — typed Projectile entities, class-owned look,
   // identical velocity/damage/ttl/box as the old inline special spawn.
   if (type === 'bomb' && ctx.bombAttacks) {
     const attack = ctx.bombAttacks.spawn('explosiveBomb', {
-      origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
+      origin: 'muzzle', direction: baseAngle,
       speed: meta.speed, arc: meta.gravity, ttl: meta.lifetime,
       damage: meta.damage, radius: meta.radius, bounce: true, blastTeam: 'ally',
     }, h);
@@ -142,10 +140,11 @@ function fireSpecial(h, input) {
     // Homing missile: macro owns flight + per-frame steering toward the
     // nearest live enemy (resolved at fire time; the macro stops steering
     // once its target dies). specialType gives the carrier its sheet art.
+    const { x: mx, y: my } = resolveMarker(makeHeroContext(h), 'muzzle') ?? h.bodyCenter();
     const attack = ctx.bombAttacks.spawn('homingMissile', {
-      origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
+      origin: 'muzzle', direction: baseAngle,
       speed: meta.speed, ttl: meta.lifetime, damage: meta.damage,
-      turnRate: meta.turnRate ?? 3, target: nearestEnemyTo(cx, cy),
+      turnRate: meta.turnRate ?? 3, target: nearestEnemyTo(mx, my),
       // Re-acquire on target death: enemies first (or boss), barrels only as
       // a second priority when no enemy is alive. Resolved from the MISSILE's
       // position, not the hero's.
@@ -156,7 +155,7 @@ function fireSpecial(h, input) {
     // Explosive shot: straight-line projectile carrier that detonates into a
     // radial explosion at its death point (impact or fuse). No arc, no bounce.
     const attack = ctx.bombAttacks.spawn('explosiveProjectile', {
-      origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
+      origin: 'muzzle', direction: baseAngle,
       speed: meta.speed, ttl: meta.lifetime, damage: meta.damage,
       radius: meta.radius, solidBehavior: 'stop',
       team: 'ally', blastTeam: 'neutral',
@@ -169,7 +168,7 @@ function fireSpecial(h, input) {
       const offset = (i - (count - 1) / 2) * step;
       const a = baseAngle + offset;
       const shot = invoke('projectile', {
-        origin: { x: cx + Math.cos(a) * 20, y: cy + Math.sin(a) * 20 },
+        origin: 'muzzle',
         direction: a,
         speed: meta.speed,
         damage: meta.damage,
@@ -182,7 +181,7 @@ function fireSpecial(h, input) {
     }
   } else {
     const shot = invoke('projectile', {
-      origin: { x: cx + ox, y: cy + oy },
+      origin: 'muzzle',
       direction: baseAngle,
       speed: meta.speed,
       damage: meta.damage,
