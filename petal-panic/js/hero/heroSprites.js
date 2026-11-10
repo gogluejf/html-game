@@ -146,12 +146,14 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // next frame falls through to the locomotion switch below and reclaims
   // idle/run/crouch — no per-attack end-of-swing reset needed.
   if (hero.specialMeleeActive && hero.sprite.anims.super_melee) {
+    delete hero._idlePatternClock; // left idle — restart pattern next stand-still
     if (hero._spriteAnim !== 'super_melee') {
       try { hero.setAnim('super_melee'); } catch { /* keep current */ }
     }
     return;
   }
   if (hero.meleeActive && hero.sprite.anims.melee) {
+    delete hero._idlePatternClock;
     if (hero._spriteAnim !== 'melee') {
       try { hero.setAnim('melee'); } catch { /* keep current */ }
     }
@@ -162,6 +164,7 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // must win over the run/idle switch. setAnim() no longer touches _targetHScale,
   // so crouched height is preserved automatically across anim switches.
   if (hero.crouching) {
+    delete hero._idlePatternClock;
     const want = (shooting && hero.sprite.anims.crouch_shoot) ? 'crouch_shoot' : 'crouch';
     if (hero._spriteAnim !== want) {
       try {
@@ -190,6 +193,7 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // preserved _targetHScale — we explicitly reset it here on the land frame so
   // a hero who was tucked in the air snaps back to standing height immediately.
   if (!hero.grounded) {
+    delete hero._idlePatternClock; // airborne — restart pattern on landing+stand
     // Restore full height the moment we're no longer tucked (covers the
     // land frame: last air frame had JUMP_HEIGHT_SCALE, now grounded).
     if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
@@ -259,9 +263,10 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
       hero.setAnim(want);
     } catch { /* anim missing for this hero — keep current */ }
   }
-  // Left the idle state (run/jump/crouch/aim…) — restart the pattern from the
-  // top next time we stand still.
-  if (hero._spriteAnim === 'idle' || hero._spriteAnim === 'idle_special') {
-    delete hero._idlePatternClock;
-  }
+  // Left the idle state (running / aiming) — restart the pattern from the top
+  // next time we stand still. The pattern block above returns early when it
+  // owns the frame, so reaching here means we are NOT in the idle pattern this
+  // frame (we're running or aiming). Clear the clock so the next stand-still
+  // begins a fresh 3×idle cycle instead of resuming mid-pattern.
+  delete hero._idlePatternClock;
 }
