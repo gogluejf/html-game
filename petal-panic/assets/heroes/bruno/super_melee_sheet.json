@@ -1,0 +1,149 @@
+{
+  "file": "petal-panic/assets/heroes/bruno/super_melee_sheet.png",
+  "size": "1493x943",
+  "rows": 3,
+  "cols": 4,
+  "kind": "animation",
+  "description": "bruno super_melee (12 frames from GIF)",
+  "entities": [
+    {
+      "name": "bruno",
+      "anim": "super_melee",
+      "frames_dir": "petal-panic/assets/heroes/bruno",
+      "frames": [
+        {
+          "file": "super_melee_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            35,
+            0,
+            289,
+            351
+          ]
+        },
+        {
+          "file": "super_melee_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            373,
+            22,
+            324,
+            306
+          ]
+        },
+        {
+          "file": "super_melee_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            724,
+            50,
+            366,
+            251
+          ]
+        },
+        {
+          "file": "super_melee_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1104,
+            62,
+            389,
+            226
+          ]
+        },
+        {
+          "file": "super_melee_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            363,
+            360,
+            229
+          ]
+        },
+        {
+          "file": "super_melee_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            360,
+            365,
+            351,
+            225
+          ]
+        },
+        {
+          "file": "super_melee_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            744,
+            362,
+            327,
+            231
+          ]
+        },
+        {
+          "file": "super_melee_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1117,
+            351,
+            362,
+            254
+          ]
+        },
+        {
+          "file": "super_melee_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            42,
+            628,
+            275,
+            292
+          ]
+        },
+        {
+          "file": "super_melee_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            367,
+            626,
+            336,
+            296
+          ]
+        },
+        {
+          "file": "super_melee_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            711,
+            628,
+            393,
+            292
+          ]
+        },
+        {
+          "file": "super_melee_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            1132,
+            605,
+            332,
+            338
+          ]
+        }
+      ]
+    }
+  ]
+}

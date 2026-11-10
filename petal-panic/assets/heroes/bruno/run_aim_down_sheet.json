@@ -1,0 +1,149 @@
+{
+  "file": "petal-panic/assets/heroes/bruno/run_aim_down_sheet.png",
+  "size": "984x996",
+  "rows": 3,
+  "cols": 4,
+  "kind": "animation",
+  "description": "bruno run_aim_down (12 frames from GIF)",
+  "entities": [
+    {
+      "name": "bruno",
+      "anim": "run_aim_down",
+      "frames_dir": "petal-panic/assets/heroes/bruno",
+      "frames": [
+        {
+          "file": "run_aim_down_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            270,
+            330
+          ]
+        },
+        {
+          "file": "run_aim_down_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            280,
+            0,
+            208,
+            329
+          ]
+        },
+        {
+          "file": "run_aim_down_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            544,
+            11,
+            174,
+            308
+          ]
+        },
+        {
+          "file": "run_aim_down_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            776,
+            0,
+            194,
+            329
+          ]
+        },
+        {
+          "file": "run_aim_down_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            24,
+            330,
+            222,
+            332
+          ]
+        },
+        {
+          "file": "run_aim_down_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            270,
+            333,
+            229,
+            325
+          ]
+        },
+        {
+          "file": "run_aim_down_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            514,
+            332,
+            234,
+            328
+          ]
+        },
+        {
+          "file": "run_aim_down_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            772,
+            341,
+            202,
+            310
+          ]
+        },
+        {
+          "file": "run_aim_down_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            47,
+            679,
+            175,
+            300
+          ]
+        },
+        {
+          "file": "run_aim_down_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            276,
+            664,
+            216,
+            330
+          ]
+        },
+        {
+          "file": "run_aim_down_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            499,
+            662,
+            264,
+            334
+          ]
+        },
+        {
+          "file": "run_aim_down_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            763,
+            662,
+            221,
+            334
+          ]
+        }
+      ]
+    }
+  ]
+}

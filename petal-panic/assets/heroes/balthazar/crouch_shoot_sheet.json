@@ -1,0 +1,199 @@
+{
+  "file": "petal-panic/assets/heroes/balthazar/crouch_shoot_sheet.png",
+  "size": "1686x442",
+  "rows": 2,
+  "cols": 4,
+  "kind": "animation",
+  "description": "balthazar crouch_shoot (8 frames from GIF)",
+  "entities": [
+    {
+      "name": "balthazar",
+      "anim": "crouch_shoot",
+      "frames_dir": "petal-panic/assets/heroes/balthazar",
+      "frames": [
+        {
+          "file": "crouch_shoot_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            427,
+            218
+          ],
+          "offset": {
+            "x": -216.5,
+            "y": -222
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            427,
+            0,
+            417,
+            218
+          ],
+          "offset": {
+            "x": -216,
+            "y": -223
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            844,
+            0,
+            413,
+            219
+          ],
+          "offset": {
+            "x": -214,
+            "y": -226
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1257,
+            0,
+            429,
+            218
+          ],
+          "offset": {
+            "x": -214,
+            "y": -225
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            19,
+            219,
+            388,
+            223
+          ],
+          "offset": {
+            "x": -214,
+            "y": -227
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            441,
+            222,
+            389,
+            216
+          ],
+          "offset": {
+            "x": -215,
+            "y": -223
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            844,
+            222,
+            412,
+            217
+          ],
+          "offset": {
+            "x": -215.5,
+            "y": -222
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "crouch_shoot_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1261,
+            221,
+            421,
+            219
+          ],
+          "offset": {
+            "x": -216,
+            "y": -222
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "fps": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": -198,
+        "y": -208,
+        "w": 396,
+        "h": 192
+      },
+      "pivot": {
+        "x": 0,
+        "y": -112
+      },
+      "markers": []
+    }
+  ]
+}

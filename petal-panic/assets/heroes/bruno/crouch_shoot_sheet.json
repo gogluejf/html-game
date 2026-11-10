@@ -1,0 +1,105 @@
+{
+  "file": "petal-panic/assets/heroes/bruno/crouch_shoot_sheet.png",
+  "size": "1658x393",
+  "rows": 2,
+  "cols": 4,
+  "kind": "animation",
+  "description": "bruno crouch_shoot (8 frames from GIF)",
+  "entities": [
+    {
+      "name": "bruno",
+      "anim": "crouch_shoot",
+      "frames_dir": "petal-panic/assets/heroes/bruno",
+      "frames": [
+        {
+          "file": "crouch_shoot_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            14,
+            0,
+            399,
+            197
+          ]
+        },
+        {
+          "file": "crouch_shoot_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            433,
+            0,
+            399,
+            196
+          ]
+        },
+        {
+          "file": "crouch_shoot_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            838,
+            1,
+            399,
+            194
+          ]
+        },
+        {
+          "file": "crouch_shoot_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1237,
+            2,
+            421,
+            193
+          ]
+        },
+        {
+          "file": "crouch_shoot_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            197,
+            427,
+            196
+          ]
+        },
+        {
+          "file": "crouch_shoot_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            427,
+            197,
+            411,
+            195
+          ]
+        },
+        {
+          "file": "crouch_shoot_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            838,
+            199,
+            398,
+            192
+          ]
+        },
+        {
+          "file": "crouch_shoot_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1252,
+            198,
+            391,
+            193
+          ]
+        }
+      ]
+    }
+  ]
+}

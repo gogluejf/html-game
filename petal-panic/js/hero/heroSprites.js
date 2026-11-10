@@ -43,7 +43,6 @@ export async function loadHeroSprites(heroId) {
       'run_aim_front', 'run_aim_up', 'run_aim_down',
       'run_aim_45up', 'run_aim_45down',
       'melee', 'super_melee', 'superpower', 'supermove',
-      'cane_attack', 'jump2', 'run2',
     ];
     const urls = names.map((n) => new URL(`${n}_sheet.json`, base).href);
     const results = await Promise.all(urls.map(async (u) => {
@@ -95,7 +94,7 @@ export function attachHeroSprites(hero, heroId) {
 const RUN_SPEED_THRESHOLD = 20;
 
 /** heroDef.id → assets/heroes/ folder name (single source of truth). */
-export const HERO_SPRITE_DIRS = { scarlet: 'scarlet_vale' };
+export const HERO_SPRITE_DIRS = { scarlet: 'scarlet_vale', balthazar: 'balthazar', bruno: 'bruno', ringo: 'ringo' };
 
 // Aim → sheet suffix table. The 8-way index (DIR_ANGLES order in core/vec.js):
 //   0 right, 1 up-right, 2 up, 3 up-left, 4 left, 5 down-left, 6 down, 7 down-right.

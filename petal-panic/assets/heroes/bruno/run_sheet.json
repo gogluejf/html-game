@@ -1,0 +1,193 @@
+{
+  "file": "petal-panic/assets/heroes/bruno/run_sheet.png",
+  "size": "1014x1160",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "bruno run (16 frames from GIF)",
+  "entities": [
+    {
+      "name": "bruno",
+      "anim": "run",
+      "frames_dir": "petal-panic/assets/heroes/bruno",
+      "frames": [
+        {
+          "file": "run_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            60,
+            4,
+            174,
+            280
+          ]
+        },
+        {
+          "file": "run_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            324,
+            3,
+            179,
+            282
+          ]
+        },
+        {
+          "file": "run_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            532,
+            0,
+            207,
+            288
+          ]
+        },
+        {
+          "file": "run_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            740,
+            2,
+            274,
+            284
+          ]
+        },
+        {
+          "file": "run_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            300,
+            295,
+            260
+          ]
+        },
+        {
+          "file": "run_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            295,
+            288,
+            237,
+            284
+          ]
+        },
+        {
+          "file": "run_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            532,
+            288,
+            208,
+            285
+          ]
+        },
+        {
+          "file": "run_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            776,
+            288,
+            202,
+            285
+          ]
+        },
+        {
+          "file": "run_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            56,
+            575,
+            182,
+            290
+          ]
+        },
+        {
+          "file": "run_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            324,
+            577,
+            179,
+            287
+          ]
+        },
+        {
+          "file": "run_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            542,
+            573,
+            188,
+            295
+          ]
+        },
+        {
+          "file": "run_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            771,
+            576,
+            211,
+            288
+          ]
+        },
+        {
+          "file": "run_f13.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            39,
+            868,
+            217,
+            292
+          ]
+        },
+        {
+          "file": "run_f14.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            312,
+            869,
+            203,
+            290
+          ]
+        },
+        {
+          "file": "run_f15.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            537,
+            870,
+            198,
+            287
+          ]
+        },
+        {
+          "file": "run_f16.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            775,
+            873,
+            204,
+            281
+          ]
+        }
+      ]
+    }
+  ]
+}

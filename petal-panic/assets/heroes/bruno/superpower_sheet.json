@@ -1,0 +1,149 @@
+{
+  "file": "petal-panic/assets/heroes/bruno/superpower_sheet.png",
+  "size": "1223x1040",
+  "rows": 3,
+  "cols": 4,
+  "kind": "animation",
+  "description": "bruno superpower (12 frames from GIF)",
+  "entities": [
+    {
+      "name": "bruno",
+      "anim": "superpower",
+      "frames_dir": "petal-panic/assets/heroes/bruno",
+      "frames": [
+        {
+          "file": "superpower_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            37,
+            0,
+            249,
+            345
+          ]
+        },
+        {
+          "file": "superpower_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            353,
+            2,
+            250,
+            341
+          ]
+        },
+        {
+          "file": "superpower_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            654,
+            2,
+            249,
+            341
+          ]
+        },
+        {
+          "file": "superpower_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            948,
+            2,
+            249,
+            341
+          ]
+        },
+        {
+          "file": "superpower_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            35,
+            346,
+            253,
+            343
+          ]
+        },
+        {
+          "file": "superpower_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            347,
+            346,
+            263,
+            344
+          ]
+        },
+        {
+          "file": "superpower_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            636,
+            345,
+            285,
+            345
+          ]
+        },
+        {
+          "file": "superpower_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            923,
+            345,
+            300,
+            346
+          ]
+        },
+        {
+          "file": "superpower_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            0,
+            691,
+            323,
+            349
+          ]
+        },
+        {
+          "file": "superpower_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            323,
+            693,
+            311,
+            344
+          ]
+        },
+        {
+          "file": "superpower_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            634,
+            695,
+            289,
+            340
+          ]
+        },
+        {
+          "file": "superpower_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            935,
+            699,
+            275,
+            333
+          ]
+        }
+      ]
+    }
+  ]
+}
