@@ -1,72 +1,193 @@
 {
- "file": "petal-panic/assets/heroes/balthazar/superpower_sheet.png",
- "size": "2600x552",
- "rows": 1,
- "cols": 5,
- "kind": "animation",
- "description": "balthazar superpower \u2014 impact burst (cane f1,f2,f8,f9,f10)",
- "entities": [
-  {
-   "name": "balthazar",
-   "anim": "superpower",
-   "frames_dir": "petal-panic/assets/heroes/balthazar",
-   "frames": [
+  "file": "petal-panic/assets/heroes/balthazar/superpower_sheet.png",
+  "size": "1191x973",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "balthazar superpower (16 frames from GIF)",
+  "entities": [
     {
-     "file": "superpower_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      106,
-      125,
-      339,
-      301
-     ]
-    },
-    {
-     "file": "superpower_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      637,
-      89,
-      317,
-      373
-     ]
-    },
-    {
-     "file": "superpower_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      1125,
-      121,
-      382,
-      309
-     ]
-    },
-    {
-     "file": "superpower_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1645,
-      115,
-      382,
-      321
-     ]
-    },
-    {
-     "file": "superpower_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      2226,
-      111,
-      259,
-      329
-     ]
+      "name": "balthazar",
+      "anim": "superpower",
+      "frames_dir": "petal-panic/assets/heroes/balthazar",
+      "frames": [
+        {
+          "file": "superpower_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            21,
+            4,
+            245,
+            237
+          ]
+        },
+        {
+          "file": "superpower_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            313,
+            1,
+            245,
+            243
+          ]
+        },
+        {
+          "file": "superpower_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            616,
+            0,
+            246,
+            244
+          ]
+        },
+        {
+          "file": "superpower_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            919,
+            0,
+            249,
+            245
+          ]
+        },
+        {
+          "file": "superpower_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            22,
+            247,
+            244,
+            247
+          ]
+        },
+        {
+          "file": "superpower_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            313,
+            246,
+            244,
+            249
+          ]
+        },
+        {
+          "file": "superpower_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            618,
+            245,
+            243,
+            250
+          ]
+        },
+        {
+          "file": "superpower_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            920,
+            245,
+            247,
+            251
+          ]
+        },
+        {
+          "file": "superpower_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            19,
+            496,
+            249,
+            251
+          ]
+        },
+        {
+          "file": "superpower_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            308,
+            501,
+            254,
+            240
+          ]
+        },
+        {
+          "file": "superpower_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            609,
+            507,
+            261,
+            229
+          ]
+        },
+        {
+          "file": "superpower_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            911,
+            509,
+            264,
+            224
+          ]
+        },
+        {
+          "file": "superpower_f13.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            0,
+            748,
+            288,
+            224
+          ]
+        },
+        {
+          "file": "superpower_f14.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            288,
+            747,
+            295,
+            225
+          ]
+        },
+        {
+          "file": "superpower_f15.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            583,
+            748,
+            313,
+            224
+          ]
+        },
+        {
+          "file": "superpower_f16.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            896,
+            747,
+            295,
+            226
+          ]
+        }
+      ]
     }
-   ]
-  }
- ]
+  ]
 }

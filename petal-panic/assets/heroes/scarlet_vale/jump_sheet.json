@@ -1,372 +1,193 @@
 {
- "file": "petal-panic/assets/heroes/scarlet_vale/jump_sheet.png",
- "size": "2172x724",
- "rows": 1,
- "cols": 4,
- "kind": "animation",
- "description": "scarlet_vale jump",
- "entities": [
-  {
-   "name": "scarlet_vale",
-   "anim": "jump",
-   "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
-   "frames": [
+  "file": "petal-panic/assets/heroes/scarlet_vale/jump_sheet.png",
+  "size": "985x1089",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "scarlet_vale jump (16 frames from GIF)",
+  "entities": [
     {
-     "file": "jump_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      11,
-      8,
-      234,
-      345
-     ],
-     "offset": {
-      "x": -117,
-      "y": -172.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      272,
-      11,
-      227,
-      341
-     ],
-     "offset": {
-      "x": -113.5,
-      "y": -170.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      545,
-      31,
-      237,
-      323
-     ],
-     "offset": {
-      "x": -118.5,
-      "y": -161.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      846,
-      7,
-      236,
-      337
-     ],
-     "offset": {
-      "x": -118,
-      "y": -168.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1140,
-      0,
-      241,
-      272
-     ],
-     "offset": {
-      "x": -120.5,
-      "y": -136
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f6.png",
-     "row": 0,
-     "col": 5,
-     "bbox": [
-      1413,
-      13,
-      235,
-      237
-     ],
-     "offset": {
-      "x": -117.5,
-      "y": -118.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f7.png",
-     "row": 0,
-     "col": 6,
-     "bbox": [
-      1671,
-      24,
-      247,
-      218
-     ],
-     "offset": {
-      "x": -123.5,
-      "y": -109
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f8.png",
-     "row": 0,
-     "col": 7,
-     "bbox": [
-      1916,
-      18,
-      240,
-      302
-     ],
-     "offset": {
-      "x": -120,
-      "y": -151
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f9.png",
-     "row": 1,
-     "col": 0,
-     "bbox": [
-      13,
-      404,
-      251,
-      279
-     ],
-     "offset": {
-      "x": -125.5,
-      "y": -139.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f10.png",
-     "row": 1,
-     "col": 1,
-     "bbox": [
-      286,
-      394,
-      233,
-      297
-     ],
-     "offset": {
-      "x": -116.5,
-      "y": -148.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f11.png",
-     "row": 1,
-     "col": 2,
-     "bbox": [
-      540,
-      399,
-      243,
-      292
-     ],
-     "offset": {
-      "x": -121.5,
-      "y": -146
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f12.png",
-     "row": 1,
-     "col": 3,
-     "bbox": [
-      782,
-      412,
-      248,
-      306
-     ],
-     "offset": {
-      "x": -124,
-      "y": -153
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f13.png",
-     "row": 1,
-     "col": 4,
-     "bbox": [
-      1053,
-      427,
-      248,
-      291
-     ],
-     "offset": {
-      "x": -124,
-      "y": -145.5
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f14.png",
-     "row": 1,
-     "col": 5,
-     "bbox": [
-      1314,
-      432,
-      249,
-      286
-     ],
-     "offset": {
-      "x": -124.5,
-      "y": -143
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f15.png",
-     "row": 1,
-     "col": 6,
-     "bbox": [
-      1586,
-      426,
-      244,
-      292
-     ],
-     "offset": {
-      "x": -122,
-      "y": -146
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "jump_f16.png",
-     "row": 1,
-     "col": 7,
-     "bbox": [
-      1885,
-      372,
-      249,
-      346
-     ],
-     "offset": {
-      "x": -124.5,
-      "y": -173
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
+      "name": "scarlet_vale",
+      "anim": "jump",
+      "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+      "frames": [
+        {
+          "file": "jump_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            12,
+            0,
+            203,
+            280
+          ]
+        },
+        {
+          "file": "jump_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            237,
+            23,
+            244,
+            234
+          ]
+        },
+        {
+          "file": "jump_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            492,
+            17,
+            253,
+            245
+          ]
+        },
+        {
+          "file": "jump_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            745,
+            11,
+            240,
+            258
+          ]
+        },
+        {
+          "file": "jump_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            294,
+            227,
+            251
+          ]
+        },
+        {
+          "file": "jump_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            255,
+            292,
+            208,
+            255
+          ]
+        },
+        {
+          "file": "jump_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            515,
+            286,
+            207,
+            268
+          ]
+        },
+        {
+          "file": "jump_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            760,
+            280,
+            209,
+            280
+          ]
+        },
+        {
+          "file": "jump_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            7,
+            568,
+            212,
+            253
+          ]
+        },
+        {
+          "file": "jump_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            227,
+            592,
+            265,
+            205
+          ]
+        },
+        {
+          "file": "jump_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            501,
+            564,
+            234,
+            260
+          ]
+        },
+        {
+          "file": "jump_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            761,
+            560,
+            207,
+            269
+          ]
+        },
+        {
+          "file": "jump_f13.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            22,
+            829,
+            183,
+            260
+          ]
+        },
+        {
+          "file": "jump_f14.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            237,
+            835,
+            244,
+            248
+          ]
+        },
+        {
+          "file": "jump_f15.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            501,
+            848,
+            234,
+            221
+          ]
+        },
+        {
+          "file": "jump_f16.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            745,
+            831,
+            240,
+            255
+          ]
+        }
+      ]
     }
-   ],
-   "fps": 8,
-   "playback": "loop",
-   "direction": "forward",
-   "collision": {
-    "x": -113,
-    "y": -125,
-    "w": 226,
-    "h": 232
-   },
-   "pivot": {
-    "x": 0,
-    "y": -9
-   },
-   "markers": []
-  }
- ],
- "updated": "2026-11-08T15:34:57",
- "crop": {
-  "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
-  "pass": "petal-panic/assets/heroes/scarlet_vale"
- }
+  ]
 }

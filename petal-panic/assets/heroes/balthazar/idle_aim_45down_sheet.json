@@ -1,0 +1,193 @@
+{
+  "file": "petal-panic/assets/heroes/balthazar/idle_aim_45down_sheet.png",
+  "size": "1046x957",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "balthazar idle_aim_45down (16 frames from GIF)",
+  "entities": [
+    {
+      "name": "balthazar",
+      "anim": "idle_aim_45down",
+      "frames_dir": "petal-panic/assets/heroes/balthazar",
+      "frames": [
+        {
+          "file": "idle_aim_45down_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            17,
+            0,
+            233,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            280,
+            0,
+            227,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            537,
+            0,
+            223,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            779,
+            0,
+            267,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            3,
+            239,
+            261,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            268,
+            239,
+            251,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            519,
+            239,
+            260,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            780,
+            239,
+            265,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            0,
+            478,
+            268,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            281,
+            478,
+            225,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            535,
+            478,
+            227,
+            240
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            798,
+            478,
+            228,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f13.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            17,
+            718,
+            234,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f14.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            275,
+            718,
+            236,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f15.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            530,
+            718,
+            237,
+            239
+          ]
+        },
+        {
+          "file": "idle_aim_45down_f16.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            793,
+            718,
+            238,
+            239
+          ]
+        }
+      ]
+    }
+  ]
+}

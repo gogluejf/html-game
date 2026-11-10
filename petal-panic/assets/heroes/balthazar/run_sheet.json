@@ -1,28 +1,29 @@
 {
  "file": "petal-panic/assets/heroes/balthazar/run_sheet.png",
- "size": "1511x291",
- "rows": 1,
- "cols": 5,
+ "size": "1212x1049",
+ "rows": 4,
+ "cols": 4,
  "kind": "animation",
- "description": "balthazar run (5 frames) \u2014 reassembled from frames",
+ "description": "balthazar run (16 frames from GIF)",
  "entities": [
   {
    "name": "balthazar",
    "anim": "run",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
    "frames": [
     {
      "file": "run_f1.png",
      "row": 0,
      "col": 0,
      "bbox": [
+      17,
       0,
-      0,
-      311,
-      291
+      284,
+      260
      ],
      "offset": {
-      "x": 0,
-      "y": -291
+      "x": -142,
+      "y": -260
      },
      "scale": {
       "sx": 1,
@@ -36,14 +37,14 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      311,
-      1,
-      284,
-      288
+      322,
+      0,
+      288,
+      259
      ],
      "offset": {
-      "x": 0,
-      "y": -288
+      "x": -144,
+      "y": -259
      },
      "scale": {
       "sx": 1,
@@ -57,14 +58,14 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      595,
-      1,
-      305,
-      289
+      614,
+      3,
+      290,
+      254
      ],
      "offset": {
-      "x": 0,
-      "y": -289
+      "x": -145,
+      "y": -254
      },
      "scale": {
       "sx": 1,
@@ -78,14 +79,14 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      900,
-      0,
-      297,
-      290
+      905,
+      9,
+      307,
+      242
      ],
      "offset": {
-      "x": 0,
-      "y": -290
+      "x": -153.5,
+      "y": -242
      },
      "scale": {
       "sx": 1,
@@ -96,17 +97,248 @@
     },
     {
      "file": "run_f5.png",
-     "row": 0,
-     "col": 4,
+     "row": 1,
+     "col": 0,
      "bbox": [
-      1197,
       0,
-      314,
-      291
+      265,
+      319,
+      256
      ],
      "offset": {
-      "x": 0,
-      "y": -291
+      "x": -159.5,
+      "y": -256
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      319,
+      260,
+      294,
+      266
+     ],
+     "offset": {
+      "x": -147,
+      "y": -266
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      615,
+      265,
+      287,
+      256
+     ],
+     "offset": {
+      "x": -143.5,
+      "y": -256
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      915,
+      267,
+      287,
+      251
+     ],
+     "offset": {
+      "x": -143.5,
+      "y": -251
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      14,
+      527,
+      290,
+      253
+     ],
+     "offset": {
+      "x": -145,
+      "y": -253
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      321,
+      526,
+      289,
+      255
+     ],
+     "offset": {
+      "x": -144.5,
+      "y": -255
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      613,
+      528,
+      292,
+      251
+     ],
+     "offset": {
+      "x": -146,
+      "y": -251
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      912,
+      530,
+      293,
+      247
+     ],
+     "offset": {
+      "x": -146.5,
+      "y": -247
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      2,
+      794,
+      315,
+      242
+     ],
+     "offset": {
+      "x": -157.5,
+      "y": -242
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      320,
+      797,
+      291,
+      236
+     ],
+     "offset": {
+      "x": -145.5,
+      "y": -236
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      613,
+      781,
+      291,
+      267
+     ],
+     "offset": {
+      "x": -145.5,
+      "y": -267
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      913,
+      781,
+      291,
+      268
+     ],
+     "offset": {
+      "x": -145.5,
+      "y": -268
      },
      "scale": {
       "sx": 1,
@@ -116,22 +348,20 @@
      "durUnits": 1
     }
    ],
-   "frames_dir": "petal-panic/assets/heroes/balthazar",
    "fps": 8,
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": 0,
-    "y": -283,
-    "w": 303,
-    "h": 283
+    "x": -138,
+    "y": -252,
+    "w": 276,
+    "h": 252
    },
    "pivot": {
-    "x": 152,
-    "y": -141
+    "x": 0,
+    "y": -126
    },
    "markers": []
   }
- ],
- "updated": "2026-10-21"
+ ]
 }

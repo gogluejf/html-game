@@ -1,0 +1,193 @@
+{
+  "file": "petal-panic/assets/heroes/balthazar/run_aim_45up_sheet.png",
+  "size": "1224x1164",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "balthazar run_aim_45up (16 frames from GIF)",
+  "entities": [
+    {
+      "name": "balthazar",
+      "anim": "run_aim_45up",
+      "frames_dir": "petal-panic/assets/heroes/balthazar",
+      "frames": [
+        {
+          "file": "run_aim_45up_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            2,
+            2,
+            298,
+            281
+          ]
+        },
+        {
+          "file": "run_aim_45up_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            307,
+            0,
+            298,
+            286
+          ]
+        },
+        {
+          "file": "run_aim_45up_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            620,
+            3,
+            289,
+            280
+          ]
+        },
+        {
+          "file": "run_aim_45up_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            926,
+            5,
+            292,
+            276
+          ]
+        },
+        {
+          "file": "run_aim_45up_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            286,
+            302,
+            290
+          ]
+        },
+        {
+          "file": "run_aim_45up_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            302,
+            286,
+            308,
+            290
+          ]
+        },
+        {
+          "file": "run_aim_45up_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            610,
+            287,
+            310,
+            288
+          ]
+        },
+        {
+          "file": "run_aim_45up_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            921,
+            286,
+            302,
+            290
+          ]
+        },
+        {
+          "file": "run_aim_45up_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            2,
+            579,
+            298,
+            288
+          ]
+        },
+        {
+          "file": "run_aim_45up_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            305,
+            584,
+            302,
+            279
+          ]
+        },
+        {
+          "file": "run_aim_45up_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            617,
+            578,
+            296,
+            291
+          ]
+        },
+        {
+          "file": "run_aim_45up_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            923,
+            576,
+            297,
+            295
+          ]
+        },
+        {
+          "file": "run_aim_45up_f13.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            2,
+            871,
+            298,
+            293
+          ]
+        },
+        {
+          "file": "run_aim_45up_f14.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            305,
+            872,
+            302,
+            291
+          ]
+        },
+        {
+          "file": "run_aim_45up_f15.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            610,
+            873,
+            310,
+            288
+          ]
+        },
+        {
+          "file": "run_aim_45up_f16.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            920,
+            875,
+            304,
+            284
+          ]
+        }
+      ]
+    }
+  ]
+}
