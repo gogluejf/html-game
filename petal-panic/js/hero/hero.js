@@ -14,6 +14,7 @@ import { SPECIAL_TYPES } from '../objects/specialWeapons.js';
 import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats } from './heroDefs.js';
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { heroDamage } from '../combat/damage.js';
+import { JUMP_HEIGHT_SCALE } from './heroSprites.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
@@ -1268,6 +1269,24 @@ export class Hero extends Entity {
    */
   applyCrouchHeight(crouching) {
     const hs = crouching ? CROUCH_HEIGHT_SCALE : 1;
+    if (hs === this._targetHScale) return;
+    const prevH = this.h;
+    this._targetHScale = hs;
+    const newH = this.h;
+    if (newH !== prevH) this.y += prevH - newH;
+  }
+
+  /**
+   * Apply/clear the airborne jump pose height. Same pure-code transform as
+   * crouch but driven by the JUMP state (JUMP_HEIGHT_SCALE): while airborne in
+   * the jump/djump/fall phase the body tucks to half height, and landing
+   * restores full height. Feet stay planted via the same y-delta adjust.
+   * Kept separate from applyCrouchHeight so the two poses can be tuned
+   * independently (both currently 0.5).
+   * @param {boolean} airborne
+   */
+  applyJumpHeight(airborne) {
+    const hs = airborne ? JUMP_HEIGHT_SCALE : 1;
     if (hs === this._targetHScale) return;
     const prevH = this.h;
     this._targetHScale = hs;

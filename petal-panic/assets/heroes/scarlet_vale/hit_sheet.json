@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/heroes/scarlet_vale/hit_sheet.png",
+ "size": "2069x501",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "scarlet_vale hit (6 frames)",
+ "entities": [
+  {
+   "name": "scarlet_vale",
+   "anim": "hit",
+   "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+   "frames": [
+    {
+     "file": "hit_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      31,
+      291,
+      438
+     ]
+    },
+    {
+     "file": "hit_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      291,
+      32,
+      336,
+      436
+     ]
+    },
+    {
+     "file": "hit_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      627,
+      24,
+      348,
+      453
+     ]
+    },
+    {
+     "file": "hit_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      975,
+      38,
+      364,
+      424
+     ]
+    },
+    {
+     "file": "hit_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1339,
+      13,
+      349,
+      474
+     ]
+    },
+    {
+     "file": "hit_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1688,
+      0,
+      381,
+      501
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-10"
+}
