@@ -100,6 +100,12 @@ const RUN_SPEED_THRESHOLD = 20;
 // constant — no sheet data.
 export const JUMP_HEIGHT_SCALE = 0.5;
 
+// Idle playback pattern: while standing still, play the `idle` anim for this
+// many full cycles, then (if an `idle_special` sheet exists) the special idle
+// for that many cycles — then repeat. Pure code constant; no sheet data.
+export const IDLE_CYCLE_COUNT = 3;
+export const IDLE_SPECIAL_CYCLE_COUNT = 1;
+
 /** heroDef.id → assets/heroes/ folder name (single source of truth). */
 export const HERO_SPRITE_DIRS = { scarlet: 'scarlet_vale', balthazar: 'balthazar', bruno: 'bruno', ringo: 'ringo' };
 
@@ -120,7 +126,7 @@ const AIM_SUFFIX = { 0: 'front', 1: '45up', 2: 'up', 3: '45up', 4: 'front', 5: '
  *   grounded+shooting→ {idle|run}_aim_{dir} when a sheet exists, else idle/run
  *   grounded         → run | idle
  */
-export function updateHeroLocomotionAnim(hero, input) {
+export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   if (!hero.sprite?.anims) return;
   const shooting = !!(input && input.shoot);
 
@@ -214,5 +220,24 @@ export function updateHeroLocomotionAnim(hero, input) {
     try {
       hero.setAnim(want);
     } catch { /* anim missing for this hero — keep current */ }
+  }
+
+  // Idle pattern: N cycles of `idle`, then M cycles of `idle_special` (if the
+  // sheet exists), looping. Driven by wall-clock time so it survives setAnim()
+  // re-creations (which reset the SpritePlayer). Only active while standing
+  // still with no aim override — run/aim/crouch/air own their anims above.
+  if (!running && !shooting && hero._spriteAnim === 'idle' && hero.sprite.anims.idle_special) {
+    const idleDur = hero.sprite.anims.idle.cycleDuration * IDLE_CYCLE_COUNT;
+    const specialDur = hero.sprite.anims.idle_special.cycleDuration * IDLE_SPECIAL_CYCLE_COUNT;
+    const t = (hero._idlePatternT || 0) + dt;
+    hero._idlePatternT = t % (idleDur + specialDur);
+    const wantIdle = hero._idlePatternT < idleDur ? 'idle' : 'idle_special';
+    if (hero._spriteAnim !== wantIdle) {
+      try { hero.setAnim(wantIdle); } catch { /* keep current */ }
+    }
+  } else if (hero._spriteAnim !== 'idle') {
+    // Left the idle state (run/jump/crouch/aim…) — restart the pattern from
+    // the top next time we stand still.
+    delete hero._idlePatternT;
   }
 }

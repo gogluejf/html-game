@@ -1054,7 +1054,7 @@ export function update(dt) {
   // Sheet-sprite locomotion + aim binding (idle/run/crouch × 5 aim dirs).
   // Runs after physics + shooting so vx, grounded and shoot intent are current;
   // no-op when the hero has no sprite data attached.
-  updateHeroLocomotionAnim(hero, intent);
+  updateHeroLocomotionAnim(hero, intent, dt);
 
   // 1a. energy / death / respawn / gameover flow.
   //     Trigger: if energy hit 0 (and no death already running) start the
