@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/heroes/balthazar/idle_aim_front_sheet.png",
+ "size": "3064x416",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "balthazar idle_aim_front (8 frames)",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "idle_aim_front",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "frames": [
+    {
+     "file": "idle_aim_front_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      371,
+      416
+     ]
+    },
+    {
+     "file": "idle_aim_front_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      371,
+      0,
+      369,
+      416
+     ]
+    },
+    {
+     "file": "idle_aim_front_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      740,
+      0,
+      402,
+      416
+     ]
+    },
+    {
+     "file": "idle_aim_front_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1142,
+      0,
+      428,
+      416
+     ]
+    },
+    {
+     "file": "idle_aim_front_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1570,
+      0,
+      393,
+      415
+     ]
+    },
+    {
+     "file": "idle_aim_front_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1963,
+      0,
+      364,
+      415
+     ]
+    },
+    {
+     "file": "idle_aim_front_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      2327,
+      0,
+      368,
+      415
+     ]
+    },
+    {
+     "file": "idle_aim_front_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      2695,
+      0,
+      369,
+      415
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-10"
+}

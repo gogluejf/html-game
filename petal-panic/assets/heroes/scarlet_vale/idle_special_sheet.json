@@ -1,0 +1,373 @@
+{
+ "label": "heroes",
+ "file": "petal-panic/assets/heroes/scarlet_vale/idle_special_sheet.png",
+ "rows": 2,
+ "cols": 8,
+ "size": "2172x724",
+ "description": "Scarlet idle, sixteen frames",
+ "entities": [
+  {
+   "name": "scarlet_vale",
+   "anim": "idle_special",
+   "frames": [
+    {
+     "file": "idle_special_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      18,
+      6,
+      243,
+      349
+     ],
+     "offset": {
+      "x": -121.5,
+      "y": -349
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      288,
+      8,
+      246,
+      347
+     ],
+     "offset": {
+      "x": -123,
+      "y": -347
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      559,
+      8,
+      247,
+      347
+     ],
+     "offset": {
+      "x": -123.5,
+      "y": -347
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      829,
+      7,
+      247,
+      348
+     ],
+     "offset": {
+      "x": -123.5,
+      "y": -348
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1100,
+      6,
+      249,
+      348
+     ],
+     "offset": {
+      "x": -124.5,
+      "y": -348
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1373,
+      7,
+      247,
+      347
+     ],
+     "offset": {
+      "x": -123.5,
+      "y": -347
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1645,
+      6,
+      248,
+      349
+     ],
+     "offset": {
+      "x": -124,
+      "y": -349
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1919,
+      7,
+      245,
+      348
+     ],
+     "offset": {
+      "x": -122.5,
+      "y": -348
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f9.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      16,
+      369,
+      247,
+      347
+     ],
+     "offset": {
+      "x": -123.5,
+      "y": -347
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f10.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      287,
+      370,
+      248,
+      346
+     ],
+     "offset": {
+      "x": -124,
+      "y": -346
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f11.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      560,
+      371,
+      246,
+      345
+     ],
+     "offset": {
+      "x": -123,
+      "y": -345
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f12.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      831,
+      371,
+      246,
+      345
+     ],
+     "offset": {
+      "x": -123,
+      "y": -345
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f13.png",
+     "row": 1,
+     "col": 4,
+     "bbox": [
+      1103,
+      371,
+      247,
+      345
+     ],
+     "offset": {
+      "x": -123.5,
+      "y": -345
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f14.png",
+     "row": 1,
+     "col": 5,
+     "bbox": [
+      1377,
+      371,
+      245,
+      345
+     ],
+     "offset": {
+      "x": -122.5,
+      "y": -345
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f15.png",
+     "row": 1,
+     "col": 6,
+     "bbox": [
+      1647,
+      370,
+      247,
+      346
+     ],
+     "offset": {
+      "x": -123.5,
+      "y": -346
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f16.png",
+     "row": 1,
+     "col": 7,
+     "bbox": [
+      1918,
+      371,
+      245,
+      345
+     ],
+     "offset": {
+      "x": -122.5,
+      "y": -345
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+   "fps": 11,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -56,
+    "y": -310,
+    "w": 146,
+    "h": 301
+   },
+   "pivot": {
+    "x": 3,
+    "y": -159
+   },
+   "markers": []
+  }
+ ],
+ "crop": {
+  "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+  "pass": "petal-panic/assets/heroes/scarlet_vale"
+ },
+ "kind": "animation",
+ "updated": "2026-11-08T04:16:11"
+}

@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/heroes/balthazar/idle_special_sheet.png",
+ "size": "2602x432",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "balthazar idle_special (8 frames)",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "idle_special",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "frames": [
+    {
+     "file": "idle_special_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      325,
+      432
+     ]
+    },
+    {
+     "file": "idle_special_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      325,
+      0,
+      325,
+      432
+     ]
+    },
+    {
+     "file": "idle_special_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      650,
+      0,
+      323,
+      432
+     ]
+    },
+    {
+     "file": "idle_special_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      973,
+      0,
+      325,
+      432
+     ]
+    },
+    {
+     "file": "idle_special_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1298,
+      0,
+      325,
+      432
+     ]
+    },
+    {
+     "file": "idle_special_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1623,
+      0,
+      326,
+      432
+     ]
+    },
+    {
+     "file": "idle_special_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1949,
+      0,
+      326,
+      432
+     ]
+    },
+    {
+     "file": "idle_special_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      2275,
+      0,
+      327,
+      432
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-10"
+}

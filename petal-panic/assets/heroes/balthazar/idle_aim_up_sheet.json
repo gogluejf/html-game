@@ -1,193 +1,106 @@
 {
-  "file": "petal-panic/assets/heroes/balthazar/idle_aim_up_sheet.png",
-  "size": "924x948",
-  "rows": 4,
-  "cols": 4,
-  "kind": "animation",
-  "description": "balthazar idle_aim_up (16 frames from GIF)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/balthazar/idle_aim_up_sheet.png",
+ "size": "2366x428",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "balthazar idle_aim_up (8 frames)",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "idle_aim_up",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "frames": [
     {
-      "name": "balthazar",
-      "anim": "idle_aim_up",
-      "frames_dir": "petal-panic/assets/heroes/balthazar",
-      "frames": [
-        {
-          "file": "idle_aim_up_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            8,
-            237,
-            230
-          ]
-        },
-        {
-          "file": "idle_aim_up_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            237,
-            9,
-            239,
-            229
-          ]
-        },
-        {
-          "file": "idle_aim_up_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            476,
-            9,
-            230,
-            229
-          ]
-        },
-        {
-          "file": "idle_aim_up_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            706,
-            0,
-            218,
-            247
-          ]
-        },
-        {
-          "file": "idle_aim_up_f5.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            9,
-            247,
-            218,
-            248
-          ]
-        },
-        {
-          "file": "idle_aim_up_f6.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            248,
-            247,
-            217,
-            248
-          ]
-        },
-        {
-          "file": "idle_aim_up_f7.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            482,
-            247,
-            217,
-            248
-          ]
-        },
-        {
-          "file": "idle_aim_up_f8.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            706,
-            247,
-            217,
-            247
-          ]
-        },
-        {
-          "file": "idle_aim_up_f9.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            10,
-            496,
-            217,
-            241
-          ]
-        },
-        {
-          "file": "idle_aim_up_f10.png",
-          "row": 2,
-          "col": 1,
-          "bbox": [
-            248,
-            495,
-            217,
-            243
-          ]
-        },
-        {
-          "file": "idle_aim_up_f11.png",
-          "row": 2,
-          "col": 2,
-          "bbox": [
-            482,
-            495,
-            217,
-            244
-          ]
-        },
-        {
-          "file": "idle_aim_up_f12.png",
-          "row": 2,
-          "col": 3,
-          "bbox": [
-            706,
-            501,
-            217,
-            231
-          ]
-        },
-        {
-          "file": "idle_aim_up_f13.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            10,
-            739,
-            217,
-            209
-          ]
-        },
-        {
-          "file": "idle_aim_up_f14.png",
-          "row": 3,
-          "col": 1,
-          "bbox": [
-            248,
-            742,
-            217,
-            203
-          ]
-        },
-        {
-          "file": "idle_aim_up_f15.png",
-          "row": 3,
-          "col": 2,
-          "bbox": [
-            482,
-            741,
-            218,
-            204
-          ]
-        },
-        {
-          "file": "idle_aim_up_f16.png",
-          "row": 3,
-          "col": 3,
-          "bbox": [
-            706,
-            742,
-            218,
-            203
-          ]
-        }
-      ]
+     "file": "idle_aim_up_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      33,
+      295,
+      362
+     ]
+    },
+    {
+     "file": "idle_aim_up_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      295,
+      34,
+      293,
+      359
+     ]
+    },
+    {
+     "file": "idle_aim_up_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      588,
+      28,
+      293,
+      371
+     ]
+    },
+    {
+     "file": "idle_aim_up_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      881,
+      0,
+      290,
+      428
+     ]
+    },
+    {
+     "file": "idle_aim_up_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1171,
+      1,
+      297,
+      425
+     ]
+    },
+    {
+     "file": "idle_aim_up_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1468,
+      12,
+      301,
+      404
+     ]
+    },
+    {
+     "file": "idle_aim_up_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1769,
+      15,
+      299,
+      397
+     ]
+    },
+    {
+     "file": "idle_aim_up_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      2068,
+      32,
+      298,
+      363
+     ]
     }
-  ]
+   ]
+  }
+ ],
+ "updated": "2026-11-10"
 }

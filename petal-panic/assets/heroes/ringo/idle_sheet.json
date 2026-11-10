@@ -1,193 +1,106 @@
 {
-  "file": "petal-panic/assets/heroes/ringo/idle_sheet.png",
-  "size": "921x1235",
-  "rows": 4,
-  "cols": 4,
-  "kind": "animation",
-  "description": "ringo idle (16 frames from GIF)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/ringo/idle_sheet.png",
+ "size": "2091x422",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "ringo idle (8 frames)",
+ "entities": [
+  {
+   "name": "ringo",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/heroes/ringo",
+   "frames": [
     {
-      "name": "ringo",
-      "anim": "idle",
-      "frames_dir": "petal-panic/assets/heroes/ringo",
-      "frames": [
-        {
-          "file": "idle_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            5,
-            0,
-            218,
-            310
-          ]
-        },
-        {
-          "file": "idle_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            234,
-            0,
-            217,
-            310
-          ]
-        },
-        {
-          "file": "idle_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            462,
-            0,
-            220,
-            310
-          ]
-        },
-        {
-          "file": "idle_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            691,
-            0,
-            226,
-            310
-          ]
-        },
-        {
-          "file": "idle_f5.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            1,
-            310,
-            227,
-            309
-          ]
-        },
-        {
-          "file": "idle_f6.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            229,
-            310,
-            228,
-            309
-          ]
-        },
-        {
-          "file": "idle_f7.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            457,
-            310,
-            231,
-            308
-          ]
-        },
-        {
-          "file": "idle_f8.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            688,
-            310,
-            233,
-            309
-          ]
-        },
-        {
-          "file": "idle_f9.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            0,
-            619,
-            229,
-            311
-          ]
-        },
-        {
-          "file": "idle_f10.png",
-          "row": 2,
-          "col": 1,
-          "bbox": [
-            229,
-            619,
-            227,
-            311
-          ]
-        },
-        {
-          "file": "idle_f11.png",
-          "row": 2,
-          "col": 2,
-          "bbox": [
-            458,
-            619,
-            229,
-            311
-          ]
-        },
-        {
-          "file": "idle_f12.png",
-          "row": 2,
-          "col": 3,
-          "bbox": [
-            695,
-            619,
-            219,
-            311
-          ]
-        },
-        {
-          "file": "idle_f13.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            5,
-            930,
-            218,
-            305
-          ]
-        },
-        {
-          "file": "idle_f14.png",
-          "row": 3,
-          "col": 1,
-          "bbox": [
-            234,
-            930,
-            217,
-            305
-          ]
-        },
-        {
-          "file": "idle_f15.png",
-          "row": 3,
-          "col": 2,
-          "bbox": [
-            463,
-            930,
-            218,
-            305
-          ]
-        },
-        {
-          "file": "idle_f16.png",
-          "row": 3,
-          "col": 3,
-          "bbox": [
-            695,
-            930,
-            218,
-            305
-          ]
-        }
-      ]
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      266,
+      421
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      266,
+      2,
+      263,
+      417
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      529,
+      7,
+      259,
+      407
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      788,
+      9,
+      257,
+      403
+     ]
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1045,
+      9,
+      258,
+      404
+     ]
+    },
+    {
+     "file": "idle_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1303,
+      6,
+      263,
+      409
+     ]
+    },
+    {
+     "file": "idle_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1566,
+      4,
+      262,
+      414
+     ]
+    },
+    {
+     "file": "idle_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1828,
+      0,
+      263,
+      422
+     ]
     }
-  ]
+   ]
+  }
+ ],
+ "updated": "2026-11-10"
 }
