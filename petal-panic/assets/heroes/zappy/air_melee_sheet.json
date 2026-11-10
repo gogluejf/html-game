@@ -1,0 +1,194 @@
+{
+ "file": "petal-panic/assets/heroes/zappy/air_melee_sheet.png",
+ "size": "947x1116",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "zappy air_melee (16 frames)",
+ "entities": [
+  {
+   "name": "zappy",
+   "anim": "air_melee",
+   "frames_dir": "petal-panic/assets/heroes/zappy",
+   "frames": [
+    {
+     "file": "air_melee_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      23,
+      17,
+      200,
+      233
+     ]
+    },
+    {
+     "file": "air_melee_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      264,
+      2,
+      198,
+      263
+     ]
+    },
+    {
+     "file": "air_melee_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      480,
+      0,
+      218,
+      268
+     ]
+    },
+    {
+     "file": "air_melee_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      711,
+      10,
+      222,
+      248
+     ]
+    },
+    {
+     "file": "air_melee_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      27,
+      288,
+      192,
+      246
+     ]
+    },
+    {
+     "file": "air_melee_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      272,
+      278,
+      182,
+      265
+     ]
+    },
+    {
+     "file": "air_melee_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      488,
+      277,
+      202,
+      268
+     ]
+    },
+    {
+     "file": "air_melee_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      707,
+      268,
+      230,
+      286
+     ]
+    },
+    {
+     "file": "air_melee_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      14,
+      554,
+      217,
+      283
+     ]
+    },
+    {
+     "file": "air_melee_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      246,
+      560,
+      234,
+      271
+     ]
+    },
+    {
+     "file": "air_melee_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      487,
+      556,
+      203,
+      278
+     ]
+    },
+    {
+     "file": "air_melee_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      698,
+      583,
+      249,
+      225
+     ]
+    },
+    {
+     "file": "air_melee_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      0,
+      853,
+      246,
+      246
+     ]
+    },
+    {
+     "file": "air_melee_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      249,
+      837,
+      228,
+      279
+     ]
+    },
+    {
+     "file": "air_melee_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      480,
+      842,
+      218,
+      269
+     ]
+    },
+    {
+     "file": "air_melee_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      707,
+      851,
+      231,
+      251
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-10"
+}

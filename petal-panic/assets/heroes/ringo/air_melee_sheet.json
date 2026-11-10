@@ -1,0 +1,368 @@
+{
+ "file": "petal-panic/assets/heroes/ringo/air_melee_sheet.png",
+ "size": "1085x1190",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "ringo air_melee (16 frames)",
+ "entities": [
+  {
+   "name": "ringo",
+   "anim": "air_melee",
+   "frames_dir": "petal-panic/assets/heroes/ringo",
+   "frames": [
+    {
+     "file": "air_melee_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      33,
+      254,
+      236
+     ],
+     "offset": {
+      "x": -127,
+      "y": -236
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      255,
+      9,
+      246,
+      284
+     ],
+     "offset": {
+      "x": -123,
+      "y": -284
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      529,
+      0,
+      234,
+      303
+     ],
+     "offset": {
+      "x": -117,
+      "y": -303
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      804,
+      1,
+      267,
+      301
+     ],
+     "offset": {
+      "x": -133.5,
+      "y": -301
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      2,
+      304,
+      249,
+      296
+     ],
+     "offset": {
+      "x": -124.5,
+      "y": -296
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      254,
+      306,
+      248,
+      293
+     ],
+     "offset": {
+      "x": -124,
+      "y": -293
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      502,
+      303,
+      288,
+      299
+     ],
+     "offset": {
+      "x": -144,
+      "y": -299
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      790,
+      308,
+      295,
+      289
+     ],
+     "offset": {
+      "x": -147.5,
+      "y": -289
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      10,
+      606,
+      234,
+      290
+     ],
+     "offset": {
+      "x": -117,
+      "y": -290
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      258,
+      602,
+      240,
+      299
+     ],
+     "offset": {
+      "x": -120,
+      "y": -299
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      534,
+      603,
+      223,
+      296
+     ],
+     "offset": {
+      "x": -111.5,
+      "y": -296
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      822,
+      605,
+      231,
+      292
+     ],
+     "offset": {
+      "x": -115.5,
+      "y": -292
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      14,
+      903,
+      226,
+      285
+     ],
+     "offset": {
+      "x": -113,
+      "y": -285
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      257,
+      903,
+      242,
+      285
+     ],
+     "offset": {
+      "x": -121,
+      "y": -285
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      525,
+      901,
+      241,
+      288
+     ],
+     "offset": {
+      "x": -120.5,
+      "y": -288
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      818,
+      901,
+      238,
+      289
+     ],
+     "offset": {
+      "x": -119,
+      "y": -289
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 16,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -123,
+    "y": -228,
+    "w": 246,
+    "h": 228
+   },
+   "pivot": {
+    "x": 0,
+    "y": -114
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-10"
+}

@@ -1,193 +1,326 @@
 {
-  "file": "petal-panic/assets/heroes/bruno/jump_sheet.png",
-  "size": "1138x1103",
-  "rows": 4,
-  "cols": 4,
-  "kind": "animation",
-  "description": "bruno jump (16 frames from GIF)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/bruno/jump_sheet.png",
+ "size": "1058x1109",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "bruno jump (14 frames)",
+ "entities": [
+  {
+   "name": "bruno",
+   "anim": "jump",
+   "frames_dir": "petal-panic/assets/heroes/bruno",
+   "frames": [
     {
-      "name": "bruno",
-      "anim": "jump",
-      "frames_dir": "petal-panic/assets/heroes/bruno",
-      "frames": [
-        {
-          "file": "jump_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            34,
-            0,
-            230,
-            295
-          ]
-        },
-        {
-          "file": "jump_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            316,
-            23,
-            248,
-            249
-          ]
-        },
-        {
-          "file": "jump_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            582,
-            32,
-            273,
-            230
-          ]
-        },
-        {
-          "file": "jump_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            855,
-            30,
-            283,
-            234
-          ]
-        },
-        {
-          "file": "jump_f5.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            0,
-            315,
-            299,
-            241
-          ]
-        },
-        {
-          "file": "jump_f6.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            299,
-            309,
-            283,
-            254
-          ]
-        },
-        {
-          "file": "jump_f7.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            610,
-            296,
-            216,
-            279
-          ]
-        },
-        {
-          "file": "jump_f8.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            878,
-            295,
-            236,
-            282
-          ]
-        },
-        {
-          "file": "jump_f9.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            25,
-            581,
-            248,
-            250
-          ]
-        },
-        {
-          "file": "jump_f10.png",
-          "row": 2,
-          "col": 1,
-          "bbox": [
-            311,
-            588,
-            258,
-            237
-          ]
-        },
-        {
-          "file": "jump_f11.png",
-          "row": 2,
-          "col": 2,
-          "bbox": [
-            601,
-            577,
-            234,
-            259
-          ]
-        },
-        {
-          "file": "jump_f12.png",
-          "row": 2,
-          "col": 3,
-          "bbox": [
-            881,
-            588,
-            231,
-            236
-          ]
-        },
-        {
-          "file": "jump_f13.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            17,
-            851,
-            264,
-            237
-          ]
-        },
-        {
-          "file": "jump_f14.png",
-          "row": 3,
-          "col": 1,
-          "bbox": [
-            316,
-            837,
-            248,
-            265
-          ]
-        },
-        {
-          "file": "jump_f15.png",
-          "row": 3,
-          "col": 2,
-          "bbox": [
-            594,
-            836,
-            249,
-            267
-          ]
-        },
-        {
-          "file": "jump_f16.png",
-          "row": 3,
-          "col": 3,
-          "bbox": [
-            870,
-            851,
-            253,
-            237
-          ]
-        }
-      ]
+     "file": "jump_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      9,
+      0,
+      230,
+      295
+     ],
+     "offset": {
+      "x": 0,
+      "y": -295
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      251,
+      23,
+      248,
+      249
+     ],
+     "offset": {
+      "x": 0,
+      "y": -249
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      502,
+      32,
+      273,
+      230
+     ],
+     "offset": {
+      "x": 0,
+      "y": -230
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      775,
+      20,
+      283,
+      254
+     ],
+     "offset": {
+      "x": 0,
+      "y": -254
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      16,
+      296,
+      216,
+      279
+     ],
+     "offset": {
+      "x": 0,
+      "y": -279
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      257,
+      295,
+      236,
+      282
+     ],
+     "offset": {
+      "x": 0,
+      "y": -282
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      514,
+      311,
+      248,
+      250
+     ],
+     "offset": {
+      "x": 0,
+      "y": -250
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      787,
+      317,
+      258,
+      237
+     ],
+     "offset": {
+      "x": 0,
+      "y": -237
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      7,
+      580,
+      234,
+      259
+     ],
+     "offset": {
+      "x": 0,
+      "y": -259
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      260,
+      591,
+      231,
+      236
+     ],
+     "offset": {
+      "x": 0,
+      "y": -236
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      506,
+      591,
+      264,
+      237
+     ],
+     "offset": {
+      "x": 0,
+      "y": -237
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      792,
+      577,
+      248,
+      265
+     ],
+     "offset": {
+      "x": 0,
+      "y": -265
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      0,
+      842,
+      249,
+      267
+     ],
+     "offset": {
+      "x": 0,
+      "y": -267
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      249,
+      857,
+      253,
+      237
+     ],
+     "offset": {
+      "x": 0,
+      "y": -237
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ]
+   ],
+   "fps": 13,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -287,
+    "w": 222,
+    "h": 287
+   },
+   "pivot": {
+    "x": 111,
+    "y": -143.5
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-10"
 }

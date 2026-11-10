@@ -1,193 +1,284 @@
 {
-  "file": "petal-panic/assets/heroes/ringo/jump_sheet.png",
-  "size": "1051x1089",
-  "rows": 4,
-  "cols": 4,
-  "kind": "animation",
-  "description": "ringo jump (16 frames from GIF)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/ringo/jump_sheet.png",
+ "size": "1063x786",
+ "rows": 3,
+ "cols": 4,
+ "kind": "animation",
+ "description": "ringo jump (12 frames)",
+ "entities": [
+  {
+   "name": "ringo",
+   "anim": "jump",
+   "frames_dir": "petal-panic/assets/heroes/ringo",
+   "frames": [
     {
-      "name": "ringo",
-      "anim": "jump",
-      "frames_dir": "petal-panic/assets/heroes/ringo",
-      "frames": [
-        {
-          "file": "jump_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            21,
-            0,
-            204,
-            280
-          ]
-        },
-        {
-          "file": "jump_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            253,
-            42,
-            259,
-            196
-          ]
-        },
-        {
-          "file": "jump_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            541,
-            31,
-            233,
-            218
-          ]
-        },
-        {
-          "file": "jump_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            814,
-            22,
-            218,
-            235
-          ]
-        },
-        {
-          "file": "jump_f5.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            24,
-            291,
-            198,
-            250
-          ]
-        },
-        {
-          "file": "jump_f6.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            281,
-            287,
-            203,
-            258
-          ]
-        },
-        {
-          "file": "jump_f7.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            553,
-            282,
-            209,
-            269
-          ]
-        },
-        {
-          "file": "jump_f8.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            818,
-            280,
-            211,
-            273
-          ]
-        },
-        {
-          "file": "jump_f9.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            0,
-            553,
-            247,
-            268
-          ]
-        },
-        {
-          "file": "jump_f10.png",
-          "row": 2,
-          "col": 1,
-          "bbox": [
-            247,
-            580,
-            272,
-            214
-          ]
-        },
-        {
-          "file": "jump_f11.png",
-          "row": 2,
-          "col": 2,
-          "bbox": [
-            519,
-            588,
-            276,
-            197
-          ]
-        },
-        {
-          "file": "jump_f12.png",
-          "row": 2,
-          "col": 3,
-          "bbox": [
-            815,
-            561,
-            216,
-            251
-          ]
-        },
-        {
-          "file": "jump_f13.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            11,
-            823,
-            225,
-            263
-          ]
-        },
-        {
-          "file": "jump_f14.png",
-          "row": 3,
-          "col": 1,
-          "bbox": [
-            266,
-            821,
-            233,
-            268
-          ]
-        },
-        {
-          "file": "jump_f15.png",
-          "row": 3,
-          "col": 2,
-          "bbox": [
-            519,
-            852,
-            277,
-            206
-          ]
-        },
-        {
-          "file": "jump_f16.png",
-          "row": 3,
-          "col": 3,
-          "bbox": [
-            796,
-            856,
-            255,
-            198
-          ]
-        }
-      ]
+     "file": "jump_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      27,
+      259,
+      196
+     ],
+     "offset": {
+      "x": 0,
+      "y": -196
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      278,
+      16,
+      233,
+      218
+     ],
+     "offset": {
+      "x": 0,
+      "y": -218
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      560,
+      7,
+      218,
+      235
+     ],
+     "offset": {
+      "x": 0,
+      "y": -235
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      836,
+      0,
+      198,
+      250
+     ],
+     "offset": {
+      "x": 0,
+      "y": -250
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      6,
+      250,
+      247,
+      268
+     ],
+     "offset": {
+      "x": 0,
+      "y": -268
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      259,
+      277,
+      272,
+      214
+     ],
+     "offset": {
+      "x": 0,
+      "y": -214
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      531,
+      285,
+      276,
+      197
+     ],
+     "offset": {
+      "x": 0,
+      "y": -197
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      827,
+      258,
+      216,
+      251
+     ],
+     "offset": {
+      "x": 0,
+      "y": -251
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      17,
+      520,
+      225,
+      263
+     ],
+     "offset": {
+      "x": 0,
+      "y": -263
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      278,
+      518,
+      233,
+      268
+     ],
+     "offset": {
+      "x": 0,
+      "y": -268
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      531,
+      549,
+      277,
+      206
+     ],
+     "offset": {
+      "x": 0,
+      "y": -206
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "jump_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      808,
+      553,
+      255,
+      198
+     ],
+     "offset": {
+      "x": 0,
+      "y": -198
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ]
+   ],
+   "fps": 13,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 0,
+    "y": -188,
+    "w": 251,
+    "h": 188
+   },
+   "pivot": {
+    "x": 126,
+    "y": -94
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-10"
 }

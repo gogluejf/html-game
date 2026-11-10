@@ -1,0 +1,158 @@
+{
+ "file": "petal-panic/assets/heroes/scarlet_vale/air_melee_sheet.png",
+ "size": "1961x796",
+ "rows": 2,
+ "cols": 4,
+ "kind": "animation",
+ "description": "scarlet_vale air_melee (6 frames)",
+ "entities": [
+  {
+   "name": "scarlet_vale",
+   "anim": "air_melee",
+   "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+   "frames": [
+    {
+     "file": "air_melee_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      105,
+      0,
+      380,
+      418
+     ],
+     "offset": {
+      "x": 0,
+      "y": -418
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      590,
+      1,
+      413,
+      416
+     ],
+     "offset": {
+      "x": 0,
+      "y": -416
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1003,
+      19,
+      439,
+      379
+     ],
+     "offset": {
+      "x": 45,
+      "y": -378
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1442,
+      18,
+      519,
+      382
+     ],
+     "offset": {
+      "x": 6,
+      "y": -382
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      425,
+      590,
+      363
+     ],
+     "offset": {
+      "x": 46,
+      "y": -364
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "air_melee_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      602,
+      418,
+      388,
+      378
+     ],
+     "offset": {
+      "x": 0,
+      "y": -378
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 10,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 117,
+    "y": -340,
+    "w": 178,
+    "h": 327
+   },
+   "pivot": {
+    "x": 186,
+    "y": -205
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-10"
+}
