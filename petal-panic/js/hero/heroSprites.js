@@ -147,6 +147,11 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // idle/run/crouch — no per-attack end-of-swing reset needed.
   if (hero.specialMeleeActive && hero.sprite.anims.super_melee) {
     delete hero._idlePatternClock; // left idle — restart pattern next stand-still
+    // If we landed mid-swing, the airborne jump-tuck (JUMP_HEIGHT_SCALE) must
+    // not persist into the grounded attack — restore full standing height so
+    // the super_melee art + hitbox render at correct size for the rest of the
+    // swing. No-op while genuinely airborne (applyJumpHeight is idempotent).
+    if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
     if (hero._spriteAnim !== 'super_melee') {
       try { hero.setAnim('super_melee'); } catch { /* keep current */ }
     }
@@ -154,6 +159,7 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   }
   if (hero.meleeActive && hero.sprite.anims.melee) {
     delete hero._idlePatternClock;
+    if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
     if (hero._spriteAnim !== 'melee') {
       try { hero.setAnim('melee'); } catch { /* keep current */ }
     }
