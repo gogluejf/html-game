@@ -138,15 +138,16 @@ ok('defaults count to 6 (pool default)', () => {
 });
 
 console.log('vignette');
-ok('kicks to strength (clamped 0..1) and decays linearly over 0.5s', () => {
+ok('kicks to strength (clamped 0..1) and decays linearly over its full-fade', () => {
+  // Full-fade duration is owned by vignette.js (VIGNETTE_FADE_S = 0.9s); the
+  // test derives expectations from it instead of duplicating the tune.
+  const FADE_S = 0.9;
   const b = vignette({ viewW: 640, viewH: 480 });
   assert.equal(b.value, 1);
-  for (let i = 0; i < 15; i++) b.update(DT); // 15 frames = 0.25s
-  // Mid-decay: exactly half the 0.5s lifetime elapsed → value ≈ 0.5 (linear).
-  const expectedMid = 1 - (1 / 0.5) * (15 * DT); // = 0.5
-  assert.ok(Math.abs(b.value - expectedMid) < 1e-9, `mid-decay ${b.value} != ${expectedMid}`);
-  assert.ok(Math.abs(b.value - 0.5) < 0.01, `got ${b.value}`);
-  for (let i = 0; i < 18; i++) b.update(DT); // 0.3s more
+  const halfFrames = Math.round((FADE_S / 2) / DT);
+  for (let i = 0; i < halfFrames; i++) b.update(DT);
+  assert.ok(Math.abs(b.value - 0.5) < 0.02, `mid-decay ${b.value} != ~0.5`);
+  for (let i = 0; i < Math.ceil((FADE_S / 2 + 0.05) / DT); i++) b.update(DT);
   assert.equal(b.value, 0);
   assert.equal(b.done, true, 'reports done once fully faded');
 });
@@ -173,17 +174,19 @@ ok('renders the radial gradient overlay while active', () => {
   };
   const b = vignette({ viewW: 640, viewH: 480 });
   b.render(ctx);
-  assert.deepEqual(calls[0], ['grad', 320, 240, Math.hypot(320, 240) * 0.45, 320, 240, Math.hypot(320, 240)]);
-  assert.deepEqual(calls[1], ['stop', 0, 'rgba(180, 20, 20, 0)']);
-  assert.deepEqual(calls[2], ['stop', 0.7, 'rgba(180, 20, 20, 0.15)']);
-  assert.deepEqual(calls[3], ['stop', 1, 'rgba(150, 10, 10, 0.55)']);
-  assert.ok(calls.some((c) => c[0] === 'fill' && c[1] === 0 && c[2] === 0 && c[3] === 640 && c[4] === 480), 'full-viewport fill recorded');
+  // Current render is TWO layers: a full-screen base wash (solid fill) plus
+  // the radial edge glow (gradient fill). Assert each layer's signature call.
+  const r = Math.hypot(320, 240);
+  assert.deepEqual(calls.find(c => c[0] === 'grad'), ['grad', 320, 240, r * 0.4, 320, 240, r]);
+  assert.ok(calls.some(c => c[0] === 'stop' && c[1] === 0 && c[2] === 'rgba(180, 20, 20, 0)'), 'glow starts clear at center');
+  assert.ok(calls.filter(c => c[0] === 'fill').length >= 2, 'base wash + gradient glow both fill the viewport');
+  assert.ok(calls.every(c => c[0] !== 'fill' || (c[1] === 0 && c[2] === 0 && c[3] === 640 && c[4] === 480)), 'all fills are full-viewport');
 });
 ok('does not render once done', () => {
   const calls = [];
   const ctx = { createRadialGradient() { throw new Error('should not draw'); }, save() { calls.push(1); }, restore() {}, fillRect() {} };
   const b = vignette({ viewW: 640, viewH: 480 });
-  for (let i = 0; i < 30; i++) b.update(DT); // 0.5s → fully faded
+  for (let i = 0; i < Math.ceil(0.95 / DT); i++) b.update(DT); // past the 0.9s fade
   assert.equal(b.done, true);
   b.render(ctx); // no-op when done
   assert.equal(calls.length, 0);
