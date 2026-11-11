@@ -46,12 +46,12 @@
 import { tintedImage } from './spriteFlash.js';
 
 const DEFAULT_PHASES = [
-  { name: 'white',  dur: 16 },
-  { name: 'orange', dur: 16 },
-  { name: 'white',  dur: 16 },
-  { name: 'black',  dur: 16 },
-  { name: 'normal', dur: 24 },
-  { name: 'gone',   dur: 112 },
+  { name: 'white',  dur: 24 },
+  { name: 'orange', dur: 24 },
+  { name: 'white',  dur: 24 },
+  { name: 'black',  dur: 24 },
+  { name: 'normal', dur: 12 },
+  { name: 'gone',   dur: 48 },
 ];
 const PHASE_COLORS = {
   white:  '#ffffff',
@@ -118,7 +118,11 @@ export function invulnFlicker(params = {}, carrier = null) {
       drawNormal(ctx, c);
       ctx.restore();
     } else if (phase === 'normal' || !(phase in PHASE_COLORS)) {
+      // Soft white lift on the "normal" beat: the REAL sprite first, then a
+      // translucent white pass over its silhouette (source-atop keeps the
+      // shape) — a faint glow, not a flat-color replacement.
       drawNormal(ctx, c);
+      drawOverlayTint(ctx, c, '#ffffff', 0.5);
     } else {
       drawTinted(ctx, c, PHASE_COLORS[phase], flashAlpha);
     }
@@ -174,6 +178,40 @@ function drawTinted(ctx, c, color, alpha) {
     }
   }
   // BOX fallback: tinted rect over the live collision box.
+  const b = typeof c.worldBox === 'function' ? c.worldBox() : null;
+  if (!b) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.fillRect(b.x, b.y, b.w, b.h);
+  ctx.restore();
+}
+
+/**
+ * Translucent overlay tint: draws a flat color OVER whatever is already on
+ * the canvas within the carrier's silhouette (source-atop), so the sprite's
+ * own colors show through at (1 - alpha). Used for the "normal" beat's soft
+ * white lift — unlike drawTinted it does NOT replace the sprite's pixels.
+ */
+function drawOverlayTint(ctx, c, color, alpha) {
+  const f = typeof c.spriteFrame === 'function' ? c.spriteFrame() : null;
+  if (f && f.img) {
+    const tinted = tintedImage(f.img, color);
+    if (tinted) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.translate(f.anchorX, f.anchorY);
+      if (f.mirrorX) ctx.scale(-1, 1);
+      if (f.mirrorY) ctx.scale(1, -1);
+      if (f.rotation) ctx.rotate(f.rotation);
+      ctx.scale(f.scale, f.scale);
+      ctx.drawImage(tinted, 0, 0, tinted.width, tinted.height, f.dx, f.dy, f.w, f.h);
+      ctx.restore();
+      return;
+    }
+  }
+  // BOX fallback: translucent rect over the live collision box.
   const b = typeof c.worldBox === 'function' ? c.worldBox() : null;
   if (!b) return;
   ctx.save();
