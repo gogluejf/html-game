@@ -146,12 +146,8 @@ export function processAllHitboxes() {
     }
     // VFX / juice on hit. Generic juice (blood sparkles, enemy shake, white
     // flash) lives in processHitboxes() itself — the engine owns it so every
-    // caller (gameplay + attack primitives) gets identical reactions. Here we
-    // only keep the GAMEPLAY-SPECIFIC routing: hero-damage vignette and
-    // knockback application.
-    if (target.layer === LAYER.HERO) {
-      Effects.heroDamaged();
-    }
+    // caller (gameplay + attack primitives) gets identical reactions. The
+    // hero-damage vignette is owned by heroDamage() (single damage funnel).
     // Hero→enemy knockback is applied by processHitboxes() BEFORE damage so a
     // same-frame kill still carries the impulse into its death slide.
     // Remove dead enemies from world.

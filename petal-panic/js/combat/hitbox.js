@@ -178,7 +178,6 @@ export function processHitboxes(hitboxes, targets, onHit) {
         // iFrameTimer from applyKnockback.
         if (t.layer === LAYER.HERO) {
           t.takeHit({ source: hb.method, dirX: 0, dirY: 0 });
-          Effects.heroDamaged();
         }
         // Hit juice lives in the ENGINE, not in host callbacks: every caller
         // of processHitboxes (gameplay hitbox registry AND attack primitives

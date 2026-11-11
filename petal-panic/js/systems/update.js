@@ -276,7 +276,6 @@ export function fallingBarrelImpact(b) {
       const dirX = Math.sign((hb.x + hb.w / 2) - (bb.x + bb.w / 2)) || 1;
       applyKnockback(h, { vx: 0, vy: vy }, { base: 200, hitstun: 0.25, pop: 60 }, { x: dirX, y: -0.5 });
       separateHeroFromBumper(h, b);
-      Effects.heroDamaged();
       record(h, { kind: 'hitTaken', source: 'barrelFall' });
     }
   }

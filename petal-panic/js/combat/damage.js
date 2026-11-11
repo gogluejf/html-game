@@ -18,6 +18,31 @@
 
 import { record } from '../stats.js';
 import { fireManual } from '../effects/index.js';
+import { VIEW_W, VIEW_H } from '../core/view.js';
+
+/**
+ * Damage → vignette intensity mapping (design §12). A hit dealing this much
+ * real damage kicks the red vignette to full; lighter hits scale linearly.
+ * Hero energy is 100, so ~30 = "a third of your bar" reads as a serious hit.
+ */
+export const VIGNETTE_FULL_DMG = 30;
+
+/**
+ * Kick the hero-damage vignette scaled by real damage dealt (design §12).
+ * Single owner of the effect: EVERY route that damages the hero funnels
+ * through heroDamage(), so no call site sprinkles its own vignette anymore.
+ * No-op for non-hero targets and zero damage (absorbed/protected hits).
+ * @param {object} target the damaged entity (hero check via energy pool)
+ * @param {number} real   actual damage dealt after defense (>=1 if it landed)
+ */
+export function kickHeroVignette(target, real) {
+  if (!target || target.energy == null || real <= 0) return;
+  const strength = Math.min(1, real / VIGNETTE_FULL_DMG);
+  // Engine's single fire path; viewport dims ride in ctx like every other
+  // screen-space overlay fire (vignette also reads them at draw time).
+  fireManual({ type: 'vignette', params: { strength } }, null,
+    { view: { w: VIEW_W, h: VIEW_H } });
+}
 
 /** Hit-landed method buckets that damage() may write (subset of stats HIT_METHODS). */
 const HITS_LANDED_METHODS = new Set(['melee', 'projectile', 'special', 'specialMelee', 'superMove', 'explosion']);
@@ -86,6 +111,11 @@ export function heroDamage(source, target, amt, method = 'projectile') {
   if (remaining <= 0) {
     target.alive = false;
   }
+
+  // Hero-damage vignette (design §12): owned HERE, at the single damage
+  // funnel — every route that hurts the hero passes through this line, so
+  // no call site sprinkles its own vignette. Scaled by real damage dealt.
+  kickHeroVignette(target, real);
 
   return real;
 }

@@ -282,8 +282,6 @@ export function registerCollisionHandlers(collisionWorld) {
           source: 'projectile',
           dirX: foeProj.vx, dirY: foeProj.vy,
         });
-        // red vignette when the hero takes damage (design §12).
-        Effects.heroDamaged();
         // track hits taken from enemy projectiles (design §4.1).
         record(victim, { kind: 'hitTaken', source: 'enemyProjectile' });
       }
@@ -366,8 +364,6 @@ export function registerCollisionHandlers(collisionWorld) {
       // (Contact damage doesn't route through takeHit(), which is the only
       // other place lastHitAt is set.)
       heroEnt.lastHitAt = performance.now();
-      // red vignette on contact damage (design §12 "Hero damaged").
-      Effects.heroDamaged();
       // track hits taken from enemy contact (design §4.1).
       record(heroEnt, { kind: 'hitTaken', source: 'enemyContact' });
     }
