@@ -15,7 +15,25 @@ import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats 
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { heroDamage } from '../combat/damage.js';
 import { JUMP_HEIGHT_SCALE } from './heroSprites.js';
-import { invulnFlicker } from '../effects/invulnFlicker.js';
+import { invulnFlicker, INVISIBLE } from '../effects/invulnFlicker.js';
+
+// Invincibility looks (design §27) — the HERO owns them: the flicker effect
+// is a dumb color-cycler, it knows nothing about hits or powerups. Each color
+// flashes OVER the visible sprite at `alpha`; 'invisible' is a vanish beat.
+//   hit     — classic transparent blink while i-frames run.
+//   powerup — SMB-style color wash + brief vanish.
+const INVULN_LOOKS = {
+  hit: {
+    colors: ['#ffffff', '#ffffff'], // white flash over the visible sprite
+    beatMs: 16,
+    alpha: 0.8,
+  },
+  powerup: {
+    colors: ['#ffffff', '#ff9f43', '#ffffff', '#000000', INVISIBLE],
+    beatMs: 16,
+    alpha: 0.8,
+  },
+};
 
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
@@ -443,15 +461,15 @@ export class Hero extends Entity {
       return;
     }
     const src = this.invulnSource ?? 'hit';
-    // Reuse the live instance only for the same visual mode.
-    const mode = src === 'powerup' ? 'powerup' : 'hit';
-    if (this.invulnFx && !this.invulnFx.done && this._invulnFxMode === mode) {
+    // Reuse the live instance only for the same look.
+    const look = INVULN_LOOKS[src] ?? INVULN_LOOKS.hit;
+    if (this.invulnFx && !this.invulnFx.done && this._invulnFxMode === src) {
       this.invulnFx.setProgress(this.timers.fraction('intangible'));
       return;
     }
     if (this.invulnFx) this.invulnFx.complete();
-    this._invulnFxMode = mode;
-    this.invulnFx = invulnFlicker({ mode }, this);
+    this._invulnFxMode = src;
+    this.invulnFx = invulnFlicker({ colors: look.colors, beatMs: look.beatMs, alpha: look.alpha }, this);
     this.invulnFx.setProgress(this.timers.fraction('intangible'));
   }
 
