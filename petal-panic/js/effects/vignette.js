@@ -12,7 +12,7 @@
 // that drawEffects hands every instance, falling back to factory-time
 // params.viewW/viewH (or fire-time ctx.view) when the draw-time view is absent.
 
-const VIGNETTE_DECAY = 1 / 0.5; // full fade over 0.5s (CoD-style, subtle)
+const VIGNETTE_DECAY = 1 / 0.9; // full fade over 0.9s — long enough to register
 
 /**
  * @param {{strength?:number, viewW?:number, viewH?:number}} params
@@ -47,13 +47,17 @@ export function vignette(params = {}, carrier, ctx = {}) {
       const viewH = dv.h ?? params.viewH ?? view.h;
       if (!viewW || !viewH) return;
       const cx = viewW / 2, cy = viewH / 2;
-      // Gradient reaches full red only at the corners; the center stays clear.
-      const r = Math.hypot(cx, cy);
-      const grad = c2d.createRadialGradient(cx, cy, r * 0.45, cx, cy, r);
-      grad.addColorStop(0, 'rgba(180, 20, 20, 0)');
-      grad.addColorStop(0.7, `rgba(180, 20, 20, ${0.15 * v})`);
-      grad.addColorStop(1, `rgba(150, 10, 10, ${0.55 * v})`);
       c2d.save();
+      // Full-screen base wash: the whole frame gets a red tint so the hit is
+      // felt everywhere, not just at the edges. Scales with intensity.
+      c2d.fillStyle = `rgba(150, 10, 10, ${0.15 * v})`;
+      c2d.fillRect(0, 0, viewW, viewH);
+      // Radial edge glow on top: stronger at corners, clear at center.
+      const r = Math.hypot(cx, cy);
+      const grad = c2d.createRadialGradient(cx, cy, r * 0.4, cx, cy, r);
+      grad.addColorStop(0, 'rgba(180, 20, 20, 0)');
+      grad.addColorStop(0.6, `rgba(180, 20, 20, ${0.4 * v})`);
+      grad.addColorStop(1, `rgba(150, 10, 10, ${0.9 * v})`);
       c2d.fillStyle = grad;
       c2d.fillRect(0, 0, viewW, viewH);
       c2d.restore();

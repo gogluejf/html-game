@@ -25,7 +25,7 @@ import { VIEW_W, VIEW_H } from '../core/view.js';
  * real damage kicks the red vignette to full; lighter hits scale linearly.
  * Hero energy is 100, so ~30 = "a third of your bar" reads as a serious hit.
  */
-export const VIGNETTE_FULL_DMG = 30;
+export const VIGNETTE_FULL_DMG = 15;
 
 /**
  * Kick the hero-damage vignette scaled by real damage dealt (design §12).
