@@ -353,9 +353,9 @@
    "direction": "forward",
    "collision": {
     "x": -83,
-    "y": -324,
+    "y": -300,
     "w": 205,
-    "h": 294
+    "h": 270
    },
    "pivot": {
     "x": 20,

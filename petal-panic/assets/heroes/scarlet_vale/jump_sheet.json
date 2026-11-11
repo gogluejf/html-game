@@ -243,7 +243,7 @@
      "durUnits": 1
     }
    ],
-   "fps": 15,
+   "fps": 18,
    "playback": "loop",
    "direction": "reverse",
    "collision": {
