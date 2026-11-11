@@ -73,14 +73,22 @@ export const TOXIC_BARREL_DEF = {
   spriteAnim: 'toxic',
 };
 
-/** Propane barrel: volatile. On destruction it pops a popcorn fan of molotov
- *  lobes (gravity arcs) that shatter into burning areas where they land.
- *  No AoE blast — the fire zones ARE the damage. */
+/** Propane barrel: volatile. On destruction it detonates with the SAME AoE
+ *  blast as the explosive barrel (radius 120, BARREL_DAMAGE, neutral, same
+ *  knockback) AND pops a popcorn fan of molotov lobes (gravity arcs) that
+ *  shatter into burning areas where they land. The blast is instant; the fire
+ *  zones are the follow-up damage. */
 export const PROPANE_BARREL_DEF = {
   id: 'propaneBarrel',
   w: 32, h: 48,
   hp: 50,
-  explosion: null,   // no instant blast — the lobe fan is the payload
+  // Identical blast to the explosive barrel — propane explodes for real.
+  explosion: {
+    radius: 120,
+    damage: BARREL_DAMAGE,
+    team: 'neutral',
+    knockback: BARREL_EXPLOSION_KNOCKBACK,
+  },
   coinDrop: null,
   spriteAnim: 'propane',
 };

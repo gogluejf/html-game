@@ -268,6 +268,12 @@ export function fallingBarrelImpact(b) {
       Effects.beginEnemyShake?.(b);
       record(h, { kind: 'enemyStomped' }) ;
     }
+    // Destroy hook: b.hit() → takeDamage() → destroy() latches destroyed/alive
+    // but does NOT fire onDestroyed (that's applyHit's job). Trigger it here so
+    // the barrel's payload (explosion / toxic / coins) actually fires.
+    if (b.destroyed && !b._destroyHandled) {
+      b.onDestroyed?.({ source: h, provenance: 'STOMP' }, { accepted: true, dealt, destroyed: true });
+    }
   } else {
     // BONK: the barrel caught the hero from above/the side mid-fall.
     if (h.intangible) { separateHeroFromBumper(h, b); b.vy = 0; return; } // bumper rule
@@ -879,6 +885,10 @@ GameObj.prototype.onHit = function (_ctx, result) {
   if (result.dealt > 0) ctx.popSuperCoinHit?.(this, result.dealt);
 };
 GameObj.prototype.onDestroyed = function (_ctx, _result) {
+  // TRIPWIRE (debug): confirm the destroy hook actually fired for this barrel.
+  // If a barrel dies (destroyed=true) but you NEVER see this line, the kill
+  // path bypassed applyHit/onDestroyed entirely — that's the broken state.
+  if (Debug.enabled) Debug.logEvent(`[barrel] onDestroyed HOOK type=${this.type} provenance=${_ctx?.provenance ?? '?'} dealt=${_result?.dealt}`);
   ctx.handleBarrelDestroyed?.(this);
 };
 ctx.coins = coins;

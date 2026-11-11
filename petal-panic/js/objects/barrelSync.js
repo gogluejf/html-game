@@ -13,9 +13,6 @@ import '../combat/attack/primitives/explosion.js'; // registers the 'explosion' 
 import '../combat/attack/primitives/dustZone.js'; // registers the 'dustZone' primitive (toxic cloud)
 import '../combat/attack/macros/index.js'; // registers spawnSplit + molotov (propane fan)
 import { isSpecialType } from '../objects/specialWeapons.js';
-import { fireManual } from '../effects/index.js';
-import { blastFallbackDrawer } from '../effects/spriteBurst.js';
-import { getSpecialSpriteData } from './projectile.js';
 import { getDamageables, getActiveFloorY } from '../world/accessors.js';
 import { projectilePool } from '../objects/projectile.js';
 import { record } from '../stats.js';
@@ -41,16 +38,27 @@ export function refreshBarrelSolidBoxes() {
  * @param {GameObj} barrel the destroyed object
  */
 export function handleBarrelDestroyed(barrel) {
-  if (barrel._destroyHandled) return; barrel._destroyHandled = true;
+  // TRIPWIRE (debug): log every destroy-payload fire + every early-return so a
+  // "barrels stopped detonating" state is catchable red-handed. The early-return
+  // case means the barrel was already handled — if you see this spam after a
+  // tab-switch / menu round-trip, the destroy hook is firing twice or the
+  // barrel list is stale.
+  if (barrel._destroyHandled) {
+    if (Debug.enabled) Debug.logEvent(`[barrel] DESTROY SKIP (already handled) type=${barrel.type} @(${Math.round(barrel.x)},${Math.round(barrel.y)})`);
+    return;
+  }
+  barrel._destroyHandled = true;
+  if (Debug.enabled) Debug.logEvent(`[barrel] DESTROY FIRE type=${barrel.type} explosion=${!!barrel.explosion} coinDrop=${!!barrel.coinDrop}`);
   const hero = ctx.hero;
   const { cx, cy } = { cx: barrel.x + barrel.w / 2, cy: barrel.y + barrel.h / 2 };
 
-  if (barrel.explosion) {
-    // Engine-owned blast: the explosion primitive resolves damage AND owns all
-    // VFX (particle burst, explode sheet art, screen flash, camera shake) —
-    // same path as the bomb macro. A barrel is a NEUTRAL blast: it hurts whoever
-    // stands in range (hero AND enemies) and shoves everyone radially. The full
-    // damageable set is passed; the team flag does the filtering.
+  // Shared real-blast path (explosive barrel AND propane). Engine-owned: the
+  // explosion primitive resolves damage AND owns all VFX (particle burst,
+  // explode sheet art, screen flash, camera shake). A barrel is a NEUTRAL
+  // blast: it hurts whoever stands in range (hero AND enemies) and shoves
+  // everyone radially. No-op when the barrel has no explosion config.
+  const fireBlast = () => {
+    if (!barrel.explosion) return;
     const targets = getDamageables();
     const h = invoke('explosion', {
       x: cx, y: cy,
@@ -61,27 +69,19 @@ export function handleBarrelDestroyed(barrel) {
       self: barrel,
       targets,
     }, { attacker: barrel, world: { hero, targets } });
-    // Real enemies killed by the blast already ran their internal death pipeline
-    // via takeDamage() inside the primitive — no manual die() needed here.
-    // track if the hero was hit by the explosion (design §4.1).
+    // Real enemies killed by the blast already ran their internal death
+    // pipeline via takeDamage() inside the primitive — no manual die() needed.
     if (h._lastResult?.hit?.includes(hero)) {
       record(hero, { kind: 'hitTaken', source: 'explosion' });
     }
-  } else if (barrel.type === SUPERCOIN_BARREL_DEF.id) {
-    // Super-coin barrel: big final coin burst launched high into the sky, plus
-    // screen shake + white flash (explosion-feel) but NO blast damage and NO
-    // explosion art — just the regular barrel-break particles + the coin shower.
-    coins.dropCoinsIntense(barrel.coinDrop, cx, cy);
-    Effects.fireParticleBurst(cx, cy, 8);   // regular barrel-break particles
-    Effects.bigExplosion(0.9);              // white screen flash
-    Effects.triggerShake(14);               // camera shake
-    // SFX: big coin burst
-  } else if (barrel.type === PROPANE_BARREL_DEF.id) {
-    // Propane barrel: popcorn fan of molotov lobes — gravity arcs that shatter
-    // into burning areas where they land. The fire zones ARE the damage; no
-    // instant AoE. spawnSplit owns the fan math; each child is a full molotov
-    // macro (ballistic carrier + fireArea payload). Neutral team: the fire
-    // hurts whoever stands in it (hero AND enemies).
+  };
+
+  if (barrel.type === PROPANE_BARREL_DEF.id) {
+    // Propane: detonates with the SAME real AoE blast as the explosive barrel
+    // (radius/damage/knockback from its def), THEN pops a popcorn fan of
+    // molotov lobes that shatter into burning areas where they land. The blast
+    // is instant; the fire zones are follow-up damage.
+    fireBlast();
     const floorY = getActiveFloorY();
     // Self-contained invoke (task 2.3): the registry owns step/draw/prune —
     // no host, no getter, no lifecycle wiring at the call site.
@@ -95,15 +95,19 @@ export function handleBarrelDestroyed(barrel) {
       molotov: { arc: 800, bounce: false, ttl: null, fireSegments: 3, team: 'neutral' },
       groundY: floorY,
     }, { attacker: barrel, pools: { projectilePool }, world: { hero: ctx.hero, targets: getDamageables() } });
-    // Pop VFX at the break point: particle burst + bomb explode sheet art
-    // (procedural flash+ring in primitive mode). No damage — the molotovs
-    // ARE the payload; this is pure juice.
-    fireManual({ type: 'explosion', params: { x: cx, y: cy, radius: 40 } });
-    const ex = getSpecialSpriteData('bomb_explode')?.anims.explode;
-    fireManual({ type: 'sprite-burst', params: { x: cx, y: cy, size: 64, duration: 0.5, anim: ex, fallback: blastFallbackDrawer } });
-    Effects.fireParticleBurst(cx, cy, 8);   // regular barrel-break particles
-    Effects.triggerShake(8);                // smaller kick than a real blast
     // SFX: propane pop
+  } else if (barrel.explosion) {
+    // Explosive barrel: real AoE blast only.
+    fireBlast();
+  } else if (barrel.type === SUPERCOIN_BARREL_DEF.id) {
+    // Super-coin barrel: big final coin burst launched high into the sky, plus
+    // screen shake + white flash (explosion-feel) but NO blast damage and NO
+    // explosion art — just the regular barrel-break particles + the coin shower.
+    coins.dropCoinsIntense(barrel.coinDrop, cx, cy);
+    Effects.fireParticleBurst(cx, cy, 8);   // regular barrel-break particles
+    Effects.bigExplosion(0.9);              // white screen flash
+    Effects.triggerShake(14);               // camera shake
+    // SFX: big coin burst
   } else if (barrel.type === TOXIC_BARREL_DEF.id) {
     // Toxic barrel: huge dust cloud (7×5 units) centered on the barrel. The
     // cloud ticks damage to everyone inside (neutral team). No instant AoE —
