@@ -38,16 +38,23 @@ test('generic mirrored aiming aligns free angles; horizontal left is mirror only
   e.orientSprite(-1,0);assert.equal(e.mirrorX,true);near(e.rotation,0);
 });
 
-test('real thorn shooting centers its pivot on hero body plus directional muzzle offset', async () => {
+test('real thorn shooting centers its box on the resolved muzzle origin', async () => {
+  // Thorn shots spawn through the attack engine's projectile primitive with
+  // origin 'muzzle': resolveMarker() falls back to the attacker's body center
+  // when the stub hero exposes no sprite markers, and the primitive centers
+  // the BOX on that point (BOX-CENTER ANCHOR CONTRACT — anchor is always the
+  // box center, art adapts via dx/dy). The stub hero therefore exposes its
+  // geometry as x/y/w/h (the marker fallback reads those), and the invariant
+  // is: box center === hero box center in all 8 aim directions.
   await initProjectileSprites();
-  const h={selectedWeapon:'thorn',fireCooldown:0,bodyCenter:()=>({x:300,y:200}),resolveAim:i=>i.dir,stats:{projectile_freq:5}};
-  for (const [dir,dx,dy] of [[0,16,0],[4,-16,0],[2,0,-16],[6,0,16]]) {
+  const h={selectedWeapon:'thorn',fireCooldown:0,x:290,y:190,w:20,h:20,bodyCenter:()=>({x:300,y:200}),resolveAim:i=>i.dir,stats:{projectile_freq:5}};
+  for (const dir of [0,1,2,3,4,5,6,7]) {
     h.fireCooldown=0;
     tryFire(h,{shoot:true,dir},1/60);
     const p=projectilePool.activeItems.at(-1);
-    const img={complete:true,naturalWidth:244,naturalHeight:101};
-    p.sprite={...p.sprite,frames:new Map(p.spriteAnimData.frames.map(f=>[f.file,img]))};
-    const f=p.spriteFrame();near(f.anchorX,300+dx);near(f.anchorY,200+dy);
+    assert.ok(p, `shot spawned for dir ${dir}`);
+    near(p.x + p.w / 2, 300);
+    near(p.y + p.h / 2, 200);
     p.alive=false;
   }
 });

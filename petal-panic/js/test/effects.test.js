@@ -21,10 +21,10 @@ function drainPool() {
 console.log('Screen-space state');
 ok('vignette starts at 0', () => assert.equal(Effects.vignette, 0));
 ok('heroDamaged sets vignette to 1', () => { Effects.heroDamaged(); assert.equal(Effects.vignette, 1); });
-ok('vignette decays linearly over ~0.5s', () => {
-  Effects.update(0.25);
-  assert.ok(Math.abs(Effects.vignette - 0.5) < 0.01, `got ${Effects.vignette}`);
-  Effects.update(0.3);
+ok('vignette decays linearly over its full-fade (0.9s)', () => {
+  Effects.update(0.45);
+  assert.ok(Math.abs(Effects.vignette - 0.5) < 0.02, `got ${Effects.vignette}`);
+  Effects.update(0.5);
   assert.equal(Effects.vignette, 0);
 });
 ok('heroDamaged clamps strength to [0,1]', () => { Effects.heroDamaged(99); assert.equal(Effects.vignette, 1); });

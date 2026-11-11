@@ -373,13 +373,16 @@ ok('coins that fall past the level are culled', () => {
     assert.ok(c.y <= 580, `coin y=${c.y} should not be below floor+80`);
   }
 });
-ok('coins that drift off the right edge are culled', () => {
+ok('coins that reach the right wall bounce and stay inside the level', () => {
+  // Wall-bounce was added (coins reflect off the left/right level bounds), so
+  // a coin drifting into the right edge no longer exits — it reflects and
+  // remains live inside the boundary.
   const pool = new CoinPool(32);
   const c = pool.spawnOne('bronze', 2990, 400, { vx: 500, vy: 0 });
   assert.ok(c, 'coin spawned near right edge');
-  // Advance until it crosses the level boundary.
   pool.updateAll(2.0, 500, 3000);
-  assert.equal(pool.count, 0, 'coin should be culled off the right edge');
+  assert.equal(pool.count, 1, 'coin survives at the right wall (bounces, not culled)');
+  assert.ok(pool.active[0].x + pool.active[0].w <= 3000 + 1, 'coin clamped inside the right bound');
 });
 
 console.log(`\n${passed} assertions passed.`);

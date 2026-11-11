@@ -70,14 +70,16 @@ test('mover: unreachable surface stops cleanly (no infinite loop)', () => {
   assert.ok(Date.now() - t0 < 5000, 'should give up fast, not loop');
 });
 
-test('mover: param injection — no double jump makes a 2h block unreachable', () => {
-  const world = worldOf([{ kind: 'block', x: 6, y: 0, width: 3, height: 2 }]);
+test('mover: param injection — no double jump makes a 3h block unreachable', () => {
+  // A 3-row rise (144px) is beyond the tuned single-jump apex (~108px); a 2h
+  // block is reachable since the stat tune, so the scenario uses 3 rows.
+  const world = worldOf([{ kind: 'block', x: 6, y: 0, width: 3, height: 3 }]);
   const weak = { ...BALT, hasDoubleJump: false, canSuper: false };
   const hero = freshHero(world);
   const goal = world.landings[0];
   const r = moveToward(hero, goal, world, weak, { maxFrames: 60 * 8, maxAttempts: 2 });
-  // Without double jump OR super, a 2-row rise is beyond a single jump apex.
-  assert.equal(r.landed, false, 'weaker params should NOT clear a 2h block');
+  // Without double jump OR super, a 3-row rise is beyond a single jump apex.
+  assert.equal(r.landed, false, 'weaker params should NOT clear a 3h block');
 });
 
 test('mover: determinism — same macro+params gives identical path', () => {

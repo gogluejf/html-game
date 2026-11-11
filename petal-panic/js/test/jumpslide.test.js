@@ -15,7 +15,8 @@ const DT = 1 / 60;
 const noInput = () => ({ left: false, right: false, up: false, down: false, jump: false, shoot: false, special: false, melee: false });
 // Holding down = crouched (releasing down would stand back up mid-test).
 const crouchInput = () => ({ ...noInput(), down: true });
-const makeHero = () => new Hero(HEROES.scarlet, 0, 0); // speed 250, jump 500
+const RUN = HEROES.scarlet.stats.speed * 48; // px/s at the 48px grid
+const makeHero = () => new Hero(HEROES.scarlet, 0, 0);
 
 console.log('Double jump');
 ok('grounded reset keeps both jumps available (counter never stuck)', () => {
@@ -79,10 +80,10 @@ ok('crouching with no input skids down slowly via linear decel', () => {
   const h = makeHero();
   h.setGrounded(true);
   h.crouching = true;
-  h.vx = 250; // full run speed
+  h.vx = RUN; // full run speed
   h.update(DT, crouchInput());
   // Linear: exactly SLIDE_DECEL*dt = 8 px/s removed this step (vs friction's 15%).
-  assert.ok(Math.abs(h.vx - (250 - 8)) < 1, `expected ~242, got ${h.vx}`);
+  assert.ok(Math.abs(h.vx - (RUN - 8)) < 1, `expected ~${RUN-8}, got ${h.vx}`);
 });
 
 ok('crouch skid from run speed lasts ~0.5s and covers ~2 body-widths', () => {
@@ -119,7 +120,7 @@ ok('run + press down slides a visible distance before stopping (not instant)', (
   // Establish full run speed first.
   let inp = noInput(); inp.right = true;
   for (let i = 0; i < 10; i++) h.update(DT, inp);
-  assert.ok(Math.abs(h.vx - 250) < 1, `should be at run speed, got ${h.vx}`);
+  assert.ok(Math.abs(h.vx - RUN) < 1, `should be at run speed, got ${h.vx}`);
 
   // Press+hold down while still holding right → begin the slide.
   inp.down = true;

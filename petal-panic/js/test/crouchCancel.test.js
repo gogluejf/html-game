@@ -16,7 +16,7 @@ import { loadTestMacros } from './_macroSetup.mjs';
 loadTestMacros();
 
 import { strict as assert } from 'node:assert';
-import { Hero } from '../hero/hero.js';
+import { Hero, CROUCH_HEIGHT_SCALE } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
 
 // --- Minimal DOM stub (render.js → update.js builds placeholder frames at
@@ -41,7 +41,8 @@ function ok(name, fn) {
 }
 const DT = 1 / 60;
 const noInput = () => ({ left: false, right: false, up: false, down: false, jump: false, shoot: false, special: false, melee: false, super: false });
-const makeHero = () => new Hero(HEROES.scarlet, 0, 0); // speed 250, jump 500
+const RUN = HEROES.scarlet.stats.speed * 48; // px/s at the 48px grid
+const makeHero = () => new Hero(HEROES.scarlet, 0, 0);
 // Free-fall leaves the hero airborne at test end; settle it back to rest so
 // post-state assertions reflect grounded gameplay state, not mid-flight.
 const settle = (h) => { h.setGrounded(true); h.vy = 0; };
@@ -58,7 +59,7 @@ ok('jumping from crouch cancels crouch and initiates the jump the same frame', (
   let inp = noInput(); inp.down = true;
   h.update(DT, inp);
   assert.ok(h.crouching, 'should be crouched first');
-  assert.equal(h._targetHScale, 0.6, 'crouch height scale active before the jump');
+  assert.equal(h._targetHScale, CROUCH_HEIGHT_SCALE, 'crouch height scale active before the jump');
   inp.jump = true;
   h.update(DT, inp);
   assert.equal(h.jumpsUsed, 1, 'jump must fire without a stand-first requirement');
@@ -84,13 +85,13 @@ ok('releasing Down while moving exits crouch into run with standing hitbox same 
   const h = makeHero();
   h.setGrounded(true);
   runUp(h, 'right');
-  assert.ok(Math.abs(h.vx - 250) < 1, 'at run speed before crouching');
+  assert.ok(Math.abs(h.vx - RUN) < 1, 'at run speed before crouching');
   // Press down while running → enters the crouch/slide skid. The one-frame
   // grace keeps control for the entry frame, so sliding starts on the next.
   let inp = noInput(); inp.down = true; inp.right = true;
   h.update(DT, inp);
   assert.ok(h.crouching, 'crouched after pressing down mid-run');
-  assert.equal(h._targetHScale, 0.6, 'crouch height scale active during the skid');
+  assert.equal(h._targetHScale, CROUCH_HEIGHT_SCALE, 'crouch height scale active during the skid');
   settle(h); // grounded hero at rest before the second skid frame
   h.update(DT, inp);
   assert.ok(h.sliding, `sliding on the second skid frame (vx=${h.vx})`);
@@ -109,20 +110,20 @@ ok('pressing Down while running keeps run velocity on the entry frame; slide dec
   const h = makeHero();
   h.setGrounded(true);
   runUp(h, 'right');
-  assert.ok(Math.abs(h.vx - 250) < 1, 'at full run speed before pressing down');
+  assert.ok(Math.abs(h.vx - RUN) < 1, 'at full run speed before pressing down');
   // Frame 1: first press of Down while holding right. The grace frame must
   // honor the held direction — vx stays at full run speed (no decel yet).
   let inp = noInput(); inp.down = true; inp.right = true;
   h.update(DT, inp);
   assert.ok(h.crouching, 'crouch entered on the press frame');
-  assert.equal(h._targetHScale, 0.6, 'crouch height scale active from the press frame');
-  assert.ok(Math.abs(h.vx - 250) < 1, `grace frame retains run velocity (vx=${h.vx})`);
+  assert.equal(h._targetHScale, CROUCH_HEIGHT_SCALE, 'crouch height scale active from the press frame');
+  assert.ok(Math.abs(h.vx - RUN) < 1, `grace frame retains run velocity (vx=${h.vx})`);
   // Frame 2: still holding Down + right. Crouch is now fully committed —
   // control is locked and linear slide decel bleeds off exactly SLIDE_DECEL*dt.
   h.update(DT, inp);
   assert.ok(h.crouching, 'still crouched');
   assert.ok(h.sliding, 'slide flag committed on the second frame');
-  assert.ok(Math.abs(h.vx - (250 - 8)) < 1, `slide decel begins on the NEXT frame (expected ~242, got ${h.vx})`);
+  assert.ok(Math.abs(h.vx - (RUN - 8)) < 1, `slide decel begins on the NEXT frame (expected ~${RUN-8}, got ${h.vx})`);
 });
 
 console.log('Slide end (§10/§11)');
@@ -167,7 +168,7 @@ ok('exitCrouch clears state, slide flag and restores the standing hitbox togethe
   const h = makeHero();
   h.crouching = true;
   h.sliding = true;
-  h._targetHScale = 0.6;
+  h._targetHScale = CROUCH_HEIGHT_SCALE;
   h.exitCrouch();
   assert.equal(h.crouching, false);
   assert.equal(h.sliding, false);

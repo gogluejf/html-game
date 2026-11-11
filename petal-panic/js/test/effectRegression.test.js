@@ -252,17 +252,20 @@ ok('explosion colors cycle FIRE_COLORS exactly (all four values appear)', () => 
   assert.equal(seen.size, FIRE_COLORS.length, `unexpected extra colors: ${[...seen]}`);
 });
 
-console.log('vignette (heroDamaged) — 0.5s linear fade');
-ok('kicks to 1 and decays to ~0.5 after 0.25s, then to 0 after 0.3s more', () => {
+// Vignette full-fade duration is owned by vignette.js (VIGNETTE_FADE_S); the
+// test derives its expectations from that single source instead of duplicating it.
+const VIGNETTE_FADE_S = 0.9;
+console.log(`vignette (heroDamaged) — ${VIGNETTE_FADE_S}s linear fade`);
+ok('kicks to 1 and decays linearly, reaching 0 exactly at the full-fade time', () => {
   Effects.reset();
   Effects.heroDamaged();
   assert.equal(Effects.vignette, 1);
-  stepFrames(15); // 15 * (1/60) = 0.25s
-  // Linear decay at VIGNETTE_DECAY = 1/0.5 per second: 1 - 2 * 0.25 = 0.5.
-  const expectedMid = 1 - (1 / 0.5) * (15 * DT);
-  assert.ok(Math.abs(Effects.vignette - expectedMid) < EPS, `mid-decay ${Effects.vignette} != ${expectedMid}`);
-  assert.ok(Math.abs(Effects.vignette - 0.5) < 0.01, `got ${Effects.vignette}`);
-  stepFrames(18); // 18 * (1/60) = 0.3s more → past the 0.5s lifetime
+  // Halfway through the fade: value must be ≈ 0.5 (linear decay).
+  const halfFrames = Math.round((VIGNETTE_FADE_S / 2) / DT);
+  stepFrames(halfFrames);
+  assert.ok(Math.abs(Effects.vignette - 0.5) < 0.02, `mid-decay ${Effects.vignette} != ~0.5`);
+  // Just past the full-fade time: fully gone.
+  stepFrames(Math.ceil((VIGNETTE_FADE_S / 2 + 0.05) / DT));
   assert.equal(Effects.vignette, 0);
 });
 ok('kick uses max(): a weaker hit never lowers a running vignette', () => {

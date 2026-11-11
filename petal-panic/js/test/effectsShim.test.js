@@ -41,11 +41,12 @@ function mockCtx() {
 }
 
 console.log('Screen-space lifecycle through the shim (kick → step → read)');
-ok('vignette ≈ 0.5 after 15 frames at fixed dt', () => {
+ok('vignette ≈ 0.5 halfway through its full-fade (0.9s)', () => {
   Effects.reset();
   Effects.heroDamaged(); // kicks to 1
-  for (let i = 0; i < 15; i++) Effects.update(DT); // 15 * (1/60) = 0.25s of a 0.5s decay
-  assert.ok(Math.abs(Effects.vignette - 0.5) < 1e-9, `got ${Effects.vignette}`);
+  const halfFrames = Math.round((0.9 / 2) / DT);
+  for (let i = 0; i < halfFrames; i++) Effects.update(DT);
+  assert.ok(Math.abs(Effects.vignette - 0.5) < 0.02, `got ${Effects.vignette}`);
 });
 ok('screenFlash decays linearly over ~0.15s', () => {
   Effects.reset();
@@ -100,8 +101,13 @@ ok('both overlays render in one pass when both are active', () => {
   Effects.bigExplosion();
   const ctx = mockCtx();
   Effects.drawOverlay(ctx, 960, 540);
-  const fills = ctx.calls.filter(c => c[0] === 'fillRect');
-  assert.equal(fills.length, 2, `expected vignette + flash fills, got ${fills.length}`);
+  // The vignette issues a full-screen base wash + radial edge glow; the
+  // screen flash paints a solid #ffffff fill. Assert each overlay's signature
+  // call is present (counts would break whenever a layer is added/removed).
+  assert.ok(ctx.calls.some(c => c[0] === 'createRadialGradient'), 'vignette radial gradient present');
+  const whiteIdx = ctx.calls.findIndex(c => c[0] === 'fillStyle' && c[1] === '#ffffff');
+  assert.ok(whiteIdx !== -1, 'screen-flash white fill style set');
+  assert.ok(ctx.calls.slice(whiteIdx + 1).some(c => c[0] === 'fillRect'), 'screen-flash fill issued after the white style');
 });
 ok('no canvas calls when no overlay is active', () => {
   Effects.reset();

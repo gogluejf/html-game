@@ -13,7 +13,9 @@ function ok(name, fn) {
 }
 const DT = 1 / 60;
 const noInput = () => ({ left: false, right: false, up: false, down: false, jump: false, shoot: false, special: false, melee: false });
-const makeHero = () => new Hero(HEROES.scarlet, 0, 0); // speed 250, jump 500
+// Run speed is read from the hero def (tuned values — do NOT hardcode px).
+const RUN = HEROES.scarlet.stats.speed * 48; // px/s at the 48px grid
+const makeHero = () => new Hero(HEROES.scarlet, 0, 0);
 
 console.log('Ground movement (§7)');
 ok('grounded press produces full run speed on the same frame', () => {
@@ -25,7 +27,7 @@ ok('grounded press produces full run speed on the same frame', () => {
   // not the air ramp. _blockedX is unset/false here — the hero is free.
   assert.equal(h.vx, 0, 'precondition: hero at rest');
   h.update(DT, inp);
-  assert.equal(h.vx, 250, `expected instant 250 from rest, got ${h.vx}`);
+  assert.ok(Math.abs(h.vx - RUN) < 1, `expected instant ${RUN} from rest, got ${h.vx}`);
 });
 
 ok('opposite ground direction cancels momentum immediately', () => {
@@ -33,10 +35,10 @@ ok('opposite ground direction cancels momentum immediately', () => {
   h.setGrounded(true);
   let inp = noInput(); inp.right = true;
   for (let i = 0; i < 10; i++) h.update(DT, inp);
-  assert.ok(Math.abs(h.vx - 250) < 1, 'should be at full run speed first');
+  assert.ok(Math.abs(h.vx - RUN) < 1, 'should be at full run speed first');
   inp = noInput(); inp.left = true;
   h.update(DT, inp);
-  assert.equal(h.vx, -250, `expected instant -250, got ${h.vx}`);
+  assert.ok(Math.abs(h.vx + RUN) < 1, `expected instant -${RUN}, got ${h.vx}`);
 });
 
 console.log('Air control ramp (§8)');
@@ -47,12 +49,12 @@ ok('airborne from ~0 vx approaches run speed over several frames, never snaps', 
   let inp = noInput(); inp.right = true;
   h.update(DT, inp);
   const v1 = h.vx;
-  assert.ok(v1 > 0 && v1 < 250, `frame 1 should be partway, not snapped: ${v1}`);
+  assert.ok(v1 > 0 && v1 < RUN, `frame 1 should be partway, not snapped: ${v1}`);
   assert.ok(v1 <= 1400 * DT + 1e-9, `first-frame gain must respect AIR_ACCEL*dt: ${v1}`);
   let frames = 0;
-  while (Math.abs(h.vx - 250) > 0.5 && frames < 300) { h.update(DT, inp); frames++; }
+  while (Math.abs(h.vx - RUN) > 0.5 && frames < 300) { h.update(DT, inp); frames++; }
   assert.ok(frames >= 3, `should take several frames to reach run speed, took ${frames}`);
-  assert.ok(Math.abs(h.vx - 250) < 1, `should settle at run speed, got ${h.vx}`);
+  assert.ok(Math.abs(h.vx - RUN) < 1, `should settle at run speed, got ${h.vx}`);
 });
 
 ok('jumping while running preserves horizontal momentum', () => {
@@ -60,16 +62,16 @@ ok('jumping while running preserves horizontal momentum', () => {
   h.setGrounded(true);
   let inp = noInput(); inp.right = true;
   for (let i = 0; i < 10; i++) h.update(DT, inp);
-  assert.ok(Math.abs(h.vx - 250) < 1, 'should be at full run speed before jumping');
+  assert.ok(Math.abs(h.vx - RUN) < 1, 'should be at full run speed before jumping');
   inp.jump = true;
   h.update(DT, inp);
   assert.ok(h.vy < 0, 'should have jumped');
   assert.equal(h.grounded, false);
-  assert.ok(Math.abs(h.vx - 250) < 1, `running jump must keep 250 vx, got ${h.vx}`);
+  assert.ok(Math.abs(h.vx - RUN) < 1, `running jump must keep ${RUN} vx, got ${h.vx}`);
   // Keep holding right in the air: velocity stays at run speed (no decay, no re-ramp).
   h.setGrounded(false);
   for (let i = 0; i < 10; i++) h.update(DT, inp);
-  assert.ok(Math.abs(h.vx - 250) < 1, `momentum should persist mid-air, got ${h.vx}`);
+  assert.ok(Math.abs(h.vx - RUN) < 1, `momentum should persist mid-air, got ${h.vx}`);
 });
 
 ok('barrel case: blocked against a solid then jumping accelerates into movement, no 1-frame snap', () => {
@@ -93,7 +95,7 @@ ok('barrel case: blocked against a solid then jumping accelerates into movement,
   // (_blockedX) with a held direction means "blocked", so the ramp applies
   // (§8 solid-obstacle).
   const vJump = h.vx;
-  assert.ok(vJump > 0 && vJump < 250, `jump frame must not launch at full speed: ${vJump}`);
+  assert.ok(vJump > 0 && vJump < RUN, `jump frame must not launch at full speed: ${vJump}`);
   assert.ok(vJump <= 1400 * DT + 1e-9, `jump-frame gain must respect AIR_ACCEL*dt: ${vJump}`);
   // Once airborne and clear of the barrel, keep holding right: the ramp
   // continues toward run speed over several frames, never re-snapping in one.
@@ -102,11 +104,11 @@ ok('barrel case: blocked against a solid then jumping accelerates into movement,
   h.update(DT, inp);
   const v1 = h.vx;
   assert.ok(v1 >= vJump - 1e-9, `ramp must be monotonic, got ${v1} after ${vJump}`);
-  assert.ok(v1 < 250, `still ramping mid-air: ${v1}`);
+  assert.ok(v1 < RUN, `still ramping mid-air: ${v1}`);
   let frames = 0;
-  while (Math.abs(h.vx - 250) > 0.5 && frames < 300) { h.update(DT, inp); frames++; }
+  while (Math.abs(h.vx - RUN) > 0.5 && frames < 300) { h.update(DT, inp); frames++; }
   assert.ok(frames >= 1, `should accelerate over several frames, took ${frames}`);
-  assert.ok(Math.abs(h.vx - 250) < 1, `should settle at run speed after clearing, got ${h.vx}`);
+  assert.ok(Math.abs(h.vx - RUN) < 1, `should settle at run speed after clearing, got ${h.vx}`);
 });
 
 console.log('Air direction reversal (§8)');
@@ -115,17 +117,17 @@ ok('full-speed air reversal flips instantly, preserving speed magnitude (no dece
   h.setGrounded(true);
   let inp = noInput(); inp.right = true;
   for (let i = 0; i < 10; i++) h.update(DT, inp); // reach full run speed
-  assert.ok(Math.abs(h.vx - 250) < 1, 'precondition: at full run speed');
+  assert.ok(Math.abs(h.vx - RUN) < 1, 'precondition: at full run speed');
   inp.jump = true;
   h.update(DT, inp);
   h.setGrounded(false); // airborne
-  assert.ok(Math.abs(h.vx - 250) < 1, 'running jump preserved 250 vx');
+  assert.ok(Math.abs(h.vx - RUN) < 1, 'running jump preserved run-speed vx');
   // Press the opposite direction in the air.
   inp = noInput(); inp.left = true;
   h.update(DT, inp);
   // Instant mirror: sign flipped on THIS frame, magnitude preserved (~250).
   assert.ok(h.vx < 0, `reversal must flip sign immediately, got ${h.vx}`);
-  assert.ok(Math.abs(Math.abs(h.vx) - 250) < 1, `magnitude must be preserved (~250), got ${h.vx}`);
+  assert.ok(Math.abs(Math.abs(h.vx) - RUN) < 1, `magnitude must be preserved (~${RUN}), got ${h.vx}`);
 });
 
 ok('air reversal never passes through a long zero window', () => {
@@ -140,7 +142,7 @@ ok('air reversal never passes through a long zero window', () => {
   h.update(DT, inp);
   // The very first reversal frame is already fully negative — it did not cruise
   // through ~0 over many frames (the old bug took ~11 frames to cross zero).
-  assert.ok(h.vx <= -249, `first reversal frame should be ~-250, got ${h.vx}`);
+  assert.ok(h.vx <= -(RUN - 1), `first reversal frame should be ~-${RUN}, got ${h.vx}`);
 });
 
 ok('near-zero air start still uses the ramp (no instant snap)', () => {
@@ -152,7 +154,7 @@ ok('near-zero air start still uses the ramp (no instant snap)', () => {
   assert.ok(Math.abs(h.vx) < 1, 'precondition: jumped from rest');
   inp = noInput(); inp.right = true;
   h.update(DT, inp);
-  assert.ok(h.vx > 0 && h.vx < 250, `near-zero start must ramp, not snap: ${h.vx}`);
+  assert.ok(h.vx > 0 && h.vx < RUN, `near-zero start must ramp, not snap: ${h.vx}`);
 });
 
 console.log(`\n${passed} passed`);
