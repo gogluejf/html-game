@@ -25,7 +25,7 @@ import { VIEW_W, VIEW_H } from '../core/view.js';
  * real damage kicks the red vignette to full; lighter hits scale linearly.
  * Hero energy is 100, so ~30 = "a third of your bar" reads as a serious hit.
  */
-export const VIGNETTE_FULL_DMG = 15;
+export const VIGNETTE_FULL_DMG = 25;
 
 /**
  * Kick the hero-damage vignette scaled by real damage dealt (design §12).
@@ -81,14 +81,16 @@ export function heroDamage(source, target, amt, method = 'projectile') {
 
   // Drain the right resource: heroes use energy (shield first), enemies use hp.
   // Shield absorbs damage before energy; energy only drains once shield is 0.
+  let energyLost = 0; // tracks actual energy drain for vignette gating
   if (target.energy != null) {
     if (target.shield > 0) {
       const absorbed = Math.min(target.shield, real);
       target.shield -= absorbed;
       const remaining = real - absorbed;
-      if (remaining > 0) target.energy -= remaining;
+      if (remaining > 0) { target.energy -= remaining; energyLost = remaining; }
     } else {
       target.energy -= real;
+      energyLost = real;
     }
   } else if (target.hp != null) {
     target.hp -= real;
@@ -113,9 +115,10 @@ export function heroDamage(source, target, amt, method = 'projectile') {
   }
 
   // Hero-damage vignette (design §12): owned HERE, at the single damage
-  // funnel — every route that hurts the hero passes through this line, so
-  // no call site sprinkles its own vignette. Scaled by real damage dealt.
-  kickHeroVignette(target, real);
+  // funnel. Gated on actual ENERGY loss — shield-only absorption produces no
+  // red flash (the shield pulse is sufficient feedback). Red = "your health
+  // is going down." Scaled by the energy actually drained.
+  if (energyLost > 0) kickHeroVignette(target, energyLost);
 
   return real;
 }
