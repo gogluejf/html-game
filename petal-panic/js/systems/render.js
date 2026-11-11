@@ -9,6 +9,7 @@ import { LAYER } from '../consts.js';
 import { getHero, getSolids, getEnemies, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getActiveZoneKind, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, getAreaEntryFadeAlpha, bossZone } from './update.js';
 import { Effects } from '../effects.js';
 import { drawEffects } from '../effects/index.js';
+import { tintedImage } from '../effects/spriteFlash.js';
 import { getState, S } from '../core/state.js';
 import { Debug } from '../debug/debug.js';
 import { Theater } from '../debug/effect-theater.js';
@@ -33,6 +34,15 @@ import { PLATFORM_DRAW_H } from '../world/macros.js';
 const IFRAME_BLINK_CYCLES = 6;       // full on/off cycles across the whole window
 const IFRAME_BLINK_ALPHA_ON = 0.8;   // "on" visibility
 const IFRAME_BLINK_ALPHA_OFF = 0.4;  // "off" visibility
+
+// Powerup invincibility: SMB1-style color flicker. Three phases per cycle —
+// white flash / normal sprite / fully invisible — at a FIXED rate (not scaled
+// to the window like the hit blink) so a 5s powerup and a 0.3s grant look
+// identical. Phase index derived from elapsed time; the cycle is arranged so
+// phase 1 (normal, fully visible) lands at expiry — no vanishing exactly when
+// protection ends.
+const INVULN_FLICKER_HZ = 12;       // cycles per second (~83ms per 3-phase cycle)
+const INVULN_WHITE_COLOR = '#ffffff';
 
 export function render(ctx, alpha = 1) {
   // Home & Select are full-screen; skip world rendering entirely.
@@ -248,18 +258,50 @@ export function render(ctx, alpha = 1) {
         const o = Effects.getEntityShakeTotal(h);
         ctx.save();
         if (o.x || o.y) ctx.translate(o.x, o.y);
-        if (h.intangible) {
-          const frac = h.timers.fraction('intangible'); // 1 → 0 across the window
-          // IFRAME_BLINK_CYCLES full on/off cycles across the whole window;
-          // phase derived from the fraction so the last visible state lands at expiry.
-          const phase = Math.floor(frac * IFRAME_BLINK_CYCLES) % 2 === 0;
-          ctx.globalAlpha = phase ? IFRAME_BLINK_ALPHA_ON : IFRAME_BLINK_ALPHA_OFF;
-        }
         // Hero body: sheet sprite when high-graphic (Hero.draw handles the
         // primitive fallback itself). The old unconditional debugColor rect
         // here painted a solid green block OVER the sprite — removed.
         const hb = h.worldBox();
-        drawAt(ctx, h, () => h.draw(ctx));
+        if (h.intangible) {
+          // Source-driven invulnerability looks (semantics over shared flags):
+          //   'powerup' → SMB1 color flicker (white / normal / invisible @12Hz)
+          //   'hit'     → transparent blink (level-entry grace family)
+          //   'dash'    → nothing — the dash speed sells it, no overlay
+          const frac = h.timers.fraction('intangible'); // 1 → 0 across the window
+          if (h.invulnSource === 'powerup') {
+            // Fixed-rate 3-phase cycle [white, normal, gone]; phase derived
+            // from elapsed time so a 5s powerup and a short grant look
+            // identical. The terminal phase is forced to 'normal' so the
+            // sprite is VISIBLE at expiry (no vanishing exactly when
+            // protection ends).
+            const totalPhases = Math.max(1, Math.round(INVULN_FLICKER_HZ * 3 * (1 - frac)));
+            const idx = Math.min(totalPhases - 1, Math.floor((1 - frac) * INVULN_FLICKER_HZ * 3));
+            let phase = ['white', 'normal', 'gone'][idx % 3];
+            if (idx === totalPhases - 1 && phase === 'gone') phase = 'normal';
+            if (phase === 'white') {
+              ctx.globalAlpha = IFRAME_BLINK_ALPHA_ON;
+              drawTintedHero(ctx, h, INVULN_WHITE_COLOR);
+            } else if (phase === 'gone') {
+              ctx.globalAlpha = 0;
+              drawAt(ctx, h, () => h.draw(ctx));
+            } else {
+              drawAt(ctx, h, () => h.draw(ctx));
+            }
+          } else if (h.invulnSource !== 'dash') {
+            // 'hit' (and any untagged legacy grant): classic transparent blink.
+            // IFRAME_BLINK_CYCLES full on/off cycles across the whole window;
+            // phase derived from the fraction so the last visible state lands
+            // at expiry.
+            const phase = Math.floor(frac * IFRAME_BLINK_CYCLES) % 2 === 0;
+            ctx.globalAlpha = phase ? IFRAME_BLINK_ALPHA_ON : IFRAME_BLINK_ALPHA_OFF;
+            drawAt(ctx, h, () => h.draw(ctx));
+          } else {
+            // 'dash': draw normally, no overlay.
+            drawAt(ctx, h, () => h.draw(ctx));
+          }
+        } else {
+          drawAt(ctx, h, () => h.draw(ctx));
+        }
         // Shield pulse: breathing disc around the hero. Base radius scales
         // with current shield (0 → invisible, full → maxR). A sine pulse
         // (1.5 Hz) adds ±12% radius oscillation for a living feel. Flash
@@ -627,6 +669,34 @@ export function heroAnimName(h) {
     // the label must match the pixels.
     default: return h._spriteAnim === 'idle_special' ? 'idle_special' : 'idle';
   }
+}
+
+/** Draw the hero's CURRENT sheet frame tinted to a solid color, through the
+ * entity's own transform pipeline (anchor, scale, mirror) — the silhouette
+ * follows the art exactly. Reuses spriteFlash's cached tintedImage() so each
+ * (frame, color) pair is recolored once and reused. Falls back to a plain
+ * box tint when no sheet frame is available (primitive mode / tests). */
+function drawTintedHero(ctx, h, color) {
+  const f = typeof h.spriteFrame === 'function' ? h.spriteFrame() : null;
+  if (f && f.img) {
+    const tinted = tintedImage(f.img, color);
+    if (tinted) {
+      ctx.save();
+      ctx.translate(f.anchorX, f.anchorY);
+      if (f.mirrorX) ctx.scale(-1, 1);
+      if (f.rotation) ctx.rotate(f.rotation);
+      ctx.scale(f.scale, f.scale);
+      ctx.drawImage(tinted, 0, 0, tinted.width, tinted.height, f.dx, f.dy, f.w, f.h);
+      ctx.restore();
+      return;
+    }
+  }
+  // BOX fallback: tinted rect over the live collision box.
+  const b = h.worldBox ? h.worldBox() : h;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.fillRect(b.x, b.y, b.w, b.h);
+  ctx.restore();
 }
 
 function drawDeathSkull(ctx, h) {

@@ -408,8 +408,10 @@ export class Hero extends Entity {
     // under friction during the window and control resumes cleanly after.
     this.timers.set('rec', profile.recovery);
     // Intangible for the i-frame duration (§27): drives both the state flag and
-    // the render blink (which reads the timer's remaining fraction).
+    // the render blink (which reads the timer's remaining fraction). Source
+    // tag 'hit' → transparent flicker (same family as level-entry grace).
     this.intangible = true;
+    this.invulnSource = 'hit';
     this.timers.set('intangible', Math.max(this.timers.get('intangible'), profile.iFrames));
     // Stamp the hit time so the HUD can play the 'hit' expression briefly.
     this.lastHitAt = performance.now();
@@ -659,6 +661,7 @@ export class Hero extends Entity {
     this.timers.tick(dt);
     if (this.intangible && this.timers.expired('intangible')) {
       this.intangible = false;
+      this.invulnSource = null;
     }
     // Drop-through window (design §13): expires naturally so the one-way
     // platform becomes landable again once the hero has cleared it.
@@ -1355,6 +1358,9 @@ export class Hero extends Entity {
     this.dying = false;
     this.deathTimer = 0;
     this.intangible = true;
+    // Respawn grace uses the level-entry look (transparent flicker) — tag it
+    // like 'hit' so the render path picks the same effect family.
+    this.invulnSource = 'hit';
     this.timers.set('intangible', Hero.RESPAWN_IFRAMES);
     this.exitCrouch();
     this.jumpsUsed = 0;          // 0=grounded, 1=first jump used, 2=double jump used
@@ -1449,6 +1455,10 @@ export class Hero extends Entity {
     // restore it when a jump-cancel ends the dash early.
     this._preSupermoveIntangible = this.timers.get('intangible');
     this.intangible = true;
+    // Dash gets NO visual effect (speed sells it) — tag 'dash' so the render
+    // path skips both flickers. A pre-existing longer grant keeps its source
+    // only if the dash didn't extend the window.
+    if (SUPERMOVE_DUR > this._preSupermoveIntangible) this.invulnSource = 'dash';
     this.timers.set('intangible', Math.max(this._preSupermoveIntangible, SUPERMOVE_DUR));
     // Swap to the supermove animation.
     if (this.anims.supermove) {
@@ -1490,6 +1500,9 @@ export class Hero extends Entity {
     if (restored > 0) {
       this.timers.set('intangible', restored);
       this.intangible = true;
+      // The surviving grant belongs to its original source — 'dash' visual is
+      // gone with the dash. Re-hit/respawn/powerup re-tag at their own sites.
+      if (this.invulnSource === 'dash') this.invulnSource = 'hit';
     } else {
       this.timers.clear('intangible');
       this.intangible = false;
