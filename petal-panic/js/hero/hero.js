@@ -15,6 +15,7 @@ import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats 
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { heroDamage } from '../combat/damage.js';
 import { JUMP_HEIGHT_SCALE } from './heroSprites.js';
+import { invulnFlicker } from '../effects/invulnFlicker.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
@@ -162,6 +163,11 @@ export class Hero extends Entity {
     // fields are transient (always zeroed right after transfer).
     this.hitstunTimer = 0;
     this.iFrameTimer = 0;
+    // Invulnerability flicker effect instance (§27). Owned by the hero, NOT
+    // the engine's active set: it is externally clocked (setProgress from the
+    // 'intangible' timer fraction) and must outlive engine resets between
+    // zones. render.js draws it in the hero slot when active.
+    this.invulnFx = null;
     // Wall-clock (ms) of the last landed hit — read by the HUD to play the
     // 'hit' expression on the lives badge for a short window after damage.
     this.lastHitAt = 0;
@@ -419,6 +425,37 @@ export class Hero extends Entity {
   }
 
   /**
+   * Sync the invulnerability flicker effect with the 'intangible' timer
+   * (design §27). Call once per frame after timers.tick(). The effect is
+   * externally clocked: its phase derives from the timer's remaining
+   * fraction, so extending the timer extends the blink and the last visible
+   * state lands exactly when immunity ends.
+   *
+   * Spawn policy: one instance per source tag. A re-hit while a 'hit' grant
+   * is active only refreshes the timer (no respawn — the fixed-rate/phase
+   * math is window-relative, not wall-clock, so it stays correct). A new
+   * source ('powerup' over 'hit', dash extension, ...) replaces the instance
+   * because the LOOK changes.
+   */
+  syncInvulnFx() {
+    if (!this.intangible) {
+      if (this.invulnFx) { this.invulnFx.complete(); this.invulnFx = null; }
+      return;
+    }
+    const src = this.invulnSource ?? 'hit';
+    // Reuse the live instance only for the same visual mode.
+    const mode = src === 'powerup' ? 'powerup' : 'hit';
+    if (this.invulnFx && !this.invulnFx.done && this._invulnFxMode === mode) {
+      this.invulnFx.setProgress(this.timers.fraction('intangible'));
+      return;
+    }
+    if (this.invulnFx) this.invulnFx.complete();
+    this._invulnFxMode = mode;
+    this.invulnFx = invulnFlicker({ mode }, this);
+    this.invulnFx.setProgress(this.timers.fraction('intangible'));
+  }
+
+  /**
    * Per-frame step.
    * @param {number} dt seconds (fixed 1/60)
    * @param {object} input { left, right, up, down, jump, shoot, special, melee }
@@ -663,6 +700,8 @@ export class Hero extends Entity {
       this.intangible = false;
       this.invulnSource = null;
     }
+    // Keep the invulnerability flicker effect in lockstep with the timer.
+    this.syncInvulnFx();
     // Drop-through window (design §13): expires naturally so the one-way
     // platform becomes landable again once the hero has cleared it.
     if (this._dropTimer > 0) this._dropTimer = Math.max(0, this._dropTimer - dt);

@@ -42,6 +42,7 @@ import { scalePulse } from './scalePulse.js';
 import { squashStretch } from './squashStretch.js';
 import { auraGlow } from './auraGlow.js';
 import { beam } from './beam.js';
+import { invulnFlicker } from './invulnFlicker.js';
 
 // --- Migrated effects () ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -87,6 +88,9 @@ registerEffect('aura-glow', auraGlow);
 
 // --- M6 beam effect -------------------------------------------------------------
 registerEffect('beam', beam);
+// Invulnerability flicker (§27): externally clocked by the carrier's
+// 'intangible' timer fraction — see invulnFlicker.js for the timing model.
+registerEffect('invuln-flicker', invulnFlicker);
 
 // --- Shield / barrier effects ---------------------------------------------------
 import { pulseBubble } from './pulseBubble.js';
