@@ -35,14 +35,27 @@ const IFRAME_BLINK_CYCLES = 6;       // full on/off cycles across the whole wind
 const IFRAME_BLINK_ALPHA_ON = 0.8;   // "on" visibility
 const IFRAME_BLINK_ALPHA_OFF = 0.4;  // "off" visibility
 
-// Powerup invincibility: SMB1-style color flicker. Three phases per cycle —
-// white flash / normal sprite / fully invisible — at a FIXED rate (not scaled
-// to the window like the hit blink) so a 5s powerup and a 0.3s grant look
-// identical. Phase index derived from elapsed time; the cycle is arranged so
-// phase 1 (normal, fully visible) lands at expiry — no vanishing exactly when
+// Powerup invincibility: SMB1-style color flicker. Six phases per cycle —
+// white / orange / white / black tints (21ms each), then the NORMAL sprite
+// (42ms), then fully INVISIBLE (83ms) — at a FIXED rate so a 5s powerup and a
+// 0.3s grant look identical. The tint beats are solid silhouettes at
+// INVULN_FLASH_ALPHA; 'black' is a black silhouette, not invisible. Phase
+// index derived from elapsed time; the terminal phase is forced to a visible
+// one so the sprite is VISIBLE at expiry — no vanishing exactly when
 // protection ends.
-const INVULN_FLICKER_HZ = 12;       // cycles per second (~83ms per 3-phase cycle)
+const INVULN_FLICKER_HZ = 12;       // cycles per second (~250ms per 6-phase cycle)
+const INVULN_PHASES = [             // name → duration in ms
+  { name: 'white',   dur: 21 },
+  { name: 'orange',  dur: 21 },
+  { name: 'white',   dur: 21 },
+  { name: 'black',   dur: 21 },
+  { name: 'normal',  dur: 42 },
+  { name: 'gone',    dur: 83 },
+];
 const INVULN_WHITE_COLOR = '#ffffff';
+const INVULN_ORANGE_COLOR = '#ff9f43';
+const INVULN_BLACK_COLOR = '#000000';
+const INVULN_FLASH_ALPHA = 0.8;     // uniform alpha for every tint phase
 
 export function render(ctx, alpha = 1) {
   // Home & Select are full-screen; skip world rendering entirely.
@@ -269,23 +282,28 @@ export function render(ctx, alpha = 1) {
           //   'dash'    → nothing — the dash speed sells it, no overlay
           const frac = h.timers.fraction('intangible'); // 1 → 0 across the window
           if (h.invulnSource === 'powerup') {
-            // Fixed-rate 3-phase cycle [white, normal, gone]; phase derived
-            // from elapsed time so a 5s powerup and a short grant look
-            // identical. The terminal phase is forced to 'normal' so the
-            // sprite is VISIBLE at expiry (no vanishing exactly when
-            // protection ends).
-            const totalPhases = Math.max(1, Math.round(INVULN_FLICKER_HZ * 3 * (1 - frac)));
-            const idx = Math.min(totalPhases - 1, Math.floor((1 - frac) * INVULN_FLICKER_HZ * 3));
-            let phase = ['white', 'normal', 'gone'][idx % 3];
+            // Fixed-rate 6-phase cycle [white, orange, white, black tints @21ms,
+            // normal @42ms, invisible @83ms]; phase derived from elapsed time
+            // so a 5s powerup and a short grant look identical. Tint beats are
+            // solid silhouettes at INVULN_FLASH_ALPHA; 'black' is a black
+            // silhouette, not invisible. The terminal phase is forced to a
+            // visible one so the sprite is VISIBLE at expiry (no vanishing
+            // exactly when protection ends).
+            const totalPhases = Math.max(1, Math.round(INVULN_FLICKER_HZ * INVULN_PHASES.length * (1 - frac)));
+            const idx = Math.min(totalPhases - 1, Math.floor((1 - frac) * INVULN_FLICKER_HZ * INVULN_PHASES.length));
+            let phase = INVULN_PHASES[idx % INVULN_PHASES.length].name;
             if (idx === totalPhases - 1 && phase === 'gone') phase = 'normal';
-            if (phase === 'white') {
-              ctx.globalAlpha = IFRAME_BLINK_ALPHA_ON;
-              drawTintedHero(ctx, h, INVULN_WHITE_COLOR);
-            } else if (phase === 'gone') {
+            if (phase === 'gone') {
               ctx.globalAlpha = 0;
               drawAt(ctx, h, () => h.draw(ctx));
-            } else {
+            } else if (phase === 'normal') {
               drawAt(ctx, h, () => h.draw(ctx));
+            } else {
+              const color = phase === 'white' ? INVULN_WHITE_COLOR
+                : phase === 'orange' ? INVULN_ORANGE_COLOR
+                : INVULN_BLACK_COLOR;
+              ctx.globalAlpha = INVULN_FLASH_ALPHA;
+              drawTintedHero(ctx, h, color);
             }
           } else if (h.invulnSource !== 'dash') {
             // 'hit' (and any untagged legacy grant): classic transparent blink.
