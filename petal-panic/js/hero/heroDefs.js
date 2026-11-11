@@ -89,14 +89,14 @@ export const HEROES = {
     id: 'scarlet',
     name: 'Scarlet Vale',
     specialName: 'Ribbon Storm',
-    targetH: 2,                  // Y-units (2 = 96px); width is sheet-owned
+    targetH: 1.9,                // Y-units (1.9 = 91.2px); width is sheet-owned
     stats: {
       weight: 1,
-      speed: 375 / UNIT_PX_X,  // X-units/s (exactly 375 px/s at the current grid)
+      speed: 312 / UNIT_PX_X,  // X-units/s (exactly 312 px/s at the current grid; 250 original × 1.25)
       attack: 10,
       defense: 2,
       stamina: 100,
-      jump: 511 / UNIT_PX_Y,   // Y-units/s impulse (exactly 511 px/s at the current grid)
+      jump: 639 / UNIT_PX_Y,   // Y-units/s impulse (exactly 639 px/s — ~109px apex ≈ 1.2× body)
       projectile_freq: 8,   // shots per second (default weapon only)
     },
     // §15 Special melee (Down+Melee): the shared advancing leg sweep — same
@@ -113,14 +113,14 @@ export const HEROES = {
     id: 'balthazar',
     name: 'Balthazhar',
     specialName: 'Earthquake',
-    targetH: 2,                  // Y-units (2 = 96px); width is sheet-owned — same standard as scarlet
+    targetH: 1.9,                // Y-units (1.9 = 91.2px); width is sheet-owned — same standard as scarlet
     stats: {
       weight: 1.3,
-      speed: 270 / UNIT_PX_X,  // X-units/s (exactly 270 px/s at the current grid)
+      speed: 225 / UNIT_PX_X,  // X-units/s (exactly 225 px/s at the current grid)
       attack: 20,
       defense: 5,
       stamina: 70,
-      jump: 456 / UNIT_PX_Y,   // Y-units/s impulse (exactly 456 px/s at the current grid)
+      jump: 570 / UNIT_PX_Y,   // Y-units/s impulse (exactly 570 px/s — ~109px apex ≈ 1.2× body)
       projectile_freq: 10,   // shots per second (default weapon only)
     },
     // §15 Special melee (Down+Melee): the shared advancing leg sweep
