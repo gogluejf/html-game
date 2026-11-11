@@ -198,7 +198,13 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // Crouch owns its own height (applyCrouchHeight + CROUCH_HEIGHT_SCALE) — it
   // must win over the run/idle switch. setAnim() no longer touches _targetHScale,
   // so crouched height is preserved automatically across anim switches.
-  if (hero.crouching) {
+  //
+  // EXCEPT while airborne: a jump launched from a crouch exits the crouch
+  // state atomically in hero.update, but a Down held through the launch would
+  // re-enter crouch on the first grounded frame and this branch would keep
+  // playing the crouch sheet for the whole air time. Airborne, the jump pose
+  // always wins (it owns both the art and the tucked height).
+  if (hero.crouching && hero.grounded) {
     delete hero._idlePatternClock;
     const want = (shooting && hero.sprite.anims.crouch_shoot) ? 'crouch_shoot' : 'crouch';
     if (hero._spriteAnim !== want) {
