@@ -502,6 +502,12 @@ export class Pool {
 
   /** Number of live projectiles. */
   get count() { return this.active.length; }
+
+  /** Kill every live projectile (attempt-boundary teardown — see clearTransientWorld). */
+  reset() {
+    for (const p of this.active) p.alive = false;
+    this.active.length = 0;
+  }
 }
 
 // Shared global pool: the single source of all live projectiles.

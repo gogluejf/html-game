@@ -544,6 +544,12 @@ export class CoinPool {
   }
 
   get activeItems() { return this.active; }
+
+  /** Kill every live coin (attempt-boundary teardown — see clearTransientWorld). */
+  reset() {
+    for (const c of this.active) { c.alive = false; c.collected = true; }
+    this.active.length = 0;
+  }
   get count() { return this.active.length; }
 }
 

@@ -27,6 +27,7 @@ import { dispatchScreenInput, setMenuHero } from '../ui/screens.js';
 import { makeElephant } from '../boss/boss.js';
 import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER } from '../boss/bossZone.js';
 import { particles, coins } from '../effects/particles.js';
+import { floatTexts } from '../hero/floatText.js';
 import { applyKnockback } from '../combat/knockback.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
@@ -577,8 +578,6 @@ function regenerateWorld(oldCtx) {
   return areaContext;
 }
 
-import { floatTexts } from '../hero/floatText.js';
-
 // --- Input -------------------------------------------------------------------
 export function processInput() {
   input.poll({ facing: hero.facing });
@@ -690,6 +689,9 @@ onTransition((from, to) => {
     // gets its real terrain. loadActiveZone replaces solids anyway, but this
     // keeps the boss zone's own state consistent for a later entry into 1-B.
     restoreBossRunFloor();
+    // Attempt boundary: a genuinely new game starts with zero transients —
+    // no fire zones, projectiles, particles, or effects from the previous run.
+    AttackLifecycle.clearTransientWorld();
     const nh = startGame({ world: collisionWorld, oldHero, areaContext }, def);
     // Snapshot the freshly generated terrain into the trace's areaMap (stable
     // for the whole game — rolled once per seed).
@@ -777,6 +779,10 @@ onTransition((from, to) => {
     // Tear down any lingering boss battle room before swapping zones (a fresh
     // resume must not inherit COMBAT state from a finished run).
     if (bossZone.active) { bossZone.reset(); camera.unlock(); restoreBossRunFloor(); }
+    // Attempt boundary: a menu continue / level-select / boss-rush entry starts
+    // with zero transients — no fire zones, projectiles, particles, or effects
+    // from the previous session may bleed into the resumed zone.
+    AttackLifecycle.clearTransientWorld();
     const zone = getActiveZone(h);
     if (zone.kind === 'area' && world.world.has(zone.areaIdx)) {
       loadActiveZone(zone, world.world.get(zone.areaIdx));
@@ -905,6 +911,7 @@ GameObj.prototype.onDestroyed = function (_ctx, _result) {
 };
 ctx.coins = coins;
 ctx.projectilePool = projectilePool;
+ctx.floatTexts = floatTexts;
 // Unified pool: specials ARE projectiles now (Special folded into Projectile,
 // task 1.3) — the engine has ONE pool.
 // Fresh per-frame world-state bag for the bomb-family attack context. Used by

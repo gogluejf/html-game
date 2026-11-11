@@ -362,7 +362,9 @@ export class BossZone {
    * Reset the machine to dormant (death during intro/combat restarts the
    * WHOLE zone — boss-arena.md §3). The caller re-installs the zone content
    * (flag restored), un-freezes the camera, and re-places the hero at the
-   * left entry; the run then repeats.
+   * left entry; the run then repeats. Also restores the boss's combat state:
+   * a death-restart can follow a fight where the boss was damaged or even
+   * defeated, and it must not re-enter with leftover HP / death latches.
    */
   reset() {
     this.state = null;
@@ -370,6 +372,7 @@ export class BossZone {
     this.barFill = 0;
     this._sweepDone = false;
     this._combat = false;
+    resetBossCombatState(this.boss);
   }
 }
 

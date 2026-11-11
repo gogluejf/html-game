@@ -15,6 +15,7 @@ import { makeCheckpoint } from '../objects/object.js';
 import { showAreaEntry, formatAreaId, recordZoneSnapshot, setAreaEntryFadeOutCallback, setAreaEntryAdvanceFlag, setAreaEntryAdvanceConsume, setMenuEntryFlag, restartAttempt, arriveAtZone, continueRun, saveCurrentRun } from '../systems/lifecycle.js';
 import { instantiateZone } from './build.js';
 import { restoreBossRunFloor } from '../boss/bossFlow.js';
+import { AttackLifecycle } from '../combat/attack/lifecycle.js';
 
 // --- Retry eligibility (state-persistence.md §2.1) ---------------------------
 // A manual retry costs exactly 1 life — identical to dying. It is only legal
@@ -139,6 +140,8 @@ export function debugWrapToNextArea() {
   // Don't stack another advance while one is already in flight.
   if (clearSeq.state !== 'idle') return;
   const hero = ctx.hero;
+  // Attempt boundary: a fresh game starts with zero transients.
+  AttackLifecycle.clearTransientWorld();
   const zone = ctx.getActiveZone(hero);
   if (zone.kind === 'boss') {
     // At the boss zone there is no further area in this level. Wrap back to
@@ -175,6 +178,9 @@ export function debugWrapToNextArea() {
   // checkpoint, record the snapshot, and show the entry screen — skipping the
   // banner + fade-out that onExitFlagReached would otherwise play.
   hero.currentArea = nextArea;
+  // Attempt boundary: no transients (fire zones, projectiles, effects) survive
+  // the advance into the next zone.
+  AttackLifecycle.clearTransientWorld();
   const nextZone = ctx.getActiveZone(hero);
   if (nextZone.kind === 'area' && ctx.world.world.has(nextZone.areaIdx)) {
     ctx.loadActiveZone(nextZone, ctx.world.world.get(nextZone.areaIdx));
@@ -250,6 +256,9 @@ export function stepClearSequence(dt) {
       // The boss zone has no stored population (buildWorld skips non-area
       // zones), so loadActiveZone uses its fallback (zone.platforms = just
       // the floor) — clearing all previous-area entities.
+      // Transient teardown first (attempt boundary): fire zones / projectiles
+      // / effects from the cleared area must not bleed into the next one.
+      AttackLifecycle.clearTransientWorld();
       if (nextZone.kind === 'area' && ctx.world.world.has(nextZone.areaIdx)) {
         ctx.loadActiveZone(nextZone, ctx.world.world.get(nextZone.areaIdx));
         console.log(`[zone] loaded zone ${nextZone.areaIdx}, checkpoints: ${ctx.checkpoints.map(c => c.checkpointId + (c.isEntry ? '(entry)' : '(exit)')).join(', ')}`);
@@ -484,6 +493,12 @@ export function heroEntryPosition(hero, zone) {
  */
 export function resetActiveZoneContent() {
   const hero = ctx.hero;
+  // Transient teardown FIRST: every attack handle, projectile, fire zone,
+  // particle, and effect dies before the zone content is re-instantiated, so
+  // nothing from the failed attempt (molotov fire, barrel payloads, enemy
+  // attacks...) can bleed into the fresh one. Single owner: clearTransientWorld
+  // (combat/attack/lifecycle.js) — new transient systems register there once.
+  AttackLifecycle.clearTransientWorld();
   const activeZone = ctx.getActiveZone(hero);
   if (activeZone.kind === 'area' && ctx.world.world.has(activeZone.areaIdx)) {
     const fresh = instantiateZone(
@@ -564,6 +579,9 @@ export function retryLevel() {
  */
 export function continueFromGameOver() {
   const hero = ctx.hero;
+  // Transient teardown (same contract as resetActiveZoneContent): a continue
+  // is an attempt boundary — no fire zones / projectiles / effects survive it.
+  AttackLifecycle.clearTransientWorld();
   // Continue rolls the wallet back to zone 1-1's entry snapshot (lifecycle.js
   // §4 / state-persistence.md §2.2). The respawned zone is area 1 of the
   // CURRENT level — and it must be INSTALLED into the collision world, exactly

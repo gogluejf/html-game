@@ -19,6 +19,7 @@
 
 import { stepBomb, stepBombTerrain } from './primitives/projectile.js';
 import { _step } from './engineDepth.js';
+import { ctx as wctx } from '../../world/context.js';
 /**
  * @typedef {object} AttackHandle
  * @property {Function} [step]      per-frame driver: step(dt, targets)
@@ -149,6 +150,31 @@ export const AttackLifecycle = {
     for (const h of handles) {
       try { h.cancel?.(); } catch (err) { console.warn('[AttackLifecycle] cancel threw during clear:', err); }
     }
+  },
+
+  /**
+   * Full transient-world teardown — the SINGLE place "remove all entities"
+   * lives. Called on every attempt boundary (death-restart, manual retry,
+   * continue, zone advance): anything that is NOT authored zone content
+   * (enemies/barrels/powerups/checkpoints are restored from their snapshots by
+   * restoreArea instead) dies here, so no attack, projectile, fire zone,
+   * particle, or effect can ever bleed into the next attempt. New transient
+   * systems register themselves in world/context.js; they get cleaned up for
+   * free.
+   */
+  clearTransientWorld() {
+    // Host-owned roots (hero shots via BombAttackHost) plus carrier entities.
+    wctx.bombAttacks?.clear();
+    // Registry-owned roots: hero-shot fire zones, barrel payloads, enemy/boss
+    // handles. cancel() cascades to nested children (carrierMacro) and kills
+    // the handle's zone + hitboxes.
+    this.clear();
+    // Pooled transients.
+    wctx.projectilePool?.reset?.();
+    wctx.coins?.reset?.();
+    wctx.particles?.reset?.();
+    wctx.effects?.reset?.();
+    if (wctx.floatTexts) for (const t of wctx.floatTexts) t.alive = false;
   },
 };
 
