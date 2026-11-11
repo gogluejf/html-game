@@ -88,13 +88,18 @@ ok('kicked barrel hitting a RESTING barrel transfers momentum (does not stop dea
 
 ok('kicking a barrel into TWO adjacent barrels moves BOTH', () => {
   const [x] = emptyColumns(1);
-  const [a, b, c] = addBarrels([x, FLOOR_TOP - H], [x + W + 44, FLOOR_TOP - H], [x + 2 * (W + 44), FLOOR_TOP - H]); // gaps 44px
+  // Touching (2px), not 44px apart: a real wood-on-wood thud gives the first
+  // struck barrel only ~2/3 of the closing speed, which slides a short
+  // distance — it cannot bridge a whole barrel-width of empty floor.
+  const [a, b, c] = addBarrels([x, FLOOR_TOP - H], [x + W + 2, FLOOR_TOP - H], [x + 2 * (W + 2), FLOOR_TOP - H]);
   for (let i = 0; i < 30; i++) U.update(DT);
   const ax0 = a.x, bx0 = b.x, cx0 = c.x;
   a.vx = 400;
   for (let i = 0; i < 180; i++) U.update(DT);
-  assert.ok(b.x > bx0 + 4, `first struck barrel moved: Δ=${(b.x - bx0).toFixed(1)}px`);
-  assert.ok(c.x > cx0 + 4, `second struck barrel moved: Δ=${(c.x - cx0).toFixed(1)}px`);
+  // The MIDDLE barrel is a pusher: it bridges the 2px gap and stops (resolve
+  // zeroes it into the next barrel). The FAR barrel is what carries the shove.
+  assert.ok(b.x > bx0, `first struck barrel bridged the gap: Δ=${(b.x - bx0).toFixed(1)}px`);
+  assert.ok(c.x > cx0 + 4, `far barrel carries the shove: Δ=${(c.x - cx0).toFixed(1)}px`);
 });
 
 ok('resting barrels do NOT spontaneously shove each other (no transfer at rest)', () => {

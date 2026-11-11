@@ -134,20 +134,25 @@ const solidEntities = [];
  * @param {object[]} peers all dynamic solids INCLUDING e (self is filtered out)
  */
 // Horizontal friction for externally-impulsed motion (knockback). Exponential
-// decay per second: 0.02 means a shoved barrel keeps 2% of its slide speed
-// after one full second — it skids to a stop in ~0.3-0.5s, matching the
-// character of the hero's ground friction (0.85 per fixed step ≈ 0.14/s at
-// 60fps). Frame-rate independent via Math.pow(friction, dt).
-const DYNAMIC_SOLID_FRICTION_PER_SECOND = 0.02;
+// decay per second: F means a shoved barrel keeps F of its slide speed after
+// ONE FULL SECOND (frame-rate independent via Math.pow(F, dt)). NOTE: LOWER F
+// = STRONGER friction (it decays faster). F=0.005 → a 400px/s kick keeps 0.5%
+// after 1s: rolls ~80px and stops in ~0.5s — a short wooden thud-roll, not an
+// ice slide. (Higher F like 0.1 = 10% after 1s = the sliding-on-ice feel.)
+const DYNAMIC_SOLID_FRICTION_PER_SECOND = 0.005;
 
 // Barrel-on-barrel momentum transfer (declaration of impact, sibling of
 // barrelImpactSweep): when a MOVING dynamic solid overlaps another live
 // dynamic solid, the mover pushes the other along the overlap axis and loses
 // part of its own velocity — so a kicked barrel that strikes a resting barrel
 // shoves it instead of stopping dead against it (real physics: momentum is
-// transferred, not destroyed). Equal-mass elastic collision with restitution:
-// each body keeps (1-e)/2 of the relative speed and hands (1+e)/2 to the other.
-const BARREL_TRANSFER_RESTITUTION = 0.9; // lively arcade bounce; <1 bleeds energy
+// transferred, not destroyed). Equal-mass collision with restitution e:
+// closing speed along the push axis is reduced by (1+e)/2 for EACH body,
+// opposite directions (momentum always conserved). e=0 → the pair moves
+// together at half the speed (perfectly inelastic); e=1 → velocities fully
+// exchange (Newton's cradle). Wood-on-wood is a thud: e=0.35 eats ~90% of
+// the KE and the struck barrel leaves at ~0.67× the closing speed.
+const BARREL_TRANSFER_RESTITUTION = 0.35; // wood-on-wood thud, not a superball
 
 export function stepDynamicSolid(e, dt, statics, peers) {
   if (!e.alive) return;
@@ -173,11 +178,13 @@ export function stepDynamicSolid(e, dt, statics, peers) {
   // Momentum transfer: a MOVING dynamic solid that overlaps another live
   // dynamic solid pushes it along the overlap axis instead of stopping dead
   // against it (a kicked barrel striking a resting barrel shoves it). Equal-
-  // mass elastic collision with restitution: each body keeps (1-e)/2 of the
-  // relative speed and hands (1+e)/2 to the other. Runs BEFORE resolve() so
-  // the impulse is computed from the OVERLAPPING position — resolve() then
-  // separates the boxes, and next frame's integration carries the shove. Only
-  // when the mover actually has velocity — at rest this is a no-op, so
+  // mass collision with restitution e=BARREL_TRANSFER_RESTITUTION: the closing
+  // speed along the push axis is reduced by (1+e)/2 for EACH body in opposite
+  // directions — a symmetric impulse, so momentum is conserved exactly.
+  // Runs BEFORE resolve() so the impulse is computed from the OVERLAPPING
+  // position — resolve() then separates the boxes and zeroes the mover's
+  // into-the-peer velocity (the "stopping against it" part). Only when the
+  // mover is actually closing on the peer — at rest this is a no-op, so
   // stacking/settling behavior is untouched.
   for (const p of others) {
     const evx = e.vx ?? 0, evy = e.vy ?? 0;
@@ -190,20 +197,18 @@ export function stepDynamicSolid(e, dt, statics, peers) {
     if (penX <= penY) {
       if (Math.abs(evx) < 1) continue; // moving vertically into a side wall — no shove
       const nx = Math.sign((pb.x + pb.w / 2) - (eb.x + eb.w / 2)) || 1; // e → peer
-      const rel = evx * nx; // >0 when closing in on the peer
+      const rel = (evx - (p.vx ?? 0)) * nx; // >0 when closing in on the peer
       if (rel <= 0) continue;
-      const keep = (1 - BARREL_TRANSFER_RESTITUTION) / 2;
-      const hand = (1 + BARREL_TRANSFER_RESTITUTION) / 2;
-      e.vx -= nx * rel * keep;
+      const hand = (1 + BARREL_TRANSFER_RESTITUTION) / 2; // symmetric impulse
+      e.vx -= nx * rel * hand;
       p.vx = (p.vx ?? 0) + nx * rel * hand;
     } else {
       if (Math.abs(evy) < 1) continue;
       const ny = Math.sign((pb.y + pb.h / 2) - (eb.y + eb.h / 2)) || 1; // e → peer
-      const rel = evy * ny;
+      const rel = (evy - (p.vy ?? 0)) * ny;
       if (rel <= 0) continue;
-      const keep = (1 - BARREL_TRANSFER_RESTITUTION) / 2;
-      const hand = (1 + BARREL_TRANSFER_RESTITUTION) / 2;
-      e.vy -= ny * rel * keep;
+      const hand = (1 + BARREL_TRANSFER_RESTITUTION) / 2; // symmetric impulse
+      e.vy -= ny * rel * hand;
       p.vy = (p.vy ?? 0) + ny * rel * hand;
     }
   }
