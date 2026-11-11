@@ -443,36 +443,46 @@ export class Hero extends Entity {
   }
 
   /**
-   * Sync the invulnerability flicker effect with the 'intangible' timer
-   * (design §27). Call once per frame after timers.tick(). The effect is
-   * externally clocked: its phase derives from the timer's remaining
-   * fraction, so extending the timer extends the blink and the last visible
-   * state lands exactly when immunity ends.
+   * Sync the invulnerability effect with the 'intangible' timer (design §27).
+   * Call once per frame after timers.tick().
    *
-   * Spawn policy: one instance per source tag. A re-hit while a 'hit' grant
-   * is active only refreshes the timer (no respawn — the fixed-rate/phase
-   * math is window-relative, not wall-clock, so it stays correct). A new
-   * source ('powerup' over 'hit', dash extension, ...) replaces the instance
+   * Spawn policy: one instance per (source, window). A re-hit that EXTENDS
+   * the timer respawns the effect with the new duration so the blink covers
+   * the whole longer window; a re-hit within the same window keeps the live
+   * instance. A new source ('powerup' over 'hit', ...) replaces the instance
    * because the LOOK changes.
+   *
+   * Clocking: the blink is SELF-TIMED over its fixed duration — this method
+   * advances it with update(dt) each frame (the intangible timer ticks for
+   * the same dt, so they stay in lockstep). The color-cycler stays externally
+   * clocked via setProgress(timer fraction).
    */
-  syncInvulnFx() {
+  syncInvulnFx(dt = 0) {
     if (!this.intangible) {
       if (this.invulnFx) { this.invulnFx.complete(); this.invulnFx = null; }
       return;
     }
     const src = this.invulnSource ?? 'hit';
-    // Reuse the live instance only for the same look.
+    // Reuse the live instance only for the same look AND the same window. A
+    // re-hit that EXTENDS the intangible timer respawns the effect with the
+    // new duration so the blink covers the whole (longer) window — the
+    // effect is self-timed over a fixed duration, it cannot stretch itself.
     const look = INVULN_LOOKS[src] ?? INVULN_LOOKS.hit;
-    if (this.invulnFx && !this.invulnFx.done && this._invulnFxMode === src) {
-      this.invulnFx.setProgress(this.timers.fraction('intangible'));
+    const remaining = this.timers.get('intangible');
+    if (this.invulnFx && !this.invulnFx.done && this._invulnFxMode === src
+        && Math.abs(this._invulnFxDur - remaining) < 1e-3) {
+      // Same look, same window: advance the self-timed blink's own clock.
+      // (The intangible timer already ticked this frame for the same dt.)
+      if (look.kind === 'blink') this.invulnFx.update(dt);
       return;
     }
     if (this.invulnFx) this.invulnFx.complete();
     this._invulnFxMode = src;
+    this._invulnFxDur = remaining;
     this.invulnFx = look.kind === 'blink'
-      ? blink({ cycles: look.cycles, alphaOn: look.alphaOn, alphaOff: look.alphaOff }, this)
+      ? blink({ duration: remaining, cycles: look.cycles, alphaOn: look.alphaOn, alphaOff: look.alphaOff }, this)
       : invulnFlicker({ colors: look.colors, beatMs: look.beatMs, alpha: look.alpha }, this);
-    this.invulnFx.setProgress(this.timers.fraction('intangible'));
+    if (look.kind !== 'blink') this.invulnFx.setProgress(this.timers.fraction('intangible'));
   }
 
   /**
@@ -720,8 +730,8 @@ export class Hero extends Entity {
       this.intangible = false;
       this.invulnSource = null;
     }
-    // Keep the invulnerability flicker effect in lockstep with the timer.
-    this.syncInvulnFx();
+    // Keep the invulnerability effect in lockstep with the timer.
+    this.syncInvulnFx(dt);
     // Drop-through window (design §13): expires naturally so the one-way
     // platform becomes landable again once the hero has cleared it.
     if (this._dropTimer > 0) this._dropTimer = Math.max(0, this._dropTimer - dt);

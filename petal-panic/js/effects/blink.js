@@ -1,22 +1,22 @@
 // Petal Panic — Blink (design §27).
 //
 // A DUMB constant-rate on/off blink of the carrier's REAL sprite. It knows
-// nothing about hits, powerups, or timers: N full on/off cycles are spread
-// EVENLY across the whole window (no acceleration), fading between alphaOn
-// and alphaOff. No colors, no wash — just visibility.
+// nothing about hits, powerups, or timers: given a `duration` and a number of
+// `cycles`, it plays N full on/off pairs spread EVENLY across that duration
+// (no acceleration), fading between alphaOn and alphaOff. No colors, no wash
+// — just visibility.
 //
-//   blink({ cycles = 6, alphaOn = 0.8, alphaOff = 0.4 }, carrier)
+//   blink({ duration = 0.6, cycles = 6, alphaOn = 0.8, alphaOff = 0.4 }, carrier)
 //
-// SIBLING EFFECT — blinkTransition is a DIFFERENT job: self-timed (owns its
-// own elapsed timer), accelerating switch rate, color/image frames, settles
-// and holds. This one is externally clocked at a constant rate so it stays
-// locked to the carrier's immunity window: extending the window extends the
-// blink, and the sprite is VISIBLE exactly when the window ends.
+// SIBLING EFFECT — blinkTransition is a DIFFERENT job: same self-timed clock
+// but an ACCELERATING switch rate (ease-in) and color/image frames instead of
+// the real sprite. This one is constant-rate and blinks the sprite itself.
 //
-// TIMING MODEL — externally driven. This instance does NOT own its clock.
-// The caller steps it every frame with setProgress(fraction), where
-// fraction = remaining/total of the carrier's immunity timer (1 → 0).
-// update(dt) is therefore a no-op.
+// TIMING MODEL — self-timed. update(dt) advances an internal elapsed clock;
+// the effect completes when `duration` elapses. The caller picks the duration
+// from the gameplay window it wants covered (i-frame length, grace period);
+// if that window extends (re-hit), the caller respawns the effect with the
+// new duration.
 //
 // RENDER OWNERSHIP — this effect REPLACES the carrier's normal draw for the
 // duration (it is not an overlay like spriteFlash/spriteColorPulse). The
@@ -24,46 +24,50 @@
 //   if (!carrier.invulnFx?.active) <normal draw>
 
 /**
- * @param {{cycles?:number, alphaOn?:number, alphaOff?:number}} params
- *   cycles   — full on/off cycles across the whole window (default 6).
+ * @param {{duration?:number, cycles?:number, alphaOn?:number, alphaOff?:number}} params
+ *   duration — total lifetime in seconds (default 0.6).
+ *   cycles   — full on/off pairs across the duration (default 6).
  *   alphaOn  — "on" visibility (default 0.8).
  *   alphaOff — "off" visibility (default 0.4).
  * @param {object|null} [carrier] entity exposing spriteFrame() and/or worldBox()
  * @returns {{space:string, active:boolean, done:boolean,
- *            setProgress:Function, update:Function, render:Function,
- *            complete:Function}}
+ *            update:Function, render:Function, complete:Function}}
  */
 export function blink(params = {}, carrier = null) {
+  const duration = Math.max(1e-3, Number.isFinite(params.duration) && params.duration > 0 ? params.duration : 0.6);
   const cycles = Math.max(1, Math.round(params.cycles ?? 6));
   const alphaOn = clamp01(params.alphaOn ?? 0.8);
   const alphaOff = clamp01(params.alphaOff ?? 0.4);
 
-  // Remaining-fraction of the immunity window (1 → 0), set by the caller.
-  let frac = 1;
+  let elapsed = 0;
 
   return {
     space: 'world', // rides the world-space camera pass (two-pass model)
     active: true,   // caller reads this to suppress the carrier's own draw
     done: false,
 
-    /** External clock: fraction = remaining/total of the immunity timer. */
-    setProgress(f) {
-      frac = Math.min(1, Math.max(0, f));
+    /** Self-timed: advance the internal clock. */
+    update(dt) {
+      if (this.done || !Number.isFinite(dt) || dt <= 0) return;
+      elapsed = Math.min(duration, elapsed + dt);
+      if (elapsed >= duration - 1e-9) this.done = true;
     },
-
-    /** No-op — timing is owned by the carrier's immunity timer. */
-    update(_dt) {},
 
     render(ctx) {
       if (this.done || !carrier) return;
-      // Constant rate: N even beats across the window. Even beats are ON.
-      const idx = Math.floor((1 - frac) * cycles + 1e-9);
-      // Terminal visibility: at frac→0 the index lands on `cycles` — for
-      // EVEN cycles that is an OFF beat and the sprite would vanish exactly
-      // when protection ends. Widen the final ON beat to cover the whole
-      // last segment (frac < 1/cycles): the sprite stays visible for the
-      // tail of the window instead of flickering off on the last frames.
-      const on = (cycles % 2 === 0 && frac < 1 / cycles) || idx % 2 === 0;
+      const frac = 1 - elapsed / duration; // remaining fraction (1 → 0)
+      // Constant rate: 2×cycles even beats across the duration, beat i spans
+      // frac ∈ ((N-1-i)/N, (N-i)/N] with N = 2×cycles. Even beats are ON.
+      // Terminal visibility: at frac→0 the raw index lands on N (an OFF beat
+      // for even N), so force the final frame ON — the sprite is VISIBLE
+      // exactly when the blink ends.
+      const n = cycles * 2;
+      const raw = (1 - frac) * n; // beats elapsed since t=0 (0 → n)
+      const idx = Math.min(n - 1, Math.floor(raw + 1e-9));
+      // Even beat indices are ON (beat 0 at t=0 is ON). Terminal visibility:
+      // the last beat (idx n-1) is forced ON so the sprite is VISIBLE exactly
+      // when the blink ends.
+      const on = idx === n - 1 || idx % 2 === 0;
       ctx.save();
       ctx.globalAlpha = on ? alphaOn : alphaOff;
       drawNormal(ctx, carrier);

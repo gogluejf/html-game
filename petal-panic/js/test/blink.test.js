@@ -1,16 +1,15 @@
 // Unit tests for the plain blink effect (js/effects/blink.js, design §27).
 // Run: node js/test/blink.test.js
-// No DOM needed: render() is exercised with a recording stub context. The
-// effect is EXTERNALLY clocked — setProgress(fraction) replaces update(dt).
+// No DOM needed: render() is exercised with a recording stub context.
 //
-// The effect is a DUMB constant-rate on/off blink: N even cycles of the real
-// sprite across the whole window, fading between alphaOn and alphaOff. No
-// colors, no wash, no acceleration. Sibling to blinkTransition (self-timed,
-// accelerating, color frames) — different job, different file.
+// The effect is a DUMB constant-rate on/off blink: given duration + cycles it
+// plays N full on/off pairs spread evenly across that duration (self-timed),
+// fading between alphaOn and alphaOff. No colors, no wash, no acceleration.
+// Sibling to blinkTransition (accelerating, color frames) — different job.
 
 import { strict as assert } from 'node:assert';
 import { blink } from '../effects/blink.js';
-import { hasEffect, fireManual, resetEffects, activeCount, drawEffects } from '../effects/index.js';
+import { hasEffect, fireManual, resetEffects, activeCount, drawEffects, updateEffects } from '../effects/index.js';
 import '../effects/registry.js'; // side effect: registers the types
 
 let passed = 0;
@@ -68,94 +67,102 @@ ok('complete() deactivates and marks done', () => {
   assert.equal(fx.active, false);
 });
 
-ok('update(dt) is a no-op (externally clocked)', () => {
-  const fx = blink({}, makeCarrier());
-  fx.setProgress(0.5);
-  fx.update(1 / 60);
+ok('update(dt) advances the self-timed clock; invalid dt ignored', () => {
+  const fx = blink({ duration: 1 }, makeCarrier());
+  fx.update(0.5);
   assert.equal(fx.done, false);
+  fx.update(-1); fx.update(NaN); // ignored
+  fx.update(0.6);
+  assert.equal(fx.done, true); // 0.5 + 0.6 >= 1
 });
 
-ok('setProgress clamps to [0,1]', () => {
-  const fx = blink({}, makeCarrier());
-  fx.setProgress(5); fx.render(makeCtx());
-  fx.setProgress(-3); fx.render(makeCtx());
+ok('completes exactly when duration elapses', () => {
+  const fx = blink({ duration: 0.6 }, makeCarrier());
+  for (let i = 0; i < 35; i++) fx.update(1 / 60); // 35/60 = 0.583 < 0.6
   assert.equal(fx.done, false);
+  fx.update(1 / 60); // 36/60 = 0.6
+  assert.equal(fx.done, true);
 });
 
 // --- Blink semantics --------------------------------------------------------------
-ok('frac=1 → ON at alphaOn (default 0.8), one normal draw', () => {
+ok('t=0 → ON at alphaOn (default 0.8), one normal draw', () => {
   const ctx = makeCtx();
   const fx = blink({}, makeCarrier());
-  fx.setProgress(1);
   fx.render(ctx);
   assert.deepEqual(alphas(ctx), [0.8]);
   assert.equal(draws(ctx).length, 1);
 });
 
 ok('mid-window OFF beat uses alphaOff (default 0.4)', () => {
-  // cycles=6: idx = floor(0.5*6)=3 → odd → off.
+  // duration 1s, 6 cycles → 12 beats of ~83ms. t=0.25 → beat 3 → OFF.
+  const fx = blink({ duration: 1, cycles: 6 }, makeCarrier());
+  fx.update(0.25);
   const ctx = makeCtx();
-  const fx = blink({}, makeCarrier());
-  fx.setProgress(0.5);
   fx.render(ctx);
   assert.deepEqual(alphas(ctx), [0.4]);
 });
 
-ok('tail of the window stays ON (visible when protection ends)', () => {
-  // Terminal visibility: even cycles widen the final ON beat to frac < 1/6.
+ok('final frame lands ON (visible when the blink ends)', () => {
+  const fx = blink({ duration: 1, cycles: 6 }, makeCarrier());
+  fx.update(0.999);
   const ctx = makeCtx();
-  const fx = blink({}, makeCarrier());
-  fx.setProgress(0.001);
   fx.render(ctx);
   assert.deepEqual(alphas(ctx), [0.8]);
 });
 
 ok('constant rate — beats are evenly spaced (no acceleration)', () => {
-  // 6 cycles: each beat spans exactly 1/6 of the window.
-  const fx = blink({ cycles: 6 }, makeCarrier());
-  const expect = (frac, alpha) => {
+  // duration 1s, 6 cycles → 12 beats, each 1/12 s. Sample the middle of
+  // each beat: even beats ON, odd OFF.
+  const fx = blink({ duration: 1, cycles: 6 }, makeCarrier());
+  const expect = (t, alpha) => {
+    fx.update(0); // fresh instance per sample
+    for (let i = 0; i < Math.round(t * 60); i++) fx.update(1 / 60);
     const ctx = makeCtx();
-    fx.setProgress(frac);
     fx.render(ctx);
-    assert.deepEqual(alphas(ctx), [alpha], `frac=${frac}`);
+    assert.deepEqual(alphas(ctx), [alpha], `t=${t}`);
   };
-  expect(0.95, 0.8); // beat 0 (ON)
-  expect(0.80, 0.4); // beat 1 (OFF)
-  expect(0.65, 0.8); // beat 2 (ON)
-  expect(0.50, 0.4); // beat 3 (OFF)
-  expect(0.32, 0.8); // beat 4 (ON)
-  expect(0.18, 0.8); // terminal widened ON (frac < 1/6)
-  expect(0.10, 0.8); // terminal widened ON
+  const fresh = () => blink({ duration: 1, cycles: 6 }, makeCarrier());
+  const check = (t, alpha) => {
+    const f = fresh();
+    for (let i = 0; i < Math.round(t * 60); i++) f.update(1 / 60);
+    const ctx = makeCtx();
+    f.render(ctx);
+    assert.deepEqual(alphas(ctx), [alpha], `t=${t}`);
+  };
+  check(0.04, 0.8); // beat 0 (ON)
+  check(0.12, 0.4); // beat 1 (OFF)
+  check(0.20, 0.8); // beat 2 (ON)
+  check(0.29, 0.4); // beat 3 (OFF)
+  check(0.37, 0.8); // beat 4 (ON)
+  check(0.45, 0.4); // beat 5 (OFF)
+  check(0.54, 0.8); // beat 6 (ON)
+  check(0.95, 0.8); // final beat (ON)
 });
 
-ok('custom cycles change the cadence', () => {
-  const fx = blink({ cycles: 2 }, makeCarrier());
-  // 2 cycles: beat 0 spans frac [0.5,1] (ON), beat 1 spans [0,0.5) — but
-  // the terminal widening makes frac < 0.5 ON too, so use the upper half.
-  const ctxOn = makeCtx();
-  fx.setProgress(0.75); fx.render(ctxOn);
-  assert.deepEqual(alphas(ctxOn), [0.8]);
-  const ctxMid = makeCtx();
-  fx.setProgress(0.6); fx.render(ctxMid);
-  assert.deepEqual(alphas(ctxMid), [0.8]);
-});
-
-ok('odd cycles end on a natural ON beat (no widening needed)', () => {
-  const fx = blink({ cycles: 3 }, makeCarrier());
-  const ctx = makeCtx();
-  fx.setProgress(0.001);
-  fx.render(ctx);
-  // idx = floor(0.999*3)=2 → even → ON naturally.
-  assert.deepEqual(alphas(ctx), [0.8]);
+ok('cycles scales the flash count within the same duration', () => {
+  // 2 cycles over 1s → 4 beats of 250ms: t=0.1 ON, t=0.3 OFF, t=0.6 ON.
+  const check = (cycles, t, alpha) => {
+    const f = blink({ duration: 1, cycles }, makeCarrier());
+    for (let i = 0; i < Math.round(t * 60); i++) f.update(1 / 60);
+    const ctx = makeCtx();
+    f.render(ctx);
+    assert.deepEqual(alphas(ctx), [alpha], `cycles=${cycles} t=${t}`);
+  };
+  check(2, 0.1, 0.8);  // beat 0 (ON)
+  check(2, 0.3, 0.4);  // beat 1 (OFF)
+  check(2, 0.6, 0.8);  // beat 2 (ON)
+  check(2, 0.85, 0.8); // beat 3 — final beat forced ON
 });
 
 ok('custom alphaOn/alphaOff are honored', () => {
   const fx = blink({ alphaOn: 1, alphaOff: 0.1 }, makeCarrier());
   const ctxOn = makeCtx();
-  fx.setProgress(1); fx.render(ctxOn);
+  fx.render(ctxOn);
   assert.deepEqual(alphas(ctxOn), [1]);
+  const f2 = blink({ duration: 1, alphaOn: 1, alphaOff: 0.1 }, makeCarrier());
+  f2.update(0.25);
   const ctxOff = makeCtx();
-  fx.setProgress(0.5); fx.render(ctxOff);
+  f2.render(ctxOff);
   assert.deepEqual(alphas(ctxOff), [0.1]);
 });
 
@@ -176,12 +183,12 @@ ok('done instance renders nothing', () => {
 });
 
 // --- Engine integration ------------------------------------------------------------
-ok('engine path: fireManual spawns an active instance', () => {
+ok('engine path: fireManual spawns an active instance, updateEffects steps it', () => {
   resetEffects();
-  const inst = fireManual({ type: 'blink', params: {} }, makeCarrier());
+  const inst = fireManual({ type: 'blink', params: { duration: 1, cycles: 6 } }, makeCarrier());
   assert.ok(inst);
   assert.equal(activeCount(), 1);
-  inst.body.setProgress(0.5);
+  for (let i = 0; i < 15; i++) updateEffects(1 / 60); // t = 0.25 → OFF beat
   const ctx = makeCtx();
   drawEffects(ctx, undefined, { space: 'world' });
   assert.deepEqual(alphas(ctx), [0.4]);

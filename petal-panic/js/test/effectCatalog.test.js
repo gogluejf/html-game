@@ -101,13 +101,17 @@ const DEFAULT_PARAMS = {
   'beam':                 { x: 160, y: 90, length: 120, width: 18, gradientRadius: 14, color: '#7df', flashInTime: 0.04, holdTime: 0.4, fadeOutTime: 0.15 },
   // sprite-burst requires a loaded anim — synthetic fallback for the headless test.
   'sprite-burst':         { x: 160, y: 90, size: 64, duration: 0.5, anim: { fps: 20, mode: 'once', frames: [{ file: 'f0' }], collisionBox: { x: 0, y: 0, w: 32, h: 32 }, pivot: { x: 16, y: 16 }, _frames: new Map([['f0', {}]]) } },
+  // Carrier-bound effects (§32/§33): render is a no-op without a carrier, so
+  // the draw-call bar below exempts them alongside camera-shake.
+  'blink':                { duration: 1, cycles: 6, alphaOn: 0.8, alphaOff: 0.4 },
+  'invuln-flicker':       { colors: ['#ffffff', '#ff9f43', '#ffffff', '#000000'], beatMs: 16, alpha: 0.8 },
 };
 
 console.log('catalog shape');
 const list = theaterList();
 ok('returns an array', () => assert.ok(Array.isArray(list), 'theaterList() returns an array'));
-ok('has exactly 30 entries (all catalog effects, Heat Distortion excluded)', () => {
-  assert.equal(list.length, 30, `expected 30 entries, got ${list.length}`);
+ok('has exactly 32 entries (all catalog effects, Heat Distortion excluded)', () => {
+  assert.equal(list.length, 32, `expected 32 entries, got ${list.length}`);
 });
 ok('every entry has { type, name, demo } with demo a function', () => {
   for (const e of list) {
@@ -135,6 +139,7 @@ ok('full type sequence matches the documented catalog order', () => {
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
     'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',
     'composite-explosion', 'beam', 'pulse-bubble', 'blink-transition', 'sprite-color-pulse', 'sprite-outline', 'sprite-burst',
+    'blink', 'invuln-flicker',
   ];
   assert.deepEqual(list.map(e => e.type), expected, 'full catalog order matches §1→§24 then Beam');
 });
@@ -253,8 +258,10 @@ ok('at least one draw call across most effects after a few frames', () => {
       for (const s of particles.activeItems) s.draw(ctx); // pool-driven bursts
     }
     // Shake effects have no canvas render by design (consumed by camera/
-    // renderer). Allow those to skip the "visible" bar.
-    if (anyDraw(ctx)) drew++;
+    // renderer), and carrier-bound effects (blink / invuln-flicker) render
+    // nothing without a carrier. Allow those to skip the "visible" bar.
+    const CARRIER_BOUND = new Set(['blink', 'invuln-flicker']);
+    if (CARRIER_BOUND.has(e.type) || anyDraw(ctx)) drew++;
     resetEffects();
   }
   assert.ok(drew >= list.length - 6, `most effects visibly draw (drew ${drew}/${list.length})`);

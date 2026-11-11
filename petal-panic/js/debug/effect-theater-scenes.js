@@ -456,30 +456,74 @@ const SCENES = {
     fire(c, entry) { const o = c.boss.origin(); return fireManual({ type: entry.type, params: { ...entry.params, x: o.x, y: o.y } }, c.boss); },
     draw(ctx, c) { c.boss.draw(ctx); },
   },
-  // 32/33. Externally-clocked invulnerability looks (design §27): the demo
-  // carrier is a static sprite box; the effect's setProgress() is driven by
-  // the demo clock so the preview shows the full blink/flicker sweep.
-  'blink': makeExternalClockScene(),
+  // 32. Blink: SELF-timed (duration + cycles) — the engine's updateEffects
+  // steps it normally; the demo shows a real sprite box to blink over.
+  'blink': makeSpriteBoxScene(),
+  // 33. Invuln Flicker: EXTERNALLY clocked — the demo drives setProgress()
+  // from its own elapsed time over a fixed 1s window.
   'invuln-flicker': makeExternalClockScene(),
 };
 
 /**
- * Scene factory for externally-clocked effects (blink / invuln-flicker).
- * These instances do NOT own their clock — update(dt) is a no-op — so the
- * demo drives setProgress() from its own elapsed time over a fixed 1s window.
- * The carrier is a REAL colored sprite (offscreen canvas) so the blink/flicker
- * reads as a visible sprite, not an empty box.
+ * Scene for self-timed sprite effects (blink): fire once with the catalog
+ * params (duration/cycles); the engine steps the instance. The carrier is a
+ * REAL colored sprite (offscreen canvas, built lazily so module load works
+ * without a DOM) so the blink reads as a visible sprite, not an empty box.
+ */
+function makeSpriteBoxScene() {
+  let img = null;
+  const getImg = () => {
+    if (!img && typeof document !== 'undefined') {
+      const c = document.createElement('canvas');
+      c.width = 32; c.height = 32;
+      const g = c.getContext('2d');
+      if (g) { g.fillStyle = '#4ecdc4'; g.fillRect(0, 0, 32, 32); }
+      img = c;
+    }
+    return img;
+  };
+  const demoCarrier = {
+    spriteFrame: () => ({
+      img: getImg(), w: 32, h: 32, dx: -16, dy: -16, scale: 1,
+      anchorX: STAGE_X, anchorY: STAGE_Y, mirrorX: false, rotation: 0,
+    }),
+    worldBox: () => ({ x: STAGE_X - 16, y: STAGE_Y - 16, w: 32, h: 32 }),
+  };
+  return {
+    setup() { return {}; },
+    shouldFire() { return true; },
+    fire(c, entry) {
+      return fireManual({ type: entry.type, params: { ...entry.params } }, demoCarrier);
+    },
+    draw(ctx) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.strokeRect(STAGE_X - 16, STAGE_Y - 16, 32, 32);
+      ctx.restore();
+    },
+  };
+}
+
+/**
+ * Scene factory for externally-clocked effects (invuln-flicker). These
+ * instances do NOT own their clock — update(dt) is a no-op — so the demo
+ * drives setProgress() from its own elapsed time over a fixed 1s window.
+ * The carrier is a REAL colored sprite (offscreen canvas, lazy-built) so the
+ * flicker reads as a visible sprite, not an empty box.
  */
 function makeExternalClockScene() {
   const WINDOW = 1; // s of demo time to play the full 1 → 0 sweep
-  const img = (() => {
-    const c = document.createElement('canvas');
-    c.width = 32; c.height = 32;
-    const g = c.getContext('2d');
-    g.fillStyle = '#4ecdc4';
-    g.fillRect(0, 0, 32, 32);
-    return c;
-  })();
+  let img = null;
+  const getImg = () => {
+    if (!img && typeof document !== 'undefined') {
+      const c = document.createElement('canvas');
+      c.width = 32; c.height = 32;
+      const g = c.getContext('2d');
+      if (g) { g.fillStyle = '#4ecdc4'; g.fillRect(0, 0, 32, 32); }
+      img = c;
+    }
+    return img;
+  };
   const demoCarrier = {
     spriteFrame: () => ({
       img, w: 32, h: 32, dx: -16, dy: -16, scale: 1,

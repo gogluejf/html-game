@@ -851,33 +851,32 @@ composed set pieces so VFX isn't doubled.
 
 ## 32. Blink (`blink`)
 
-Constant-rate on/off blink of the carrier's REAL sprite. N full cycles are
-spread EVENLY across the whole window (no acceleration), fading between
-`alphaOn` and `alphaOff`. No colors, no wash — just visibility. The sibling
-of `blink-transition` (§28) with a different job: that one is self-timed with
-an accelerating switch rate and color/image frames; this one is externally
-clocked at a constant rate so it stays locked to the carrier's immunity
-window (design §27).
+Constant-rate on/off blink of the carrier's REAL sprite. Given a `duration`
+and a number of `cycles`, it plays N full on/off pairs spread EVENLY across
+that duration (no acceleration), fading between `alphaOn` and `alphaOff`.
+No colors, no wash — just visibility. The sibling of `blink-transition`
+(§28) with a different job: that one has an ACCELERATING switch rate (ease-in)
+and color/image frames; this one is constant-rate and blinks the real sprite.
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `cycles` | `6` | Full on/off cycles across the whole window |
+| `duration` | `0.6` | Total lifetime in seconds |
+| `cycles` | `6` | Full on/off pairs across the duration |
 | `alphaOn` | `0.8` | "on" visibility |
 | `alphaOff` | `0.4` | "off" visibility |
 
-**Timing model — externally driven.** The instance does NOT own its clock:
-`update(dt)` is a no-op and the caller steps phase with
-`setProgress(fraction)`, fraction = remaining/total of the carrier's
-immunity timer (1 → 0). Extending the window extends the blink, and the
-sprite is VISIBLE exactly when the window ends (for even `cycles` the final
-ON beat is widened to cover the last `1/cycles` segment, so the sprite never
-vanishes on the terminal frame).
+**Timing model — self-timed.** `update(dt)` advances an internal elapsed
+clock; the effect completes when `duration` elapses. The caller picks the
+duration from the gameplay window it wants covered (i-frame length, grace
+period); if that window extends (re-hit), the caller respawns the effect
+with the new duration. The final frame is forced ON so the sprite is
+VISIBLE exactly when the blink ends.
 
 ```js
 import { blink } from './effects/blink.js';
-const fx = blink({ cycles: 6, alphaOn: 0.8, alphaOff: 0.4 }, hero);
-// per frame while intangible:
-fx.setProgress(hero.timers.fraction('intangible'));
+const fx = blink({ duration: 0.6, cycles: 6, alphaOn: 0.8, alphaOff: 0.4 }, hero);
+// per frame while intangible (advances the blink's own clock):
+fx.update(dt);
 // render pass (replaces the normal draw while active):
 if (!hero.invulnFx?.active) <normal draw>; else fx.render(ctx);
 ```

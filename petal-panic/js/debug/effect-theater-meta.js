@@ -370,7 +370,8 @@ export const EFFECT_META = {
   'blink': {
     desc: 'Constant-rate on/off blink of the real sprite, locked to the immunity window (externally clocked). Hit i-frames / level-entry grace.',
     params: [
-      { key: 'cycles',   config: true, kind: 'int', desc: 'On/off cycles across the window' },
+      { key: 'duration', config: true, kind: 'num', desc: 'Total lifetime (s)' },
+      { key: 'cycles',   config: true, kind: 'int', desc: 'On/off pairs across the duration' },
       { key: 'alphaOn',  config: true, kind: 'num', desc: '"on" visibility (0-1)' },
       { key: 'alphaOff', config: true, kind: 'num', desc: '"off" visibility (0-1)' },
     ],
