@@ -56,6 +56,13 @@ export class Entity {
     // --- Position -----------------------------------------------------------
     this.x = opts.x ?? 0;
     this.y = opts.y ?? 0;
+    // Previous physics-step position (render interpolation). Captured by
+    // capturePrev() at the top of each fixed step; render() lerps
+    // prev→current by the loop's leftover alpha so motion is continuous at
+    // any refresh rate (60Hz logic on a 75/144Hz display). Teleports detect
+    // themselves via distance and snap instead of smearing.
+    this.px = this.x;
+    this.py = this.y;
 
     // --- Size (single source of truth) --------------------------------------
     // targetH: height in Y-units. Drives both the getter `h` and setAnim() scale.
@@ -490,6 +497,35 @@ export class Entity {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.tickAnim(dt); // sprite playback advances with every entity step
+  }
+
+  // --- Render interpolation (fixed-timestep → any refresh rate) -------------
+  // The loop runs physics at FIXED_DT but paints at the display rate. Between
+  // two physics steps the render pass draws prev→current blended by alpha
+  // (leftover time / FIXED_DT). capturePrev() snapshots the position at the
+  // START of each step so that step's motion spans [prev, current].
+  // Teleports (respawn, zone change, snap-to-surface) exceed TELEPORT_PX and
+  // snap instead of lerping — a smeared ghost across the screen is worse than
+  // a one-frame jump.
+
+  static TELEPORT_PX = 256;
+
+  /** Snapshot x/y as the new "previous" position. Called once per entity at
+   * the top of each fixed physics step (before integration). */
+  capturePrev() {
+    this.px = this.x;
+    this.py = this.y;
+  }
+
+  /** Interpolated render position for alpha ∈ [0,1] (0 = at prev, 1 = at
+   * current). Returns {x,y}; snaps to current when the step was a teleport. */
+  renderPos(alpha) {
+    const dx = this.x - this.px;
+    const dy = this.y - this.py;
+    if (dx * dx + dy * dy > Entity.TELEPORT_PX * Entity.TELEPORT_PX) {
+      return { x: this.x, y: this.y };
+    }
+    return { x: this.px + dx * alpha, y: this.py + dy * alpha };
   }
 
   /**

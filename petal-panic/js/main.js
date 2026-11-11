@@ -225,6 +225,7 @@ async function boot() {
   } catch { /* update.js not ready yet */ }
   const { update } = await import('./systems/update.js');
   const { render } = await import('./systems/render.js');
+  const { capturePrevPositions } = await import('./world/accessors.js');
   // VIRTUAL GAMEPAD option (fullscreen-layout plan): default ON; the pad only
   // renders on touch devices anyway, so this is inert on desktop by design.
   const { loadStore } = await import('./systems/progressStore.js');
@@ -245,11 +246,15 @@ async function boot() {
     lastTime = t;
     accumulator += delta;
     while (accumulator >= FIXED_DT) {
+      capturePrevPositions(); // snapshot before this step moves anything
       update(FIXED_DT);
       accumulator -= FIXED_DT;
     }
     applyTransform();
-    render(ctx);
+    // alpha = how far through the NEXT physics step we are: leftover time /
+    // step length. Render lerps prev→current by this for smooth motion at any
+    // refresh rate (interpolation — see Entity.renderPos).
+    render(ctx, accumulator / FIXED_DT);
     requestAnimationFrame(frame);
   }
 

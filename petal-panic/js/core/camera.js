@@ -21,10 +21,20 @@
 
 import { VIEW_W, VIEW_H } from './view.js';
 
+// Same teleport threshold as Entity.TELEPORT_PX (kept local to avoid an
+// import cycle: entity.js is the heavier module).
+const Entity_TELEPORT_PX = 256;
+
 export class Camera {
   constructor() {
     this.x = 0;
     this.y = 0;
+    // Previous-step position for render interpolation (same contract as
+    // Entity.capturePrev/renderPos): the camera follows the hero inside the
+    // fixed physics step, so without lerp the SCROLL steps at 60Hz while the
+    // monitor paints faster — the "janky scroll" half of the stutter.
+    this.px = 0;
+    this.py = 0;
     this.w = VIEW_W;
     this.h = VIEW_H;
 
@@ -139,6 +149,24 @@ export class Camera {
       // Track the highest (smallest-y) position reached.
       if (this.y < this.minYReached) this.minYReached = this.y;
     }
+  }
+
+  /** Snapshot current position as "previous" — call at the top of each fixed
+   * physics step, before update() moves the camera. */
+  capturePrev() {
+    this.px = this.x;
+    this.py = this.y;
+  }
+
+  /** Interpolated render position for alpha ∈ [0,1]. Snaps on teleports
+   * (zone change / snap-to-hero jumps move the camera far in one step). */
+  renderPos(alpha) {
+    const dx = this.x - this.px;
+    const dy = this.y - this.py;
+    if (dx * dx + dy * dy > Entity_TELEPORT_PX * Entity_TELEPORT_PX) {
+      return { x: this.x, y: this.y };
+    }
+    return { x: this.px + dx * alpha, y: this.py + dy * alpha };
   }
 
   /**

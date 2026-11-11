@@ -50,6 +50,30 @@ export function getActiveFloorY() {
 }
 export function getParticles() { return particles; }
 export function getCoins() { return coins; }
+
+/**
+ * Snapshot every live entity's position as its "previous" position for render
+ * interpolation. Called by the main loop at the TOP of each fixed physics
+ * step (before update()), so each step's motion spans [prev, current] and the
+ * render pass can lerp by the leftover alpha. Cheap: one field copy per
+ * entity, zero allocation. Entities that spawn mid-step get prev=current on
+ * their first visible frame (pools call capturePrev on reuse).
+ */
+export function capturePrevPositions() {
+  const h = ctx.hero;
+  if (h) h.capturePrev();
+  const cam = ctx.camera;
+  if (cam) cam.capturePrev();
+  for (const e of ctx.realEnemies ?? []) e.capturePrev?.();
+  if (ctx.boss) ctx.boss.capturePrev?.();
+  for (const b of [...(ctx.barrels ?? []), ...(ctx.woodBarrels ?? []), ...(ctx.coinBarrels ?? [])]) b.capturePrev?.();
+  for (const p of projectilePool.activeItems) p.capturePrev?.();
+  for (const c of coins.activeItems) c.capturePrev?.();
+  for (const p of particles.activeItems) p.capturePrev?.();
+  for (const o of ctx.powerups ?? []) o.capturePrev?.();
+  for (const c of ctx.checkpoints ?? []) c.capturePrev?.();
+  for (const f of floatTexts) f.capturePrev?.();
+}
 // barrels (explosive + coin) + explosion screen shake for render.
 export function getBarrels() { return [...ctx.barrels, ...ctx.woodBarrels, ...ctx.coinBarrels]; }
 /**

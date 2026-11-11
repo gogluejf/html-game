@@ -34,7 +34,7 @@ const IFRAME_BLINK_CYCLES = 6;       // full on/off cycles across the whole wind
 const IFRAME_BLINK_ALPHA_ON = 0.8;   // "on" visibility
 const IFRAME_BLINK_ALPHA_OFF = 0.4;  // "off" visibility
 
-export function render(ctx) {
+export function render(ctx, alpha = 1) {
   // Home & Select are full-screen; skip world rendering entirely.
   const state = getState();
   if (state === S.HOME || state === S.MENU || state === S.SELECT || state === S.REMAP || state === S.LEVEL_SELECT || state === S.BOSS_RUSH || state === S.MEDIA || state === S.OPTIONS) {
@@ -87,7 +87,10 @@ export function render(ctx) {
   // explosion screen shake offsets the whole world by a decaying
   // random vector (getShakeOffset returns {x:0,y:0} when idle).
   const shake = getShakeOffset();
-  ctx.translate(-cam.x + shake.x, -cam.y + shake.y);
+  // Camera render interpolation: lerp prev→current by alpha so scrolling is
+  // continuous between physics steps (snaps on zone-change teleports).
+  const camPos = cam.renderPos ? cam.renderPos(alpha) : { x: cam.x, y: cam.y };
+  ctx.translate(-camPos.x + shake.x, -camPos.y + shake.y);
 
   // Solid platforms + blocks — real terrain art via the tiler
   // (docs/architecture/terrain-tiling.md). Hidden in collision-only mode like
@@ -142,6 +145,21 @@ export function render(ctx) {
     fn();
     ctx.restore();
   };
+  // Render interpolation: draw the entity at its lerped position (prev→current
+  // by alpha) instead of the raw physics position. The delta is applied as a
+  // pure translate so every internal this.x/this.y read (sprite pipeline,
+  // worldBox, primitives) stays consistent — no per-class changes. Teleports
+  // snap (renderPos returns current), so respawns never smear.
+  const drawAt = (ctx, ent, fn) => {
+    if (alpha >= 1 || !ent.renderPos) { fn(); return; }
+    const p = ent.renderPos(alpha);
+    const dx = p.x - ent.x, dy = p.y - ent.y;
+    if (!dx && !dy) { fn(); return; }
+    ctx.save();
+    ctx.translate(dx, dy);
+    fn();
+    ctx.restore();
+  };
   if (showSprites) {
     // Self-contained attack lifecycle (task 2.2): the registry draws EVERY
     // live handle's zones in world space — hero-shot roots included. This is
@@ -153,11 +171,11 @@ export function render(ctx) {
     // destructible barrels (drawn via Entity.draw; white flash on hit).
     for (const b of getBarrels()) {
       if (!b.alive) continue;
-      drawShaken(ctx, b, () => b.draw(ctx));
+      drawAt(ctx, b, () => drawShaken(ctx, b, () => b.draw(ctx)));
     }
 
     // Placeholder pickups / enemies / projectiles (debug-colored bodies).
-    for (const p of getPickups()) drawShaken(ctx, p, () => p.draw(ctx));
+    for (const p of getPickups()) drawAt(ctx, p, () => drawShaken(ctx, p, () => p.draw(ctx)));
     for (const e of getEnemies()) {
       if (e.alive === false) continue; // destroyed target — no longer drawn
       // enemy shake: offset the draw position by a random ±3px while
@@ -185,33 +203,35 @@ export function render(ctx) {
     for (const e of getRealEnemies()) {
       if (!e.alive) continue;
       const sh = Effects.getEntityShakeTotal(e);
-      ctx.save();
-      ctx.translate(sh.x, sh.y);
-      e.draw(ctx);
-      ctx.restore();
+      drawAt(ctx, e, () => {
+        ctx.save();
+        ctx.translate(sh.x, sh.y);
+        e.draw(ctx);
+        ctx.restore();
+      });
     }
 
     // boss (Overgrown Elephant). Invisible during the boss zone intro
     // (boss-arena.md §2: the boss is hidden until it enters from the right
     // during BOSS_ENTER). The flow machine owns the visibility gate.
     const boss = getBoss();
-    if (boss && boss.alive && bossZone.bossVisible()) drawShaken(ctx, boss, () => boss.draw(ctx));
+    if (boss && boss.alive && bossZone.bossVisible()) drawAt(ctx, boss, () => drawShaken(ctx, boss, () => boss.draw(ctx)));
 
     // sparkle particles + dropped coins.
-    for (const s of getParticles().activeItems) s.draw(ctx);
-    for (const c of getCoins().activeItems) c.draw(ctx);
+    for (const s of getParticles().activeItems) drawAt(ctx, s, () => s.draw(ctx));
+    for (const c of getCoins().activeItems) drawAt(ctx, c, () => c.draw(ctx));
 
     // checkpoints (flags) + powerups (signboards). Both draw themselves
     // (Entity transform pipeline + bob/flash overlays).
-    for (const c of getCheckpoints()) drawShaken(ctx, c, () => c.draw(ctx));
-    for (const p of getPowerups()) drawShaken(ctx, p, () => p.draw(ctx));
+    for (const c of getCheckpoints()) drawAt(ctx, c, () => drawShaken(ctx, c, () => c.draw(ctx)));
+    for (const p of getPowerups()) drawAt(ctx, p, () => drawShaken(ctx, p, () => p.draw(ctx)));
 
     // floating value-text popups (powerup labels, checkpoint ids).
-    for (const t of getFloatTexts()) t.draw(ctx);
+    for (const t of getFloatTexts()) drawAt(ctx, t, () => t.draw(ctx));
 
     // Projectiles + specials (hero bomb/saw).
-    for (const p of getProjectiles()) drawShaken(ctx, p, () => p.draw(ctx));
-    for (const s of getSpecials()) drawShaken(ctx, s, () => s.draw(ctx));
+    for (const p of getProjectiles()) drawAt(ctx, p, () => drawShaken(ctx, p, () => p.draw(ctx)));
+    for (const s of getSpecials()) drawAt(ctx, s, () => drawShaken(ctx, s, () => s.draw(ctx)));
 
     // Hero — invincibility blink and death skull are gameplay effects, so they
     // live inside the sprite layer too. The flicker is driven by the 'intangible'
@@ -239,7 +259,7 @@ export function render(ctx) {
         // primitive fallback itself). The old unconditional debugColor rect
         // here painted a solid green block OVER the sprite — removed.
         const hb = h.worldBox();
-        h.draw(ctx);
+        drawAt(ctx, h, () => h.draw(ctx));
         // Shield pulse: breathing disc around the hero. Base radius scales
         // with current shield (0 → invisible, full → maxR). A sine pulse
         // (1.5 Hz) adds ±12% radius oscillation for a living feel. Flash
@@ -411,7 +431,7 @@ export function render(ctx) {
   //   collision layer — drawn whenever debug is on and not sprite-only;
   //                     SEMITRANSPARENT in both modes (it's always an overlay).
   if (Debug.enabled && Debug.viewMode !== 1 && Debug.viewMode !== 4) {
-    drawDebugOverlay(ctx);
+    drawDebugOverlay(ctx, alpha);
     // per-enemy debug: aggro radius circle + AI state label
     // above each real enemy's head.
     for (const e of getRealEnemies()) drawEnemyDebug(ctx, e);
@@ -639,7 +659,7 @@ function drawDeathSkull(ctx, h) {
  *   Blue   — PICKUP (objects / powerups)
  *   Pink   — PROJ_ALLY / PROJ_FOE (projectiles / explosions)
  */
-function drawDebugOverlay(ctx) {
+function drawDebugOverlay(ctx, alpha = 1) {
   ctx.save();
   // Always semitransparent — it's an overlay on top of the graphic layer.
   // In mode 3 (collision-only) the graphic layer is hidden so the boxes
@@ -675,7 +695,13 @@ function drawDebugOverlay(ctx) {
     const layer = ent.layer ?? 0;
     const rule = layers.find(r => r.match(layer));
     if (!rule) continue;
-    const b = ent.worldBox ? ent.worldBox() : ent;
+    // Match the sprite layer: draw the box at the INTERPOLATED position so the
+    // debug rect tracks the pixels, not the last physics tick.
+    let b = ent.worldBox ? ent.worldBox() : ent;
+    if (alpha < 1 && ent.renderPos) {
+      const p = ent.renderPos(alpha);
+      b = { ...b, x: b.x + (p.x - ent.x), y: b.y + (p.y - ent.y) };
+    }
     ctx.fillStyle = rule.color;
     ctx.fillRect(b.x, b.y, b.w, b.h);
     ctx.strokeStyle = rule.color;
