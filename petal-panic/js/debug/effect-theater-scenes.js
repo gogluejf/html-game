@@ -467,23 +467,30 @@ const SCENES = {
  * Scene factory for externally-clocked effects (blink / invuln-flicker).
  * These instances do NOT own their clock — update(dt) is a no-op — so the
  * demo drives setProgress() from its own elapsed time over a fixed 1s window.
+ * The carrier is a REAL colored sprite (offscreen canvas) so the blink/flicker
+ * reads as a visible sprite, not an empty box.
  */
 function makeExternalClockScene() {
   const WINDOW = 1; // s of demo time to play the full 1 → 0 sweep
+  const img = (() => {
+    const c = document.createElement('canvas');
+    c.width = 32; c.height = 32;
+    const g = c.getContext('2d');
+    g.fillStyle = '#4ecdc4';
+    g.fillRect(0, 0, 32, 32);
+    return c;
+  })();
   const demoCarrier = {
     spriteFrame: () => ({
-      img: null, w: 32, h: 32, dx: -16, dy: -32, scale: 1,
+      img, w: 32, h: 32, dx: -16, dy: -16, scale: 1,
       anchorX: STAGE_X, anchorY: STAGE_Y, mirrorX: false, rotation: 0,
     }),
-    worldBox: () => ({ x: STAGE_X - 16, y: STAGE_Y - 32, w: 32, h: 32 }),
+    worldBox: () => ({ x: STAGE_X - 16, y: STAGE_Y - 16, w: 32, h: 32 }),
   };
   return {
     setup() { return { inst: null, _t: 0 }; },
     update(c, dt) {
       c._t += dt;
-      if (!c.inst) {
-        c.inst = null; // fired on first frame via shouldFire
-      }
       if (c.inst && !c.inst.done) {
         c.inst.body.setProgress(Math.max(0, 1 - c._t / WINDOW));
       }
@@ -495,10 +502,10 @@ function makeExternalClockScene() {
       return inst;
     },
     draw(ctx, c) {
-      // Draw the carrier box so the viewer sees WHERE the sprite blinks.
+      // Outline where the sprite blinks so the vanish beats are readable.
       ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-      ctx.strokeRect(STAGE_X - 16, STAGE_Y - 32, 32, 32);
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.strokeRect(STAGE_X - 16, STAGE_Y - 16, 32, 32);
       ctx.restore();
     },
   };
