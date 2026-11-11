@@ -140,6 +140,15 @@ const solidEntities = [];
 // 60fps). Frame-rate independent via Math.pow(friction, dt).
 const DYNAMIC_SOLID_FRICTION_PER_SECOND = 0.02;
 
+// Barrel-on-barrel momentum transfer (declaration of impact, sibling of
+// barrelImpactSweep): when a MOVING dynamic solid overlaps another live
+// dynamic solid, the mover pushes the other along the overlap axis and loses
+// part of its own velocity — so a kicked barrel that strikes a resting barrel
+// shoves it instead of stopping dead against it (real physics: momentum is
+// transferred, not destroyed). Equal-mass elastic collision with restitution:
+// each body keeps (1-e)/2 of the relative speed and hands (1+e)/2 to the other.
+const BARREL_TRANSFER_RESTITUTION = 0.9; // lively arcade bounce; <1 bleeds energy
+
 export function stepDynamicSolid(e, dt, statics, peers) {
   if (!e.alive) return;
   // Horizontal friction for externally-impulsed motion (knockback). Retained
@@ -161,6 +170,43 @@ export function stepDynamicSolid(e, dt, statics, peers) {
     if (Math.abs(e.vx) < 2) e.vx = 0; // rest threshold: kill sub-pixel creep
   }
   const others = peers.filter(p => p !== e && p.alive);
+  // Momentum transfer: a MOVING dynamic solid that overlaps another live
+  // dynamic solid pushes it along the overlap axis instead of stopping dead
+  // against it (a kicked barrel striking a resting barrel shoves it). Equal-
+  // mass elastic collision with restitution: each body keeps (1-e)/2 of the
+  // relative speed and hands (1+e)/2 to the other. Runs BEFORE resolve() so
+  // the impulse is computed from the OVERLAPPING position — resolve() then
+  // separates the boxes, and next frame's integration carries the shove. Only
+  // when the mover actually has velocity — at rest this is a no-op, so
+  // stacking/settling behavior is untouched.
+  for (const p of others) {
+    const evx = e.vx ?? 0, evy = e.vy ?? 0;
+    if (!evx && !evy) break; // nothing to transfer
+    const eb = e.worldBox(), pb = p.worldBox();
+    const penX = Math.min(eb.x + eb.w - pb.x, pb.x + pb.w - eb.x);
+    const penY = Math.min(eb.y + eb.h - pb.y, pb.y + pb.h - eb.y);
+    if (penX <= 0 || penY <= 0) continue; // not overlapping
+    // Push axis = minimum penetration (same rule as resolve()).
+    if (penX <= penY) {
+      if (Math.abs(evx) < 1) continue; // moving vertically into a side wall — no shove
+      const nx = Math.sign((pb.x + pb.w / 2) - (eb.x + eb.w / 2)) || 1; // e → peer
+      const rel = evx * nx; // >0 when closing in on the peer
+      if (rel <= 0) continue;
+      const keep = (1 - BARREL_TRANSFER_RESTITUTION) / 2;
+      const hand = (1 + BARREL_TRANSFER_RESTITUTION) / 2;
+      e.vx -= nx * rel * keep;
+      p.vx = (p.vx ?? 0) + nx * rel * hand;
+    } else {
+      if (Math.abs(evy) < 1) continue;
+      const ny = Math.sign((pb.y + pb.h / 2) - (eb.y + eb.h / 2)) || 1; // e → peer
+      const rel = evy * ny;
+      if (rel <= 0) continue;
+      const keep = (1 - BARREL_TRANSFER_RESTITUTION) / 2;
+      const hand = (1 + BARREL_TRANSFER_RESTITUTION) / 2;
+      e.vy -= ny * rel * keep;
+      p.vy = (p.vy ?? 0) + ny * rel * hand;
+    }
+  }
   resolve(e, [...statics, ...others.map(p => p.worldBox())], { prevBottom });
   // Landing snap: zero fall velocity when resting on a surface.
   const wb = e.worldBox();
