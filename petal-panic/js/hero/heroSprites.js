@@ -228,7 +228,16 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // this every air frame; this guards against any path that left us tucked).
   if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
 
-  const running = hero.grounded && Math.abs(hero.vx) > RUN_SPEED_THRESHOLD;
+  // Run anim requires an ACTIVE direction input, not just velocity: on release
+  // the body coasts to a stop under ground friction (the skid), but the run
+  // cycle is a propulsion pose — playing it while coasting reads as "still
+  // accelerating" and stutters at low speed. Idle-during-skid reads as
+  // momentum instead. Holding a direction (including reversing mid-skid)
+  // keeps the run anim since the hero is actively driving again. The speed
+  // threshold still applies so a held direction at near-zero drift doesn't
+  // churn into the run cycle.
+  const dirHeld = !!(input && ((input.left && !input.right) || (input.right && !input.left)));
+  const running = hero.grounded && dirHeld && Math.abs(hero.vx) > RUN_SPEED_THRESHOLD;
 
   // Idle pattern clock: while standing still with no aim override and an
   // idle_special sheet exists, alternate 3× idle → 1× idle_special. It only
