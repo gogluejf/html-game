@@ -521,6 +521,113 @@ export function applyGodMode(dt) {
   ctx.hero.intangible = true;
 }
 
+// --- Frame-by-frame box/hitbox trace (auto-gated) ----------------------------
+// Logs hero worldBox, all barrel worldBoxes, and the active attack hitbox
+// ONLY while the hero is in a high-risk locomotion phase (super_melee, run,
+// slide) — the phases where tunneling into barrels actually happens. No manual
+// toggle: it's always armed while debug is on, but stays silent during idle/
+// jump/fall so the console doesn't flood. Designed for catching the
+// super-melee-into-barrel teleport bug.
+let _frameTraceN = 0;
+const TRACE_PHASES = new Set(['supermove', 'attack', 'run', 'slide']);
+
+// --- Persistent frame ring-buffer (Ctrl+E dump) -----------------------------
+// The console trace above floods and scrolls away — useless for a bug that
+// takes minutes to trigger. This buffer records EVERY frame (debug on) into a
+// bounded ring and can be downloaded as one JSON file via Ctrl+E: press it the
+// moment the broken state appears and the file holds the full lead-up. Frames
+// where the hero's y moved more than Y_JUMP_PX vs the previous frame are
+// flagged `yJump` — those are the teleport candidates; scan for them first.
+const FRAME_RING_MAX = 1500;
+const Y_JUMP_PX = 8;
+const _frameRing = [];
+let _prevTraceY = null;
+
+/** Called once per frame from update() while debug is on. Records every frame
+ *  (unlike the console trace, no phase gate) and flags suspicious y jumps. */
+export function tickFrameTrace() {
+  const h = ctx.hero;
+  if (!h) return;
+  const phase = h.locomotion ?? '';
+  // Console line DISABLED (too noisy during run/super-melee): the ring buffer
+  // below still records every frame silently for Ctrl+E dumps.
+  if (false && TRACE_PHASES.has(phase)) {
+    _frameTraceN++;
+    const hb0 = h.worldBox();
+    let atk0 = null;
+    try {
+      // attackHitboxWorld() returns null on frames with no box (melee windup/
+      // recovery) — spreading null would give {} and crash the .toFixed() below.
+      const b0 = h.meleeActive ? h.attackHitboxWorld('melee')
+        : (h.specialMeleeActive && h.specialMeleePhase === 'active') ? h.attackHitboxWorld('specialMelee')
+        : h.supermoveActive ? h.attackHitboxWorld('supermove') : null;
+      if (b0) atk0 = { kind: h.meleeActive ? 'melee' : (h.supermoveActive ? 'supermove' : 'specialMelee'), ...b0 };
+    } catch { /* no hitbox this frame */ }
+    const barrels0 = [...(ctx.barrels ?? []), ...(ctx.woodBarrels ?? []), ...(ctx.coinBarrels ?? [])]
+      .filter(b => b.alive && !b.destroyed)
+      .map(b => { try { const bb = b.worldBox(); if (!Number.isFinite(bb.x) || !Number.isFinite(bb.y)) return null; return `${b.type}@(${bb.x.toFixed(0)},${bb.y.toFixed(0)}) [${bb.w}x${bb.h}]`; } catch { return null; } })
+      .filter(Boolean);
+    const line = `[trace#${_frameTraceN}] ${phase} hero(${hb0.x.toFixed(0)},${hb0.y.toFixed(0)},${hb0.w.toFixed(0)},${hb0.h.toFixed(0)}) vx=${h.vx.toFixed(0)} vy=${h.vy.toFixed(0)} grounded=${h.grounded}${atk0 ? ` | ${atk0.kind}(${atk0.x.toFixed(0)},${atk0.y.toFixed(0)},${atk0.w},${atk0.h})` : ''} | barrels: ${barrels0.join(' ') || 'none'}`;
+    console.log(line);
+  }
+  // Ring record (every frame while debug is armed).
+  const hb = h.worldBox();
+  let atk = null;
+  try {
+    // Same null-guard as the console line above: no box on melee windup/recovery.
+    const b = h.meleeActive ? h.attackHitboxWorld('melee')
+      : (h.specialMeleeActive && h.specialMeleePhase === 'active') ? h.attackHitboxWorld('specialMelee')
+      : h.supermoveActive ? h.attackHitboxWorld('supermove') : null;
+    if (b) atk = { kind: h.meleeActive ? 'melee' : (h.supermoveActive ? 'supermove' : 'specialMelee'), ...b };
+  } catch { /* no hitbox this frame */ }
+  const y = Math.round(hb.y * 10) / 10;
+  const rec = {
+    n: _frameRing.length,
+    t: Math.round(performance.now()),
+    phase,
+    x: Math.round(hb.x * 10) / 10, y, w: Math.round(hb.w * 10) / 10, h: Math.round(hb.h * 10) / 10,
+    vx: Math.round(h.vx * 10) / 10, vy: Math.round(h.vy * 10) / 10,
+    grounded: !!h.grounded,
+    sm: h.specialMeleeActive ? h.specialMeleePhase : null,
+    anim: h._spriteAnim ?? null,
+    atk: atk ? { k: atk.kind, x: Math.round(atk.x), y: Math.round(atk.y), w: atk.w, h: atk.h } : null,
+    barrels: [...(ctx.barrels ?? []), ...(ctx.woodBarrels ?? []), ...(ctx.coinBarrels ?? [])]
+      .filter(b => b.alive && !b.destroyed)
+      .map(b => { try { const bb = b.worldBox(); if (!Number.isFinite(bb.x) || !Number.isFinite(bb.y)) return null; return [b.type, Math.round(bb.x), Math.round(bb.y)]; } catch { return null; } })
+      .filter(Boolean),
+  };
+  if (_prevTraceY != null && Math.abs(y - _prevTraceY) > Y_JUMP_PX) rec.yJump = true;
+  _prevTraceY = y;
+  _frameRing.push(rec);
+  if (_frameRing.length > FRAME_RING_MAX) _frameRing.shift();
+}
+
+/** Download the frame ring buffer as JSON (Ctrl+E). Contains the full lead-up
+ *  to whatever state is on screen when pressed; `yJump` frames are the
+ *  teleport candidates. */
+export function dumpFrameTrace() {
+  const out = {
+    at: new Date().toISOString(),
+    note: 'hero frame-by-frame ring buffer (debug on). Scan for yJump=true — those frames moved hero y by more than 8px in one step.',
+    frames: _frameRing.length,
+    yJumps: _frameRing.filter(r => r.yJump).length,
+    data: _frameRing,
+  };
+  console.log(`[debug] frame-trace dump: ${out.frames} frames, ${out.yJumps} y-jump(s)`);
+  if (typeof document !== 'undefined' && typeof URL !== 'undefined' && URL.createObjectURL) {
+    try {
+      const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `frame-trace-${Date.now()}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (e) { console.warn('[debug] frame-trace dump failed', e); }
+  }
+  try { Debug.logEvent(`frame-trace dump (${out.frames}f, ${out.yJumps} y-jump)`); } catch { /* headless */ }
+}
+
 // Debug is intentionally outside normal navigation/gameplay bindings.
 window.addEventListener('keydown', (e) => {
   if (input.capturing) return;
@@ -537,6 +644,15 @@ window.addEventListener('keydown', (e) => {
   // F1: toggle debug mode. Opening debug from gameplay enters PLAY + harness.
   // Closing debug returns to normal gameplay (and closes theater if open).
   if (e.code === 'F1') { handleDebugToggle(e, 'debug'); return; }
+  // Ctrl+E: dump the frame-trace ring buffer (hero box/velocities/phases +
+  // barrels, every frame while debug was on) as JSON. Handled BEFORE the F1/
+  // debug gates so it works whether or not debug mode is on — press it the
+  // moment the broken state appears and the file holds the full lead-up.
+  if (e.ctrlKey && e.code === 'KeyE') {
+    e.preventDefault();
+    dumpFrameTrace();
+    return;
+  }
   // Theaters are IN-AREA tools: they may only be triggered while actively
   // playing a zone (S.PLAY) and NOT during transitions — the area-entry
   // presentation is timed and non-interactive, and opening a theater there

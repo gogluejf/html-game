@@ -31,7 +31,7 @@ import { floatTexts } from '../hero/floatText.js';
 import { applyKnockback } from '../combat/knockback.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
-import { applyGodMode, setHeroRefSetter, tickDebugBarrelDrops } from '../debug/debugHarness.js';
+import { applyGodMode, setHeroRefSetter, tickDebugBarrelDrops, tickFrameTrace } from '../debug/debugHarness.js';
 import { buildWorld, captureAreaMap, newGameSeed, getLastWorldSeed } from '../world/build.js';
 import { CLEAR_SEQ, clearSeq, areaEntrySeq, setMenuEntryPending, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryLevel, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryLevel, continueFromGameOver };
@@ -1112,6 +1112,7 @@ export function update(dt) {
     dt *= Debug.timeScale; // slow-mo / freeze-frame (0 = physics paused, render continues)
     if (dt <= 0) { Effects.update(0); return; } // frozen: skip all physics this step
     tickDebugBarrelDrops(dt); // B-key barrel rain: spawn pending drops on their timers
+    tickFrameTrace();         // V-key frame-by-frame box/hitbox trace (no-op when off)
   }
 
   // During the intro PRESENTATION (LOCKED → INTRO_SWEEP → BAR_FILL →

@@ -352,14 +352,14 @@
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": -83,
+    "x": -69,
     "y": -300,
-    "w": 205,
+    "w": 176,
     "h": 270
    },
    "pivot": {
-    "x": 20,
-    "y": -177
+    "x": 19,
+    "y": -165
    },
    "markers": []
   }

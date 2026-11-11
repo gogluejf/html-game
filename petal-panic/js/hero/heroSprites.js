@@ -244,9 +244,12 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // a hero who was tucked in the air snaps back to standing height immediately.
   if (!hero.grounded) {
     delete hero._idlePatternClock; // airborne — restart pattern on landing+stand
-    // Restore full height the moment we're no longer tucked (covers the
-    // land frame: last air frame had JUMP_HEIGHT_SCALE, now grounded).
-    if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
+    // BUGFIX (jump-height oscillation): the old code restored full height here
+    // whenever _targetHScale !== 1 — but a tucked air frame ALWAYS has scale
+    // 0.5, so this fired EVERY air frame: restore (y += 45.6) then tuck
+    // (y -= 45.6) twice per frame = the ±48px jitter/pop during jumps and
+    // super-melee. The land-frame restore is owned by the grounded branch
+    // below (line ~273), so the air branch must NOT touch height on entry.
     if (hero.sprite.anims.jump) {
       if (hero._spriteAnim !== 'jump') {
         try { hero.setAnim('jump'); } catch { /* keep current */ }
