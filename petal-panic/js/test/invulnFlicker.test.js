@@ -132,15 +132,27 @@ ok('powerup mode: frac=1 starts at first phase (white tint @0.8)', () => {
 });
 
 ok('powerup mode: gone phase renders at alpha 0', () => {
-  // Phase table: white,orange,white,black (idx 0-3), normal (4), gone (5).
-  // At hz=12 there are 72 beats per cycle; idx = floor((1-frac)*72).
-  // idx ∈ [5,11] → gone. Pick frac so idx=6: (1-frac) = 6/72 → frac = 66/72.
+  // The gone beat (last in the default table) renders invisible whenever it
+  // lands MID-WINDOW — only the window's final frame is forced visible.
+  // At hz=12 (72 beats/s), frac = 66/72 puts idx exactly on a gone beat one
+  // full cycle from expiry (cyclesRemaining = 1.0, not < 1 → no force).
   const ctx = makeCtx();
   const fx = invulnFlicker({ mode: 'powerup' }, makeCarrier());
   fx.setProgress(66 / 72);
   fx.render(ctx);
   const alphas = ctx.ops.filter(o => o[0] === 'alpha').map(o => o[1]);
   assert.deepEqual(alphas, [0]);
+});
+
+ok('powerup mode: window expiry forces the terminal beat visible', () => {
+  // As frac → 0 the final frame must never be the invisible phase — the
+  // sprite is VISIBLE exactly when protection ends.
+  const ctx = makeCtx();
+  const fx = invulnFlicker({ mode: 'powerup' }, makeCarrier());
+  fx.setProgress(0.0001);
+  fx.render(ctx);
+  const alphas = ctx.ops.filter(o => o[0] === 'alpha').map(o => o[1]);
+  assert.notDeepEqual(alphas, [0], 'must not be invisible at expiry');
 });
 
 ok('powerup mode: terminal beat forced visible at expiry', () => {

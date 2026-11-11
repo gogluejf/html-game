@@ -108,8 +108,10 @@ export function invulnFlicker(params = {}, carrier = null) {
     const idx = Math.min(totalPhases - 1,
       Math.floor((1 - f) * hz * phases.length));
     let phase = phases[idx % phases.length].name;
-    // Terminal beat forced visible: never vanish exactly at expiry.
-    if (idx === totalPhases - 1 && phase === 'gone') phase = 'normal';
+    // Expiry guard: on the final frame(s) of the window (less than one render
+    // frame from expiry), never show the invisible phase — the sprite must be
+    // VISIBLE when protection ends. Mid-window gone beats render normally.
+    if (f < 1 / 60 && idx === totalPhases - 1 && phase === 'gone') phase = 'normal';
     if (phase === 'gone') {
       ctx.save();
       ctx.globalAlpha = 0;
