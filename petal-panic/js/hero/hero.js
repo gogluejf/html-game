@@ -16,19 +16,19 @@ import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { heroDamage } from '../combat/damage.js';
 import { JUMP_HEIGHT_SCALE } from './heroSprites.js';
 import { invulnFlicker, INVISIBLE } from '../effects/invulnFlicker.js';
+import { blink } from '../effects/blink.js';
 
-// Invincibility looks (design §27) — the HERO owns them: the flicker effect
-// is a dumb color-cycler, it knows nothing about hits or powerups. Each color
-// flashes OVER the visible sprite at `alpha`; 'invisible' is a vanish beat.
-//   hit     — classic transparent blink while i-frames run.
-//   powerup — SMB-style color wash + brief vanish.
+// Invincibility looks (design §27) — the HERO owns them. Two separate effects,
+// each one job:
+//   powerup — the color-cycler (invulnFlicker): each color flashes OVER the
+//             visible sprite at alpha; 'invisible' is a vanish beat.
+//   hit     — a plain BLINK (blink.js): constant-rate on/off of the real
+//             sprite, externally clocked by the intangible timer. No colors,
+//             no wash — taking a hit / level-entry grace just blinks.
 const INVULN_LOOKS = {
-  hit: {
-    colors: ['#ffffff', '#ffffff'], // white flash over the visible sprite
-    beatMs: 16,
-    alpha: 0.8,
-  },
+  hit: { kind: 'blink', cycles: 6, alphaOn: 0.8, alphaOff: 0.4 },
   powerup: {
+    kind: 'flicker',
     colors: ['#ffffff', '#ff9f43', '#ffffff', '#000000', INVISIBLE],
     beatMs: 16,
     alpha: 0.8,
@@ -469,7 +469,9 @@ export class Hero extends Entity {
     }
     if (this.invulnFx) this.invulnFx.complete();
     this._invulnFxMode = src;
-    this.invulnFx = invulnFlicker({ colors: look.colors, beatMs: look.beatMs, alpha: look.alpha }, this);
+    this.invulnFx = look.kind === 'blink'
+      ? blink({ cycles: look.cycles, alphaOn: look.alphaOn, alphaOff: look.alphaOff }, this)
+      : invulnFlicker({ colors: look.colors, beatMs: look.beatMs, alpha: look.alpha }, this);
     this.invulnFx.setProgress(this.timers.fraction('intangible'));
   }
 

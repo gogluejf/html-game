@@ -43,6 +43,7 @@ import { squashStretch } from './squashStretch.js';
 import { auraGlow } from './auraGlow.js';
 import { beam } from './beam.js';
 import { invulnFlicker } from './invulnFlicker.js';
+import { blink } from './blink.js';
 
 // --- Migrated effects () ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -91,6 +92,9 @@ registerEffect('beam', beam);
 // Invulnerability flicker (§27): externally clocked by the carrier's
 // 'intangible' timer fraction — see invulnFlicker.js for the timing model.
 registerEffect('invuln-flicker', invulnFlicker);
+// Plain constant-rate on/off blink (§27): same external clock, no colors —
+// hit i-frames / level-entry grace. See blink.js.
+registerEffect('blink', blink);
 
 // --- Shield / barrier effects ---------------------------------------------------
 import { pulseBubble } from './pulseBubble.js';
