@@ -227,23 +227,31 @@ export function barrelImpactSweep(b) {
 //   - any other fast overlap (barrel hits you from the side/above while you're
 //     under it) → the barrel is destroyed on impact and detonates normally;
 //     whoever (hero AND enemies) stands in the blast radius takes the blast's
-//     own damage. No special stomp rule, no bounce, no flat "bonk" number —
-//     the detonation IS the damage. One rule for every way a barrel dies.
+//     own damage. No special stomp rule, no flat "bonk" number — the
+//     detonation IS the damage. One rule for every way a barrel dies.
 // Below FALLING_MIN_VY the barrel is just settling — no impact (stacking and
 // gentle drops keep working). One impact per barrel per short window so a
 // resting-on-head frame doesn't machine-gun.
 const FALLING_BARREL_MIN_VY = 260;   // px/s downward before it counts as "falling"
 const FALLING_BARREL_COOLDOWN = 0.3; // re-arm window per barrel
+// Head-hit response: the barrel gets a small knockback launch (up + away from
+// the hero) and a short fuse. It stays alive and arcs under gravity; it
+// detonates when the fuse expires OR it lands on a surface — whichever first.
+// The blast fires at its CURRENT position, so the explosion travels with the
+// launched barrel (kick-a-barrel-and-it-blows-up feel).
+const STOMP_KNOCKBACK = { base: 260, scaleBySpeed: 0, hitstun: 0, iFrames: 0, dirMode: 'fromAttacker', pop: 120 };
+const STOMP_FUSE = 0.45;             // seconds of cooking after the head-hit
 
 /**
  * Impact check for one falling barrel against the hero. Called from the
  * dynamic-solid step AFTER integration (positions final for this frame).
  *
- * Pure model: a fast-falling barrel that overlaps the hero is DESTROYED on
- * impact and detonates through its normal pipeline (explosion / toxic / coin /
- * wood). The blast then damages whoever is in range — including the hero, with
- * no protection. This replaces the old stomp-bounce + flat-bonk split: barrels
- * now behave identically whether shot, bombed, or dropped on your head.
+ * Kick-and-cook model: a fast-falling barrel that overlaps the hero gets a
+ * small knockback launch (up + away) and a short fuse instead of dying
+ * instantly. It stays alive and arcs under gravity (stepDynamicSolid handles
+ * the physics each frame); it detonates when the fuse expires OR it lands —
+ * whichever comes first — via tickFallingBarrelFuse(). The blast fires at the
+ * barrel's CURRENT position, so the explosion travels with the launched barrel.
  * @param {GameObj} b the barrel
  */
 export function fallingBarrelImpact(b) {
@@ -258,17 +266,39 @@ export function fallingBarrelImpact(b) {
   const hb = h.worldBox ? h.worldBox() : { x: h.x, y: h.y, w: h.w, h: h.h };
   if (!aabbOverlap(bb, hb)) return;
 
-  // The barrel smashes on the hero: kill it outright and let its normal
-  // destruction payload fire. takeDamage→destroy latches the dead flags but
-  // does NOT fire onDestroyed (that's applyHit's job), so trigger it here —
-  // handleBarrelDestroyed runs the blast/zone/coin and removes the barrel.
-  const dealt = b.hit(Number.MAX_SAFE_INTEGER, h, 'stomp');
-  if (b.destroyed && !b._destroyHandled) {
-    b.onDestroyed?.({ source: h, provenance: 'STOMP' }, { accepted: true, dealt, destroyed: true });
-  }
+  // Launch the barrel off the hero: upward + horizontally away from the hero's
+  // center. applyKnockback writes vx/vy; stepDynamicSolid carries the arc.
+  const dirX = Math.sign((bb.x + bb.w / 2) - (hb.x + hb.w / 2)) || 1;
+  applyKnockback(b, h, STOMP_KNOCKBACK, { x: dirX, y: -1 });
+  // Arm the fuse. It cooks while airborne; landing or fuse-expiry detonates.
+  b._fuse = STOMP_FUSE;
   record(h, { kind: 'enemyStomped' });
-  b.vy = 0;                 // the fall ENDS on impact
   b._fallCd = FALLING_BARREL_COOLDOWN;
+}
+
+/**
+ * Per-frame fuse tick for a cooking barrel (armed by fallingBarrelImpact).
+ * Call once per live barrel in the dynamic-solid loop, AFTER stepDynamicSolid
+ * so positions/velocity are final for the frame. Detonates when the fuse hits
+ * zero OR the barrel has come to rest on a surface (vy ~ 0 and grounded), so a
+ * launched barrel always blows up — at its current spot — rather than cooking
+ * forever. No-op for barrels without an armed fuse.
+ * @param {GameObj} b the barrel
+ * @param {number} dt seconds
+ */
+export function tickFallingBarrelFuse(b, dt) {
+  if (!b.alive || b.destroyed || b._fuse == null) return;
+  b._fuse -= dt;
+  // Landed? stepDynamicSolid zeroes vy on a surface; treat "no longer falling"
+  // as the detonation trigger so a short hop still blows where it settles.
+  const landed = (b.vy ?? 0) <= 1;
+  if (b._fuse <= 0 || landed) {
+    b._fuse = null;
+    const dealt = b.hit(Number.MAX_SAFE_INTEGER, b, 'stomp');
+    if (b.destroyed && !b._destroyHandled) {
+      b.onDestroyed?.({ source: b, provenance: 'STOMP' }, { accepted: true, dealt, destroyed: true });
+    }
+  }
 }
 
 // The hero's physical entry position for the active zone. Area -1 has no entry
@@ -1129,6 +1159,7 @@ export function update(dt) {
   for (const b of dynBarrels) {
     b.update(dt);
     stepDynamicSolid(b, dt, SOLIDS, dynBarrels);
+    tickFallingBarrelFuse(b, dt);   // cook + detonate launched barrels (post-physics)
     barrelImpactSweep(b);
     fallingBarrelImpact(b);
   }
