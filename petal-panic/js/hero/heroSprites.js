@@ -14,6 +14,7 @@ import { parseSheet } from '../core/spriteData.js';
 import { loadFrames } from '../core/frameLoader.js';
 import { uniformScale } from '../core/spriteData.js';
 import { SpritePlayer } from '../core/spritePlayer.js';
+import { CROUCH_HEIGHT_SCALE } from './hero.js';
 
 /** Module-level cache: heroId → { data, frames }. */
 const heroSpriteCache = new Map();
@@ -45,6 +46,7 @@ export async function loadHeroSprites(heroId) {
       'run_aim_front', 'run_aim_up', 'run_aim_down',
       'run_aim_45up', 'run_aim_45down',
       'melee', 'super_melee', 'superpower', 'supermove',
+      'hit',
     ];
     const urls = names.map((n) => new URL(`${n}_sheet.json`, base).href);
     const results = await Promise.all(urls.map(async (u) => {
@@ -141,6 +143,33 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   if (!hero.sprite?.anims) return;
   const shooting = !!(input && input.shoot);
 
+  // Hit reaction owns the sprite for its WHOLE playback (hit > attack > crouch
+  // > jump). The sheet is a 'once' anim: setAnim() starts it at frame 0 and
+  // playback runs to the terminal frame; while _spriteAnim === 'hit' this
+  // branch keeps winning — even AFTER hit-stun expires, since the pose (0.75s)
+  // outlives the stun (0.25–0.30s). That tail matters: crouch entry/exit is
+  // input-gated in hero.update (skipped while hitStunned), so a Down held from
+  // before the hit makes this.crouching flip true the first unstunned frame —
+  // if the hit branch had already yielded, the crouch branch would shrink the
+  // box under the full-height hit art (or vice versa on the snap back). Owning
+  // the frame until playback truly ends keeps height + art + box consistent.
+  // Knockback physics runs underneath — the pose is purely visual. Re-hit
+  // mid-playback restarts it (setAnim rebuilds the player).
+  const hitPoseActive = hero._spriteAnim === 'hit' && hero.sprite.anims.hit
+    && (!hero._player || !hero._player.isDone);
+  if ((hero.hitStunned || hitPoseActive) && hero.sprite.anims.hit) {
+    delete hero._idlePatternClock;
+    // The hit pose is FULL standing height, always (airborne or grounded):
+    // restore any crouch/jump tuck for the duration of the pose. When playback
+    // ends and control returns, the normal branches re-derive height from the
+    // live crouching/grounded state — no manual reset needed.
+    if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
+    if (hero._spriteAnim !== 'hit') {
+      try { hero.setAnim('hit'); } catch { /* keep current */ }
+    }
+    return;
+  }
+
   // Attack anims own their window: while a swing runs, the sheet (melee /
   // super_melee) plays from f1 at its authored fps. When the swing ends, the
   // next frame falls through to the locomotion switch below and reclaims
@@ -177,6 +206,15 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
         hero.setAnim(want);
       } catch { /* keep current */ }
     }
+    // Height: this branch REQUIRES the crouched scale. applyCrouchHeight only
+    // runs on the entry/exit state transitions in hero.update (input-gated),
+    // so paths that reach here with a stale full-height scale — notably the
+    // frame right after a hit pose ends (the hit branch forces full height for
+    // its whole playback, and crouch entry was skipped while stunned) — would
+    // otherwise render the crouch sheet at FULL size: a huge croucher with a
+    // full-height box. Re-asserting here makes the branch self-consistent:
+    // crouching true ⇒ crouched height, always.
+    if (hero._targetHScale !== CROUCH_HEIGHT_SCALE) hero.applyCrouchHeight(true);
     // setAnim() fits the sheet onto this.h at SWITCH time, but the crouch
     // height change happens in a separate step (applyCrouchHeight) — re-derive
     // scale + width from the active sheet + CURRENT h so both axes follow the
