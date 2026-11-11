@@ -106,7 +106,9 @@ test('New Game clears the active run save but preserves meta unlocks', () => {
 
   setState(S.HOME);
   go(S.MENU);
-  SC.Menu.focus = 0; // New Game
+  // With a save present the menu order is [Continue, New Game, ...] — New
+  // Game is focus 1 (focus 0 is Continue).
+  SC.Menu.focus = 1; // New Game
   assert.equal(SC.Menu.onAction('confirm'), true, 'confirm handled');
 
   assert.equal(getState(), S.SELECT, 'New Game routes to SELECT');
@@ -143,12 +145,12 @@ test('Continue installs the saved zone + spawn checkpoint through AREA_ENTRY (H2
   PS.resetStore();
   writeSave({ level: 1, area: 3, score: 900, timestamp: 456 });
 
-  const hero = SC.getMenuHero(); // the live hero registered at boot (no manual registration)
-  assert.ok(hero, 'a live hero is registered for the Continue flow');
+  const hero = U.getHero(); // live hero booted by update.js — the menu's Continue target
+  assert.ok(hero, 'a live hero exists for the Continue flow');
 
   setState(S.HOME);
   go(S.MENU);
-  SC.Menu.focus = 1; // Continue
+  SC.Menu.focus = 0; // Continue (first entry when a save exists)
   assert.equal(SC.Menu.onAction('confirm'), true, 'confirm handled');
 
   assert.equal(getState(), S.AREA_ENTRY, 'state is now AREA_ENTRY');

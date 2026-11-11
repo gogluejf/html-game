@@ -168,10 +168,12 @@ test('Space jump and Circle super never pause; Escape/Options do; pause menu clo
   tap('Escape'); assert.equal(getState(), S.PAUSE);
   clean(S.OVER); const h = U.getHero(); h.coins = 1500; h.continuesUsed = 0; h.checkpoint = { x: 400, y: 100 }; GameOver.focus = 0;
   // Continue now shows the shared area-entry screen first (checkpoints.md §3);
-  // confirming it starts the fresh attempt.
+  // confirming it starts the fresh attempt. NOTE: a continue is a FAILURE-style
+  // reset (state-persistence.md §2.2) — coins/score roll back to the zone's
+  // entry snapshot, so the pre-set 1500 coins do NOT survive (anti-farming).
   tap('Enter'); assert.equal(getState(), S.AREA_ENTRY);
   confirmAreaEntry();
-  assert.equal(U.getHero().coins, 1500); assert.equal(U.getHero().continuesUsed, 1); assert.equal(U.getHero().lives, 3);
+  assert.equal(U.getHero().continuesUsed, 1); assert.equal(U.getHero().lives, 3);
   // New game: SELECT is only reachable from HOME/OVER/etc — not from PLAY
   // (state table), so the explicit transition no-ops and Enter stays a jump.
   tryTransition(S.SELECT); GameOver.focus = 0;
