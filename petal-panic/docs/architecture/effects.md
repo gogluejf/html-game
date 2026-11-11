@@ -846,3 +846,92 @@ the bomb `explode_sheet.json` anim (high-graphic) plus its own procedural
 flash-core + shock-ring drawer as `fallback` (primitive mode). Declared in the
 primitive's `meta.effects`; suppressed per-call via the declared-fire guard in
 composed set pieces so VFX isn't doubled.
+
+---
+
+## 32. Blink (`blink`)
+
+Constant-rate on/off blink of the carrier's REAL sprite. N full cycles are
+spread EVENLY across the whole window (no acceleration), fading between
+`alphaOn` and `alphaOff`. No colors, no wash — just visibility. The sibling
+of `blink-transition` (§28) with a different job: that one is self-timed with
+an accelerating switch rate and color/image frames; this one is externally
+clocked at a constant rate so it stays locked to the carrier's immunity
+window (design §27).
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `cycles` | `6` | Full on/off cycles across the whole window |
+| `alphaOn` | `0.8` | "on" visibility |
+| `alphaOff` | `0.4` | "off" visibility |
+
+**Timing model — externally driven.** The instance does NOT own its clock:
+`update(dt)` is a no-op and the caller steps phase with
+`setProgress(fraction)`, fraction = remaining/total of the carrier's
+immunity timer (1 → 0). Extending the window extends the blink, and the
+sprite is VISIBLE exactly when the window ends (for even `cycles` the final
+ON beat is widened to cover the last `1/cycles` segment, so the sprite never
+vanishes on the terminal frame).
+
+```js
+import { blink } from './effects/blink.js';
+const fx = blink({ cycles: 6, alphaOn: 0.8, alphaOff: 0.4 }, hero);
+// per frame while intangible:
+fx.setProgress(hero.timers.fraction('intangible'));
+// render pass (replaces the normal draw while active):
+if (!hero.invulnFx?.active) <normal draw>; else fx.render(ctx);
+```
+
+**Rendering ownership:** suppress the carrier's normal sprite while the
+effect is active (same contract as `invuln-flicker`).
+
+**Current usage:** hero hit i-frames and level-entry/respawn grace
+(`INVULN_LOOKS.hit` in hero.js).
+
+**F2 theater:** section 32, **Blink** — demo drives `setProgress()` over a
+1 s sweep on a static sprite box.
+
+---
+
+## 33. Invuln Flicker (`invuln-flicker`)
+
+Dumb color-cycler for the star-powerup invincibility look. An array of colors
+is played as a fixed-rate cycle; each color flashes OVER the carrier's real
+sprite at `alpha` (the anim stays visible underneath the whole time the color
+iterates). The special `'invisible'` entry is a vanish beat. The effect knows
+nothing about hits or powerups — the hero owns the look table
+(`INVULN_LOOKS.powerup` in hero.js: white → orange → white → black →
+invisible @ 16 ms).
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `colors` | `['#ffffff']` | Cycle table: color strings, or the exported `INVISIBLE` sentinel for a vanish beat |
+| `beatMs` | `16` | Duration of ONE beat in ms; the whole cycle is `colors.length × beatMs` |
+| `alpha` | `0.8` | Flash alpha for color beats (color drawn over the sprite via `source-atop`) |
+
+**Timing model — externally driven.** Same contract as `blink` (§32):
+`update(dt)` is a no-op; the caller drives phase with
+`setProgress(fraction)` from the `intangible` timer's remaining fraction.
+The expiry guard forces the terminal frame visible if it would otherwise
+land on an `INVISIBLE` beat.
+
+```js
+import { invulnFlicker, INVISIBLE } from './effects/invulnFlicker.js';
+const fx = invulnFlicker(
+  { colors: ['#ffffff', '#ff9f43', '#ffffff', '#000000', INVISIBLE], beatMs: 16, alpha: 0.8 },
+  hero,
+);
+// per frame while intangible:
+fx.setProgress(hero.timers.fraction('intangible'));
+```
+
+**Rendering ownership:** suppress the carrier's normal sprite while the
+effect is active. Color beats use `source-atop` compositing so the sprite's
+own pixels show through at `(1 - alpha)`; without a sheet frame the beat
+falls back to a translucent rect over the live collision box.
+
+**Current usage:** star powerup (5 s invincibility) only. Hit i-frames use
+`blink` (§32) instead.
+
+**F2 theater:** section 33, **Invuln Flicker** — demo drives `setProgress()`
+over a 1 s sweep on a static sprite box.

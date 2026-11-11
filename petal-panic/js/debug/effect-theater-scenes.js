@@ -456,7 +456,53 @@ const SCENES = {
     fire(c, entry) { const o = c.boss.origin(); return fireManual({ type: entry.type, params: { ...entry.params, x: o.x, y: o.y } }, c.boss); },
     draw(ctx, c) { c.boss.draw(ctx); },
   },
+  // 32/33. Externally-clocked invulnerability looks (design §27): the demo
+  // carrier is a static sprite box; the effect's setProgress() is driven by
+  // the demo clock so the preview shows the full blink/flicker sweep.
+  'blink': makeExternalClockScene(),
+  'invuln-flicker': makeExternalClockScene(),
 };
+
+/**
+ * Scene factory for externally-clocked effects (blink / invuln-flicker).
+ * These instances do NOT own their clock — update(dt) is a no-op — so the
+ * demo drives setProgress() from its own elapsed time over a fixed 1s window.
+ */
+function makeExternalClockScene() {
+  const WINDOW = 1; // s of demo time to play the full 1 → 0 sweep
+  const demoCarrier = {
+    spriteFrame: () => ({
+      img: null, w: 32, h: 32, dx: -16, dy: -32, scale: 1,
+      anchorX: STAGE_X, anchorY: STAGE_Y, mirrorX: false, rotation: 0,
+    }),
+    worldBox: () => ({ x: STAGE_X - 16, y: STAGE_Y - 32, w: 32, h: 32 }),
+  };
+  return {
+    setup() { return { inst: null, _t: 0 }; },
+    update(c, dt) {
+      c._t += dt;
+      if (!c.inst) {
+        c.inst = null; // fired on first frame via shouldFire
+      }
+      if (c.inst && !c.inst.done) {
+        c.inst.body.setProgress(Math.max(0, 1 - c._t / WINDOW));
+      }
+    },
+    shouldFire(c) { return !c.inst; },
+    fire(c, entry) {
+      const inst = fireManual({ type: entry.type, params: { ...entry.params } }, demoCarrier);
+      c.inst = inst;
+      return inst;
+    },
+    draw(ctx, c) {
+      // Draw the carrier box so the viewer sees WHERE the sprite blinks.
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.strokeRect(STAGE_X - 16, STAGE_Y - 32, 32, 32);
+      ctx.restore();
+    },
+  };
+}
 
 /**
  * Build a stateless, deterministic demo for one catalog entry.

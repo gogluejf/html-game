@@ -408,6 +408,8 @@ export const CATALOG = [
   { type: 'sprite-color-pulse', name: 'Sprite Color Pulse', section: 29, params: { colorA: 'transparent', colorB: '#ffe600', duration: 1.0, cycles: 3, easing: 'easeInOut', opacity: 0.9, box: BOX } },
   { type: 'sprite-outline', name: 'Sprite Outline', section: 30, params: { color: '#000000', thickness: 2, opacity: 1.0, box: BOX } },
   { type: 'sprite-burst', name: 'Sprite Burst', section: 31, params: { x: STAGE_X, y: STAGE_Y, size: 64, duration: 0.5 } },
+  { type: 'blink', name: 'Blink', section: 32, params: { cycles: 6, alphaOn: 0.8, alphaOff: 0.4 } },
+  { type: 'invuln-flicker', name: 'Invuln Flicker', section: 33, params: { colors: ['#ffffff', '#ff9f43', '#ffffff', '#000000'], beatMs: 16, alpha: 0.8 } },
 ];
 
 // Effects whose visual lives in the SHARED particle pool (one-shot bursts):
