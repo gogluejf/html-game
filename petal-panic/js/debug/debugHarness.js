@@ -241,14 +241,20 @@ function debugInjectPowerups() {
   _debugPowerups.length = 0;
 
   const cx = h.x + h.w / 2, cy = h.y + h.h / 2;
-  const types = POWERUP_ROLL_TYPES; // flat: every effect + every special, equal weight
+  // No-repeat wheel: every G press shows each powerup type exactly once.
+  // Random order keeps it fresh; if the pool ever has fewer types than slots,
+  // the ring just gets shorter (no duplicates to pad with).
+  const types = [...POWERUP_ROLL_TYPES];
+  for (let i = types.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [types[i], types[j]] = [types[j], types[i]];
+  }
   const R = 140;
-  const COUNT = 10;
+  const COUNT = types.length;
   let n = 0;
   for (let i = 0; i < COUNT; i++) {
     const a = (i / COUNT) * Math.PI * 2;
-    const type = types[Math.floor(Math.random() * types.length)];
-    const p = makePowerup(type, cx + Math.cos(a) * R - 14, cy + Math.sin(a) * R - 14);
+    const p = makePowerup(types[i], cx + Math.cos(a) * R - 14, cy + Math.sin(a) * R - 14);
     ctx.powerups.push(p);
     ctx.collisionWorld?.add(p);
     _debugPowerups.push(p);
