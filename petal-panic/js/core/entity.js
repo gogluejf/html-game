@@ -528,6 +528,18 @@ export class Entity {
     return { x: this.px + dx * alpha, y: this.py + dy * alpha };
   }
 
+  /** Mark the current position as a discrete correction (landing snap,
+   * wall-push, zone change): collapse prev onto current so render
+   * interpolation SNAPS instead of lerping through the discontinuity.
+   * Without this, a landing frame — where collision snaps the feet to the
+   * surface and/or the pose height changes — would paint the entity partway
+   * DOWN into the ground for the rest of the step (the lerp can't tell a
+   * snap from smooth motion when the jump is below TELEPORT_PX). */
+  snapRenderInterp() {
+    this.px = this.x;
+    this.py = this.y;
+  }
+
   /**
    * Draw placeholder. Subclasses override; this default renders either the
    * current animation frame or a debug-colored rect at the entity center.

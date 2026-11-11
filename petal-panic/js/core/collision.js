@@ -120,6 +120,9 @@ export function resolve(entity, solids, opts = {}) {
       const boxBottomOffset = b.y - entity.y + b.h;
       entity.y = s.y - boxBottomOffset;
       if (entity.vy > 0) entity.vy = 0;
+      // Discrete landing correction — snap render interpolation so the lerp
+      // doesn't paint the entity partway into the ground this step.
+      entity.snapRenderInterp?.();
       resolved = { axis: 'y', dir: 1 };
       continue; // skip generic AABB push for this solid
     }
@@ -138,6 +141,8 @@ export function resolve(entity, solids, opts = {}) {
       const boxBottomOffset = b.y - entity.y + b.h;
       entity.y = s.y - boxBottomOffset;
       entity.vy = 0;
+      // Discrete landing correction — snap render interpolation (see above).
+      entity.snapRenderInterp?.();
       resolved = { axis: 'y', dir: 1 };
       continue;
     }
