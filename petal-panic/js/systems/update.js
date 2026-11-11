@@ -154,6 +154,13 @@ const DYNAMIC_SOLID_FRICTION_PER_SECOND = 0.005;
 // the KE and the struck barrel leaves at ~0.67× the closing speed.
 const BARREL_TRANSFER_RESTITUTION = 0.35; // wood-on-wood thud, not a superball
 
+// Wall bounce: a barrel striking static terrain at speed should thud and
+// rebound with energy absorbed (restitution), not stop dead against the wall.
+// Below this impact speed the hit is gentle settling — no bounce (stacking and
+// resting behavior stay untouched).
+const BARREL_WALL_BOUNCE_MIN_SPEED = 120;   // px/s — below this it's a settle, not a hit
+const BARREL_WALL_BOUNCE_RESTITUTION = 0.3; // wood-on-stone: ~70% of KE absorbed
+
 export function stepDynamicSolid(e, dt, statics, peers) {
   if (!e.alive) return;
   // Horizontal friction for externally-impulsed motion (knockback). Retained
@@ -175,6 +182,37 @@ export function stepDynamicSolid(e, dt, statics, peers) {
     if (Math.abs(e.vx) < 2) e.vx = 0; // rest threshold: kill sub-pixel creep
   }
   const others = peers.filter(p => p !== e && p.alive);
+  // Wall bounce (declaration of impact, static version of the barrel-on-barrel
+  // transfer above): a barrel striking STATIC terrain at speed thuds and
+  // rebounds with energy absorbed — it does not stop dead against the wall.
+  // Runs BEFORE resolve() so the impact speed is read from the OVERLAPPING
+  // position; resolve() then separates the boxes (its "zero velocity into the
+  // solid" rule is exactly what we want here: it cancels the INTO-wall part of
+  // the rebound, leaving only the AWAY-from-wall component). Gentle overlaps
+  // (below the min-speed gate) are settling, not impacts — untouched.
+  for (const s of statics) {
+    const eb = e.worldBox();
+    const penX = Math.min(eb.x + eb.w - s.x, s.x + s.w - eb.x);
+    const penY = Math.min(eb.y + eb.h - s.y, s.y + s.h - eb.y);
+    if (penX <= 0 || penY <= 0) continue; // not overlapping
+    // Impact axis = minimum penetration (same rule as resolve()).
+    if (penX <= penY) {
+      const v = e.vx ?? 0;
+      if (Math.abs(v) < BARREL_WALL_BOUNCE_MIN_SPEED) continue; // gentle settle
+      // Normal points OUT of the wall toward the entity (away from its center).
+      const nx = Math.sign((eb.x + eb.w / 2) - (s.x + s.w / 2)) || 1;
+      if (v * nx >= 0) continue; // moving away from the wall — no impact
+      // Rebound: reflect the into-wall velocity with restitution; the parallel
+      // component (vy) is preserved — friction on the wall face is out of scope.
+      e.vx = -v * BARREL_WALL_BOUNCE_RESTITUTION;
+    } else {
+      const v = e.vy ?? 0;
+      if (Math.abs(v) < BARREL_WALL_BOUNCE_MIN_SPEED) continue; // gentle settle
+      const ny = Math.sign((eb.y + eb.h / 2) - (s.y + s.h / 2)) || 1;
+      if (v * ny >= 0) continue; // moving away from the surface — no impact
+      e.vy = -v * BARREL_WALL_BOUNCE_RESTITUTION;
+    }
+  }
   // Momentum transfer: a MOVING dynamic solid that overlaps another live
   // dynamic solid pushes it along the overlap axis instead of stopping dead
   // against it (a kicked barrel striking a resting barrel shoves it). Equal-

@@ -125,4 +125,32 @@ ok('fast-falling barrel onto a resting one settles without NaN/instability', () 
   assert.ok(Math.abs(bottom(upper) - lower.worldBox().y) <= 2, 'upper rests on lower');
 });
 
+ok('barrel striking a WALL bounces back with energy absorbed (not stop dead)', () => {
+  // Find a static solid whose left face is exposed (open floor to its left).
+  let wall = null, wx = 0;
+  for (const s of U.SOLIDS) {
+    if (s.y >= FLOOR_TOP - 4) continue; // skip the floor itself
+    const probeX = s.x - W - 8;
+    let blocked = false;
+    for (const o of U.SOLIDS) if (o !== s && o.y < FLOOR_TOP && o.x <= probeX + W && o.x + o.w >= probeX) blocked = true;
+    if (!blocked) { wall = s; wx = probeX; break; }
+  }
+  assert.ok(wall, 'found an exposed wall face to test against');
+  const b = makeWoodBarrel(wx, FLOOR_TOP - H);
+  ctx.woodBarrels.push(b);
+  for (let i = 0; i < 30; i++) U.update(DT); // settle at rest
+  const x0 = b.x;
+  b.vx = 500; // kick into the wall
+  let bounced = false;
+  for (let i = 0; i < 60; i++) {
+    U.update(DT);
+    if (b.vx < -40) { bounced = true; break; } // rebounded away from the wall
+  }
+  assert.ok(bounced, `barrel rebounded off the wall (final vx=${b.vx.toFixed(0)})`);
+  // Energy absorbed: it did NOT bounce back at full speed (restitution < 1).
+  assert.ok(Math.abs(b.vx) < 500, `bounce speed absorbed (|vx|=${Math.abs(b.vx).toFixed(0)} < 500)`);
+  // It stopped AT the wall, not through it.
+  assert.ok(b.x > x0, `barrel reached the wall (Δ=${(b.x - x0).toFixed(1)}px)`);
+});
+
 console.log(`\n${passed} passed`);
