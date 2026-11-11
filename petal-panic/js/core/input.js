@@ -689,7 +689,16 @@ export function createInput({ target = globalThis.window, document = globalThis.
           // facing-based neutral default.
           let angle;
           if (resolveAim) {
-            const dir = resolveAim({ down: s.crouch, lockMove: s.lockMove, aimX: dirX, aimY: dirY });
+            // Capture priority (shuffle-lock): LEFT held at engage time locks
+            // the LEFT side; everything else — up, down, right, diagonals,
+            // neutral — locks RIGHT. The resolver still picks the exact angle
+            // within that side (front / 45up / 45down), so pass the horizontal
+            // intent with left stripped: a locked-left capture resolves to
+            // DIR_LEFT, any other capture to DIR_RIGHT.
+            const dir = resolveAim({
+              down: s.crouch, lockMove: s.lockMove,
+              aimX: Math.max(0, dirX), aimY: dirY,
+            });
             angle = dirAngle(dir);
           } else {
             angle = lastAim ?? ((s.aimX || s.aimY) ? Math.atan2(s.aimY, s.aimX) : (facing < 0 ? Math.PI : 0));

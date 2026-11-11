@@ -516,8 +516,16 @@ export class Hero extends Entity {
       this.vx = 0;
       this.sliding = false;
     } else if (moveDir !== 0) {
-      this.facing = moveDir > 0 ? 1 : -1;
-      this.syncMirror();
+      // Lock Direction freezes the BODY too, not just the aim (Contra /
+      // Shattered Soldier shuffle): while the lock is held the hero keeps
+      // facing the locked side no matter which way he runs — running opposite
+      // plays the run cycle mirrored (backwards shuffle). The mirror flip
+      // alone sells it; no frame reversal needed. Release resumes normal
+      // movement-driven facing on the next input frame.
+      if (!input.lockDir) {
+        this.facing = moveDir > 0 ? 1 : -1;
+        this.syncMirror();
+      }
       const targetVx = moveDir * speed;
       // Blocked on the ground (design §8 solid-obstacle case): a solid actually
       // cancelled our horizontal motion last frame (resolve() stamped
