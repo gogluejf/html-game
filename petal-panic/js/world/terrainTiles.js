@@ -58,26 +58,28 @@ export function loadTerrainFrames(level, kind) {
  *   PLATFORM (6 frames): f1–f3 decorated (25%) / f4..f6 empty (75%).
  *   BLOCK (2 frames):    f1 decorated (75%) / f2 empty (25%).
  */
-function pickFrame(rng, frameCount, kind) {
-  let plainPool, decoPool;
+function pickFrame(rng, frameCount, kind, pair = null) {
   if (kind === 'block') {
     // f1 (index 0) is decorated; f2..end are plain.
-    plainPool = [];
+    const plainPool = [];
     for (let i = 1; i < frameCount; i++) plainPool.push(i);
-    decoPool = [0];
-  } else {
-    // Platform: f4..end (last three slots of a 6-frame sheet) are the empty
-    // pool; everything before (f1–f3) is decorated.
-    const plainStart = Math.max(0, frameCount - 3);
-    plainPool = [];
-    for (let i = plainStart; i < frameCount; i++) plainPool.push(i);
-    decoPool = [];
-    for (let i = 0; i < plainStart; i++) decoPool.push(i);
+    const decoPool = [0];
+    if (rng.next() < PLAIN_FRAME_WEIGHT && plainPool.length > 0) {
+      return plainPool[Math.floor(rng.next() * plainPool.length)];
+    }
+    return decoPool.length > 0 ? decoPool[Math.floor(rng.next() * decoPool.length)] : plainPool[0];
   }
-  if (rng.next() < PLAIN_FRAME_WEIGHT && plainPool.length > 0) {
-    return plainPool[Math.floor(rng.next() * plainPool.length)];
+  // Platform: paired theming.
+  // Pairs: (0,3), (1,4), (2,5) -> (f1,f4), (f2,f5), (f3,f6)
+  if (pair == null) {
+    pair = Math.floor(rng.next() * 3); // pick pair 0, 1, or 2
   }
-  return decoPool.length > 0 ? decoPool[Math.floor(rng.next() * decoPool.length)] : plainPool[0];
+  const decoIdx = pair;         // f1, f2, or f3 (indices 0, 1, 2)
+  const plainIdx = pair + 3;    // f4, f5, or f6 (indices 3, 4, 5)
+  if (rng.next() < PLAIN_FRAME_WEIGHT) {
+    return plainIdx;
+  }
+  return decoIdx;
 }
 
 /**
@@ -123,6 +125,10 @@ export function tileSolid(s, level, seed) {
   const anim = asset?.data?.anims[asset.animName];
   const frameCount = anim?.frames.length ?? (kind === 'platform' ? 4 : 2);
 
+  // Platform theming: pick ONE random pair (0/1/2) per solid so all tiles
+  // on the same platform share the same shape family.
+  const platformPair = kind === 'platform' ? Math.floor(rng.next() * 3) : null;
+
   const tiles = [];
   // Columns RIGHT → LEFT (proper overlay: earlier-drawn right tiles sit under
   // later-drawn left tiles).
@@ -136,7 +142,7 @@ export function tileSolid(s, level, seed) {
       // (full width × 1u) — the sprite pinning happens in tileSprite.js via
       // targetH = PLATFORM_DRAW_H so the drawn slab tops out at the platform
       // level exactly.
-      const frame = pickFrame(rng, frameCount, kind);
+      const frame = pickFrame(rng, frameCount, kind, platformPair);
       const imgKey = anim ? anim.frames[frame % anim.frames.length].file
         : `platform_${colW === 1 ? 'single' : colW === 2 ? 'double' : 'triple'}_f${frame + 1}.png`;
       const colX = cursorRight - colW * UNIT_PX_X;
