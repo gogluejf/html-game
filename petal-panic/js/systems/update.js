@@ -1437,5 +1437,5 @@ import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, cullOf
 import { applyObjectImpact } from '../combat/objectImpact.js';
 import { hitstop as requestHitstop } from '../core/hitstop.js';
 // Star-power barrel pop juice (same values as the enemy contact kill).
-const STAR_POWER_HITSTOP_FRAMES = 5;
+const STAR_POWER_HITSTOP_FRAMES = 2; // ~33ms — snappy pop beat (was 5 ≈ 83ms)
 const STAR_POWER_SHAKE = 6;
