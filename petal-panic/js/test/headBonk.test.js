@@ -127,18 +127,18 @@ ok('heroBonkDynamic: SIDE hit at run speed does NOT shove the barrel on X (no pu
 });
 
 ok('heroPushCreep: gentle grounded press makes the barrel crawl at creep speed', () => {
-  // Side-overlap geometry (penX > penY): hero's lower half alongside the barrel.
-  const hero = box(0, 20, 32, 91, 200, 0);     // running right, grounded
-  const barrel = box(24, 70, 32, 48, 0, 0);    // penX=28, penY=17 → side contact
+  // Side-overlap geometry (penX < penY): hero's lower half alongside the barrel.
+  const hero = box(0, 20, 32, 91, 100, 0);     // walking right (< bonk gate), grounded
+  const barrel = box(28, 70, 32, 48, 0, 0);    // penX=4, penY=41 → side contact
   const applied = heroPushCreep(hero, barrel);
   assert.ok(applied, 'creep applied');
   assert.equal(barrel.vx, HERO_PUSH_CREEP_SPEED, `barrel.vx=${barrel.vx} expected ${HERO_PUSH_CREEP_SPEED}`);
-  assert.equal(hero.vx, 200, 'hero vx untouched (resolve blocks the hero)');
+  assert.equal(hero.vx, 100, 'hero vx untouched (resolve blocks the hero)');
 });
 
 ok('heroPushCreep: direction follows the hero\'s walk direction', () => {
-  const hero = box(56, 20, 32, 91, -200, 0);   // running LEFT into the barrel's right side
-  const barrel = box(24, 70, 32, 48, 0, 0);
+  const hero = box(52, 20, 32, 91, -100, 0);   // walking LEFT into the barrel's right side
+  const barrel = box(24, 70, 32, 48, 0, 0);    // penX=4, penY=41 → side contact
   heroPushCreep(hero, barrel);
   assert.equal(barrel.vx, -HERO_PUSH_CREEP_SPEED, `barrel.vx=${barrel.vx}`);
 });
