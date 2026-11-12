@@ -199,6 +199,12 @@ export function heroPushCreep(hero, barrel, opts = {}) {
   const bb = barrel.worldBox();
   const { penX, penY } = penetration(hb, bb);
   if (penX <= 0 || penY <= 0) return false;
+  // Must be a SIDE press, not a top press: hero's feet (bottom) must be
+  // below the top 30% of the barrel. On top = feet in upper 30%.
+  const heroBottom = hb.y + hb.h;
+  const barrelTop = bb.y;
+  const barrelH = bb.h;
+  if (heroBottom < barrelTop + barrelH * 0.3) return false; // hero is on top, not side
   const vx = hero.vx ?? 0;
   if (Math.abs(vx) < 1) return false;                    // not pressing horizontally
   if (Math.abs(hero.vy ?? 0) > 40) return false;         // airborne clip, not a grounded press
