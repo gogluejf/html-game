@@ -7,6 +7,7 @@ import { loadTestMacros } from './_macroSetup.mjs';
 loadTestMacros();
 
 import { strict as assert } from 'node:assert';
+import { resolve } from '../core/collision.js';
 
 // --- DOM stub + event-listener capture so we can inject key input ----------
 const noop = () => {};
@@ -115,6 +116,26 @@ ok('destroyed barrel stops blocking (hero walks through its old spot)', () => {
   release('KeyD');
   assert.ok(hero.x > barrel.x,
     `hero should have passed through the destroyed barrel's spot (x=${hero.x.toFixed(1)} > ${barrel.x})`);
+});
+
+ok('fractional barrel side contacts never teleport vertically in either direction', () => {
+  for (const dir of [1, -1]) {
+    for (let i = 0; i < 10000; i++) {
+      const solid = { x: 1000 + i * 0.137, y: 100, w: 48, h: 48 };
+      const body = {
+        x: dir === 1 ? solid.x - 30 + 0.31 : solid.x + solid.w - 0.31,
+        y: 56.8, w: 30, h: 91.2, vx: dir * 200, vy: 0,
+        worldBox() { return { x: this.x + 0.123, y: this.y, w: this.w, h: this.h }; },
+      };
+      const hit = resolve(body, [solid], { prevBottom: 148 });
+      assert.equal(body.y, 56.8, `direction=${dir}, sample=${i}: side contact must not change height`);
+      assert.deepEqual(hit, { axis: 'x', dir: -dir });
+      assert.equal(body.vx, 0);
+      const box = body.worldBox();
+      const gap = dir === 1 ? solid.x - (box.x + box.w) : box.x - (solid.x + solid.w);
+      assert.ok(Math.abs(gap) < 1e-9, 'body remains at the contacted side');
+    }
+  }
 });
 
 console.log(`\n${passed} passed`);

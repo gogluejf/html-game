@@ -187,7 +187,9 @@ export function resolve(entity, solids, opts = {}) {
       pushAxis('x');
       const p2 = Math.min(b.y + b.h - s.y, s.y + s.h - b.y);
       const px2 = Math.min(b.x + b.w - s.x, s.x + s.w - b.x);
-      if (p2 > 0 && px2 > 0) pushAxis('y');
+      // Recomputed offset boxes can retain sub-pixel rounding residue after
+      // separation. Never turn that residue into a full other-axis push.
+      if (p2 > 1e-9 && px2 > 1e-9) pushAxis('y');
     } else {
       // The hero is falling and was above this solid's top before integration:
       // it Landed on the surface. The generic minimum-penetration choice would
@@ -206,7 +208,7 @@ export function resolve(entity, solids, opts = {}) {
         pushAxis('y');
         const p2 = Math.min(b.x + b.w - s.x, s.x + s.w - b.x);
         const py2 = Math.min(b.y + b.h - s.y, s.y + s.h - b.y);
-        if (p2 > 0 && py2 > 0) pushAxis('x');
+        if (p2 > 1e-9 && py2 > 1e-9) pushAxis('x');
       }
     }
   }
