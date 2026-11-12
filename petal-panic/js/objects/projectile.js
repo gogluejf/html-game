@@ -68,6 +68,7 @@ const SPRITE_TARGETS = Object.freeze({
   bomb:        { anim: 'shoot' },
   explosion:   { cat: 'fx', dir: 'explosion', file: 'explode_sheet.json', anim: 'explode' },
   explosion_smoke: { cat: 'fx', dir: 'explosion', file: 'explode_smoke_sheet.json', anim: 'explode_smoke' },
+  smoke_ring:  { cat: 'fx', dir: 'smoke', file: 'ring_sheet.json', anim: 'ring' },
   saw:         { anim: 'shoot' },
   spread:      { anim: 'shoot' },
   homing:      { anim: 'fly' },

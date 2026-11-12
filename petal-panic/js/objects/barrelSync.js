@@ -6,6 +6,15 @@ import { LAYER, UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { roomFloorTop } from '../world/level.js';
 import { Effects } from '../effects.js';
+import { fireManual } from '../effects/index.js';
+import { getSpecialSpriteData } from './projectile.js';
+
+/** Fire a smoke ring sprite-burst at (x, y) for non-explosive barrel breaks. */
+function fireSmokeRing(x, y) {
+  const anim = getSpecialSpriteData('smoke_ring')?.anims.ring;
+  if (!anim) return; // pre-boot or failed load — skip silently
+  fireManual({ type: 'sprite-burst', params: { x, y, size: 48, anim, fromAlpha: 1, toAlpha: 0 } });
+}
 import { particles, coins } from '../effects/particles.js';
 import { GameObj, BARREL_DAMAGE, SUPERCOIN_BARREL_DEF, PROPANE_BARREL_DEF, TOXIC_BARREL_DEF } from './object.js';
 import { invoke } from '../combat/attack/engine.js';
@@ -107,6 +116,7 @@ export function handleBarrelDestroyed(barrel) {
     Effects.fireParticleBurst(cx, cy, 8);   // regular barrel-break particles
     Effects.bigExplosion(0.9);              // white screen flash
     Effects.triggerShake(14);               // camera shake
+    fireSmokeRing(cx, cy);
     // SFX: big coin burst
   } else if (barrel.type === TOXIC_BARREL_DEF.id) {
     // Toxic barrel: huge dust cloud (7×5 units) centered on the barrel. The
@@ -122,15 +132,18 @@ export function handleBarrelDestroyed(barrel) {
     }, { attacker: barrel, world: { hero: ctx.hero, targets: getDamageables() } });
     Effects.fireParticleBurst(cx, cy, 10);  // initial puff burst
     Effects.triggerShake(6);
+    fireSmokeRing(cx, cy);
     // SFX: toxic hiss
   } else if (barrel.coinDrop) {
     // Coin barrel (or any object with a coinDrop config): spawn the burst.
     coins.dropCoins(barrel.coinDrop, cx, cy);
     Effects.fireParticleBurst(cx, cy, 6); // engine path — plain sparkle burst
+    fireSmokeRing(cx, cy);
     // SFX: coin
   } else {
     // Wood barrel (plain): just breaks into wood-chip particles. No damage, no coins.
     Effects.fireParticleBurst(cx, cy, 8); // engine path — plain sparkle burst
+    fireSmokeRing(cx, cy);
     // SFX: break
   }
 
