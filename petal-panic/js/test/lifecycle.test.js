@@ -48,7 +48,7 @@ const { Hero } = await import('../hero/hero.js');
 const { HEROES } = await import('../hero/heroDefs.js');
 const { createTrace } = await import('../stats.js');
 const U = await import('../systems/update.js');
-const { ZONE_ENTRY_X, ZONE_GROUND_Y } = await import('../world/level.js');
+const { ZONE_ENTRY_X, ZONE_GROUND_Y, ZONE_ENTRY_DROP_PX } = await import('../world/level.js');
 
 // --- Helpers -----------------------------------------------------------------
 
@@ -168,7 +168,7 @@ test('restartAttempt: restores area arrangement and places hero at entry', () =>
 
   // Hero placed at entry with i-frames.
   assert.equal(h.x, 100, 'hero at entry x');
-  assert.equal(h.y, 400, 'hero at entry y');
+  assert.equal(h.y, 400 - ZONE_ENTRY_DROP_PX, 'hero at entry y (with drop)');
   assert.equal(h.energy, h.maxEnergy, 'full energy');
   assert.ok(h.invincible, 'i-frames active (invincible)');
 });

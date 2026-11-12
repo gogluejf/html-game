@@ -164,7 +164,6 @@ export function debugWrapToNextArea() {
       ctx.loadActiveZone(z1, ctx.world.world.get(z1.areaIdx));
     }
     const sp1 = z1.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
-    hero.checkpoint = { x: sp1.x, y: sp1.y - hero.h };
     recordZoneSnapshot(hero);
     ctx.camera.setZoneBounds(z1);
     showAreaEntry(hero, ctx.areaContext);
@@ -201,12 +200,10 @@ export function debugWrapToNextArea() {
     // Entering the boss zone starts the RUN phase: hero at the left entry,
     // normal camera, machine dormant. Spawn is zone data (§4).
     const sp = nextZone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
-    hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
   } else {
     // Respawn position is zone data: the NEXT zone's spawn (exit flags trigger
     // into it). Fallback keeps hand-built zones working.
     const sp = nextZone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
-    hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
   }
   recordZoneSnapshot(hero);
   ctx.camera.setZoneBounds(nextZone);
@@ -283,7 +280,6 @@ export function stepClearSequence(dt) {
       // the floor). Exit flags trigger into the next zone; area 1 has no
       // entry flag and spawns at its own start.
       const sp = nextZone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
-      hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
       // Accounting snapshot (game-rules.md §4): record the entry totals for
       // this genuine area advance so a later death restart of the area can
       // roll the run stats back to them (the 'rollback' policy).
@@ -320,7 +316,6 @@ export function beginClearFadeIn() {
   const sp = zone.spawn ?? { x: (zone.rooms?.[0]?.x ?? 0) + ZONE_ENTRY_X, y: ZONE_GROUND_Y };
   hero.x = sp.x;
   hero.y = sp.y - hero.h;
-  hero.checkpoint = { x: hero.x, y: hero.y };
   // Re-clamp the camera to the new zone's bounds (task 2.3) so it cannot reveal
   // the previous or next zone; a fresh vertical climb also resets its ascent.
   ctx.camera.setZoneBounds(zone);
@@ -529,7 +524,6 @@ export function resetActiveZoneContent() {
     ctx.camera.unlock();
     ctx.camera.setZoneBounds(activeZone);
     const sp = activeZone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
-    hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
   }
 }
 
@@ -573,7 +567,6 @@ export function retryLevel() {
   // Same pattern as continueFromGameOver's vertical-zone-corruption fix.
   const zone = ctx.getActiveZone(hero);
   const sp = zone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
-  hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
   ctx.camera.setZoneBounds(zone);
   showAreaEntry(hero, ctx.areaContext);
   console.log(`[lifecycle] PAUSE → AREA_ENTRY (manual retry, lives: ${hero.lives})`);
@@ -619,7 +612,6 @@ export function continueFromGameOver() {
   // (feet on its floor), NOT the hardcoded horizontal floor — this is what
   // keeps a vertical first-area from stranding the hero mid-climb.
   const sp = z1.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
-  hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
   ctx.camera.setZoneBounds(z1);
   const applied = continueRun(hero, ctx.areaContext);
   if (applied) console.log('[lifecycle] continue applied');

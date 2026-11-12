@@ -24,7 +24,7 @@
 // effects) so the rules are unit-testable in node without a DOM.
 
 import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetHeroInventory } from './gameRules.js';
-import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../world/level.js';
+import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y, ZONE_ENTRY_DROP_PX } from '../world/level.js';
 import { getLevelConfig, LEVEL_CONFIGS, AREA_BOSS } from '../world/levelConfigs.js';
 import { getLastWorldSeed } from '../world/build.js';
 import { Hero, WEAPON_THORN } from '../hero/hero.js';
@@ -36,6 +36,7 @@ import { tryTransition, getState, setState, S } from '../core/state.js';
 import { TUNING } from '../tuning.js';
 import { loadStore, saveStore, clearRunSave, updateProgress, markMediaUnlocked } from './progressStore.js';
 import { ctx as wctx } from '../world/context.js';
+import { createRun, serializeRun, deserializeRun } from './runState.js';
 
 // --- Zone-snapshot chain (state-persistence.md §1) ---------------------------
 //
@@ -120,6 +121,21 @@ const ENTRY_AREA = 1;
 // MINOR 9: the coordinates are zone-aware (level.js ZONE_ENTRY_X /
 // ZONE_GROUND_Y), not stale prototype constants. Area 1 has no entry flag
 // (checkpoints.md §1), so its entry is the zone's start position.
+
+// --- Transition table (zone-entry-unification Step 3) ------------------------
+// Declarative rules for what each zone-entry transition does to Run and Life.
+// Replaces the scattered inline decisions ("reset energy here, keep weapon
+// there") with a single lookup. The enterZone function (Step 4) reads this
+// table; until then the existing code paths still do their own thing.
+
+export const TRANSITIONS = {
+  'new-game':     { run: 'fresh',        life: 'fresh' },
+  'advance':      { run: 'keep',         life: 'keep' },
+  'death-retry':  { run: 'rollback',     life: 'reset' },
+  'continue':     { run: 'refill-lives', life: 'reset' },
+  'level-clear':  { run: 'keep',         life: 'refill' },
+  'save-load':    { run: 'restore',      life: 'reset' },
+};
 
 /**
  * Build a fresh Hero for a new game with the given definition.
@@ -365,6 +381,8 @@ export function resetGeneration(ctx) {
  */
 export function startGame(ctx, heroDef) {
   const h = makeHero(heroDef);
+  // Run state (zone-entry-unification Step 2): persistent game identity.
+  h.run = createRun(heroDef.id, getLastWorldSeed());
   h.lives = GAME_RULES.startingLives;
   h.continues = createContinuePool(GAME_RULES.startingContinues);
   // continuesUsed is a derived view of the pool for backwards compatibility
@@ -485,11 +503,20 @@ export function startArea(h, level, areaIdx) {
  * @param {Hero} h
  */
 export function placeHeroAtEntry(h) {
-  // Read spawn directly from the active zone — no intermediate checkpoint field.
+  // Position the hero at the zone entry with a drop offset.
+  // Priority: h.checkpoint (explicit, set by tests/callers) > zone.spawn > current pos.
+  // zone.spawn.y is the FLOOR (feet). h.checkpoint stores top-left (already -h.h).
+  const cp = h.checkpoint;
   const zone = wctx.getActiveZone?.(h);
-  const sp = zone?.spawn ?? { x: h.x, y: h.y + h.h };
-  h.x = sp.x;
-  h.y = sp.y - h.h;
+  if (cp && typeof cp === 'object') {
+    h.x = cp.x;
+    h.y = cp.y - ZONE_ENTRY_DROP_PX;
+  } else if (zone?.spawn) {
+    h.x = zone.spawn.x;
+    h.y = zone.spawn.y - h.h - ZONE_ENTRY_DROP_PX;
+  } else {
+    h.y -= ZONE_ENTRY_DROP_PX;
+  }
   h.vx = 0;
   h.vy = 0;
   h.dying = false;
@@ -567,6 +594,62 @@ export function startLife(h, ctx, opts = {}) {
   else restartAttempt(h, ctx);
 }
 
+// --- Unified zone entry (zone-entry-unification Step 4) -----------------------
+//
+// THE ONE FUNCTION that enters a zone. Replaces the 5 scattered code paths
+// (new game, advance, death retry, continue, save-load) with a single call.
+// The transition name selects the rules from TRANSITIONS; the five steps
+// below are always identical regardless of path.
+//
+// Migration note: during the transition period, the existing paths
+// (restartAttempt, arriveAtZone, etc.) still work. This function is the
+// target they will all collapse into once callers are migrated.
+
+/**
+ * Enter a zone: install content, reset transients, place hero, show screen.
+ * @param {Hero} h the hero entity
+ * @param {object} zone the zone object (from buildLevelZones / getActiveZone)
+ * @param {string} transition one of TRANSITIONS keys
+ * @param {object} [ctx] area context for entity restoration
+ */
+export function enterZone(h, zone, transition, ctx) {
+  const rule = TRANSITIONS[transition];
+  if (!rule) throw new Error(`enterZone: unknown transition '${transition}'`);
+
+  // Apply run rules
+  if (rule.run === 'fresh') {
+    // New game: fresh run already created in startGame. Nothing to do here.
+  } else if (rule.run === 'rollback') {
+    restoreAreaEntryStats(h);
+  } else if (rule.run === 'refill-lives') {
+    h.lives = GAME_RULES.startingLives;
+    restoreZoneState(h, `${h.currentLevel}:1`);
+  } else if (rule.run === 'restore') {
+    // save-load: run was already deserialized in continueFromMenu.
+  }
+  // 'keep' → do nothing
+
+  // Apply life rules
+  if (rule.life === 'reset') {
+    resetHeroTransient(h);
+    resetHeroInventory(h);
+  } else if (rule.life === 'refill') {
+    if (h.maxEnergy !== undefined) h.energy = h.maxEnergy;
+  }
+  // 'keep' / 'fresh' → do nothing (fresh life is set by the Hero constructor)
+
+  // Restore zone arrangement (entities back to initial state)
+  const c = ctx ?? ctxOf(h) ?? buildContextFromHero(h);
+  if (rule.run === 'rollback' || rule.run === 'refill-lives' || rule.run === 'restore') {
+    restoreArea(c);
+  }
+
+  // THE FIVE STEPS (always identical)
+  placeHeroAtEntry(h);
+  resetHitstop();
+  showAreaEntry(h, c);
+}
+
 /**
  * §4 Game continue. Requires a remaining continue and consumes exactly one,
  * restores the global starting life count, returns to area 1 of the CURRENT
@@ -604,6 +687,8 @@ export function continueRun(h, ctx) {
   // Inventory persistence (game-rules.md §5): same reset sequence as a death
   // restart — full energy, weapon gone, specials/shield/super cleared.
   resetHeroInventory(h);
+  // Continue ALWAYS returns to area 1 — set the entry position unconditionally.
+  h.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - h.h };
   const c = ctx ?? ctxOf(h);
   // checkpoints.md §3: continue shows the shared area-entry screen (with the
   // restored life count) and starts a fresh attempt there — the attempt begins
@@ -690,15 +775,20 @@ export function continueFromMenu(h) {
   const level = sm.level;
   const area = sm.area;
   if (h) {
+    // Restore the Run state from the save (zone-entry-unification Step 2).
+    // The run object carries heroId, seed, level, area, lives, continues, wallet.
+    h.run = deserializeRun(sm);
+    // Mirror onto the hero fields (migration: readers still use hero fields).
     h.currentLevel = level;
     h.currentArea = area;
-    // Persistent-column resume (state-persistence.md §2.6): a save carrying a
-    // `state` block restores lives + continues + the zone-snapshot chain
-    // BEFORE the zone installs, so the entry screen shows the saved life count
-    // and the resume's failure-style restart (restartAttempt) rolls coins/score
-    // back to the SAVED ZONE's entry snapshot with full energy + cleared
-    // weapon. Identical in-session and after a page reload. Legacy saves
-    // without `state` keep today's behavior (no crash).
+    h.lives = h.run.lives;
+    if (h.continues && h.run.continues) h.continues.remaining = h.run.continues.remaining;
+    if (h.wallet) {
+      h.wallet.current = { ...h.run.wallet.current };
+      h.wallet.snapshots = { ...h.run.wallet.snapshots };
+    }
+    // Persistent-column resume (state-persistence.md §2.6): legacy path for
+    // saves that carry a separate `state` block.
     if (sm.state && typeof sm.state === 'object') applySavedState(h, sm.state);
   }
   showAreaEntry(h ?? { currentLevel: level, currentArea: area, lives: GAME_RULES.startingLives });
@@ -793,25 +883,28 @@ export function applySavedState(h, st) {
  * @returns {{level:number, area:number, score:number, timestamp:number}|null}
  */
 export function saveCurrentRun(h, overrides = {}) {
+  // Sync the run object with the hero's current state (migration: hero still
+  // owns the fields; we mirror them into the run before serializing).
+  if (h?.run) {
+    h.run.level = overrides.level ?? h.currentLevel ?? 1;
+    h.run.area = overrides.area ?? h.currentArea ?? 1;
+    h.run.lives = h.lives;
+    if (h.continues) h.run.continues.remaining = h.continues.remaining;
+    h.run.wallet.current = { ...h.wallet.current };
+    h.run.wallet.snapshots = { ...h.wallet.snapshots };
+  }
   const meta = {
-    level: overrides.level ?? h?.currentLevel ?? 1,
-    area: overrides.area ?? h?.currentArea ?? 1,
+    ...(h?.run ? serializeRun(h.run) : {
+      heroId: h?.heroDef?.id ?? 'scarlet',
+      seed: getLastWorldSeed(),
+      level: overrides.level ?? h?.currentLevel ?? 1,
+      area: overrides.area ?? h?.currentArea ?? 1,
+      lives: h?.lives ?? GAME_RULES.startingLives,
+      continues: h?.continues?.remaining ?? 0,
+      wallet: structuredClone(h?.wallet ?? { current: { coins: 0, kills: 0 }, snapshots: {} }),
+    }),
     score: calculateScore(h?.traceStats?.total ?? {}, h),
-    // The per-game generation seed (build.js newGameSeed): persisting it lets
-    // a Continue after reload rebuild the EXACT world the run was played on.
-    // Death/continue never reroll, so this is stable for the whole run.
-    seed: getLastWorldSeed(),
-    // Hero identity: which hero was playing this run. Without this, a
-    // Continue after Save&Quit always resumes as Scarlet (the boot default).
-    heroId: h?.heroDef?.id ?? 'scarlet',
-    // Persistent columns at quit time (state-persistence.md §2.5): lives,
-    // continues, score — restored by applySavedState on a reload-Continue
-    // (§2.6). Energy/weapon/coins deliberately NOT saved: the resume's
-    // failure-style restart recomputes them from the zone snapshot.
     state: capturePlayerState(h),
-    // The whole zone-snapshot chain (state-persistence.md §1/§2.5): carried
-    // inside `state` so applySavedState restores it in one place.
-    timestamp: Date.now(),
   };
   meta.state.snapshots = h?.wallet?.snapshots && typeof h.wallet.snapshots === 'object'
     ? structuredClone(h.wallet.snapshots)

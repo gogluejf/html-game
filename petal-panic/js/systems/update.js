@@ -333,7 +333,6 @@ hero = startGame({ oldHero: hero }, HEROES.scarlet);
   const p = heroEntryPosition(hero, getActiveZone(hero));
   hero.x = p.x;
   hero.y = p.y;
-  hero.checkpoint = { x: p.x, y: p.y };
 }
 // Store the zone model on the hero (the authoritative structure the runtime
 // references for structural decisions).

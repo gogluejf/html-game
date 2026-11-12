@@ -429,7 +429,6 @@ export class Checkpoint extends Entity {
     this.triggered = true;
     // REVISION-zones-as-data §4: respawn position is zone data (feet on the
     // floor), not the flag's sprite box. Fallback keeps legacy flags working.
-    hero.checkpoint = this.spawnPos ?? { x: this.x, y: this.y };
     // Swap idle pulse for a solid yellow tint (colorA === colorB = no fade).
     this._tint = spriteColorPulse({
       colorA: '#fff176', colorB: '#fff176',

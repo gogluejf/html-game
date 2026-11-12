@@ -84,7 +84,6 @@ export function settleIntoBossRoom() {
   ctx.hero.y = roomFloorTop(arena, 'boss') - ctx.hero.h;
   ctx.hero.vx = 0;
   ctx.hero.vy = 0;
-  ctx.hero.checkpoint = { x: ctx.hero.x, y: ctx.hero.y };
   // Lift the black over the fade-in duration so the room reveals cleanly.
   ctx.clearSeq.timer = 0;
   console.log(`[bossZone] settled into arena room — floor [${arena.x},${arena.x + arena.w}], cam @${ctx.camera.x}, hero @${ctx.hero.x}`);

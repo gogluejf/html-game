@@ -154,6 +154,10 @@ export function roomFloorTop(room, orientation) {
 }
 /** Hero/entry-flag inset: shared 2-column unit padding. */
 export const ZONE_ENTRY_X = ZONE_ENTRY_PAD_UNITS * UNIT_PX_X;
+/** Drop height (units) above the floor for zone entry. */
+export const ZONE_ENTRY_DROP_UNITS = 5;
+/** Drop height in pixels. */
+export const ZONE_ENTRY_DROP_PX = ZONE_ENTRY_DROP_UNITS * UNIT_PX_Y;
 /**
  * Where the exit flag sits inside a zone, from its left edge (px).
  *

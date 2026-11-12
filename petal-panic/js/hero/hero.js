@@ -166,7 +166,6 @@ export class Hero extends Entity {
     // exposed via the getters/setters below so legacy call sites
     // (boss.js, powerup.js, update.js) keep working unchanged. The debug
     // overlay shows them as 'invincible' and 'rapid' bars in the per-entity stack.
-    this.checkpoint = { x, y };
 
     // --- Death / respawn / continue () -------------------------------
     // dying: hero has hit 0 energy and is playing the skull-fade death sequence.
