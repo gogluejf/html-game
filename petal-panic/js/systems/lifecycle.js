@@ -569,8 +569,7 @@ export function restartAttempt(h, ctx) {
   } else {
     beginLife(h);
   }
-  resetAttemptState(h, c);
-  placeHeroAtEntry(h);
+  enterZone(h, wctx.getActiveZone?.(h), 'death-retry', c);
 }
 
 /**
@@ -582,7 +581,7 @@ export function restartAttempt(h, ctx) {
  * @param {Hero} h
  */
 export function arriveAtZone(h) {
-  placeHeroAtEntry(h);
+  enterZone(h, wctx.getActiveZone?.(h), 'advance');
 }
 
 /**
