@@ -36,12 +36,13 @@ import { buildWorld, instantiateZone, captureAreaMap, newGameSeed, getLastWorldS
 import { CLEAR_SEQ, clearSeq, areaEntrySeq, setMenuEntryPending, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryLevel, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryLevel, continueFromGameOver };
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, roomFloorTop, BOSS_TRIGGER_X } from '../world/level.js';
-import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, applySavedState } from '../systems/lifecycle.js';
+import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, applySavedState, makeHero } from '../systems/lifecycle.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
 import { loadStore } from '../systems/progressStore.js';
 import { Theater } from '../debug/effect-theater.js';
 import { AttackTheater } from '../debug/attack-theater.js';
-import { record } from '../stats.js';
+import { record, createTrace } from '../stats.js';
+import { GAME_RULES, createContinuePool } from '../systems/gameRules.js';
 import { isGrounded, standingOnOneWay } from '../hero/physics.js';
 import { stepDynamicSolid, heroBonkDynamic, heroPushCreep } from '../core/physics.js';
 // Re-export for tests that import the shared physics step via update.js.
@@ -739,7 +740,7 @@ onTransition((from, to) => {
 // straight to AREA_ENTRY).
 onTransition((from, to) => {
   if (to === S.AREA_ENTRY && (from === S.MENU || from === S.LEVEL_SELECT || from === S.BOSS_RUSH)) {
-    const h = hero;
+    let h = hero;
     // This zone was installed FROM THE MENU (reload-Continue / level select /
     // boss rush): the entry sequence MUST start the attempt in FAILURE flavor
     // (state-persistence.md §2.6 — snapshot rollback, full energy, weapon
@@ -762,6 +763,33 @@ onTransition((from, to) => {
     // starting a zone from the menu must not silently fall back to a stale
     // or freshly-rolled world — if the save names a different seed, rebuild.
     const sm = loadStore().saveMeta;
+    // Hero identity restore: if the saved run was played with a different hero
+    // than the current one (always Scarlet on fresh page load), rebuild the
+    // hero with the correct definition BEFORE restoring state onto it.
+    if (sm?.heroId && sm.heroId !== hero.heroDef?.id) {
+      const def = HEROES[sm.heroId] || HEROES.scarlet;
+      const newH = makeHero(def);
+      newH.lives = GAME_RULES.startingLives;
+      newH.continues = createContinuePool(GAME_RULES.startingContinues);
+      Object.defineProperty(newH, 'continuesUsed', {
+        get() { return GAME_RULES.startingContinues - newH.continues.remaining; },
+        set(n) { newH.continues.remaining = GAME_RULES.startingContinues - n; },
+      });
+      newH.traceStats = createTrace();
+      newH.wallet.snapshots = {};
+      // Swap: remove old hero from collision world, add new one, rebind refs.
+      collisionWorld.remove(hero);
+      collisionWorld.add(newH);
+      setHeroRef(newH);
+      bindAreaContext(newH, ctx);
+      // Re-apply saved state onto the CORRECT hero (continueFromMenu applied
+      // it to the old hero before the transition fired; we redo it here).
+      newH.currentLevel = sm.level;
+      newH.currentArea = sm.area;
+      if (sm.state && typeof sm.state === 'object') applySavedState(newH, sm.state);
+      h = newH; // rebind local ref so checkpoint/zone logic below uses the new hero
+      console.log(`[lifecycle] ${from} continue: swapped hero to ${sm.heroId}`);
+    }
     if (sm && Number.isInteger(sm.seed) && sm.seed !== getLastWorldSeed()) {
       world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, sm.seed);
       // CRITICAL: ctx.world is a STABLE reference read by resetActiveZoneContent /

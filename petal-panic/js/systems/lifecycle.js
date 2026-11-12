@@ -814,6 +814,9 @@ export function saveCurrentRun(h, overrides = {}) {
     // a Continue after reload rebuild the EXACT world the run was played on.
     // Death/continue never reroll, so this is stable for the whole run.
     seed: getLastWorldSeed(),
+    // Hero identity: which hero was playing this run. Without this, a
+    // Continue after Save&Quit always resumes as Scarlet (the boot default).
+    heroId: h?.heroDef?.id ?? 'scarlet',
     // Persistent columns at quit time (state-persistence.md §2.5): lives,
     // continues, score — restored by applySavedState on a reload-Continue
     // (§2.6). Energy/weapon/coins deliberately NOT saved: the resume's
