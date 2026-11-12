@@ -42,14 +42,14 @@ export function resolveHeroStats(def) {
 const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }, null];
 
 /**
- * Normal-melee knockback: a small burst shove — enough to read as a hit,
- * far lighter than the committed attacks (special/supermove base ~320-360).
- * No pop: the jab pushes horizontally at body level; only the committed
- * attacks loft victims. Presence of this field is what makes melee shove
- * at all (knockback.md §11 gate) — before it existed, melee was damage-only
- * and enemies only moved via solid-body separation on overlap.
+ * Normal-melee knockback: a readable jab shove — pushes the victim back AND
+ * stuns them long enough that they CANNOT keep attacking through the hit
+ * (hitstun skips ai(), so a whipping/chasing enemy is frozen for the whole
+ * window). Tuned well below the committed attacks (sweep ~320-440, dash
+ * ~360-636) so the hierarchy reads: jab < sweep < dash. No pop: the jab
+ * shoves horizontally at body level.
  */
-const MELEE_KNOCKBACK = { base: 90, scaleBySpeed: 0.15, hitstun: 0.10, dirMode: 'fromAttacker' };
+const MELEE_KNOCKBACK = { base: 150, scaleBySpeed: 0.2, hitstun: 0.30, dirMode: 'fromAttacker' };
 
 /**
  * Shared supermove dash box + knockback (thin, full body height, in front).
