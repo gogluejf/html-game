@@ -485,9 +485,11 @@ export function startArea(h, level, areaIdx) {
  * @param {Hero} h
  */
 export function placeHeroAtEntry(h) {
-  const cp = h.checkpoint ?? { x: h.x, y: h.y };
-  h.x = cp.x;
-  h.y = cp.y;
+  // Read spawn directly from the active zone — no intermediate checkpoint field.
+  const zone = wctx.getActiveZone?.(h);
+  const sp = zone?.spawn ?? { x: h.x, y: h.y + h.h };
+  h.x = sp.x;
+  h.y = sp.y - h.h;
   h.vx = 0;
   h.vy = 0;
   h.dying = false;
@@ -602,21 +604,6 @@ export function continueRun(h, ctx) {
   // Inventory persistence (game-rules.md §5): same reset sequence as a death
   // restart — full energy, weapon gone, specials/shield/super cleared.
   resetHeroInventory(h);
-  // Position the hero at area 1's entry (checkpoints.md §5, lifecycle.md §4):
-  // Continue returns to the current level's area 1 with restored lives and
-  // starts a FRESH attempt there — it does NOT resume beside the flag of the
-  // area where the last life was lost. Area 1 has no entry flag, so its entry
-  // is the zone's start position.
-  //
-  // The authoritative checkpoint is set by the CALLER from zone data (the
-  // respawn wrapper in zoneLifecycle.js installs area 1 and sets
-  // h.checkpoint = { x: z1.spawn.x, y: z1.spawn.y - h.h }). We only fill it in
-  // as a fallback for bare/unit callers that pass no zone data — never
-  // overwrite a caller-provided value, so a vertical first-area (if one ever
-  // exists) can't be stranded mid-climb by a stale horizontal-floor constant.
-  if (!h.checkpoint || typeof h.checkpoint !== 'object') {
-    h.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - h.h };
-  }
   const c = ctx ?? ctxOf(h);
   // checkpoints.md §3: continue shows the shared area-entry screen (with the
   // restored life count) and starts a fresh attempt there — the attempt begins

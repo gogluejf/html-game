@@ -18,6 +18,7 @@ import { JUMP_HEIGHT_SCALE } from './heroSprites.js';
 import { placeSheetFrame } from '../core/spriteData.js';
 import { invulnFlicker, INVISIBLE } from '../effects/invulnFlicker.js';
 import { blink } from '../effects/blink.js';
+import { ctx } from '../world/context.js';
 
 // Invincibility looks (design §27) — the HERO owns them. Two separate effects,
 // each one job:
@@ -1555,9 +1556,11 @@ export class Hero extends Entity {
    * killed again at the spawn point.
    */
   respawn() {
-    const cp = this.checkpoint ?? { x: 0, y: 0 };
-    this.x = cp.x;
-    this.y = cp.y;
+    // Read spawn directly from the active zone.
+    const zone = ctx.getActiveZone?.(this);
+    const sp = zone?.spawn ?? { x: this.x, y: this.y + this.h };
+    this.x = sp.x;
+    this.y = sp.y - this.h;
     this.vx = 0;
     this.vy = 0;
     this.energy = this.maxEnergy;
