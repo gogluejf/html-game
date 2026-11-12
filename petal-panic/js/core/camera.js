@@ -102,6 +102,12 @@ export class Camera {
     }
     this.x = clamp(this.x, this.minX, this.maxX);
     this.y = clamp(this.y, this.minY, this.maxY);
+    // Vertical zones: snap to the bottom (floor) so the hero's spawn point
+    // is visible. The hero starts at the bottom platform and climbs up.
+    if (zone.ratchet) {
+      this.y = this.maxY;
+      console.log('[camera] vertical snap: y=' + this.y + ' maxY=' + this.maxY + ' minY=' + this.minY + ' room.h=' + room.h + ' viewH=' + this.h);
+    }
     // Reset the high-water mark to the current position so a fresh climb does
     // not inherit the previous zone's ascent.
     this.minYReached = this.y;

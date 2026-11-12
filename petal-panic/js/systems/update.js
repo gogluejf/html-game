@@ -495,6 +495,7 @@ export function loadActiveZone(zone, content) {
 
   // Install the new zone's content.
   const solids = content?.solids ?? zone.platforms.map((p) => ({ ...p }));
+  console.log('[loadActiveZone] zone=' + (zone.areaIdx ?? 'boss') + ' solids count=' + solids.length + ' floor present=' + solids.some(s => s.kind === 'floor'));
   for (const s of solids) {
     SOLIDS.push(s);
     solidEntities.push(new SolidBox(s));
