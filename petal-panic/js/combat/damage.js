@@ -82,10 +82,12 @@ export function heroDamage(source, target, amt, method = 'projectile') {
   // Drain the right resource: heroes use energy (shield first), enemies use hp.
   // Shield absorbs damage before energy; energy only drains once shield is 0.
   let energyLost = 0; // tracks actual energy drain for vignette gating
+  let shieldAbsorbed = 0; // tracks shield absorption for blue vignette
   if (target.energy != null) {
     if (target.shield > 0) {
       const absorbed = Math.min(target.shield, real);
       target.shield -= absorbed;
+      shieldAbsorbed = absorbed;
       const remaining = real - absorbed;
       if (remaining > 0) { target.energy -= remaining; energyLost = remaining; }
     } else {
@@ -119,6 +121,15 @@ export function heroDamage(source, target, amt, method = 'projectile') {
   // red flash (the shield pulse is sufficient feedback). Red = "your health
   // is going down." Scaled by the energy actually drained.
   if (energyLost > 0) kickHeroVignette(target, energyLost);
+
+  // Shield-absorption vignette: cyan flash when the shield soaks a hit.
+  // Same intensity algorithm as the red vignette, just a different color.
+  // Cyan = "shield took it, you're fine."
+  if (shieldAbsorbed > 0 && energyLost === 0) {
+    const strength = Math.min(1, shieldAbsorbed / VIGNETTE_FULL_DMG) * 0.5;
+    fireManual({ type: 'vignette', params: { strength, color: 'shield' } }, null,
+      { view: { w: VIEW_W, h: VIEW_H } });
+  }
 
   // Expose energyLost so callers can gate hit reactions (knockback/hitstun)
   // on actual HP loss vs shield-only absorption.

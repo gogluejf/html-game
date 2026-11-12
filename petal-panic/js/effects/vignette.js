@@ -26,6 +26,10 @@ export function vignette(params = {}, carrier, ctx = {}) {
   // negative — it collapses to 0 so render() is a no-op and update() marks
   // done immediately.
   const value = Math.min(1, Math.max(0, params.strength ?? 1));
+  // Color variant: 'damage' (red, default) or 'shield' (cyan).
+  const isShield = params.color === 'shield';
+  const colorBase = isShield ? '0, 200, 255' : '150, 10, 10';
+  const colorMid = isShield ? '0, 229, 255' : '180, 20, 20';
   return {
     space: 'screen', // viewport-space overlay (two-pass render model, effects.md §Lifecycle)
     value,
@@ -48,16 +52,16 @@ export function vignette(params = {}, carrier, ctx = {}) {
       if (!viewW || !viewH) return;
       const cx = viewW / 2, cy = viewH / 2;
       c2d.save();
-      // Full-screen base wash: the whole frame gets a red tint so the hit is
+      // Full-screen base wash: the whole frame gets a tint so the hit is
       // felt everywhere, not just at the edges. Scales with intensity.
-      c2d.fillStyle = `rgba(150, 10, 10, ${0.15 * v})`;
+      c2d.fillStyle = `rgba(${colorBase}, ${0.15 * v})`;
       c2d.fillRect(0, 0, viewW, viewH);
       // Radial edge glow on top: stronger at corners, clear at center.
       const r = Math.hypot(cx, cy);
       const grad = c2d.createRadialGradient(cx, cy, r * 0.4, cx, cy, r);
-      grad.addColorStop(0, 'rgba(180, 20, 20, 0)');
-      grad.addColorStop(0.6, `rgba(180, 20, 20, ${0.4 * v})`);
-      grad.addColorStop(1, `rgba(150, 10, 10, ${0.9 * v})`);
+      grad.addColorStop(0, `rgba(${colorMid}, 0)`);
+      grad.addColorStop(0.6, `rgba(${colorMid}, ${0.4 * v})`);
+      grad.addColorStop(1, `rgba(${colorBase}, ${0.9 * v})`);
       c2d.fillStyle = grad;
       c2d.fillRect(0, 0, viewW, viewH);
       c2d.restore();
