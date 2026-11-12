@@ -294,6 +294,12 @@ function initKeyboard(){
     // A parked ride (status 'cleared') has NO input anymore: parkRide()
     // released every button, so editor shortcuts work as normal again.
     if (ride.active && ride.manual && ride.status !== 'cleared'){
+      // Manual play owns the game keys — but ONLY while focus is on the page
+      // body. If an inspector/toolbar input has focus, the user is editing a
+      // value: arrows/delete/typing must stay native to that field (the shared
+      // game input engine would otherwise eat Space/arrows via its window listener).
+      const t = (document.activeElement?.tagName || '').toLowerCase();
+      if (t === 'input' || t === 'textarea' || t === 'select') return;
       if (e.code === 'Escape'){ e.preventDefault(); toggleManualPlay(); }
       return;
     }

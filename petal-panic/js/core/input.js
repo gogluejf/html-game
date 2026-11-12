@@ -722,6 +722,12 @@ export function createInput({ target = globalThis.window, document = globalThis.
   };
   listen(target, 'keydown', e => {
     if (/^F\d+$/.test(e.code)) return; // debug owns function keys
+    // If an editable field has focus, the user is typing — hand the keyboard
+    // back to the browser entirely (arrows/delete/backspace must stay native).
+    // This mirrors the sprite editor's guard and covers ALL editors that embed
+    // the game input engine on the same page (macro editor ride, etc.).
+    const t = (e.target?.tagName || '').toLowerCase();
+    if (t === 'input' || t === 'textarea' || t === 'select' || e.target?.isContentEditable) return;
     // Never swallow OS/browser shortcut combos (Cmd/Ctrl+letter), but a bare
     // modifier press must still reach us — dropping it here is what made held
     // shoot keys stick after any accidental two-key chord.
