@@ -40,11 +40,12 @@ export const BARREL_TRANSFER_RESTITUTION = 0.35;
 export const BARREL_WALL_BOUNCE_MIN_SPEED = 120;  // px/s — below = settle, not hit
 export const BARREL_WALL_BOUNCE_RESTITUTION = 0.3; // wood-on-stone: ~70% KE absorbed
 
-/** Hero head-bonking a RESTING dynamic solid (barrel on a platform): the bonk
+/** Hero head-bonk against a RESTING dynamic solid (barrel on a platform): the bonk
  *  must not be a hard stop. The hero keeps part of its fall speed (bounce)
  *  AND transfers part of it INTO the barrel (the barrel gets shoved along the
- *  impact axis and skids to a stop under its own friction). Gated by min
- *  speed so gentle landings/settling are untouched. */
+ *  impact axis — VERTICAL ONLY, see heroBonkDynamic — and skids to a stop
+ *  under its own friction). Gated by min speed so gentle landings/settling
+ *  are untouched. */
 export const HERO_BONK_MIN_SPEED = 140;           // px/s closing before it's a bonk
 export const HERO_BONK_RESTITUTION = 0.28;        // hero keeps ~28% of fall speed
 export const HERO_BONK_TRANSFER = 0.6;            // share of closing speed given to the barrel
@@ -116,16 +117,21 @@ export function bounceOffStatic(body, surface, e, minSpeed) {
  *   - hero keeps HERO_BONK_RESTITUTION of its closing speed (soft bounce,
  *     not a hard stop),
  *   - the barrel receives HERO_BONK_TRANSFER × closing speed along the
- *     impact axis (it shoves/skids; stepDynamicSolid's friction stops it).
+ *     impact axis (it skids; stepDynamicSolid's friction stops it).
  *
- * Axis rule (intent-aware, NOT blind min-penetration): barrels are short
- * boxes (32×48) and the hero is tall (91px standing), so a head hit usually
- * has LARGER horizontal penetration than vertical — blind min-penetration
- * would call it a side hit and read vx (~0 while jumping straight up),
- * missing the bonk entirely. The physical intent decides instead:
- *   - RISING with the head inside the barrel's lower half → HEAD HIT (Y),
- *     even when penX < penY. This is the under-barrel jump case.
- *   - otherwise → minimum-penetration axis (side hits, feet bumps).
+ * VERTICAL ONLY by design: the hero must NOT be able to push barrels around
+ * horizontally — walking into one just blocks you like any wall (resolve()
+ * handles the separation). Only impacts along Y get an impulse: falling onto
+ * the top, or rising into the bottom (head bonk).
+ *
+ * Axis rule (intent-aware, NOT blind min-penetration) for the head case:
+ * barrels are short boxes (32×48) and the hero is tall (91px standing), so a
+ * head hit usually has LARGER horizontal penetration than vertical — blind
+ * min-penetration would call it a side hit and skip the bonk entirely. The
+ * physical intent decides instead: RISING with the hero's center inside the
+ * barrel's lower half → HEAD HIT (Y), even when penX < penY. This is the
+ * under-barrel jump case. Everything else resolves on the minimum-penetration
+ * axis, and only acts when that axis is Y.
  * Gated by min closing speed so gentle contact is untouched (settling).
  * @returns {boolean} true if the bonk was applied
  */
@@ -143,26 +149,17 @@ export function heroBonkDynamic(hero, barrel, opts = {}) {
   const heroCY = hb.y + hb.h / 2;
   const barrelMidY = bb.y + bb.h / 2;
   const headHit = v < 0 && heroCY < barrelMidY;
-  if (headHit || penY < penX) {
-    // Vertical axis owns the impulse. ny points hero → barrel; rel > 0 when
-    // the hero drives INTO the barrel along that axis (rising into its bottom,
-    // or falling onto its top).
-    const ny = axisNormal(hb, bb, 'y');
-    const rel = v * ny;
-    if (rel < minSpeed) return false;
-    // Hero bounces back with RESTITUTION of the closing speed (soft bonk,
-    // not a hard stop); the barrel takes TRANSFER of it along the same axis.
-    hero.vy = -v * rest;
-    barrel.vy = (barrel.vy ?? 0) + ny * rel * transfer;
-    return true;
-  }
-  // Side hit: horizontal axis owns the impulse.
-  const vx = hero.vx ?? 0;
-  const nx = axisNormal(hb, bb, 'x'); // hero → barrel
-  const relX = vx * nx;               // >0 when pushing into the barrel
-  if (relX < minSpeed) return false;
-  hero.vx = vx - nx * relX * (rest + transfer);
-  barrel.vx = (barrel.vx ?? 0) + nx * relX * transfer;
+  if (!headHit && penX <= penY) return false; // side hit: static block, no shove
+  // Vertical axis owns the impulse. ny points hero → barrel; rel > 0 when
+  // the hero drives INTO the barrel along that axis (rising into its bottom,
+  // or falling onto its top).
+  const ny = axisNormal(hb, bb, 'y');
+  const rel = v * ny;
+  if (rel < minSpeed) return false;
+  // Hero bounces back with RESTITUTION of the closing speed (soft bonk,
+  // not a hard stop); the barrel takes TRANSFER of it along the same axis.
+  hero.vy = -v * rest;
+  barrel.vy = (barrel.vy ?? 0) + ny * rel * transfer;
   return true;
 }
 

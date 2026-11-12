@@ -113,6 +113,19 @@ ok('heroBonkDynamic: hero rising past a barrel (moving away) = no-op', () => {
   assert.equal(heroBonkDynamic(hero, barrel), false);
 });
 
+ok('heroBonkDynamic: SIDE hit at run speed does NOT shove the barrel on X (no pushing)', () => {
+  // Regression: walking into a barrel at full run speed used to transfer vx
+  // and push the barrel around. The hero must never push barrels horizontally —
+  // a side contact is a static block (resolve() separates), no impulse either
+  // way. penX > penY here so min-penetration calls it a side hit.
+  const hero = box(0, 40, 32, 91, 250, 0);     // running right at a resting barrel
+  const barrel = box(24, 60, 32, 48, 0, 0);    // overlaps: penX=28, penY=19
+  const hit = heroBonkDynamic(hero, barrel);
+  assert.equal(hit, false, 'side hit must not bonk');
+  assert.equal(hero.vx, 250, 'hero vx untouched');
+  assert.equal(barrel.vx, 0, 'barrel vx untouched — no horizontal push');
+});
+
 ok('applyAxisImpulse: equal-mass collision conserves momentum', () => {
   const a = { vx: 100 }, b = { vx: 0 };
   applyAxisImpulse(a, b, 1, 'vx', 0.35);
