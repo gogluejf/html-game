@@ -363,6 +363,35 @@ export function decideInput(b, hero, world){
     }
   }
   b._pickFrame++;
+  // STUCK DETECTION: if the hero is grounded, blocked by a wall, and hasn't
+  // moved in several frames, the replay script is exhausted or misfiring.
+  // Invalidate the pick so the next frame re-settles and re-picks cleanly.
+  // If the previous pick was null/pruned (unreachable goal), also clear the
+  // noCandidateFor flag so the backtrack logic re-fires on the next pickStale.
+  if (hero.grounded && hero._blockedX && b._pickFrame > 10){
+    const wb = hero.worldBox();
+    const cx = wb.x + wb.w / 2;
+    if (!b._stuckCx || Math.abs(cx - b._stuckCx) < 0.5){
+      b._stuckFrames = (b._stuckFrames ?? 0) + 1;
+      if (b._stuckFrames > 6){
+        b._pick = null;
+        b._pickGoalIdx = null;
+        b._pickFromKey = null;
+        b._pickFrame = 0;
+        b._cands = [];
+        b._stuckFrames = 0;
+        b._stuckCx = null;
+        b.noCandidateFor = null; // allow backtrack to re-fire
+        return inp;
+      }
+    } else {
+      b._stuckFrames = 0;
+      b._stuckCx = cx;
+    }
+  } else {
+    b._stuckFrames = 0;
+    b._stuckCx = null;
+  }
   const cand = b._cands.find(c => c.id === b._pick.best?.id);
   if (cand){
     const p = cand.script(b._pickFrame, hero);
