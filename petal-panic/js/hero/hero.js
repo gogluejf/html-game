@@ -23,7 +23,7 @@ import { blink } from '../effects/blink.js';
 //   powerup — the color-cycler (invulnFlicker): each color flashes OVER the
 //             visible sprite at alpha; 'invisible' is a vanish beat.
 //   hit     — a plain BLINK (blink.js): constant-rate on/off of the real
-//             sprite, externally clocked by the intangible timer. No colors,
+//             sprite, externally clocked by the invincible timer. No colors,
 //             no wash — taking a hit / level-entry grace just blinks.
 const INVULN_LOOKS = {
   hit: { kind: 'blink', cycles: 6, alphaOn: 0.8, alphaOff: 0.4 },
@@ -163,7 +163,7 @@ export class Hero extends Entity {
     // Invincibility + rapid-fire are now unified labeled timers (see timers.js),
     // exposed via the getters/setters below so legacy call sites
     // (boss.js, powerup.js, update.js) keep working unchanged. The debug
-    // overlay shows them as 'intangible' and 'rapid' bars in the per-entity stack.
+    // overlay shows them as 'invincible' and 'rapid' bars in the per-entity stack.
     this.checkpoint = { x, y };
 
     // --- Death / respawn / continue () -------------------------------
@@ -187,7 +187,7 @@ export class Hero extends Entity {
     this.iFrameTimer = 0;
     // Invulnerability flicker effect instance (§27). Owned by the hero, NOT
     // the engine's active set: it is externally clocked (setProgress from the
-    // 'intangible' timer fraction) and must outlive engine resets between
+    // 'invincible' timer fraction) and must outlive engine resets between
     // zones. render.js draws it in the hero slot when active.
     this.invulnFx = null;
     // Wall-clock (ms) of the last landed hit — read by the HUD to play the
@@ -334,8 +334,8 @@ export class Hero extends Entity {
 
   // --- Legacy timer bridges -------------------------------------------------
   // rapidTimer is a unified labeled timer ('rapid').
-  // Intangibility is now a proper state (this.intangible) driven by the
-  // 'intangible' timer — no more 'inv' timer or invincibleTimer accessor.
+  // Invincibility is now a proper state (this.invincible) driven by the
+  // 'invincible' timer — no more 'inv' timer or invincibleTimer accessor.
 
   /** Remaining rapid-fire seconds (0 when not active). */
   get rapidTimer() { return this.timers.get('rapid'); }
@@ -399,6 +399,7 @@ export class Hero extends Entity {
   /** Active effect flags, composed for consumers that need them together. */
   get effects() {
     return {
+      invincible: this.invincible,
       intangible: this.intangible,
       rapid: this.timers.get('rapid') > 0,
       hitstun: this.hitStunned,
@@ -416,7 +417,7 @@ export class Hero extends Entity {
    * recovery / i-frame numbers are passed in. Damage and knockback stay
    * independent — damage() handles HP, this handles knockback only.
    *
-   * If the hero is already intangible (i-frames up), the hit is ABSORBED — no
+   * If the hero is already invincible (i-frames up), the hit is ABSORBED — no
    * double-fling, no timer refresh. This matches how projectile hits already
    * behave and prevents melt while overlapping.
    *
@@ -428,7 +429,7 @@ export class Hero extends Entity {
    */
   takeHit({ source = DEFAULT_KNOCKBACK_SOURCE, dirX = 0, dirY = 0 }) {
     if (this.dying) return false;
-    if (this.intangible) return false; // intangible absorbs it
+    if (this.invincible) return false; // invincible absorbs it
     const profile = KNOCKBACK_PROFILES[source] ?? KNOCKBACK_PROFILES[DEFAULT_KNOCKBACK_SOURCE];
     // Zero-magnitude direction = no shove (persistent zones tick damage without
     // flinging): arm the timers only. A real impact always carries a direction.
@@ -441,19 +442,19 @@ export class Hero extends Entity {
     // Hit-stun (§24/§26): input locked, physics keep running; knockback decays
     // under friction during the window and control resumes cleanly after.
     this.timers.set('rec', profile.recovery);
-    // Intangible for the i-frame duration (§27): drives both the state flag and
-    // the render blink (which reads the timer's remaining fraction). Source
-    // tag 'hit' → transparent flicker (same family as level-entry grace).
-    this.intangible = true;
+    // Damage-immune for the i-frame duration (§27): drives both the state flag
+    // and the render blink (which reads the timer's remaining fraction).
+    // Source tag 'hit' → transparent flicker (same family as level-entry grace).
+    this.invincible = true;
     this.invulnSource = 'hit';
-    this.timers.set('intangible', Math.max(this.timers.get('intangible'), profile.iFrames));
+    this.timers.set('invincible', Math.max(this.timers.get('invincible'), profile.iFrames));
     // Stamp the hit time so the HUD can play the 'hit' expression briefly.
     this.lastHitAt = performance.now();
     return true;
   }
 
   /**
-   * Sync the invulnerability effect with the 'intangible' timer (design §27).
+   * Sync the invulnerability effect with the 'invincible' timer (design §27).
    * Call once per frame after timers.tick().
    *
    * Spawn policy: one instance per (source, window). A re-hit that EXTENDS
@@ -463,26 +464,26 @@ export class Hero extends Entity {
    * because the LOOK changes.
    *
    * Clocking: the blink is SELF-TIMED over its fixed duration — this method
-   * advances it with update(dt) each frame (the intangible timer ticks for
+   * advances it with update(dt) each frame (the invincible timer ticks for
    * the same dt, so they stay in lockstep). The color-cycler stays externally
    * clocked via setProgress(timer fraction).
    */
   syncInvulnFx(dt = 0) {
-    if (!this.intangible) {
+    if (!this.invincible) {
       if (this.invulnFx) { this.invulnFx.complete(); this.invulnFx = null; }
       return;
     }
     const src = this.invulnSource ?? 'hit';
     // Reuse the live instance only for the same look AND the same window. A
-    // re-hit that EXTENDS the intangible timer respawns the effect with the
+    // re-hit that EXTENDS the invincible timer respawns the effect with the
     // new duration so the blink covers the whole (longer) window — the
     // effect is self-timed over a fixed duration, it cannot stretch itself.
     const look = INVULN_LOOKS[src] ?? INVULN_LOOKS.hit;
-    const remaining = this.timers.get('intangible');
+    const remaining = this.timers.get('invincible');
     if (this.invulnFx && !this.invulnFx.done && this._invulnFxMode === src
         && Math.abs(this._invulnFxDur - remaining) < 1e-3) {
       // Same look, same window: advance the self-timed blink's own clock.
-      // (The intangible timer already ticked this frame for the same dt.)
+      // (The invincible timer already ticked this frame for the same dt.)
       if (look.kind === 'blink') this.invulnFx.update(dt);
       return;
     }
@@ -492,7 +493,7 @@ export class Hero extends Entity {
     this.invulnFx = look.kind === 'blink'
       ? blink({ duration: remaining, cycles: look.cycles, alphaOn: look.alphaOn, alphaOff: look.alphaOff }, this)
       : invulnFlicker({ colors: look.colors, beatMs: look.beatMs, alpha: look.alpha }, this);
-    if (look.kind !== 'blink') this.invulnFx.setProgress(this.timers.fraction('intangible'));
+    if (look.kind !== 'blink') this.invulnFx.setProgress(this.timers.fraction('invincible'));
   }
 
   /**
@@ -734,7 +735,7 @@ export class Hero extends Entity {
     // Here we only track intent and integrate.
 
     // --- Timers -------------------------------------------------------------
-    // Unified labeled timers (intangible, rapid, rec, ...) advance together.
+    // Unified labeled timers (invincible, rapid, rec, ...) advance together.
     this.timers.tick(dt);
     // Fall-grace clock: decays only while airborne with no jump initiated —
     // the window that keeps the last grounded anim playing after a ledge
@@ -742,9 +743,11 @@ export class Hero extends Entity {
     if (!this.grounded && this.jumpsUsed === 0 && this._fallAnimGrace > 0) {
       this._fallAnimGrace = Math.max(0, this._fallAnimGrace - dt);
     }
-    if (this.intangible && this.timers.expired('intangible')) {
-      this.intangible = false;
+    if (this.invincible && this.timers.expired('invincible')) {
+      this.invincible = false;
       this.invulnSource = null;
+      // Star power ends with the invincibility window.
+      this.starPower = false;
     }
     // Keep the invulnerability effect in lockstep with the timer.
     this.syncInvulnFx(dt);
@@ -1455,11 +1458,11 @@ export class Hero extends Entity {
     this.alive = true;
     this.dying = false;
     this.deathTimer = 0;
-    this.intangible = true;
+    this.invincible = true;
     // Respawn grace uses the level-entry look (transparent flicker) — tag it
     // like 'hit' so the render path picks the same effect family.
     this.invulnSource = 'hit';
-    this.timers.set('intangible', Hero.RESPAWN_IFRAMES);
+    this.timers.set('invincible', Hero.RESPAWN_IFRAMES);
     this.exitCrouch();
     this.jumpsUsed = 0;          // 0=grounded, 1=first jump used, 2=double jump used
     this.MAX_JUMPS = 2;          // ground jump + 1 air jump
@@ -1477,9 +1480,9 @@ export class Hero extends Entity {
     this.supermoveTimer = 0;
     this._supermoveElapsed = 0;
     this._fallAnimGrace = 0;
-    // Respawn i-frames (§27): the shared 'intangible' timer drives BOTH the
-    // flag and the blink — the flag must stay true while the timer is active.
-    this.intangible = true;
+    // Respawn i-frames (§27): the 'invincible' timer drives BOTH the flag and
+    // the blink — the flag must stay true while the timer is active.
+    this.invincible = true;
   }
 
   /**
@@ -1548,18 +1551,21 @@ export class Hero extends Entity {
     this.supermovePhase = 'burst';
     this.supermoveTimer = this.burstDur;
     this._supermoveElapsed = 0; // total elapsed since trigger (drives the velocity ramp)
-    // Intangible for at least the dash window via the SHARED 'intangible' timer
-    // (§27 common semantics — same timer as i-frames/powerups, no separate
-    // bookkeeping). max() so an existing longer grant (i-frames / powerup) is
-    // never truncated; we remember the pre-dash value so endSupermove() can
-    // restore it when a jump-cancel ends the dash early.
-    this._preSupermoveIntangible = this.timers.get('intangible');
+    // The dash is BOTH untouchable and phases-through for its window:
+    //   invincible — damage-immune for at least the dash window via the
+    //     'invincible' timer. max() so an existing longer grant (i-frames /
+    //     star powerup) is never truncated; we remember the pre-dash value so
+    //     endSupermove() can restore it when a jump-cancel ends the dash early.
+    //   intangible — phases through platform tops (platformMover.js relies on
+    //     this + vy=0 flat to pass through one-way surfaces).
+    this._preSupermoveInvincible = this.timers.get('invincible');
+    this.invincible = true;
     this.intangible = true;
     // Dash gets NO visual effect (speed sells it) — tag 'dash' so the render
     // path skips both flickers. A pre-existing longer grant keeps its source
     // only if the dash didn't extend the window.
-    if (SUPERMOVE_DUR > this._preSupermoveIntangible) this.invulnSource = 'dash';
-    this.timers.set('intangible', Math.max(this._preSupermoveIntangible, SUPERMOVE_DUR));
+    if (SUPERMOVE_DUR > this._preSupermoveInvincible) this.invulnSource = 'dash';
+    this.timers.set('invincible', Math.max(this._preSupermoveInvincible, SUPERMOVE_DUR));
     // Swap to the supermove animation.
     if (this.anims.supermove) {
       this._prevAnim = this.anim;
@@ -1582,32 +1588,35 @@ export class Hero extends Entity {
     // The supermove-granted immunity ends with the dash. Restore whatever
     // intangibility existed BEFORE the dash (i-frames/powerup, or none) so a
     // jump-cancel never leaves the hero invulnerable past the visible dash.
-    // _preSupermoveIntangible was captured as the REMAINING seconds at trigger
+    // _preSupermoveInvincible was captured as the REMAINING seconds at trigger
     // time; subtract the total elapsed since the trigger to get what that
     // pre-dash grant SHOULD have left — this correctly zeroes out a short
     // pre-grant (e.g. 0.3s i-frames) that naturally expired during the dash.
     // If something ELSE extended the timer DURING the dash (a powerup pickup),
     // its remaining window is still in the live timer and must not be
     // truncated by restoring the shorter pre-dash value.
-    const pre = this._preSupermoveIntangible ?? 0;
+    const pre = this._preSupermoveInvincible ?? 0;
     const preRemaining = Math.max(0, pre - this._supermoveElapsed);
     // If something ELSE extended the timer beyond SUPERMOVE_DUR during the dash
-    // (e.g. a powerup pickup), that excess belongs to the other source and must
-    // survive. We only remove the supermove-granted portion.
-    const current = this.timers.get('intangible');
+    // (e.g. a star powerup pickup), that excess belongs to the other source and
+    // must survive. We only remove the supermove-granted portion.
+    const current = this.timers.get('invincible');
     const otherExcess = Math.max(0, current - SUPERMOVE_DUR);
     const restored = Math.max(preRemaining, otherExcess);
     if (restored > 0) {
-      this.timers.set('intangible', restored);
-      this.intangible = true;
+      this.timers.set('invincible', restored);
+      this.invincible = true;
       // The surviving grant belongs to its original source — 'dash' visual is
       // gone with the dash. Re-hit/respawn/powerup re-tag at their own sites.
       if (this.invulnSource === 'dash') this.invulnSource = 'hit';
     } else {
-      this.timers.clear('intangible');
-      this.intangible = false;
+      this.timers.clear('invincible');
+      this.invincible = false;
+      this.starPower = false;
     }
-    this._preSupermoveIntangible = 0;
+    // Phases-through ends with the dash unconditionally (nothing else grants it).
+    this.intangible = false;
+    this._preSupermoveInvincible = 0;
     // Restore previous animation.
     if (this._prevAnim) {
       this.anim = this._prevAnim;

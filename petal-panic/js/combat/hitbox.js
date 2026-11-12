@@ -117,9 +117,9 @@ export function processHitboxes(hitboxes, targets, onHit) {
       const tb = t.worldBox ? t.worldBox() : { x: t.x, y: t.y, w: t.w, h: t.h };
       if (!aabbOverlap(hb.box, tb)) continue;
 
-      // Skip hero if intangible or mid-death.
+      // Skip hero if invincible or mid-death.
       if (t.layer === LAYER.HERO) {
-        if (t.intangible) continue;
+        if (t.invincible) continue;
         if (t.dying) continue;
       }
 

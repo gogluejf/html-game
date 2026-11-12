@@ -25,7 +25,7 @@ const ok = (name, fn) => {
 const EPS = 1e-9;
 const close = (a, b) => Math.abs(a - b) < EPS;
 
-/** A real hero at rest, not intangible. */
+/** A real hero at rest, not invincible. */
 const mkHero = () => new Hero(HEROES.scarlet, 0, 0);
 
 /** Minimal enemy stand-in carrying what resolveExplosion reads/writes. */
@@ -163,9 +163,9 @@ ok('isValidTarget excludes self across all teams', () => {
 // ============================================================================
 // Intangible targets absorb the blast (no damage, no shove).
 // ============================================================================
-ok('intangible target absorbs the blast (no damage, no shove)', () => {
+ok('invincible target absorbs the blast (no damage, no shove)', () => {
   const enemy = mkEnemy(40, 0);
-  enemy.intangible = true;         // i-frames up
+  enemy.invincible = true;         // i-frames up
   const exp = { cx: 30, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   const beforeHp = enemy.hp;
   const result = resolveExplosion(exp, [enemy]);
@@ -175,9 +175,10 @@ ok('intangible target absorbs the blast (no damage, no shove)', () => {
   assert.equal(enemy.hitstunTimer, 0, 'no stun applied');
 });
 
-ok('intangible HERO absorbs the blast (takeHit guard, no double-fling)', () => {
+ok('invincible HERO absorbs the blast (takeHit guard, no double-fling)', () => {
   const hero = mkHero();
-  hero.intangible = true;
+  hero.invincible = true;
+  hero.invulnSource = 'hit';
   const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   const beforeEnergy = hero.energy;
   const result = resolveExplosion(exp, [hero]);
@@ -236,8 +237,8 @@ ok('hero knocked back via takeHit("explosion") profile (strength 380, rec 0.30, 
   assert.ok(close(hero.vx, -380), `vx=${hero.vx}, expected -380`);
   assert.ok(close(hero.vy, 0), `vy=${hero.vy}, expected 0`);
   assert.ok(close(hero.timers.get('rec'), 0.30), `rec=${hero.timers.get('rec')}`);
-  assert.ok(close(hero.timers.get('intangible'), 0.60), `intangible=${hero.timers.get('intangible')}`);
-  assert.equal(hero.intangible, true, 'hero intangible after blast');
+  assert.ok(close(hero.timers.get('invincible'), 0.60), `invincible=${hero.timers.get('invincible')}`);
+  assert.equal(hero.invincible, true, 'hero invincible after blast');
 });
 
 // Dead targets are skipped.

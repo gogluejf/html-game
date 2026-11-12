@@ -53,12 +53,12 @@ ok('damage and knockback are independent properties (§25)', () => {
   assert.equal(h.energy, before, 'takeHit must not touch damage/energy');
 });
 
-ok('takeHit sets rec + intangible timers from the profile (§24/§28)', () => {
+ok('takeHit sets rec + invincible timers from the profile (§24/§28)', () => {
   const h = mk();
   h.takeHit({ source: 'contact', dirX: 1, dirY: 0 });
   assert.ok(Math.abs(h.timers.get('rec') - KNOCKBACK_PROFILES.contact.recovery) < 1e-9);
-  assert.ok(Math.abs(h.timers.get('intangible') - KNOCKBACK_PROFILES.contact.iFrames) < 1e-9);
-  assert.equal(h.intangible, true);
+  assert.ok(Math.abs(h.timers.get('invincible') - KNOCKBACK_PROFILES.contact.iFrames) < 1e-9);
+  assert.equal(h.invincible, true);
 });
 
 ok('second hit during i-frames is absorbed (no double-fling)', () => {
@@ -109,17 +109,17 @@ ok('input is ignored while stunned (vx not set by moveDir)', () => {
   assert.ok(Math.abs(h.vx) < h.stats.speed);
 });
 
-ok('i-frame flag clears exactly when the intangible timer expires (§27)', () => {
+ok('i-frame flag clears exactly when the invincible timer expires (§27)', () => {
   const h = mk();
   h.takeHit({ source: 'projectile', dirX: 1, dirY: 0 }); // 0.30s i-frames
-  assert.equal(h.intangible, true);
-  // Tick just short of expiry: still intangible.
+  assert.equal(h.invincible, true);
+  // Tick just short of expiry: still invincible.
   h.update(KNOCKBACK_PROFILES.projectile.iFrames - DT, {}, null);
-  assert.equal(h.intangible, true);
+  assert.equal(h.invincible, true);
   // Cross the expiry frame: flag drops on the same frame the timer hits zero.
   h.update(DT * 2, {}, null);
-  assert.equal(h.intangible, false);
-  assert.equal(h.timers.get('intangible'), 0);
+  assert.equal(h.invincible, false);
+  assert.equal(h.timers.get('invincible'), 0);
 });
 
 ok('dying hero takes no hit', () => {

@@ -284,7 +284,7 @@ function handleDebugKeys(e) {
   switch (e.code) {
     case 'KeyF': // God mode toggle
       Debug.god = !Debug.god;
-      if (!Debug.god) ctx.hero.intangible = false;
+      if (!Debug.god) { ctx.hero.invincible = false; ctx.hero.starPower = false; }
       Debug.logEvent(`god mode ${Debug.god ? 'ON' : 'OFF'}`);
       break;
     case 'KeyZ': // Slow-mo / freeze cycle
@@ -461,7 +461,7 @@ function swapHero() {
     _lifeBucketArmed: hero._lifeBucketArmed,
     _levelStartTotal: hero._levelStartTotal,
     _lifeBucketArmed: hero._lifeBucketArmed,
-    intangible: hero.intangible, rapidTimer: hero.rapidTimer,
+    intangible: hero.intangible, invincible: hero.invincible, starPower: hero.starPower, rapidTimer: hero.rapidTimer,
     // CRITICAL: progress identity. A fresh Hero() does NOT set these, so
     // without them the swapped hero has currentArea === undefined and
     // getActiveZone() falls through to the boss zone — which instantly fires
@@ -480,15 +480,18 @@ function swapHero() {
 
   const nh = new Hero(def, saved.x, saved.y);
   Object.assign(nh, saved);
-  // Carry the remaining i-frame window across the swap so the new hero is not
-  // immune forever (flag alone would outlive its timer). If the old flag was
-  // set but the timer already expired, clear both so the flag can't linger.
-  if (saved.intangible) {
-    const remaining = hero.timers.get('intangible');
+  // Carry the remaining invincibility window across the swap so the new hero is
+  // not immune forever (flag alone would outlive its timer). If the old flag
+  // was set but the timer already expired, clear both so the flag can't linger.
+  if (saved.invincible) {
+    const remaining = hero.timers.get('invincible');
     if (remaining > 0) {
-      nh.timers.set('intangible', remaining);
+      nh.timers.set('invincible', remaining);
+      nh.invulnSource = hero.invulnSource ?? 'hit';
+      nh.starPower = !!hero.starPower;
     } else {
-      nh.intangible = false;
+      nh.invincible = false;
+      nh.starPower = false;
     }
   }
   // CRITICAL: restore the NEW hero's stats with px conversion. Uses the same
@@ -515,10 +518,10 @@ function swapHero() {
   Debug.logEvent(`hero → ${def.name}`);
 }
 
-/** Per-frame god-mode enforcement: intangible (weapons are unlimited by design). */
+/** Per-frame god-mode enforcement: invincible (weapons are unlimited by design). */
 export function applyGodMode(dt) {
   if (!Debug.god) return;
-  ctx.hero.intangible = true;
+  ctx.hero.invincible = true;
 }
 
 // --- Frame-by-frame box/hitbox trace (auto-gated) ----------------------------

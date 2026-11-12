@@ -18,7 +18,8 @@ export const TIMER_COLORS = {
   life:       '#95a5a6', // generic expiry (coin/projectile/bomb fuse)
   death:      '#e74c3c', // enemy death shrink/fade before despawn
   rec:        '#f1c40f', // hero hit-stun / recovery (control locked)
-  intangible: '#00e5ff', // hero intangible (no damage taken) — BLUE
+  invincible: '#ffd700', // hero damage-immune window (i-frames / star power) — GOLD
+  intangible: '#00e5ff', // hero phases through solids (supermove dash) — BLUE
   rapid:      '#9b59b6', // rapid-fire powerup window
   special:    '#1abc9c', // special-attack cooldown (saw/bomb)
 };

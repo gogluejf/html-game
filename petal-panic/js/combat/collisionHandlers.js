@@ -40,11 +40,49 @@ import { ctx } from '../world/context.js';
 // existing consumers.
 import { entryImpactPoint, snapToImpact } from './entryImpact.js';
 export { entryImpactPoint, snapToImpact };
+import { hitstop as requestHitstop } from '../core/hitstop.js';
+
+/** Star-power launch (mario star): how hard a touched enemy/boss gets flung. */
+const STAR_POWER_KNOCKBACK = Object.freeze({ base: 420, scaleBySpeed: 0, hitstun: 0.5, pop: 260 });
+/** Screen shake magnitude for a star-power kill. */
+const STAR_POWER_SHAKE = 6;
+/** Hit-stop length in fixed frames (~83ms at 60Hz — HANDOFF Part B default). */
+const STAR_POWER_HITSTOP_FRAMES = 5;
+
+/**
+ * Star power (mario star): one-shot kill on contact while the star powerup is
+ * active. Called from the ENEMY×HERO contact handler when hero.starPower is
+ * set. The victim takes lethal damage through its normal pipeline
+ * (Enemy.takeDamage → die() → death anim + sparkles + coins + kill count),
+ * then gets a big launch impulse so the corpse flies off before it fades.
+ * Juice: global hit-stop freeze + screen shake per kill.
+ *
+ * The boss is included deliberately: touching the elephant during star power
+ * drains it like any other body (bossCanTakeDamage() was already checked by
+ * the caller before this runs).
+ * @param {object} hero  the star-powered hero (source of the kill)
+ * @param {object} victim the touched enemy/boss body
+ */
+export function starPowerKill(hero, victim) {
+  if (!victim || !victim.alive || victim.aiState === 'dead') return;
+  // Lethal through the normal pipeline: takeDamage() routes via central
+  // damage(), flashes white, and enters the death pipeline at hp <= 0.
+  const amt = Math.max(victim.hp ?? 1, victim.stats?.stamina ?? 1);
+  victim.takeDamage(amt, hero, 'contact');
+  // Big launch: away from the hero horizontally + strong upward pop.
+  const hcx = hero.x + hero.w / 2, vcx = victim.x + victim.w / 2;
+  const dirX = Math.sign(vcx - hcx) || 1;
+  applyKnockback(victim, hero, STAR_POWER_KNOCKBACK, { x: dirX, y: 0 });
+  // Juice: freeze the whole sim for ~83ms + shake. Max-merge semantics mean
+  // overlapping kills hold the larger window, never stack.
+  requestHitstop(STAR_POWER_HITSTOP_FRAMES);
+  Effects.triggerShake(STAR_POWER_SHAKE);
+}
 
 /**
  * Pinball-bumper separation: push the hero's box out of a solid body along
  * the minimum-penetration axis so it can never render INSIDE an enemy while
- * intangible (or right after a hit). One-shot positional resolve — velocity
+ * invincible (or right after a hit). One-shot positional resolve — velocity
  * is owned by knockback; this only fixes the overlap. The ENEMY never moves
  * (it is the fixed bumper; the hero is the ball).
  * @param {object} hero  hero entity (x/y mutated)
@@ -270,7 +308,7 @@ export function registerCollisionHandlers(collisionWorld) {
       if (foeProj === boss && !bossZone.bossCanTakeDamage()) { foeProj.alive = false; return; }
       // a hero mid-death takes no further damage (skull is playing).
       if (victim.dying) { foeProj.alive = false; return; }
-      if (victim.intangible) { foeProj.alive = false; return; } // intangible absorbs it
+      if (victim.invincible) { foeProj.alive = false; return; } // invincible absorbs it
       const dealt = damage(foeProj, victim, foeProj.damage, 'projectile');
       if (dealt > 0) {
         // Special loss (special-weapons.md): a hit that costs damage drops the
@@ -313,14 +351,18 @@ export function registerCollisionHandlers(collisionWorld) {
     if (!source.alive || source.aiState === 'dead') return; // dead enemies don't hurt
     // Boss zone flow (boss-arena.md §2): the boss is untouchable before COMBAT.
     if (source === boss && !bossZone.bossCanTakeDamage()) return;
-    // PINBALL BUMPER RULE: intangible absorbs DAMAGE but never disables
+    // PINBALL BUMPER RULE: invincibility absorbs DAMAGE but never disables
     // collision. While blinking, live enemies are solid bumpers to the hero —
     // push the hero's box out along the overlap normal so it can never render
     // inside a body. (Previously this early-returned and the hero phased
     // through enemies for the full i-frame window.) The damage path below
-    // stays gated on intangible as before.
-    if (heroEnt.intangible) {
+    // stays gated on invincible as before.
+    if (heroEnt.invincible) {
       separateHeroFromBumper(heroEnt, source);
+      // STAR POWER (mario star): while the star powerup is active, touching an
+      // enemy/boss one-shots it with a big launch + hitstop + shake. Regular
+      // i-frames (hit/respawn/dash) keep the old absorb-only behavior.
+      if (heroEnt.starPower) starPowerKill(heroEnt, source);
       return;
     }
     // Self-protection on connect (knockback.md ): a clean sweep connect
@@ -352,14 +394,15 @@ export function registerCollisionHandlers(collisionWorld) {
       // i-frame blink plays NEXT TO the enemy, never inside it.
       separateHeroFromBumper(heroEnt, source);
       // Route applyKnockback's plain-field results into the hero's unified timer
-      // system so the existing intangible flag + render blink keep working.
+      // system so the existing invincible flag + render blink keep working.
       if (heroEnt.hitstunTimer > 0) {
         heroEnt.timers.set('rec', Math.max(heroEnt.timers.get('rec'), heroEnt.hitstunTimer));
         heroEnt.hitstunTimer = 0;
       }
       if (heroEnt.iFrameTimer > 0) {
-        heroEnt.intangible = true;
-        heroEnt.timers.set('intangible', Math.max(heroEnt.timers.get('intangible'), heroEnt.iFrameTimer));
+        heroEnt.invincible = true;
+        heroEnt.invulnSource = 'hit';
+        heroEnt.timers.set('invincible', Math.max(heroEnt.timers.get('invincible'), heroEnt.iFrameTimer));
         heroEnt.iFrameTimer = 0;
       }
       // Stamp the hit time so the HUD plays the 'hit' expression briefly.

@@ -208,6 +208,13 @@ const FALLING_BARREL_COOLDOWN = 0.3; // re-arm window per barrel
 // launched barrel (kick-a-barrel-and-it-blows-up feel).
 const STOMP_KNOCKBACK = { base: 260, scaleBySpeed: 0, hitstun: 0, iFrames: 0, dirMode: 'fromAttacker', pop: 120 };
 const STOMP_FUSE = 0.45;             // seconds of cooking after the head-hit
+// STAR POWER barrel pop: launch the barrel off the hero like a stomp, then let
+// it cook for a beat before detonating — the delayed blast is the satisfaction.
+// NOTE: barrels have knockbackResist 0.5 (light props), so the impulse DIVIDES
+// by 0.5 → these numbers land at 2× their face value. Tuned HARD on purpose:
+// star power should feel like the barrel gets yeeted across the room.
+const STAR_BARREL_KNOCKBACK = { base: 900, scaleBySpeed: 0, hitstun: 0, iFrames: 0, dirMode: 'fromAttacker', pop: 700 };
+const STAR_BARREL_FUSE = 0.35;       // shorter than stomp: star feels snappier
 
 /**
  * Impact check for one falling barrel against the hero. Called from the
@@ -1274,6 +1281,26 @@ export function update(dt) {
   // instead of stopping dead against it. Runs before resolve() so the
   // impulse reads the overlapping position; resolve() then separates.
   if (!hero.dying) {
+    // STAR POWER (mario star): touching a destructible barrel LAUNCHES it off
+    // the hero and arms a short fuse — it detonates after a beat, exactly like
+    // the falling-barrel stomp (launch → cook → blast). That delay is the
+    // satisfaction: the barrel flies up, hangs, then BOOM. Runs before bonk/
+    // creep so a starred hero never shoves or creeps a barrel. The detonation
+    // goes through GameObj.hit() → destroy() and fires onDestroyed (wired in
+    // update.js) which owns the full aftermath: explosion AoE + VFX for
+    // explosive barrels, coin burst for coin barrels.
+    if (hero.starPower) {
+      const hbx = hero.worldBox();
+      for (const b of dynBarrels) {
+        if (!b.alive || b.destroyed || b._fuse != null) continue;
+        if (!aabbOverlap(hbx, b.worldBox())) continue;
+        const dirX = Math.sign((b.x + b.w / 2) - (hbx.x + hbx.w / 2)) || 1;
+        applyKnockback(b, hero, STAR_BARREL_KNOCKBACK, { x: dirX, y: -1 });
+        b._fuse = STAR_BARREL_FUSE; // tickFallingBarrelFuse cooks + detonates
+        requestHitstop(STAR_POWER_HITSTOP_FRAMES);
+        Effects.triggerShake(STAR_POWER_SHAKE);
+      }
+    }
     for (const b of dynBarrels) {
       if (heroBonkDynamic(hero, b)) break; // one bonk per frame
     }
@@ -1390,3 +1417,7 @@ import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFl
 import { updateRealEnemies } from '../enemies/enemyUpdate.js';
 import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
 import { applyObjectImpact } from '../combat/objectImpact.js';
+import { hitstop as requestHitstop } from '../core/hitstop.js';
+// Star-power barrel pop juice (same values as the enemy contact kill).
+const STAR_POWER_HITSTOP_FRAMES = 5;
+const STAR_POWER_SHAKE = 6;

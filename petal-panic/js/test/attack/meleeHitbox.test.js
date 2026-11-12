@@ -79,7 +79,7 @@ ok('step is idempotent after completion', () => {
 });
 
 ok('team routing: foe team hits only the hero layer', () => {
-  const hero = { x: 140, y: 105, w: 24, h: 24, alive: true, energy: 100, layer: LAYER.HERO, intangible: false, dying: false,
+  const hero = { x: 140, y: 105, w: 24, h: 24, alive: true, energy: 100, layer: LAYER.HERO, invincible: false, dying: false,
     takeDamage(amt) { this.energy -= amt; return amt; } };
   const enemy = dummyEnemy(140, 105);
   const ctx = makeContext(attacker(), {});

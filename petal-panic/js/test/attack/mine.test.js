@@ -96,7 +96,7 @@ test('null TTL stays contact-only; valid contact arms immediately without repeat
   h.cancel(); assert.equal(warning.done, true);
 });
 
-test('contacts use actual explosion target semantics, including self/dead/intangible exclusion', () => {
+test('contacts use actual explosion target semantics, including self/dead/invincible exclusion', () => {
   for (const team of ['ally', 'foe', 'neutral']) {
     const c = context(), hero = enemy(), foe = enemy(); c.world.hero = hero; hero.x = 500;
     const h = invoke('mine', { team, ttl: null }, c);
@@ -114,7 +114,7 @@ test('team eligibility truth table and invalid contacts', () => {
     assert.equal(h.validTarget(foe), team !== 'foe');
     assert.equal(h.validTarget(c.attacker), false);
     assert.equal(h.validTarget({ ...foe, alive: false }), false);
-    assert.equal(h.validTarget({ ...foe, intangible: true }), false);
+    assert.equal(h.validTarget({ ...foe, invincible: true }), false);
     h.cancel();
   }
 });

@@ -228,7 +228,7 @@ test('death in 1-3 re-enters 1-3 beside its entry flag (same area, same arrangem
   L.areaEntryOnAction('confirm', hero);
   assert.equal(getState(), S.PLAY, 'confirm starts the attempt');
   assert.ok(Math.abs(hero.x - entryX) < 1, `hero placed beside the 1-3 flag (x=${hero.x})`);
-  assert.ok(hero.intangible, 'respawn i-frames active');
+  assert.ok(hero.invincible, 'respawn i-frames active');
   assert.equal(hero.energy, hero.maxEnergy, 'full energy for the fresh attempt');
 
   // The area's starting arrangement returns (a killed enemy is restored).

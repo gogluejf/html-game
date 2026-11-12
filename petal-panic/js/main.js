@@ -11,6 +11,7 @@ import * as CONSTS from './consts.js';
 import { loadMacros } from './world/macroLoader.js';
 import { setMacros } from './world/macros.js';
 import { initTouchControls, setVirtualPadEnabled } from './ui/touchControls.js';
+import { consumeHitstop, resetHitstop } from './core/hitstop.js';
 
 /* Screen asset loading happens in boot() after screens.js is evaluated. */
 
@@ -246,6 +247,13 @@ async function boot() {
     lastTime = t;
     accumulator += delta;
     while (accumulator >= FIXED_DT) {
+      // Hit-stop (HANDOFF Part B): a frozen step skips the ENTIRE simulation
+      // but still consumes one step's worth of accumulated time — no drift.
+      // Render keeps drawing the frozen pose every rAF below.
+      if (consumeHitstop()) {
+        accumulator -= FIXED_DT;
+        continue;
+      }
       capturePrevPositions(); // snapshot before this step moves anything
       update(FIXED_DT);
       accumulator -= FIXED_DT;

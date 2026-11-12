@@ -31,6 +31,7 @@ import { Hero, WEAPON_THORN } from '../hero/hero.js';
 import { attachHeroSprites, HERO_SPRITE_DIRS } from '../hero/heroSprites.js';
 import {createTrace, record, beginLife, beginContinue, calculateScore} from '../stats.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
+import { resetHitstop } from '../core/hitstop.js';
 import { tryTransition, getState, setState, S } from '../core/state.js';
 import { TUNING } from '../tuning.js';
 import { loadStore, saveStore, clearRunSave, updateProgress, markMediaUnlocked } from './progressStore.js';
@@ -218,7 +219,8 @@ export function resetHeroTransient(h) {
   h.deathTimer = 0;
   h.alive = true;
   h.energy = h.maxEnergy;
-  h.intangible = false;
+  h.invincible = false;
+  h.starPower = false;
   h.vx = 0;
   h.vy = 0;
 }
@@ -259,6 +261,7 @@ export function restoreArea(ctx) {
   if (ctx.coins) ctx.coins.active.length = 0;
   ctx.particles?.reset?.();
   ctx.effects?.reset?.();
+  resetHitstop(); // a stale freeze must never carry across attempts/zones
 }
 
 // --- The four lifecycle operations -------------------------------------------
@@ -491,8 +494,9 @@ export function placeHeroAtEntry(h) {
   h.deathTimer = 0;
   h.alive = true;
   // Brief entry i-frames so the fade-in reveal isn't instantly lethal.
-  h.intangible = true;
-  h.timers.set('intangible', h.RESPAWN_IFRAMES ?? 2);
+  h.invincible = true;
+  h.invulnSource = 'hit';
+  h.timers.set('invincible', h.RESPAWN_IFRAMES ?? 2);
 }
 
 /**

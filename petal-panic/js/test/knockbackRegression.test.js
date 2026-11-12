@@ -9,7 +9,7 @@
 // carried on the enemy; projectile / heavyProj / explosion still call takeHit().
 //
 // This test proves the observable hero reaction (vx/vy delta + rec timer +
-// intangible window) is IDENTICAL to the pre-refactor reference for all four
+// invincible window) is IDENTICAL to the pre-refactor reference for all four
 // live paths. No DOM needed.
 
 import { strict as assert } from 'node:assert';
@@ -29,10 +29,10 @@ const close = (a, b) => Math.abs(a - b) < EPS;
 const mkHero = () => new Hero(HEROES.scarlet, 100, 100);
 
 // --- Reference vectors (captured pre-refactor, see knockback-reference.txt) ---
-// For a normalized direction and a fresh hero at rest (not intangible):
+// For a normalized direction and a fresh hero at rest (not invincible):
 //   vx_delta = dirX_norm * strength, vy_delta = dirY_norm * strength
 //   rec      = profile.recovery
-//   intangible = profile.iFrames
+//   invincible = profile.iFrames
 const REF = {
   contact:     { strength: 260, recovery: 0.25, iFrames: 0.60 },
   bossContact: { strength: 340, recovery: 0.30, iFrames: 0.70 },
@@ -68,8 +68,9 @@ function transferTimers(hero) {
     hero.hitstunTimer = 0;
   }
   if (hero.iFrameTimer > 0) {
-    hero.intangible = true;
-    hero.timers.set('intangible', Math.max(hero.timers.get('intangible'), hero.iFrameTimer));
+    hero.invincible = true;
+    hero.invulnSource = 'hit';
+    hero.timers.set('invincible', Math.max(hero.timers.get('invincible'), hero.iFrameTimer));
     hero.iFrameTimer = 0;
   }
 }
@@ -90,8 +91,8 @@ ok('body contact (regular enemy, idle) matches pre-refactor contact profile', ()
   assert.ok(close(hero.vx, (1 / len) * REF.contact.strength), `vx=${hero.vx}, expected ${(1 / len) * REF.contact.strength}`);
   assert.ok(close(hero.vy, (-0.6 / len) * REF.contact.strength), `vy=${hero.vy}, expected ${(-0.6 / len) * REF.contact.strength}`);
   assert.ok(close(hero.timers.get('rec'), REF.contact.recovery), `rec=${hero.timers.get('rec')}`);
-  assert.ok(close(hero.timers.get('intangible'), REF.contact.iFrames), `intangible=${hero.timers.get('intangible')}`);
-  assert.equal(hero.intangible, true);
+  assert.ok(close(hero.timers.get('invincible'), REF.contact.iFrames), `invincible=${hero.timers.get('invincible')}`);
+  assert.equal(hero.invincible, true);
 });
 
 ok('body contact (regular enemy, pushed left) mirrors the rightward case', () => {
@@ -115,8 +116,8 @@ ok('body contact (boss, idle) matches pre-refactor bossContact profile', () => {
   assert.ok(close(hero.vx, (1 / len) * REF.bossContact.strength), `vx=${hero.vx}`);
   assert.ok(close(hero.vy, (-0.6 / len) * REF.bossContact.strength), `vy=${hero.vy}`);
   assert.ok(close(hero.timers.get('rec'), REF.bossContact.recovery), `rec=${hero.timers.get('rec')}`);
-  assert.ok(close(hero.timers.get('intangible'), REF.bossContact.iFrames), `intangible=${hero.timers.get('intangible')}`);
-  assert.equal(hero.intangible, true);
+  assert.ok(close(hero.timers.get('invincible'), REF.bossContact.iFrames), `invincible=${hero.timers.get('invincible')}`);
+  assert.equal(hero.invincible, true);
 });
 
 // ============================================================================
@@ -131,8 +132,8 @@ ok('enemy projectile matches pre-refactor projectile profile (dirX=1, dirY=0)', 
   assert.ok(close(hero.vx, REF.projectile.strength), `vx=${hero.vx}`);
   assert.ok(close(hero.vy, 0), `vy=${hero.vy}`);
   assert.ok(close(hero.timers.get('rec'), REF.projectile.recovery), `rec=${hero.timers.get('rec')}`);
-  assert.ok(close(hero.timers.get('intangible'), REF.projectile.iFrames), `intangible=${hero.timers.get('intangible')}`);
-  assert.equal(hero.intangible, true);
+  assert.ok(close(hero.timers.get('invincible'), REF.projectile.iFrames), `invincible=${hero.timers.get('invincible')}`);
+  assert.equal(hero.invincible, true);
 });
 
 ok('heavy projectile matches pre-refactor heavyProj profile (dirX=1, dirY=0)', () => {
@@ -141,8 +142,8 @@ ok('heavy projectile matches pre-refactor heavyProj profile (dirX=1, dirY=0)', (
   assert.ok(close(hero.vx, REF.heavyProj.strength), `vx=${hero.vx}`);
   assert.ok(close(hero.vy, 0), `vy=${hero.vy}`);
   assert.ok(close(hero.timers.get('rec'), REF.heavyProj.recovery), `rec=${hero.timers.get('rec')}`);
-  assert.ok(close(hero.timers.get('intangible'), REF.heavyProj.iFrames), `intangible=${hero.timers.get('intangible')}`);
-  assert.equal(hero.intangible, true);
+  assert.ok(close(hero.timers.get('invincible'), REF.heavyProj.iFrames), `invincible=${hero.timers.get('invincible')}`);
+  assert.equal(hero.invincible, true);
 });
 
 ok('explosion (radial) matches pre-refactor explosion profile', () => {
@@ -153,8 +154,8 @@ ok('explosion (radial) matches pre-refactor explosion profile', () => {
   assert.ok(close(hero.vx, REF.explosion.strength), `vx=${hero.vx}`);
   assert.ok(close(hero.vy, 0), `vy=${hero.vy}`);
   assert.ok(close(hero.timers.get('rec'), REF.explosion.recovery), `rec=${hero.timers.get('rec')}`);
-  assert.ok(close(hero.timers.get('intangible'), REF.explosion.iFrames), `intangible=${hero.timers.get('intangible')}`);
-  assert.equal(hero.intangible, true);
+  assert.ok(close(hero.timers.get('invincible'), REF.explosion.iFrames), `invincible=${hero.timers.get('invincible')}`);
+  assert.equal(hero.invincible, true);
 });
 
 ok('explosion radial direction scales correctly (diagonal blast offset)', () => {
@@ -174,9 +175,9 @@ ok('i-frames absorb a second body-contact hit (no double-fling, unchanged)', () 
   applyKnockback(hero, enemy, enemy.bodyKnockback, normal);
   transferTimers(hero);
   const vxAfterFirst = hero.vx;
-  // Second overlap while intangible: the handler early-returns on
-  // heroEnt.intangible, so nothing changes.
-  assert.equal(hero.intangible, true);
+  // Second overlap while invincible: the handler early-returns on
+  // heroEnt.invincible, so nothing changes.
+  assert.equal(hero.invincible, true);
   assert.equal(hero.vx, vxAfterFirst);
 });
 

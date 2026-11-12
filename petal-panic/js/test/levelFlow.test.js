@@ -388,7 +388,7 @@ test('death in area 3: the same area restarts with the SAME arrangement', () => 
   assert.equal(ctx._barrel.hp, 60, 'the destroyed barrel is restored');
   assert.equal(ctx._barrel.alive, true, 'the destroyed barrel is alive again');
   assert.equal(h.lives, 2, 'lives are decremented by the death, not by restartAttempt');
-  assert.ok(h.intangible, 'respawn i-frames are active at the entry');
+  assert.ok(h.invincible, 'respawn i-frames are active at the entry');
 });
 
 test('continue: lands the hero at area 1 with lives restored', () => {
@@ -417,7 +417,7 @@ test('continue: lands the hero at area 1 with lives restored', () => {
   L.areaEntryOnAction('confirm', h, ctx);
   assert.equal(getState(), S.PLAY, 'confirm starts the fresh attempt');
   assert.equal(h.x, ZONE_ENTRY_X, 'the hero is at area 1\'s entry (not the death spot)');
-  assert.ok(h.intangible, 'respawn i-frames are active after the continue');
+  assert.ok(h.invincible, 'respawn i-frames are active after the continue');
 });
 
 // =============================================================================

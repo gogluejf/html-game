@@ -133,6 +133,13 @@ export class Entity {
     // --- State ----------------------------------------------------------------
     this.alive = true;
     this.visible = true;
+    // Two distinct immunity concepts (mario star vs "just can't be touched"):
+    //   invincible  — damage-immune window (hit i-frames, respawn grace, boss
+    //                 stomp, supermove dash, star powerup). Driven by the
+    //                 'invincible' labeled timer; every damage gate reads THIS.
+    //   intangible  — phases through solids (supermove dash only). Platform
+    //                 movers rely on it to let the flat dash pass through tops.
+    this.invincible = false;
     this.intangible = false;
     this.debugColor = opts.debugColor ?? '#fff';
 

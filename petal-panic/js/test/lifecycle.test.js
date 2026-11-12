@@ -170,7 +170,7 @@ test('restartAttempt: restores area arrangement and places hero at entry', () =>
   assert.equal(h.x, 100, 'hero at entry x');
   assert.equal(h.y, 400, 'hero at entry y');
   assert.equal(h.energy, h.maxEnergy, 'full energy');
-  assert.ok(h.intangible, 'i-frames active (intangible)');
+  assert.ok(h.invincible, 'i-frames active (invincible)');
 });
 
 test('restartAttempt: does NOT touch lives (caller already consumed one)', () => {
@@ -361,7 +361,7 @@ test('continueRun: returns to area 1 and respects the caller-provided entry chec
   L.areaEntryOnAction('confirm', h, ctx);
   assert.equal(h.currentArea, 1, 'area reset to 1');
   assert.equal(h.x, ZONE_ENTRY_X, 'hero positioned at the level entry, not the death spot');
-  assert.ok(h.intangible, 'respawn i-frames active');
+  assert.ok(h.invincible, 'respawn i-frames active');
   assert.equal(h.energy, h.maxEnergy, 'full energy after continue');
 });
 
@@ -443,14 +443,14 @@ test('resetHeroTransient: clears death flags and stale i-frames without touching
   h.deathTimer = 0.5;
   h.alive = false;
   h.energy = 0;
-  h.intangible = true;
+  h.invincible = true;
   h.vx = 40; h.vy = -10;
   L.resetHeroTransient(h);
   assert.equal(h.dying, false, 'death flag cleared');
   assert.equal(h.deathTimer, 0, 'death timer cleared');
   assert.equal(h.alive, true, 'alive restored');
   assert.equal(h.energy, h.maxEnergy, 'energy restored');
-  assert.equal(h.intangible, false, 'stale i-frames cleared (respawn() re-grants)');
+  assert.equal(h.invincible, false, 'stale i-frames cleared (respawn() re-grants)');
   assert.equal(h.vx, 0, 'velocity reset');
   assert.equal(h.vy, 0, 'velocity reset');
   assert.equal(h.lives, 1, 'lives untouched');
@@ -463,7 +463,7 @@ test('restartAttempt: clears a leaked death flag / drained energy from a failed 
   // Simulate a failed attempt that left transient state on the hero.
   h.dying = true;
   h.energy = 0;
-  h.intangible = true;
+  h.invincible = true;
   h.x = 3500;
   h.checkpoint = { x: 100, y: 400 };
   setState(S.PLAY);
@@ -692,7 +692,7 @@ test('retryLevel: reset sequence matches death (coins rolled back, energy full, 
   }
   assert.equal(hero.shield, 0, 'shield cleared');
   assert.equal(hero.supermoveMeter, 0, 'super meter cleared');
-  assert.ok(hero.intangible, 'respawn i-frames active');
+  assert.ok(hero.invincible, 'respawn i-frames active');
   assert.ok(Math.abs(hero.x - hero.checkpoint.x) < 1, 'placed at checkpoint');
 });
 
@@ -735,7 +735,7 @@ async function advanceThenDieInArea2() {
   hero.checkpoint = { x: hero.x, y: hero.y };
   hero.dying = false; hero.deathTimer = 0; hero.alive = true;
   hero.lives = 3;
-  hero.intangible = true; hero.timers.set('intangible', 60); // keep the scripted run clean
+  hero.invincible = true; hero.invulnSource = 'hit'; hero.timers.set('invincible', 60); // keep the scripted run clean
   hero.energy = 40; // drained while playing 1-1
   hero.wallet.current.coins = 0;
   hero.wallet.current.kills = 0;
@@ -776,7 +776,7 @@ test('REGRESSION: death in 1-2 after a genuine advance restarts with FULL energy
   assert.equal(getState(), S.PLAY, 'entry sequence auto-started the fresh attempt');
   assert.equal(hero.energy, hero.maxEnergy, 'FULL energy on the death-restart (not the 0 died with)');
   assert.equal(hero.wallet.current.coins, 0, 'coins rolled back to the 1:2 entry snapshot');
-  assert.ok(hero.intangible, 'respawn i-frames active');
+  assert.ok(hero.invincible, 'respawn i-frames active');
 });
 
 test('REGRESSION: manual-confirm of the post-death entry after an advance is FAILURE flavor (full energy)', async () => {

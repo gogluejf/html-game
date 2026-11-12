@@ -231,13 +231,14 @@ export class Elephant extends Enemy {
     // just record the magnitude so the caller can triggerShake()).
     this.shakeMag = 8;
     if (hero.dying) return false;
-    if (hero.intangible) return false; // intangible absorbs it
+    if (hero.invincible) return false; // invincible absorbs it
     if (hero.grounded) {
       const dealt = damage(this, hero, this.stats.attack, 'melee');
       if (dealt > 0) {
         hero.loseSelectedSpecial(); // special-weapons.md: damaging hit drops it
-        hero.intangible = true;
-        hero.timers.set('intangible', Math.max(hero.timers.get('intangible'), 0.3));
+        hero.invincible = true;
+        hero.invulnSource = 'hit';
+        hero.timers.set('invincible', Math.max(hero.timers.get('invincible'), 0.3));
         return true;
       }
     }

@@ -29,7 +29,7 @@ function dummyEnemy(x, y, hp = 30) {
   };
   return t;
 }
-const heroDummy = () => { const h = { layer: 1, x: 500, y: 300, w: 28, h: 40, alive: true, energy: 100, shield: 0, intangible: false, dying: false, defense: 0, traceStats: createTrace(), loseSelectedSpecial() {}, takeHit() {} }; h.takeDamage = (amt, src, method) => { const def = h.defense ?? 0; const real = Math.max(1, amt - def); if (h.shield > 0) { const abs = Math.min(h.shield, real); h.shield -= abs; const rem = real - abs; if (rem > 0) h.energy -= rem; } else { h.energy -= real; } if (h.energy <= 0) { h.energy = 0; h.alive = false; } return real; }; return h; };
+const heroDummy = () => { const h = { layer: 1, x: 500, y: 300, w: 28, h: 40, alive: true, energy: 100, shield: 0, invincible: false, dying: false, defense: 0, traceStats: createTrace(), loseSelectedSpecial() {}, takeHit() {} }; h.takeDamage = (amt, src, method) => { const def = h.defense ?? 0; const real = Math.max(1, amt - def); if (h.shield > 0) { const abs = Math.min(h.shield, real); h.shield -= abs; const rem = real - abs; if (rem > 0) h.energy -= rem; } else { h.energy -= real; } if (h.energy <= 0) { h.energy = 0; h.alive = false; } return real; }; return h; };
 
 ok('neutral blast damages enemies in radius, spares those outside', () => {
   const near = dummyEnemy(100, 100);
@@ -72,9 +72,9 @@ ok('self (detonator) is never hit by its own blast', () => {
   assert.equal(self.hp, 50);
 });
 
-ok('dead and intangible targets are skipped', () => {
+ok('dead and invincible targets are skipped', () => {
   const dead = dummyEnemy(100, 100); dead.alive = false;
-  const ghost = dummyEnemy(110, 100); ghost.intangible = true;
+  const ghost = dummyEnemy(110, 100); ghost.invincible = true;
   const solid = dummyEnemy(120, 100);
   const ctx = makeContext(null, { world: { targets: [dead, ghost, solid] } });
   const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 5, team: 'neutral' }, ctx);

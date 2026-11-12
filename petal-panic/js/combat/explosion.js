@@ -90,7 +90,7 @@ function withinRadius(aCx, aCy, bCx, bCy, radius) {
 export function isValidTarget(explosion, target, source) {
   if (!target || target === source) return false;   // never self-hit
   if (target.alive === false) return false;          // skip already-dead
-  if (target.intangible) return false;               // i-frames absorb the blast
+  if (target.invincible) return false;               // i-frames absorb the blast
 
   const hero = ctxHero(explosion);
   // `team` is the engine-wide side vocabulary (same key as the hitbox
@@ -124,7 +124,7 @@ function isEnemy(target) {
 /**
  * Resolve a single explosion against a set of candidate targets.
  *
- * For each valid target within the radius (per team + self/dead/intangible
+ * For each valid target within the radius (per team + self/dead/invincible
  * filters):
  *   1. Apply damage through the central damage system — real enemies route via
  *      their own takeDamage() (which runs their internal death pipeline); every
@@ -132,7 +132,7 @@ function isEnemy(target) {
  *      (energy vs hp), telemetry, and death flagging all apply uniformly.
  *   2. If the target was actually damaged, apply radial knockback:
  *        - HERO: routed through hero.takeHit({source:'explosion', dirX, dirY}) so
- *          the existing rec + intangible timer semantics are preserved EXACTLY
+ *          the existing rec + invincible timer semantics are preserved EXACTLY
  *          (behavior preservation — see knockbackRegression.test.js).
  *        - ENEMY: routed through applyKnockback() with the blast's radial knockback
  *          setting (shove + stun + pop via hitstunTimer/iFrameTimer).

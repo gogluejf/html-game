@@ -145,12 +145,13 @@ await ok('a held jump that started in the burst does NOT cancel once in decel (f
 });
 
 console.log('Intangibility window (AC #3/#5)');
-await ok('supermove uses the shared intangible timer, not a separate bookkeeping path', () => {
+await ok('supermove uses the shared invincible timer, not a separate bookkeeping path', () => {
   const h = makeHero();
   startDash(h);
-  assert.equal(h.intangible, true);
-  assert.ok(Math.abs(h.timers.get('intangible') - SUPERMOVE_DUR) < 1e-9,
-    `intangible timer should equal the dash duration, got ${h.timers.get('intangible')}`);
+  assert.equal(h.invincible, true);
+  assert.equal(h.intangible, true, 'dash also phases through solids');
+  assert.ok(Math.abs(h.timers.get('invincible') - SUPERMOVE_DUR) < 1e-9,
+    `invincible timer should equal the dash duration, got ${h.timers.get('invincible')}`);
 });
 
 await ok('intangibility lasts exactly the dash duration (timer-driven)', () => {
@@ -159,15 +160,17 @@ await ok('intangibility lasts exactly the dash duration (timer-driven)', () => {
   const endFrame = runUntilEnd(h);
   // On the ending frame the dash has just closed; the shared timer has ticked
   // the same number of frames, so it expires on the very same frame.
-  assert.equal(h.intangible, false, 'intangible flag should clear when the dash ends');
-  assert.equal(h.timers.get('intangible'), 0, 'shared timer should be spent at dash end');
+  assert.equal(h.invincible, false, 'invincible flag should clear when the dash ends');
+  assert.equal(h.intangible, false, 'phases-through clears with the dash');
+  assert.equal(h.timers.get('invincible'), 0, 'shared timer should be spent at dash end');
   assert.ok(endFrame > 0, 'dash should have ended');
 });
 
-await ok('jump-cancel during decel clears the supermove-granted intangibility', () => {
+await ok('jump-cancel during decel clears the supermove-granted invincibility', () => {
   const h = makeHero();
   startDash(h);
-  assert.equal(h.intangible, true, 'dashing hero must be intangible');
+  assert.equal(h.invincible, true, 'dashing hero must be invincible');
+  assert.equal(h.intangible, true, 'dashing hero also phases through solids');
   // Skip ahead past the burst into the decel phase.
   for (let i = 0; i < 23 && h.supermoveActive; i++) h.update(DT, noInput());
   assert.equal(h.supermovePhase, 'decel', `should be in decel, was ${h.supermovePhase}`);
@@ -176,20 +179,22 @@ await ok('jump-cancel during decel clears the supermove-granted intangibility', 
   h.update(DT, inp);
   assert.equal(h.supermoveActive, false, 'decel jump must end the dash');
   // The dash is over → the supermove immunity must NOT linger.
-  assert.equal(h.intangible, false, 'hero must not stay intangible after a cancelled dash');
-  assert.equal(h.timers.get('intangible'), 0, 'intangible timer must be cleared on cancel');
+  assert.equal(h.invincible, false, 'hero must not stay invincible after a cancelled dash');
+  assert.equal(h.intangible, false, 'phases-through must clear with the dash');
+  assert.equal(h.timers.get('invincible'), 0, 'invincible timer must be cleared on cancel');
 });
 
-await ok('jump-cancel restores a pre-existing longer intangibility grant', () => {
+await ok('jump-cancel restores a pre-existing longer invincibility grant', () => {
   const h = makeHero();
   // Pre-existing i-frame window (e.g. from a recent hit) that outlasts the dash.
-  h.intangible = true;
-  h.timers.set('intangible', 2.0);
+  h.invincible = true;
+  h.invulnSource = 'hit';
+  h.timers.set('invincible', 2.0);
   startDash(h);
   // Supermove must not truncate the existing longer grant: it stays at the
   // pre-dash value (the trigger frame's own tick has already advanced it).
-  assert.ok(h.timers.get('intangible') > SUPERMOVE_DUR,
-    `existing 2s grant must survive trigger, got ${h.timers.get('intangible')}`);
+  assert.ok(h.timers.get('invincible') > SUPERMOVE_DUR,
+    `existing 2s grant must survive trigger, got ${h.timers.get('invincible')}`);
   // Cancel mid-dash.
   for (let i = 0; i < 23 && h.supermoveActive; i++) h.update(DT, noInput());
   let inp = noInput(); inp.jump = true;
@@ -198,17 +203,18 @@ await ok('jump-cancel restores a pre-existing longer intangibility grant', () =>
   // Restored to the pre-dash remaining: the trigger re-set the timer to the
   // full pre-dash duration (2.0s), then 25 frames have ticked by cancel time
   // (1 on the trigger frame + 24 more).
-  assert.equal(h.intangible, true, 'pre-existing intangibility must be restored');
+  assert.equal(h.invincible, true, 'pre-existing invincibility must be restored');
   const expected = Math.max(0, 2.0 - (25 * DT));
-  assert.ok(Math.abs(h.timers.get('intangible') - expected) < 2 * DT + 1e-6,
-    `restored timer ≈ pre-dash remaining, got ${h.timers.get('intangible')} want ${expected}`);
+  assert.ok(Math.abs(h.timers.get('invincible') - expected) < 2 * DT + 1e-6,
+    `restored timer ≈ pre-dash remaining, got ${h.timers.get('invincible')} want ${expected}`);
 });
 
 await ok('a shorter pre-existing grant that expires during the dash is NOT restored', () => {
   const h = makeHero();
   // Short i-frame window (0.3s) that will naturally expire during the 0.6s dash.
-  h.intangible = true;
-  h.timers.set('intangible', 0.3);
+  h.invincible = true;
+  h.invulnSource = 'hit';
+  h.timers.set('invincible', 0.3);
   startDash(h);
   // The shared timer was bumped up to cover the dash, but the ORIGINAL 0.3s
   // grant only lasts 0.3s of real time — it must be gone when the dash ends.
@@ -219,8 +225,9 @@ await ok('a shorter pre-existing grant that expires during the dash is NOT resto
   assert.equal(h.supermoveActive, false, 'decel jump must end the dash');
   // 24 frames × DT ≈ 0.4s have elapsed since trigger > the 0.3s pre-grant →
   // the original immunity is long expired and must NOT linger after the cancel.
-  assert.equal(h.intangible, false, 'expired pre-grant must not be resurrected by the cancel');
-  assert.equal(h.timers.get('intangible'), 0, 'intangible timer must be cleared on cancel');
+  assert.equal(h.invincible, false, 'expired pre-grant must not be resurrected by the cancel');
+  assert.equal(h.intangible, false, 'phases-through clears with the dash');
+  assert.equal(h.timers.get('invincible'), 0, 'invincible timer must be cleared on cancel');
 });
 
 console.log('Respawn i-frames (§27)');
@@ -229,15 +236,15 @@ await ok('respawn grants actual immunity (flag true while the timer is active)',
   h.dying = true;
   h.energy = 0;
   h.respawn();
-  assert.equal(h.intangible, true, 'hero must be intangible right after respawn');
-  assert.ok(Math.abs(h.timers.get('intangible') - Hero.RESPAWN_IFRAMES) < 1e-9,
-    `respawn i-frame timer should equal RESPAWN_IFRAMES, got ${h.timers.get('intangible')}`);
+  assert.equal(h.invincible, true, 'hero must be invincible right after respawn');
+  assert.ok(Math.abs(h.timers.get('invincible') - Hero.RESPAWN_IFRAMES) < 1e-9,
+    `respawn i-frame timer should equal RESPAWN_IFRAMES, got ${h.timers.get('invincible')}`);
   // A hit during the respawn window must be absorbed.
   const landed = h.takeHit({ dirX: -1, dirY: 0, strength: 240 });
   assert.equal(landed, false, 'hit during respawn i-frames must be absorbed');
   // After the window ticks out the flag clears.
   for (let i = 0; i < Math.ceil(Hero.RESPAWN_IFRAMES / DT) + 1; i++) h.update(DT, noInput());
-  assert.equal(h.intangible, false, 'intangible flag must clear once the respawn window expires');
+  assert.equal(h.invincible, false, 'invincible flag must clear once the respawn window expires');
 });
 
 console.log('Anim state sync (§29, AC #4)');

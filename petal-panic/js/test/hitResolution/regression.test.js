@@ -31,7 +31,7 @@ test('REGRESSION — melee on barrel triggers onHit callback (supercoin reward p
 });
 
 test('REGRESSION — ally explosion spares hero, hits enemy', () => {
-  const hero = { layer: 4, x:20,y:0,w:32,h:48, energy:100, shield:0, alive:true, intangible:false, dying:false };
+  const hero = { layer: 4, x:20,y:0,w:32,h:48, energy:100, shield:0, alive:true, invincible:false, dying:false };
   const enemy = makeEnemy(30,0);
   const res = resolveExplosion(
     { cx:0, cy:0, radius:60, damage:25, team:'ally', knockback:{base:380,scaleBySpeed:0,hitstun:0.3,iFrames:0.6,dirMode:'radial',pop:60}, self:null, ctx:{hero} },
