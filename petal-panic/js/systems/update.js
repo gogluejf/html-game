@@ -32,7 +32,7 @@ import { applyKnockback } from '../combat/knockback.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
 import { applyGodMode, setHeroRefSetter, tickDebugBarrelDrops, tickFrameTrace } from '../debug/debugHarness.js';
-import { buildWorld, captureAreaMap, newGameSeed, getLastWorldSeed } from '../world/build.js';
+import { buildWorld, instantiateZone, captureAreaMap, newGameSeed, getLastWorldSeed } from '../world/build.js';
 import { CLEAR_SEQ, clearSeq, areaEntrySeq, setMenuEntryPending, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryLevel, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryLevel, continueFromGameOver };
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, roomFloorTop, BOSS_TRIGGER_X } from '../world/level.js';
@@ -777,7 +777,13 @@ onTransition((from, to) => {
     AttackLifecycle.clearTransientWorld();
     const zone = getActiveZone(h);
     if (zone.kind === 'area' && world.world.has(zone.areaIdx)) {
-      loadActiveZone(zone, world.world.get(zone.areaIdx));
+      // world.world holds live instances, not a pristine snapshot: same-seed
+      // menu returns can otherwise revive enemies with destroyed/_deathHandled
+      // still set and barrels with _destroyHandled (suppressing their blasts).
+      // Recreate runtime state from the preserved arrangement, as retry does.
+      loadActiveZone(zone, instantiateZone(
+        zone, world.terrain.get(zone.areaIdx), world.population.get(zone.areaIdx), levelZones,
+      ));
     } else if (zone.kind === 'boss') {
       const bossCp = zone.entryFlag
         ? [makeCheckpoint(zone.entryFlag.id, zone.entryFlag.x, zone.entryFlag.y, { isEntry: true, appearance: zone.entryFlag.appearance, spawnPos: zone.spawn })]

@@ -438,3 +438,87 @@ test('New Game after a saved run clears the saved state (fresh start)', () => {
   assert.equal(PS.hasSave(), false, 'the full-state save is cleared entirely');
   assert.equal(PS.loadStore().saveMeta, null, 'saveMeta is null (not just stripped)');
 });
+
+// Same-seed menu returns must not resurrect cached, combat-mutated instances.
+for (const entry of ['manual', 'timed']) {
+  test(`Save & Quit restores fresh combat entities (${entry} entry, repeated)`, async () => {
+    const { ctx } = await import('../world/context.js');
+    const { instantiateZone, getLastWorldSeed } = await import('../world/build.js');
+    const { applyHit } = await import('../combat/hitResolution.js');
+    const { Team, AttackProvenance } = await import('../combat/targeting.js');
+    const { updateRealEnemies } = await import('../enemies/enemyUpdate.js');
+    const { AttackLifecycle } = await import('../combat/attack/lifecycle.js');
+    const h = U.getHero();
+    h.currentLevel = 1;
+    h.currentArea = 1;
+    const zone = U.getActiveZone(h);
+    const world = ctx.world;
+    const oldPop = world.population.get(1);
+    const oldContent = world.world.get(1);
+    const pop = { enemies: [{ type: 'jester', x: 4, y: 0 }], barrels: [{ type: 'explosive', x: 8, y: 0 }], powerups: [] };
+    world.population.set(1, pop);
+    const content = instantiateZone(zone, world.terrain.get(1), pop, ctx.levelZones);
+    world.world.set(1, content);
+    U.loadActiveZone(zone, content);
+    const spawn = content.enemies.map(e => [e.x, e.y]);
+    const hit = (target) => applyHit({ provenance: AttackProvenance.PROJECTILE, source: h, target, damage: 1000, team: Team.ALLY });
+    try {
+      for (let cycle = 0; cycle < 2; cycle++) {
+        const enemy = ctx.realEnemies[0];
+        const barrel = ctx.barrels[0];
+        h.x = -1000; // keep the player outside the blast
+        hit(enemy);
+        updateRealEnemies(1); // finish death, credit kill, remove collision body
+        assert.equal(enemy._deathHandled, true);
+        hit(barrel);
+        assert.equal(barrel._destroyHandled, true);
+        assert.equal(ctx.collisionWorld.entities.has(barrel), false);
+        // Combat can also mark an enemy destroyed (e.g. instant kill).
+        enemy.destroyed = true;
+        barrel.intangible = true;
+        barrel._fuse = 0.1;
+        barrel.vx = 300;
+        setState(S.PLAY);
+        go(S.PAUSE);
+        SC.Pause.focus = 2;
+        SC.screenOnAction('confirm', h, {}, h);
+        assert.equal(getState(), S.MENU);
+        const raw = JSON.parse(memStorage.getItem('petal_panic_store')).saveMeta;
+        assert.equal(raw.seed, getLastWorldSeed(), 'exercise same-seed reuse branch');
+        assert.equal(raw.area, 1);
+        assert.equal(L.continueFromMenu(h), true);
+        await Promise.resolve(); // menu-entry flag is queued by the transition
+        if (entry === 'manual') L.areaEntryOnAction('confirm', h);
+        else for (let frame = 0; frame < 600 && getState() !== S.PLAY; frame++) U.update(1 / 60);
+        assert.equal(getState(), S.PLAY);
+        const fresh = ctx.realEnemies[0];
+        const freshBarrel = ctx.barrels[0];
+        assert.notEqual(fresh, enemy, 'do not revive cached enemy runtime');
+        assert.notEqual(freshBarrel, barrel, 'do not revive cached barrel runtime');
+        assert.deepEqual(ctx.realEnemies.map(e => [e.x, e.y]), spawn, 'same authored arrangement');
+        assert.equal(fresh.hp, fresh.maxHp);
+        assert.equal(fresh.aiState, 'idle');
+        assert.ok(!fresh.destroyed && !fresh._deathHandled);
+        assert.ok(!freshBarrel._destroyHandled && !freshBarrel.intangible && !freshBarrel._fuse);
+        assert.equal(freshBarrel.hp, freshBarrel.maxHp);
+        assert.equal(freshBarrel.vx, 0);
+        assert.ok(ctx.collisionWorld.entities.has(fresh));
+        assert.ok(ctx.collisionWorld.entities.has(freshBarrel));
+        assert.ok(!ctx.collisionWorld.entities.has(enemy));
+        // Verify a real explosion damages a nearby enemy, not merely a flag reset.
+        h.x = -1000;
+        fresh.x = freshBarrel.x;
+        fresh.y = freshBarrel.y;
+        hit(freshBarrel);
+        assert.ok(fresh.hp < fresh.maxHp, 'resumed barrel detonates and deals damage');
+        updateRealEnemies(1);
+        assert.equal(fresh._deathHandled, true, 'resumed enemy death is handled again');
+      }
+    } finally {
+      AttackLifecycle.clearTransientWorld();
+      world.population.set(1, oldPop);
+      world.world.set(1, oldContent);
+      U.loadActiveZone(zone, oldContent);
+    }
+  });
+}
