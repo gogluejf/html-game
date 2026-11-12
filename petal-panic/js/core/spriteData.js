@@ -123,7 +123,15 @@ function parseFrames(ent) {
     // Per-frame tuning is OPTIONAL: size/position come from the image's
     // natural size + offset/scale (anchor space). Sheets without tuning render
     // via the legacy placement (centered, bottom on the anchor line).
-    return { file: f.file, offset: parsePoint(f.offset), scale: parseFrameScale(f.scale) };
+    return {
+      file: f.file,
+      offset: parsePoint(f.offset),
+      scale: parseFrameScale(f.scale),
+      // Typed per-frame boxes (Animation Studio): [{label, x, y, w, h}] in
+      // anchor space — same transform as the frame art. Carried verbatim so
+      // gameplay can resolve sheet-authored hitboxes (Hero._sheetAttackBox).
+      boxes: Array.isArray(f.boxes) ? f.boxes : [],
+    };
   });
 }
 

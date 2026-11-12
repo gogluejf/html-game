@@ -707,45 +707,37 @@ function drawDebugOverlay(ctx, alpha = 1) {
   ctx.restore();
 
   // draw the melee hitbox in YELLOW when active (debug only).
+  // Sheet-sourced boxes get a small 'sheet' tag; table fallbacks 'table' —
+  // so during the sheet-hitbox rollout you can see which frames are live.
   const hero = getHero();
-  const mh = hero.meleeHitboxWorld;
-  if (mh) {
+  const _drawAtkBox = (b, label) => {
+    if (!b) return;
     ctx.save();
     ctx.globalAlpha = 0.6;
     ctx.fillStyle = '#f1c40f';
-    ctx.fillRect(mh.x, mh.y, mh.w, mh.h);
+    ctx.fillRect(b.x, b.y, b.w, b.h);
     ctx.strokeStyle = '#f1c40f';
     ctx.lineWidth = 2;
-    ctx.strokeRect(mh.x + 0.5, mh.y + 0.5, mh.w, mh.h);
+    ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w, b.h);
+    if (label) {
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px monospace';
+      ctx.fillText(label, b.x + 2, b.y - 3);
+    }
     ctx.restore();
-  }
+  };
+  const mh = hero.meleeHitboxWorld;
+  _drawAtkBox(mh, mh ? `melee·${mh._source ?? '?'}` : null);
 
   // Super dash hitbox in YELLOW when active (debug only) — same as melee.
   const sh = hero.supermoveHitboxWorld;
-  if (sh) {
-    ctx.save();
-    ctx.globalAlpha = 0.6;
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillRect(sh.x, sh.y, sh.w, sh.h);
-    ctx.strokeStyle = '#f1c40f';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(sh.x + 0.5, sh.y + 0.5, sh.w, sh.h);
-    ctx.restore();
-  }
+  _drawAtkBox(sh, sh ? `super·${sh._source ?? '?'}` : null);
 
   // Special melee (Down+Melee) hitbox in YELLOW when active (debug only) —
   // same convention as melee + supermove.
   const spm = hero.specialMeleeHitboxWorld;
-  if (spm) {
-    ctx.save();
-    ctx.globalAlpha = 0.6;
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillRect(spm.x, spm.y, spm.w, spm.h);
-    ctx.strokeStyle = '#f1c40f';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(spm.x + 0.5, spm.y + 0.5, spm.w, spm.h);
-    ctx.restore();
-  }
+  _drawAtkBox(spm, spm ? `sweep·${spm._source ?? '?'}` : null);
 
   // Generic effect-radius circles (debug): any entity with radius > 0 gets a
   // dashed red circle (aggro/detection). Any entity carrying an `explosion`

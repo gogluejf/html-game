@@ -15,6 +15,7 @@ import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats 
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { heroDamage } from '../combat/damage.js';
 import { JUMP_HEIGHT_SCALE } from './heroSprites.js';
+import { placeSheetFrame } from '../core/spriteData.js';
 import { invulnFlicker, INVISIBLE } from '../effects/invulnFlicker.js';
 import { blink } from '../effects/blink.js';
 
@@ -1051,10 +1052,26 @@ export class Hero extends Entity {
     let entry = null; // resolved {ox,oy,bw,bh} or null (no box this frame)
     if (attackName === ATTACK_MELEE) {
       if (!this.meleeActive) return null;
+      // Sheet-authored box first (per-frame, from the active melee/air_melee
+      // sheet); hand-tuned table is the fallback when the sheet has no box on
+      // this frame or no sheet data is attached.
+      const sheetBox = this._sheetAttackBox(this._meleeAirborne ? 'air_melee' : 'melee');
+      if (sheetBox) {
+        const wb = this.worldBox();
+        const box = this._sheetBoxToWorld(sheetBox);
+        return { ...box, knockback: this._attackKnockback(attackName), _source: 'sheet' };
+      }
       const frames = this.heroDef.attacks[ATTACK_MELEE].frames;
       entry = frames[Math.floor(this.meleeFrame)] ?? null;
     } else if (attackName === ATTACK_SPECIAL_MELEE) {
       if (!this.specialMeleeActive || this.specialMeleePhase !== 'active') return null;
+      // Sheet-authored box first (super_melee sheet plays during the swing);
+      // the single SWEEP.hitbox table entry is the fallback.
+      const sheetBox = this._sheetAttackBox('super_melee');
+      if (sheetBox) {
+        const box = this._sheetBoxToWorld(sheetBox);
+        return { ...box, knockback: this._attackKnockback(attackName), _source: 'sheet' };
+      }
       entry = this.heroDef.specialMelee.hitbox;
     } else if (attackName === ATTACK_SUPERMOVE) {
       if (!this.supermoveActive) return null;
@@ -1088,6 +1105,7 @@ export class Hero extends Entity {
       w: entry.bw,
       h: entry.bh,
       knockback,
+      _source: 'table',
     };
   }
 
@@ -1106,6 +1124,55 @@ export class Hero extends Entity {
     }
     // Normal melee: small burst shove (MELEE_KNOCKBACK in heroDefs).
     return this.heroDef.attacks[ATTACK_MELEE]?.knockback;
+  }
+
+  /**
+   * Sheet-authored attack box for the current anim frame (anchor space).
+   * The sheet JSON is the source of truth when it carries one: each frame can
+   * declare `boxes: [{label:'attack', x, y, w, h}]` in the same anchor space
+   * as the sprite's offset/scale, so the box transforms EXACTLY like the art
+   * (same uniform scale, same mirror around the box-center anchor). Returns
+   * null when the active frame has no authored box (windup/recovery) or no
+   * sheet data is attached (node tests / primitive path) — callers fall back
+   * to the hand-tuned heroDefs tables.
+   * @param {string} animName 'melee' | 'air_melee' | 'super_melee'
+   * @returns {?{x:number,y:number,w:number,h:number}} anchor-space box
+   */
+  _sheetAttackBox(animName) {
+    if (this._spriteAnim !== animName || !this.spriteAnimData) return null;
+    const data = this.spriteAnimData;
+    const frame = data.frames[this.spriteFrameIndex % data.frames.length];
+    const box = (frame?.boxes ?? []).find(b => b.label === 'attack');
+    if (!box) return null;
+    // Boxes are authored in EDITOR/ANCHOR SPACE — the same space as the
+    // collision box and pivot (y-down, origin at the sheet's (0,0)). The
+    // runtime places the body-center anchor AT the pivot point, so an editor
+    // point (ex,ey) maps to world = anchor + s·(e − pivot). This is the same
+    // transform the collision box itself uses (setAnim fits cb.h onto the
+    // body via this._spriteScale), so boxes track the art exactly.
+    const placed = placeSheetFrame(data, frame, { complete: true, naturalWidth: 1, naturalHeight: 1 }, this._spriteScale * data.collisionBox.h);
+    if (!placed) return null;
+    const s = placed.scale;
+    const pv = data.pivot ?? { x: data.collisionBox.x + data.collisionBox.w / 2, y: data.collisionBox.y + data.collisionBox.h / 2 };
+    return { x: box.x - pv.x, y: box.y - pv.y, w: box.w, h: box.h, s };
+  }
+
+  /**
+   * World-space AABB of a sheet-authored attack box: anchor-space box → world,
+   * mirrored around the box-center anchor when facing left (identical to the
+   * sprite mirror, so visual and gameplay impact coincide).
+   * @param {{x:number,y:number,w:number,h:number,s:number}} ab anchor-space box
+   * @returns {{x:number,y:number,w:number,h:number}}
+   */
+  _sheetBoxToWorld(ab) {
+    const wb = this.worldBox();
+    const ax = wb.x + wb.w / 2, ay = wb.y + wb.h / 2;
+    // Mirror follows FACING (not the mirrorX render flag): hitboxes must flip
+    // the moment facing does, even before syncMirror() runs this frame.
+    const m = this.facing === -1 ? -1 : 1;
+    const x0 = ax + m * ab.s * ab.x;
+    const x1 = ax + m * ab.s * (ab.x + ab.w);
+    return { x: Math.min(x0, x1), y: ay + ab.s * ab.y, w: ab.s * ab.w, h: ab.s * ab.h };
   }
 
   /**
