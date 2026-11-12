@@ -282,7 +282,10 @@ function initKeyboard(){
       return;
     }
     if ((e.ctrlKey||e.metaKey) && (e.code==='Digit0'||e.code==='Numpad0')){ e.preventDefault(); if (app.cur) selectMacro(app.cur.id); return; }
-    if (tag==='input'||tag==='textarea') return;
+    // Any editable field owns the keyboard — let native input navigation
+    // (arrows, delete, backspace, typing) work untouched. Ctrl combos above
+    // are global app shortcuts and intentionally still fire.
+    if (tag==='input'||tag==='textarea'||tag==='select') return;
     // If a <dialog> is open (confirm / prompt), let it own the keyboard —
     // especially Escape, which the dialog uses to cancel. Do NOT intercept.
     if (document.querySelector('dialog[open]')) return;

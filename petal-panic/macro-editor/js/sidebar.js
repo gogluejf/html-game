@@ -12,6 +12,9 @@ import { analyzeMacroWarnings } from './validation.js';
 import { killRideIfActive } from './ghost.js';
 import { markChanged } from './save.js';
 import { pushUndo } from './undo.js';
+import { showToast } from './toast.js';
+import { validateMacroCandidate } from './validation.js';
+import { normalizeUnit, unitGridError } from '../../js/world/squareGrid.js';
 import { BARREL_TYPES } from '../../js/objects/object.js';
 import { ENEMY_TYPES } from '../../js/world/enemyTypes.js';
 import { POWERUP_ROLL_TYPES, POWERUP_DEFS } from '../../js/objects/powerup.js';
@@ -147,11 +150,20 @@ const FAMILY_LABELS = {
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-export function syncInspector(){
+export function syncInspector(force = false){
   const body = $('inspectorBody');
   const title = $('inspectorTitle');
   const swatch = $('inspectorSwatch');
   const sel = app.editor.selection;
+  // Don't rebuild the DOM while the user is actively editing an input—
+  // it would steal focus and destroy their cursor/selection mid-typing.
+  // `force=true` bypasses this (used after a committed edit).
+  if (!force){
+    const activeEl = document.activeElement;
+    if (activeEl && body.contains(activeEl) && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT')){
+      return;
+    }
+  }
   if (!sel || !app.cur){
     title.textContent = 'Selection';
     swatch.style.background = 'var(--acc)';
@@ -198,42 +210,88 @@ export function syncInspector(){
   body.querySelectorAll('[data-insp]').forEach(el => {
     el.addEventListener('change', () => onInspectorChange(sel, el));
   });
+  initInspectorSpinners();
+}
+
+// Wrap inspector number inputs with the same custom spinner arrows used by
+// the sprite editor (native spinners are hidden via CSS). Arrow keys still
+// work natively inside the input — only the visual arrows are replaced.
+export function initInspectorSpinners(){
+  const body = $('inspectorBody');
+  body.querySelectorAll('input[type=number]').forEach(inp=>{
+    if (inp.closest('.numwrap')) return;   // already wrapped
+    const wrap = document.createElement('span');
+    wrap.className = 'numwrap';
+    inp.parentNode.insertBefore(wrap, inp);
+    wrap.appendChild(inp);
+    const arr = document.createElement('span');
+    arr.className = 'arr';
+    arr.innerHTML = '<span class="up"></span><span class="dn"></span>';
+    wrap.appendChild(arr);
+    const step = () => parseFloat(inp.step) || 1;
+    arr.querySelector('.up').addEventListener('click', ()=>{ inp.value=(parseFloat(inp.value)||0)+step(); inp.dispatchEvent(new Event('change')); });
+    arr.querySelector('.dn').addEventListener('click', ()=>{ inp.value=(parseFloat(inp.value)||0)-step(); inp.dispatchEvent(new Event('change')); });
+  });
 }
 
 function onInspectorChange(sel, el){
   const st = app.cur.st;
   const key = el.dataset.insp;
-  pushUndo();
   if (sel.kind === 'unit'){
     const u = st.units[sel.index];
     if (!u) return;
+    // Build a candidate with the proposed change, normalize it through the
+    // SAME shared function the canvas drag/resize uses.
+    let proposed = { ...u };
     if (key === 'kind'){
       const newKind = el.value;
-      if (newKind === 'platform' && u.kind === 'block'){
-        delete u.height; // platforms don't have height
-      } else if (newKind === 'block' && u.kind === 'platform'){
-        u.height = 1; // blocks need a height
-      }
-      u.kind = newKind;
+      if (newKind === 'platform') delete proposed.height;
+      else proposed.height = proposed.height ?? 1;
+      proposed.kind = newKind;
     }
-    else if (key === 'x') u.x = Math.max(0, parseInt(el.value, 10) || 0);
-    else if (key === 'y') u.y = Math.max(0, parseInt(el.value, 10) || 0);
-    else if (key === 'width') u.width = Math.max(1, parseInt(el.value, 10) || 1);
-    else if (key === 'height') u.height = Math.max(1, parseInt(el.value, 10) || 1);
+    else if (key === 'x') proposed.x = parseInt(el.value, 10) || 0;
+    else if (key === 'y') proposed.y = parseInt(el.value, 10) || 0;
+    else if (key === 'width') proposed.width = parseInt(el.value, 10) || 1;
+    else if (key === 'height') proposed.height = parseInt(el.value, 10) || 1;
+    // Normalize through the shared grid contract (snap block x, clamp dims).
+    const normalized = normalizeUnit(proposed);
+    // Validate against the full macro (schema + layout + support).
+    const result = validateMacroCandidate(st, normalized, { targetKind: 'unit', targetIndex: sel.index });
+    if (!result.valid){
+      showToast(result.reason, 'error');
+      syncInspector(true); // revert display to current values
+      return;
+    }
+    pushUndo();
+    Object.assign(u, normalized);
+    markChanged();
+    draw();
+    // no rebuild needed — input already shows the new value
+
   } else if (sel.kind === 'slot'){
     const p = st.placements[sel.index];
     if (!p) return;
+    let proposed = { ...p };
     if (key === 'type'){
-      p.type = el.value;
-      p.value = 'random';
+      proposed.type = el.value;
+      proposed.value = 'random';
     } else if (key === 'value'){
-      p.value = el.value;
-    } else if (key === 'x') p.x = Math.max(0, parseInt(el.value, 10) || 0);
-    else if (key === 'y') p.y = Math.max(0, parseInt(el.value, 10) || 0);
+      proposed.value = el.value;
+    } else if (key === 'x') proposed.x = parseInt(el.value, 10) || 0;
+    else if (key === 'y') proposed.y = parseInt(el.value, 10) || 0;
+    const result = validateMacroCandidate(st, proposed, { targetKind: 'slot', targetIndex: sel.index });
+    if (!result.valid){
+      showToast(result.reason, 'error');
+      syncInspector(true);
+      return;
+    }
+    pushUndo();
+    Object.assign(p, proposed);
+    markChanged();
+    draw();
+    // no rebuild needed — input already shows the new value
+
   }
-  markChanged();
-  draw();
-  syncInspector();
 }
 
 // ---------- context menu (right-click sidebar row) ----------
