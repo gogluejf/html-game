@@ -66,7 +66,7 @@ const SPRITE_TARGETS = Object.freeze({
   rock_medium: { file: 'medium_shoot_sheet.json', anim: 'shoot' },
   rock_small:  { file: 'small_shoot_sheet.json', anim: 'shoot' },
   bomb:        { anim: 'shoot' },
-  bomb_explode:{ dir: 'bomb', file: 'explode_sheet.json', anim: 'explode' },
+  explosion:   { cat: 'fx', dir: 'explosion', file: 'explode_sheet.json', anim: 'explode' },
   saw:         { anim: 'shoot' },
   spread:      { anim: 'shoot' },
   homing:      { anim: 'fly' },
@@ -90,7 +90,8 @@ export function initProjectileSprites() {
     if (spriteData.has(type)) continue;
     const dir = cfg.dir ?? type;
     const file = cfg.file ?? `${cfg.anim}_sheet.json`;
-    const base = new URL(`../../assets/projectiles/${dir}/`, import.meta.url).href;
+    const cat = cfg.cat ?? 'projectiles';
+    const base = new URL(`../../assets/${cat}/${dir}/`, import.meta.url).href;
     const load = base.startsWith('file:')
       ? readFileJson(new URL(file, base))
       : fetch(base + file).then((r) => r.json());

@@ -1,0 +1,150 @@
+{
+ "file": "petal-panic/assets/fx/ground/impact_sheet.png",
+ "size": "2092x623",
+ "rows": 2,
+ "cols": 6,
+ "kind": "animation",
+ "description": "ground impact effect (12 frames)",
+ "entities": [
+  {
+   "name": "ground",
+   "anim": "impact",
+   "frames_dir": "petal-panic/assets/fx/ground",
+   "frames": [
+    {
+     "file": "impact_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      93,
+      123,
+      176,
+      52
+     ]
+    },
+    {
+     "file": "impact_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      429,
+      94,
+      223,
+      110
+     ]
+    },
+    {
+     "file": "impact_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      764,
+      59,
+      255,
+      179
+     ]
+    },
+    {
+     "file": "impact_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1085,
+      34,
+      301,
+      230
+     ]
+    },
+    {
+     "file": "impact_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1408,
+      26,
+      324,
+      246
+     ]
+    },
+    {
+     "file": "impact_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1732,
+      0,
+      360,
+      298
+     ]
+    },
+    {
+     "file": "impact_f7.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      298,
+      362,
+      325
+     ]
+    },
+    {
+     "file": "impact_f8.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      362,
+      311,
+      358,
+      299
+     ]
+    },
+    {
+     "file": "impact_f9.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      720,
+      319,
+      344,
+      282
+     ]
+    },
+    {
+     "file": "impact_f10.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1064,
+      332,
+      344,
+      256
+     ]
+    },
+    {
+     "file": "impact_f11.png",
+     "row": 1,
+     "col": 4,
+     "bbox": [
+      1409,
+      366,
+      322,
+      188
+     ]
+    },
+    {
+     "file": "impact_f12.png",
+     "row": 1,
+     "col": 5,
+     "bbox": [
+      1754,
+      375,
+      316,
+      171
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-11"
+}

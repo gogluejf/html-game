@@ -1,0 +1,116 @@
+{
+ "file": "petal-panic/assets/fx/explosion/explode_sheet.png",
+ "size": "960x212",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "explosion effect — bomb blast art (4 frames)",
+ "entities": [
+  {
+   "name": "explosion",
+   "anim": "explode",
+   "frames_dir": "petal-panic/assets/fx/explosion",
+   "frames": [
+    {
+     "file": "explode_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      237,
+      212
+     ],
+     "offset": {
+      "x": -118.5,
+      "y": -106
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      237,
+      9,
+      240,
+      193
+     ],
+     "offset": {
+      "x": -120,
+      "y": -96.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      477,
+      15,
+      243,
+      182
+     ],
+     "offset": {
+      "x": -121.5,
+      "y": -91
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      720,
+      37,
+      240,
+      138
+     ],
+     "offset": {
+      "x": -120,
+      "y": -69
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "collision": {
+    "x": -121.5,
+    "y": -106,
+    "w": 243,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "fps": 8,
+   "playback": "once",
+   "direction": "forward",
+   "markers": []
+  }
+ ],
+ "updated": "2026-10-21"
+}

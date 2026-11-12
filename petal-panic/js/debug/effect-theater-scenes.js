@@ -258,12 +258,12 @@ const SCENES = {
     draw(ctx, c) { c.enemy.draw(ctx); },
   },
   // 31. Sprite Burst: bomb detonation art at the stage point. Uses the real
-  // bomb_explode anim when loaded; falls back to a procedural flash+ring
+  // explosion anim when loaded; falls back to a procedural flash+ring
   // drawer (same pattern as the explosion primitive) so the demo always
   // shows something (node/pre-boot/primitive mode).
   'sprite-burst': {
     setup() {
-      const anim = getSpecialSpriteData('bomb_explode')?.anims.explode ?? null;
+      const anim = getSpecialSpriteData('explosion')?.anims.explode ?? null;
       return { anim, fallback: blastFallbackDrawer };
     },
     fire(c, entry) { fireManual({ type: entry.type, params: { ...entry.params, anim: c.anim, fallback: c.fallback } }, null); },

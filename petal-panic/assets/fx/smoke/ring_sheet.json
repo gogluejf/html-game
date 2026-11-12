@@ -1,0 +1,150 @@
+{
+ "file": "petal-panic/assets/fx/smoke/ring_sheet.png",
+ "size": "2095x661",
+ "rows": 2,
+ "cols": 6,
+ "kind": "animation",
+ "description": "smoke ring effect (12 frames)",
+ "entities": [
+  {
+   "name": "smoke",
+   "anim": "ring",
+   "frames_dir": "petal-panic/assets/fx/smoke",
+   "frames": [
+    {
+     "file": "ring_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      87,
+      109,
+      152,
+      143
+     ]
+    },
+    {
+     "file": "ring_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      367,
+      64,
+      253,
+      233
+     ]
+    },
+    {
+     "file": "ring_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      662,
+      28,
+      327,
+      305
+     ]
+    },
+    {
+     "file": "ring_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      989,
+      19,
+      344,
+      323
+     ]
+    },
+    {
+     "file": "ring_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1333,
+      1,
+      375,
+      359
+     ]
+    },
+    {
+     "file": "ring_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1708,
+      0,
+      387,
+      361
+     ]
+    },
+    {
+     "file": "ring_f7.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      361,
+      326,
+      300
+     ]
+    },
+    {
+     "file": "ring_f8.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      326,
+      363,
+      336,
+      296
+     ]
+    },
+    {
+     "file": "ring_f9.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      662,
+      377,
+      327,
+      268
+     ]
+    },
+    {
+     "file": "ring_f10.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1005,
+      393,
+      312,
+      235
+     ]
+    },
+    {
+     "file": "ring_f11.png",
+     "row": 1,
+     "col": 4,
+     "bbox": [
+      1378,
+      406,
+      285,
+      209
+     ]
+    },
+    {
+     "file": "ring_f12.png",
+     "row": 1,
+     "col": 5,
+     "bbox": [
+      1749,
+      439,
+      305,
+      143
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-11"
+}

@@ -380,7 +380,7 @@ registerPrimitive('fireArea', {
     // the flame is igniting). Queued here, fired lazily in h.step().
     const igniteQueue = [];
     if (p.ignitePerSegment) {
-      const ex = getSpecialSpriteData('bomb_explode')?.anims.explode;
+      const ex = getSpecialSpriteData('explosion')?.anims.explode;
       for (const s of segs) igniteQueue.push({ seg: s, done: false, ex });
     }
     // Per-segment hitboxes: each tracks its OWN segment position so damage

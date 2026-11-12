@@ -1,0 +1,284 @@
+{
+ "file": "petal-panic/assets/fx/explosion/explode_smoke_sheet.png",
+ "size": "2076x666",
+ "rows": 2,
+ "cols": 6,
+ "kind": "animation",
+ "description": "explosion explode_smoke effect (12 frames)",
+ "entities": [
+  {
+   "name": "explosion",
+   "anim": "explode_smoke",
+   "frames_dir": "petal-panic/assets/fx/explosion",
+   "frames": [
+    {
+     "file": "explode_smoke_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      121,
+      127,
+      109,
+      87
+     ],
+     "offset": {
+      "x": -54.5,
+      "y": -43.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      428,
+      93,
+      189,
+      154
+     ],
+     "offset": {
+      "x": -94.5,
+      "y": -77
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      710,
+      58,
+      296,
+      224
+     ],
+     "offset": {
+      "x": -148,
+      "y": -112
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1023,
+      44,
+      332,
+      253
+     ],
+     "offset": {
+      "x": -166,
+      "y": -126.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1355,
+      9,
+      345,
+      323
+     ],
+     "offset": {
+      "x": -172.5,
+      "y": -161.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1700,
+      0,
+      376,
+      341
+     ],
+     "offset": {
+      "x": -188,
+      "y": -170.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f7.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      341,
+      352,
+      325
+     ],
+     "offset": {
+      "x": -176,
+      "y": -162.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f8.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      352,
+      351,
+      342,
+      305
+     ],
+     "offset": {
+      "x": -171,
+      "y": -152.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f9.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      694,
+      362,
+      329,
+      283
+     ],
+     "offset": {
+      "x": -164.5,
+      "y": -141.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f10.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1027,
+      374,
+      323,
+      259
+     ],
+     "offset": {
+      "x": -161.5,
+      "y": -129.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f11.png",
+     "row": 1,
+     "col": 4,
+     "bbox": [
+      1383,
+      395,
+      289,
+      217
+     ],
+     "offset": {
+      "x": -144.5,
+      "y": -108.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "explode_smoke_f12.png",
+     "row": 1,
+     "col": 5,
+     "bbox": [
+      1749,
+      408,
+      278,
+      191
+     ],
+     "offset": {
+      "x": -139,
+      "y": -95.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 14,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -50.5,
+    "y": -39.5,
+    "w": 101,
+    "h": 79
+   },
+   "pivot": {
+    "x": 0,
+    "y": 0
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-11-11"
+}
