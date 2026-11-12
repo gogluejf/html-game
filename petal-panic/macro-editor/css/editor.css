@@ -133,6 +133,23 @@
   .row input[type=number]{width:84px;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:5px 20px 5px 8px;text-align:right;-moz-appearance:textfield;}
   .row input[type=number]::-webkit-inner-spin-button,.row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .row input[type=number]:focus{outline:none;border-color:var(--acc);}
+  /* ---------- inspector section ---------- */
+  #inspectorBody{min-height:48px;}
+  .inspector-empty{color:var(--faint);font-size:12px;padding:8px 0;font-style:italic;}
+  .inspector-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin:4px 0 8px;}
+  .inspector-grid label{color:var(--dim);font-size:12px;white-space:nowrap;}
+  .inspector-grid input,.inspector-grid select{width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:5px 8px;text-align:right;}
+  .inspector-grid select{text-align:left;cursor:pointer;}
+  .inspector-grid input:focus,.inspector-grid select:focus{outline:none;border-color:var(--acc);}
+  .inspector-grid input[type=number]{-moz-appearance:textfield;}
+  .inspector-grid input[type=number]::-webkit-inner-spin-button,.inspector-grid input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+  .ro-display{color:var(--faint);font-size:13px;font-family:monospace;background:transparent;border:1px solid transparent;padding:5px 8px;border-radius:6px;min-width:60px;display:inline-block;}
+  .inspector-pair{display:flex;gap:6px;}
+  .inspector-pair > div{flex:1;display:flex;align-items:center;gap:4px;}
+  .inspector-pair b{color:var(--faint);font-weight:normal;font-size:10px;width:10px;text-align:center;flex:none;}
+  .inspector-pair input,.inspector-pair select{width:100%;min-width:0;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:5px 8px;text-align:right;}
+  .inspector-pair select{text-align:left;cursor:pointer;}
+  .inspector-pair input:focus,.inspector-pair select:focus{outline:none;border-color:var(--acc);}
   /* custom spinner arrows, right-aligned inside the box */
   .numwrap{position:relative;display:inline-block;width:84px;overflow:hidden;}
   .numwrap input{width:100%;}

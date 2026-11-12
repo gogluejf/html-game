@@ -117,10 +117,11 @@ export function valueLabel(placement){
   return entry ? entry.label : String(v);
 }
 
-/** Tooltip text for a placement dot: 'barrel - Coin', 'enemy - random'. */
+/** Tooltip lines for a placement slot: ID / type / subtype. */
 export function placementTooltip(placement){
   if (!hasValueCycle(placement?.type)) return '';
-  return `${placement.type} - ${valueLabel(placement)}`;
+  const id = placement.slot ?? '?';
+  return `${id}\n${placement.type}\n${valueLabel(placement)}`;
 }
 
 /** Next value in the cycle: random -> each family id in registry order -> random. */
@@ -623,7 +624,7 @@ function onPointerDown(e){
     // A slot subtype tool may change an existing slot's type while still using
     // the normal temporary Select/move interaction.
     const candidate=hit.kind==='slot'&&tool.startsWith('slot-')
-      ? {...original,type:tool.slice(5)}
+      ? {...original,type:tool.slice(5),value:'random'}
       : clone(original);
     const interaction={mode:hit.kind==='slot'?'moving-slot':'moving-object',targetKind:hit.kind,targetIndex:hit.index,anchorCell:cell,currentCell:cell,original,candidate,attachedPlacements:hit.kind==='unit'?attachedPlacements(original):[],valid:true,reason:''};
     // Typed-spawn slots (barrel/enemy/powerup) cycle their value on a plain

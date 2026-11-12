@@ -4,12 +4,21 @@
 
 import { app } from './state.js';
 import { $, tree } from './viewport.js';
-import { draw, zoneExtents, contentExtents } from './draw.js';
+import { draw, zoneExtents, contentExtents, setInspectorHook } from './draw.js';
 import { setZoom } from './viewport.js';
 import { updateDirtyDots, updateSaveButton, saveActive } from './save.js';
 import { renameCurrentMacro, deleteCurrentMacro, duplicateCurrentMacro } from './save.js';
 import { analyzeMacroWarnings } from './validation.js';
 import { killRideIfActive } from './ghost.js';
+import { markChanged } from './save.js';
+import { pushUndo } from './undo.js';
+import { BARREL_TYPES } from '../../js/objects/object.js';
+import { ENEMY_TYPES } from '../../js/world/enemyTypes.js';
+import { POWERUP_ROLL_TYPES, POWERUP_DEFS } from '../../js/objects/powerup.js';
+
+// Register the inspector hook so draw() can refresh the selection panel
+// without a circular import.
+setInspectorHook(syncInspector);
 
 export function buildSidebar(macros){
   tree.innerHTML = '';
@@ -126,6 +135,105 @@ export function syncPanel(){
   $('p_cellh').textContent = app.consts.unitPxY + ' px';
   $('p_plath').textContent = app.consts.platformDrawH + ' px';
   $('finfo').textContent = `${app.cur.id} · ${st.orientation} · diff ${st.difficulty}`;
+  syncInspector();
+}
+
+// ---------- Inspector (selection properties) ----------
+const FAMILY_LABELS = {
+  barrel: BARREL_TYPES,
+  enemy: ENEMY_TYPES,
+  powerup: POWERUP_ROLL_TYPES.map(id => ({ id, label: POWERUP_DEFS[id]?.label ?? id })),
+};
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+export function syncInspector(){
+  const body = $('inspectorBody');
+  const title = $('inspectorTitle');
+  const swatch = $('inspectorSwatch');
+  const sel = app.editor.selection;
+  if (!sel || !app.cur){
+    title.textContent = 'Selection';
+    swatch.style.background = 'var(--acc)';
+    body.className = 'inspector-empty';
+    body.innerHTML = 'Select a block, platform, or object to edit its properties.';
+    return;
+  }
+  const st = app.cur.st;
+  let html = '';
+  if (sel.kind === 'unit'){
+    const u = st.units[sel.index];
+    if (!u) return;
+    const isBlock = u.kind === 'block';
+    title.textContent = isBlock ? 'Block' : 'Platform';
+    swatch.style.background = isBlock ? 'var(--grn)' : 'var(--acc)';
+    html += `<div class="inspector-grid">`;
+    html += `<label>ID</label><span class="ro-display">#${sel.index}</span>`;
+    html += `<label>Kind</label><select data-insp="kind"><option value="block" ${u.kind==='block'?'selected':''}>block</option><option value="platform" ${u.kind==='platform'?'selected':''}>platform</option></select>`;
+    html += `<label>Position</label><div class="inspector-pair"><div><b>X</b><input type="number" data-insp="x" value="${u.x}"></div><div><b>Y</b><input type="number" data-insp="y" value="${u.y}"></div></div>`;
+    html += `<label>Size</label><div class="inspector-pair"><div><b>W</b><input type="number" data-insp="width" value="${u.width}" min="1"></div>${isBlock ? `<div><b>H</b><input type="number" data-insp="height" value="${u.height}" min="1"></div>` : ''}</div>`;
+    html += `</div>`;
+  } else if (sel.kind === 'slot'){
+    const p = st.placements[sel.index];
+    if (!p) return;
+    title.textContent = 'Object Slot';
+    swatch.style.background = 'var(--yel)';
+    const families = ['enemy','barrel','powerup'];
+    const famOpts = families.map(f => `<option value="${f}" ${f===p.type?'selected':''}>${f}</option>`).join('');
+    const subList = FAMILY_LABELS[p.type] || [];
+    const curVal = p.value ?? 'random';
+    const subOpts = `<option value="random" ${curVal==='random'||!subList.find(t=>t.id===curVal)?'selected':''}>random</option>` +
+      subList.map(t => `<option value="${esc(t.id)}" ${t.id===curVal?'selected':''}>${esc(t.label)}</option>`).join('');
+    html += `<div class="inspector-grid">`;
+    const objId = `#${p.type}-${sel.index}`;
+    html += `<label>ID</label><span class="ro-display">${esc(objId)}</span>`;
+    html += `<label>Type</label><select data-insp="type">${famOpts}</select>`;
+    html += `<label>Subtype</label><select data-insp="value" data-type="${esc(p.type)}">${subOpts}</select>`;
+    html += `<label>Position</label><div class="inspector-pair"><div><b>X</b><input type="number" data-insp="x" value="${p.x}"></div><div><b>Y</b><input type="number" data-insp="y" value="${p.y ?? 0}"></div></div>`;
+    html += `</div>`;
+  }
+  body.className = '';
+  body.innerHTML = html;
+  // Wire up change handlers
+  body.querySelectorAll('[data-insp]').forEach(el => {
+    el.addEventListener('change', () => onInspectorChange(sel, el));
+  });
+}
+
+function onInspectorChange(sel, el){
+  const st = app.cur.st;
+  const key = el.dataset.insp;
+  pushUndo();
+  if (sel.kind === 'unit'){
+    const u = st.units[sel.index];
+    if (!u) return;
+    if (key === 'kind'){
+      const newKind = el.value;
+      if (newKind === 'platform' && u.kind === 'block'){
+        delete u.height; // platforms don't have height
+      } else if (newKind === 'block' && u.kind === 'platform'){
+        u.height = 1; // blocks need a height
+      }
+      u.kind = newKind;
+    }
+    else if (key === 'x') u.x = Math.max(0, parseInt(el.value, 10) || 0);
+    else if (key === 'y') u.y = Math.max(0, parseInt(el.value, 10) || 0);
+    else if (key === 'width') u.width = Math.max(1, parseInt(el.value, 10) || 1);
+    else if (key === 'height') u.height = Math.max(1, parseInt(el.value, 10) || 1);
+  } else if (sel.kind === 'slot'){
+    const p = st.placements[sel.index];
+    if (!p) return;
+    if (key === 'type'){
+      p.type = el.value;
+      p.value = 'random';
+    } else if (key === 'value'){
+      p.value = el.value;
+    } else if (key === 'x') p.x = Math.max(0, parseInt(el.value, 10) || 0);
+    else if (key === 'y') p.y = Math.max(0, parseInt(el.value, 10) || 0);
+  }
+  markChanged();
+  draw();
+  syncInspector();
 }
 
 // ---------- context menu (right-click sidebar row) ----------

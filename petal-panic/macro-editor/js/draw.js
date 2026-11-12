@@ -17,7 +17,7 @@ import { cv, ctx, s2c, setDrawHook } from './viewport.js';
 import { drawRide, setRedrawHook } from './ghost.js';
 import { macroEndpoint } from './clearance.js';
 import { UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H } from './state.js';
-import { placementTooltip } from './pointer.js';
+import { placementTooltip, valueLabel } from './pointer.js';
 
 // Authoritative square-grid constants (state.js re-exports consts.js). No
 // pre-boot fallback values: boot always calls setConstants() before any draw.
@@ -52,7 +52,13 @@ export function draw(){
     ctx.fillText('select a macro', cssW/2, cssH/2);
   }
   syncValidationHint();
+  if (_inspectorHook) _inspectorHook();
 }
+
+// Inspector hook: sidebar.js registers its syncInspector here to avoid
+// a circular import (draw → sidebar → ghost → draw).
+let _inspectorHook = null;
+export function setInspectorHook(fn){ _inspectorHook = fn; }
 
 // Register the redraw hook so ghost.js can trigger a frame without importing
 // draw.js directly (avoids the circular dependency).
@@ -132,24 +138,43 @@ function drawTarget(target, macro, selected=false, erase=false){
     ctx.strokeRect(r.left,r.top,r.width,r.height);
     if (selected) drawHandles(item,macro);
   }
-  // Typed-spawn tooltip: 'barrel - Coin' / 'enemy - random' on hover/selection.
-  const tip = target.kind === 'slot' ? placementTooltip(item) : '';
-  if (tip){
+  // Multi-line tooltip on hover/selection: ID / type / subtype (slots) or
+  // ID / coords / size (units). 3 lines, clean dark box.
+  let tipLines = null;
+  const idx = target?.index ?? '?';
+  if (target.kind === 'slot'){
+    const p = item;
+    const id = `#${p.type}-${idx}`;
+    tipLines = [id, p.type, valueLabel(p)];
+  } else {
+    const u = item;
+    const id = `#${idx}`;
+    const coords = `x${u.x} y${u.y}`;
+    const size = u.kind === 'block' ? `${u.width}×${u.height}` : `w${u.width}`;
+    tipLines = [id, coords, size];
+  }
+  if (tipLines){
     ctx.shadowBlur=0;
-    ctx.font='bold 12px monospace';
+    ctx.font='bold 11px monospace';
     ctx.textAlign='left';
-    ctx.textBaseline='alphabetic';
-    const tw=ctx.measureText(tip).width;
+    ctx.textBaseline='top';
+    const lineH = 14;
+    const maxW = Math.max(...tipLines.map(l => ctx.measureText(l).width));
+    const padX = 6, padY = 5;
+    const boxW = maxW + padX*2;
+    const boxH = tipLines.length * lineH + padY*2;
     const ux=_consts.unitPxX,uy=_consts.unitPxY,off=bodyOffset(macro);
     let [tx,ty]=W((item.x+off+.5)*ux,(item.y+.5)*uy);
-    tx+=12; ty-=10;
-    ctx.fillStyle='rgba(7,9,18,.85)';
-    ctx.fillRect(tx-3,ty-12,tw+6,16);
+    tx+=14; ty-=boxH/2;
+    ctx.fillStyle='rgba(7,9,18,.92)';
+    ctx.fillRect(tx,ty,boxW,boxH);
     ctx.strokeStyle=erase?'#ff4545':'#3ef0ff';
     ctx.lineWidth=1;
-    ctx.strokeRect(tx-3,ty-12,tw+6,16);
+    ctx.strokeRect(tx,ty,boxW,boxH);
     ctx.fillStyle='#fff';
-    ctx.fillText(tip,tx,ty);
+    for(let i=0;i<tipLines.length;i++){
+      ctx.fillText(tipLines[i], tx+padX, ty+padY+i*lineH);
+    }
   }
   ctx.restore();
 }
