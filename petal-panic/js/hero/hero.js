@@ -596,6 +596,13 @@ export class Hero extends Entity {
       // velocity; §6: Lock Movement disables player-driven locomotion only.
       this.vx = 0;
       this.sliding = false;
+      // Movement lock stops travel, not turning: aim input still flips the
+      // mirror. (Direction lock is NOT checked here — its body-freeze effect
+      // applies to the movement branch only.)
+      if (Math.abs(input.aimX ?? 0) > 0.2) {
+        this.facing = input.aimX > 0 ? 1 : -1;
+        this.syncMirror();
+      }
     } else if (moveDir !== 0) {
       // Lock Direction freezes the BODY too, not just the aim (Contra /
       // Shattered Soldier shuffle): while the lock is held the hero keeps
