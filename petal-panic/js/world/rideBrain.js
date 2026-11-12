@@ -203,9 +203,15 @@ export function surfaceUnder(hero, world){
 export function isLandedOn(hero, world, g){
   if (!g || !hero.grounded) return false;
   const box = hero.worldBox();
-  const cx = box.x + box.w / 2;
   const fy = box.y + box.h;
-  return cx >= g.x0 - 6 && cx <= g.x1 + 6 && Math.abs(g.y - fy) <= 6;
+  // Use feet-x (box center) with the FULL box width for overlap check:
+  // the hero counts as "on" the goal when ANY part of its feet overlaps
+  // the goal span. This is robust to dynamic per-anim box widths and
+  // frame-timing differences between browser rAF and node fixed-DT.
+  const halfW = box.w / 2;
+  const feetLeft = box.x;
+  const feetRight = box.x + box.w;
+  return feetRight >= g.x0 && feetLeft <= g.x1 && Math.abs(g.y - fy) <= 6;
 }
 
 /**
