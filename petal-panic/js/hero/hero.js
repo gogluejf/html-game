@@ -1243,8 +1243,16 @@ export class Hero extends Entity {
   get specialMeleeDuration() {
     const cfg = this.heroDef.specialMelee;
     if (cfg.duration != null && Number.isFinite(cfg.duration)) return cfg.duration;
-    if (this._spriteAnim === 'super_melee' && this._player) return this._player.cycleDuration;
-    return this.specialMeleeTotalFrames / 60; // 60fps fallback (no sheet attached)
+    // FIXED STEP: the swing's frame clock advances exactly one integer frame per
+    // tick at the fixed 60fps step (updateSpecialMelee), so the duration MUST be
+    // total/60. Deriving it from the sheet's cycleDuration desyncs the logical
+    // phase machine from the sheet playback: with a 16-frame @24fps sheet the
+    // swing ran ~3.5x longer than the art, so the 'active' phase (and its
+    // hitbox) stretched across most of the recovery frames — and worse, the
+    // connect-protection window (armed on first connect, decaying one swing-
+    // frame per tick) drained long before the visible swing ended, leaving the
+    // hero exposed to contact damage "right after" a landed sweep.
+    return this.specialMeleeTotalFrames / 60;
   }
 
   /**
