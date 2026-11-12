@@ -205,12 +205,19 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // must win over the run/idle switch. setAnim() no longer touches _targetHScale,
   // so crouched height is preserved automatically across anim switches.
   //
-  // EXCEPT while airborne: a jump launched from a crouch exits the crouch
-  // state atomically in hero.update, but a Down held through the launch would
-  // re-enter crouch on the first grounded frame and this branch would keep
-  // playing the crouch sheet for the whole air time. Airborne, the jump pose
-  // always wins (it owns both the art and the tucked height).
-  if (hero.crouching && hero.grounded) {
+  // EXCEPT while airborne with a jump initiated: a jump launched from a crouch
+  // exits the crouch state atomically in hero.update, but a Down held through
+  // the launch would re-enter crouch on the first grounded frame and this
+  // branch would keep playing the crouch sheet for the whole air time. Jumping,
+  // the jump pose always wins (it owns both the art and the tucked height).
+  //
+  // The fall-grace window is the ONE airborne case where crouch still wins:
+  // crouched at a ledge edge with Down held walks off still crouched (the
+  // crouch flag only clears on an actual jump or landing), so the grace keeps
+  // the crouch sheet + tucked height exactly as before the fix — then the
+  // jump tuck takes over when the grace expires.
+  const inFallGrace = !hero.grounded && hero.jumpsUsed === 0 && hero._fallAnimGrace > 0;
+  if (hero.crouching && (hero.grounded || inFallGrace)) {
     delete hero._idlePatternClock;
     const want = (shooting && hero.sprite.anims.crouch_shoot) ? 'crouch_shoot' : 'crouch';
     if (hero._spriteAnim !== want) {
@@ -248,7 +255,13 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // handled by the grounded branch below restoring full height via setAnim's
   // preserved _targetHScale — we explicitly reset it here on the land frame so
   // a hero who was tucked in the air snaps back to standing height immediately.
-  if (!hero.grounded) {
+  //
+  // Fall grace (hero._fallAnimGrace): an UNJUMPED air entry (walked off a
+  // ledge, knocked into the air) keeps the last grounded anim for a short
+  // window before the jump tuck takes over — snapping into the tucked pose on
+  // the exact frame you leave a platform reads as a flinch. A real jump never
+  // sees this window (jumpsUsed > 0 from the launch frame).
+  if (!hero.grounded && !(hero.jumpsUsed === 0 && hero._fallAnimGrace > 0)) {
     delete hero._idlePatternClock; // airborne — restart pattern on landing+stand
     // BUGFIX (jump-height oscillation): the old code restored full height here
     // whenever _targetHScale !== 1 — but a tucked air frame ALWAYS has scale
@@ -281,6 +294,13 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // this every air frame; this guards against any path that left us tucked).
   if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
 
+  // Fall-grace window (unjumped air entry): the jump-tuck branch above is
+  // suppressed, so fall through to the grounded-style switch below and keep
+  // playing run/idle while the grace clock runs out. Height stays FULL during
+  // the grace — the tuck only begins once the jump pose actually takes over.
+  // (A crouched walk-off never reaches here: the crouch branch above already
+  // claimed it for the whole grace window.)
+
   // Run anim requires an ACTIVE direction input, not just velocity: on release
   // the body coasts to a stop under ground friction (the skid), but the run
   // cycle is a propulsion pose — playing it while coasting reads as "still
@@ -289,8 +309,13 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // keeps the run anim since the hero is actively driving again. The speed
   // threshold still applies so a held direction at near-zero drift doesn't
   // churn into the run cycle.
+  //
+  // Fall-grace exception: airborne during the grace window the hero KEEPS its
+  // last grounded anim — running off a ledge must stay in the run cycle (not
+  // snap to idle), standing at the edge stays idle. The grounded gate on
+  // `running` is relaxed ONLY for that window; aim overrides stay grounded-only.
   const dirHeld = !!(input && ((input.left && !input.right) || (input.right && !input.left)));
-  const running = hero.grounded && dirHeld && Math.abs(hero.vx) > RUN_SPEED_THRESHOLD;
+  const running = (hero.grounded || inFallGrace) && dirHeld && Math.abs(hero.vx) > RUN_SPEED_THRESHOLD;
 
   // Idle pattern clock: while standing still with no aim override and an
   // idle_special sheet exists, alternate 3× idle → 1× idle_special. It only

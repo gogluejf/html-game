@@ -40,6 +40,10 @@ const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on
 const JUMP_CUT_VY = 0.45;       // vy scale when jump released early (variable height)
 const SLIDE_DECEL = 480;        // px/s^2 — crouch skid: ~0.5s / ~65px from full run
 const COYOTE_TIME = 0.08;       // grace window after leaving a ledge (s)
+// Anim-only fall grace: how long the last grounded anim keeps playing after an
+// UNJUMPED air entry (ledge walk-off, knockback into the air) before the
+// jump-tuck pose takes over. Purely visual — physics/collision are untouched.
+const FALL_ANIM_GRACE = 0.2;    // seconds
 const JUMP_BUFFER = 0.12;       // pre-land jump input window (s)
 // Crouch height as a fraction of standing targetH (pure code, generic for
 // every hero): crouched h = targetH × CROUCH_HEIGHT_SCALE. NOT sheet data —
@@ -281,6 +285,12 @@ export class Hero extends Entity {
 
     // Internal feel timers.
     this._coyote = 0;
+    // Fall-grace clock: while airborne WITHOUT an initiated jump (walked off a
+    // ledge / knocked into the air), the last grounded anim is kept for
+    // FALL_ANIM_GRACE seconds before the jump-tuck pose takes over. A real
+    // jump never sees this window — the jump block in update() clears it on
+    // launch (jumpsUsed > 0) before resolve() flips grounded next frame.
+    this._fallAnimGrace = 0;
     this._jumpBuffer = 0;
     this._prevJumpHeld = false;
     // Dedicated prev-jump tracker for melee recovery cancels (§16/§19).
@@ -726,6 +736,12 @@ export class Hero extends Entity {
     // --- Timers -------------------------------------------------------------
     // Unified labeled timers (intangible, rapid, rec, ...) advance together.
     this.timers.tick(dt);
+    // Fall-grace clock: decays only while airborne with no jump initiated —
+    // the window that keeps the last grounded anim playing after a ledge
+    // walk-off before the jump-tuck pose takes over.
+    if (!this.grounded && this.jumpsUsed === 0 && this._fallAnimGrace > 0) {
+      this._fallAnimGrace = Math.max(0, this._fallAnimGrace - dt);
+    }
     if (this.intangible && this.timers.expired('intangible')) {
       this.intangible = false;
       this.invulnSource = null;
@@ -1392,10 +1408,15 @@ export class Hero extends Entity {
     if (grounded && !this.grounded) {
       // Just landed: reset jump count for double-jump.
       this.jumpsUsed = 0;
+      this._fallAnimGrace = 0;
     }
     if (!grounded && this.grounded) {
       // Walked off a ledge: start coyote grace window.
       this._coyote = COYOTE_TIME;
+      // Start the anim-only fall grace too — it only MATTERS when no jump was
+      // initiated (jumpsUsed === 0); an actual launch clears jumpsUsed to 1 in
+      // update() before resolve() flips grounded, so real jumps skip the window.
+      this._fallAnimGrace = FALL_ANIM_GRACE;
     }
     this.grounded = grounded;
   }
@@ -1455,6 +1476,7 @@ export class Hero extends Entity {
     this.supermovePhase = null;
     this.supermoveTimer = 0;
     this._supermoveElapsed = 0;
+    this._fallAnimGrace = 0;
     // Respawn i-frames (§27): the shared 'intangible' timer drives BOTH the
     // flag and the blink — the flag must stay true while the timer is active.
     this.intangible = true;
