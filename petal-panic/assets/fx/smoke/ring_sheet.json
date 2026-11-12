@@ -1,8 +1,8 @@
 {
  "file": "petal-panic/assets/fx/smoke/ring_sheet.png",
- "size": "2095x661",
+ "size": "1699x659",
  "rows": 2,
- "cols": 6,
+ "cols": 5,
  "kind": "animation",
  "description": "smoke ring effect (12 frames)",
  "entities": [
@@ -17,133 +17,225 @@
      "col": 0,
      "bbox": [
       87,
-      109,
+      108,
       152,
       143
-     ]
+     ],
+     "offset": {
+      "x": -76,
+      "y": -71.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "ring_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
-      367,
-      64,
+      363,
+      63,
       253,
       233
-     ]
+     ],
+     "offset": {
+      "x": -126.5,
+      "y": -116.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "ring_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
-      662,
-      28,
+      653,
+      27,
       327,
       305
-     ]
+     ],
+     "offset": {
+      "x": -163.5,
+      "y": -152.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "ring_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
-      989,
-      19,
+      980,
+      18,
       344,
       323
-     ]
+     ],
+     "offset": {
+      "x": -172,
+      "y": -161.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "ring_f5.png",
      "row": 0,
      "col": 4,
      "bbox": [
-      1333,
-      1,
+      1324,
+      0,
       375,
       359
-     ]
+     ],
+     "offset": {
+      "x": -187.5,
+      "y": -179.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "ring_f6.png",
-     "row": 0,
-     "col": 5,
-     "bbox": [
-      1708,
-      0,
-      387,
-      361
-     ]
-    },
-    {
-     "file": "ring_f7.png",
      "row": 1,
      "col": 0,
      "bbox": [
       0,
-      361,
+      359,
       326,
       300
-     ]
+     ],
+     "offset": {
+      "x": -163,
+      "y": -150
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
-     "file": "ring_f8.png",
+     "file": "ring_f7.png",
      "row": 1,
      "col": 1,
      "bbox": [
       326,
-      363,
-      336,
-      296
-     ]
+      375,
+      327,
+      268
+     ],
+     "offset": {
+      "x": -163.5,
+      "y": -134
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "ring_f8.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      660,
+      391,
+      312,
+      235
+     ],
+     "offset": {
+      "x": -156,
+      "y": -117.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "ring_f9.png",
      "row": 1,
-     "col": 2,
+     "col": 3,
      "bbox": [
-      662,
-      377,
-      327,
-      268
-     ]
+      1009,
+      404,
+      285,
+      209
+     ],
+     "offset": {
+      "x": -142.5,
+      "y": -104.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "ring_f10.png",
      "row": 1,
-     "col": 3,
-     "bbox": [
-      1005,
-      393,
-      312,
-      235
-     ]
-    },
-    {
-     "file": "ring_f11.png",
-     "row": 1,
      "col": 4,
      "bbox": [
-      1378,
-      406,
-      285,
-      209
-     ]
-    },
-    {
-     "file": "ring_f12.png",
-     "row": 1,
-     "col": 5,
-     "bbox": [
-      1749,
-      439,
+      1359,
+      437,
       305,
       143
-     ]
+     ],
+     "offset": {
+      "x": -152.5,
+      "y": -71.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-   ]
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -184,
+    "y": -177,
+    "w": 364,
+    "h": 349
+   },
+   "pivot": {
+    "x": -2,
+    "y": -2
+   },
+   "markers": []
   }
  ],
  "updated": "2026-11-11"
