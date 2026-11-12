@@ -259,10 +259,10 @@ export function render(ctx, alpha = 1) {
         // with current shield (0 → invisible, full → maxR). A sine pulse
         // (1.5 Hz) adds ±12% radius oscillation for a living feel. Flash
         // spike at 0.5 Hz for periodic brightness blips.
-        if (h.shield > 0) {
+        if ((h._shieldDisplay ?? h.shield) > 0) {
           const cx = hb.x + hb.w / 2, cy = hb.y + hb.h / 2;
           const maxR = 44;
-          const shieldFrac = Math.min(1, h.shield / (h.maxEnergy * 0.25));
+          const shieldFrac = Math.min(1, (h._shieldDisplay ?? h.shield) / (h.maxEnergy * 0.25));
           // Base radius: 0 at no shield, maxR at full shield.
           const baseR = maxR * shieldFrac;
           if (baseR > 1) {

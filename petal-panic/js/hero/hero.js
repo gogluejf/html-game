@@ -751,6 +751,16 @@ export class Hero extends Entity {
     }
     // Keep the invulnerability effect in lockstep with the timer.
     this.syncInvulnFx(dt);
+    // Shield visual: the drawn radius tracks a DISPLAY value that eases toward
+    // the real shield — it shrinks smoothly to the next size instead of
+    // snapping, so consumption reads clearly (a step-down per hit, not a gap).
+    if (this._shieldDisplay == null) this._shieldDisplay = this.shield;
+    const sdTarget = this.shield ?? 0;
+    if (this._shieldDisplay !== sdTarget) {
+      const diff = sdTarget - this._shieldDisplay;
+      const step = Math.max(Math.abs(diff) * 12 * dt, Math.abs(diff) / 8, 0.5);
+      this._shieldDisplay += Math.sign(diff) * Math.min(step, Math.abs(diff));
+    }
     // Drop-through window (design §13): expires naturally so the one-way
     // platform becomes landable again once the hero has cleared it.
     if (this._dropTimer > 0) this._dropTimer = Math.max(0, this._dropTimer - dt);
