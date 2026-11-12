@@ -120,6 +120,10 @@ export function heroDamage(source, target, amt, method = 'projectile') {
   // is going down." Scaled by the energy actually drained.
   if (energyLost > 0) kickHeroVignette(target, energyLost);
 
+  // Expose energyLost so callers can gate hit reactions (knockback/hitstun)
+  // on actual HP loss vs shield-only absorption.
+  target._lastEnergyLost = energyLost;
+
   return real;
 }
 

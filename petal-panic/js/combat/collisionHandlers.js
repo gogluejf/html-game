@@ -277,11 +277,13 @@ export function registerCollisionHandlers(collisionWorld) {
         // selected special. i-frame/protected paths early-return above (dealt==0).
         victim.loseSelectedSpecial();
         // Knockback along the projectile's travel direction + hit-stun + i-frames.
-        // Contextual profile by source (design §25): ordinary foe shot.
-        victim.takeHit({
-          source: 'projectile',
-          dirX: foeProj.vx, dirY: foeProj.vy,
-        });
+        // Only flinch/stun if actual energy was lost (shield-only = no reaction).
+        if ((victim._lastEnergyLost ?? 0) > 0) {
+          victim.takeHit({
+            source: 'projectile',
+            dirX: foeProj.vx, dirY: foeProj.vy,
+          });
+        }
         // track hits taken from enemy projectiles (design §4.1).
         record(victim, { kind: 'hitTaken', source: 'enemyProjectile' });
       }

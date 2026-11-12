@@ -171,12 +171,9 @@ export function processHitboxes(hitboxes, targets, onHit) {
 
       if (dealt > 0) {
         hb.hitSet.add(t);
-        // Hero hit reaction — parity with the blast path (explosion.js): a
-        // damaging tick on the hero arms i-frames via the zone's method
-        // profile ('dust' falls back to contact). Without this, persistent
-        // zones melt the hero every tick while enemies get their own
-        // iFrameTimer from applyKnockback.
-        if (t.layer === LAYER.HERO) {
+        // Hero hit reaction — only flinch/stun if actual energy was lost
+        // (shield-only absorption = no reaction, shield pulse is enough).
+        if (t.layer === LAYER.HERO && (t._lastEnergyLost ?? 0) > 0) {
           t.takeHit({ source: hb.method, dirX: 0, dirY: 0 });
         }
         // Hit juice lives in the ENGINE, not in host callbacks: every caller

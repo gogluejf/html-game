@@ -178,9 +178,10 @@ export function resolveExplosion(explosion, targets) {
 
     // Radial knockback away from the blast center.
     if (t === hero) {
-      // Preserve the hero's exact pre-refactor behavior: takeHit('explosion') sets
-      // vx/vy from the profile strength along the normalized dir + rec + intangible.
-      hero.takeHit({ source: 'explosion', dirX: tc.cx - cx, dirY: tc.cy - cy });
+      // Only flinch/stun if actual energy was lost (shield-only = no reaction).
+      if ((hero._lastEnergyLost ?? 0) > 0) {
+        hero.takeHit({ source: 'explosion', dirX: tc.cx - cx, dirY: tc.cy - cy });
+      }
     } else if (isEnemy(t)) {
       const normal = radialNormal({ cx, cy }, tc);
       applyKnockback(t, { vx: 0, vy: 0 }, knockback, normal);
