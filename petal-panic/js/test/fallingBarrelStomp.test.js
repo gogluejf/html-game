@@ -20,7 +20,7 @@ await import('../effects/registry.js');
 
 function makeHero(x, y) {
   return {
-    alive: true, dying: false, x, y, w: 32, h: 48, vx: 0, vy: 0,
+    alive: true, dying: false, x, y, w: 32, h: 91, vx: 0, vy: 0, // real standing hero box (scarlet targetH 1.9)
     energy: 100, shield: 0, stats: { defense: 0 }, layer: 1,
     worldBox() { return { x: this.x, y: this.y, w: this.w, h: this.h }; },
   };
@@ -34,9 +34,9 @@ function makeFallingBarrel(x, y, vy = 500) {
 }
 
 test('head-hit launches the barrel (knockback) and arms a fuse, does NOT kill instantly', () => {
-  const hero = makeHero(100, 100);
+  const hero = makeHero(100, 100); // head region 100..112
   ctx.hero = hero;
-  const b = makeFallingBarrel(100, 90);
+  const b = makeFallingBarrel(100, 80); // barrel y=80..128, midline=104: head under it
   resetEffects();
   U.fallingBarrelImpact(b);
   assert.equal(b.destroyed, false, 'barrel survives the head-hit (cooking, not dead)');
@@ -47,7 +47,7 @@ test('head-hit launches the barrel (knockback) and arms a fuse, does NOT kill in
 test('fuse expiry detonates the barrel at its current position', () => {
   const hero = makeHero(100, 100);
   ctx.hero = hero;
-  const b = makeFallingBarrel(100, 90);
+  const b = makeFallingBarrel(100, 80);
   U.fallingBarrelImpact(b);
   // Simulate airborne cooking: keep vy high (not landed) and tick past the fuse.
   for (let i = 0; i < 60 && !b.destroyed; i++) {
@@ -61,7 +61,7 @@ test('fuse expiry detonates the barrel at its current position', () => {
 test('landing detonates the barrel even before the fuse expires', () => {
   const hero = makeHero(100, 100);
   ctx.hero = hero;
-  const b = makeFallingBarrel(100, 90);
+  const b = makeFallingBarrel(100, 80);
   U.fallingBarrelImpact(b);
   // Barrel comes to rest on a surface: stepDynamicSolid zeroes vy → landed.
   b.vy = 0;
@@ -76,6 +76,54 @@ test('slow settling barrel does not trigger impact', () => {
   resetEffects();
   U.fallingBarrelImpact(b);
   assert.equal(b._fuse, undefined, 'settling barrel left alone (no fuse)');
+});
+
+test('mid-air SIDE touch does NOT arm a fuse (barrel level with hero in air)', () => {
+  const hero = makeHero(100, 100); // hero top at y=100, head region 100..112
+  ctx.hero = hero;
+  // Barrel falling fast but its BOTTOM is still ABOVE the hero's head —
+  // they overlap only because of widths; it is drifting into the hero's
+  // side from above, not landing on the head.
+  const b = makeFallingBarrel(110, 50, 500); // barrel y=50..98, bottom=98 < heroTop=100
+  resetEffects();
+  U.fallingBarrelImpact(b);
+  assert.equal(b._fuse, undefined, 'airborne side touch must NOT cook the barrel');
+});
+
+test('barrel falling onto the head DOES arm a fuse', () => {
+  const hero = makeHero(100, 100); // hero top at y=100, head region 100..112
+  ctx.hero = hero;
+  // Barrel overlapping the hero's head region: barrel y=80..128, midline=104.
+  // Head bottom (112) > midline (104) → head under the barrel; barrel bottom
+  // (128) below hero top (100) → arriving from above. Genuine stomp geometry.
+  const b = makeFallingBarrel(100, 80, 500);
+  resetEffects();
+  U.fallingBarrelImpact(b);
+  assert.ok(b._fuse != null && b._fuse > 0, 'head stomp arms the fuse');
+});
+
+test('fast barrel skipping deep into the body still counts as a head stomp', () => {
+  const hero = makeHero(100, 100); // real hero: 32×91 standing; head region 100..122.75
+  ctx.hero = hero;
+  // One-frame skip: barrel already partly past the head, y=95..143,
+  // midline=119. Head bottom (122.75) is below midline (119) → head region
+  // overlaps the barrel's lower half → genuine stomp even though the
+  // top-edge-only test would have missed it.
+  const b = makeFallingBarrel(100, 95, 600);
+  resetEffects();
+  U.fallingBarrelImpact(b);
+  assert.ok(b._fuse != null && b._fuse > 0, 'skipped frame still registers the stomp');
+});
+
+test('barrel level with the torso in the air does NOT arm a fuse', () => {
+  const hero = makeHero(100, 100); // head region 100..122.75
+  ctx.hero = hero;
+  // Barrel y=125..173: entirely below the head region, overlapping the
+  // torso. Midline=149; head bottom (122.75) < midline → no stomp geometry.
+  const b = makeFallingBarrel(100, 125, 500);
+  resetEffects();
+  U.fallingBarrelImpact(b);
+  assert.equal(b._fuse, undefined, 'torso-level contact must NOT cook the barrel');
 });
 
 test('dead/destroyed barrel is skipped', () => {

@@ -43,6 +43,9 @@ import { Theater } from '../debug/effect-theater.js';
 import { AttackTheater } from '../debug/attack-theater.js';
 import { record } from '../stats.js';
 import { isGrounded, standingOnOneWay } from '../hero/physics.js';
+import { stepDynamicSolid, heroBonkDynamic } from '../core/physics.js';
+// Re-export for tests that import the shared physics step via update.js.
+export { stepDynamicSolid };
 import { isLethalFall, getDeathFadeAlpha, finishHeroDeath, DEATH_FADE_DURATION } from '../hero/death.js';
 export { isLethalFall, getDeathFadeAlpha, finishHeroDeath };
 import { makeCheckpoint, GameObj } from '../objects/object.js';
@@ -133,132 +136,6 @@ const solidEntities = [];
  * @param {object[]} statics static terrain boxes (SOLID/PLATFORM)
  * @param {object[]} peers all dynamic solids INCLUDING e (self is filtered out)
  */
-// Horizontal friction for externally-impulsed motion (knockback). Exponential
-// decay per second: F means a shoved barrel keeps F of its slide speed after
-// ONE FULL SECOND (frame-rate independent via Math.pow(F, dt)). NOTE: LOWER F
-// = STRONGER friction (it decays faster). F=0.005 → a 400px/s kick keeps 0.5%
-// after 1s: rolls ~80px and stops in ~0.5s — a short wooden thud-roll, not an
-// ice slide. (Higher F like 0.1 = 10% after 1s = the sliding-on-ice feel.)
-const DYNAMIC_SOLID_FRICTION_PER_SECOND = 0.005;
-
-// Barrel-on-barrel momentum transfer (declaration of impact, sibling of
-// barrelImpactSweep): when a MOVING dynamic solid overlaps another live
-// dynamic solid, the mover pushes the other along the overlap axis and loses
-// part of its own velocity — so a kicked barrel that strikes a resting barrel
-// shoves it instead of stopping dead against it (real physics: momentum is
-// transferred, not destroyed). Equal-mass collision with restitution e:
-// closing speed along the push axis is reduced by (1+e)/2 for EACH body,
-// opposite directions (momentum always conserved). e=0 → the pair moves
-// together at half the speed (perfectly inelastic); e=1 → velocities fully
-// exchange (Newton's cradle). Wood-on-wood is a thud: e=0.35 eats ~90% of
-// the KE and the struck barrel leaves at ~0.67× the closing speed.
-const BARREL_TRANSFER_RESTITUTION = 0.35; // wood-on-wood thud, not a superball
-
-// Wall bounce: a barrel striking static terrain at speed should thud and
-// rebound with energy absorbed (restitution), not stop dead against the wall.
-// Below this impact speed the hit is gentle settling — no bounce (stacking and
-// resting behavior stay untouched).
-const BARREL_WALL_BOUNCE_MIN_SPEED = 120;   // px/s — below this it's a settle, not a hit
-const BARREL_WALL_BOUNCE_RESTITUTION = 0.3; // wood-on-stone: ~70% of KE absorbed
-
-export function stepDynamicSolid(e, dt, statics, peers) {
-  if (!e.alive) return;
-  // Horizontal friction for externally-impulsed motion (knockback). Retained
-  // as a parameter so tests can override the decay character.
-  const friction = e.dynamicFrictionPerSecond ?? DYNAMIC_SOLID_FRICTION_PER_SECOND;
-  if (e.vy == null) e.vy = 0;
-  const before = e.worldBox();
-  const prevBottom = before.y + before.h;
-  e.vy = Math.min(e.vy + GRAVITY * dt, MAX_FALL_SPEED);
-  e.x += (e.vx ?? 0) * dt;
-  e.y += e.vy * dt;
-  // Horizontal friction: external impulses (knockback from melee/supermove/
-  // explosions) write vx once and nothing else drives it — without decay a
-  // shoved barrel slides forever at constant speed. Exponential bleed per
-  // second (frame-rate independent), same character as the hero's ground
-  // friction so a kicked barrel skids to a stop in ~0.3-0.5s.
-  if (e.vx) {
-    e.vx *= Math.pow(friction, dt);
-    if (Math.abs(e.vx) < 2) e.vx = 0; // rest threshold: kill sub-pixel creep
-  }
-  const others = peers.filter(p => p !== e && p.alive);
-  // Wall bounce (declaration of impact, static version of the barrel-on-barrel
-  // transfer above): a barrel striking STATIC terrain at speed thuds and
-  // rebounds with energy absorbed — it does not stop dead against the wall.
-  // Runs BEFORE resolve() so the impact speed is read from the OVERLAPPING
-  // position; resolve() then separates the boxes (its "zero velocity into the
-  // solid" rule is exactly what we want here: it cancels the INTO-wall part of
-  // the rebound, leaving only the AWAY-from-wall component). Gentle overlaps
-  // (below the min-speed gate) are settling, not impacts — untouched.
-  for (const s of statics) {
-    const eb = e.worldBox();
-    const penX = Math.min(eb.x + eb.w - s.x, s.x + s.w - eb.x);
-    const penY = Math.min(eb.y + eb.h - s.y, s.y + s.h - eb.y);
-    if (penX <= 0 || penY <= 0) continue; // not overlapping
-    // Impact axis = minimum penetration (same rule as resolve()).
-    if (penX <= penY) {
-      const v = e.vx ?? 0;
-      if (Math.abs(v) < BARREL_WALL_BOUNCE_MIN_SPEED) continue; // gentle settle
-      // Normal points OUT of the wall toward the entity (away from its center).
-      const nx = Math.sign((eb.x + eb.w / 2) - (s.x + s.w / 2)) || 1;
-      if (v * nx >= 0) continue; // moving away from the wall — no impact
-      // Rebound: reflect the into-wall velocity with restitution; the parallel
-      // component (vy) is preserved — friction on the wall face is out of scope.
-      e.vx = -v * BARREL_WALL_BOUNCE_RESTITUTION;
-    } else {
-      const v = e.vy ?? 0;
-      if (Math.abs(v) < BARREL_WALL_BOUNCE_MIN_SPEED) continue; // gentle settle
-      const ny = Math.sign((eb.y + eb.h / 2) - (s.y + s.h / 2)) || 1;
-      if (v * ny >= 0) continue; // moving away from the surface — no impact
-      e.vy = -v * BARREL_WALL_BOUNCE_RESTITUTION;
-    }
-  }
-  // Momentum transfer: a MOVING dynamic solid that overlaps another live
-  // dynamic solid pushes it along the overlap axis instead of stopping dead
-  // against it (a kicked barrel striking a resting barrel shoves it). Equal-
-  // mass collision with restitution e=BARREL_TRANSFER_RESTITUTION: the closing
-  // speed along the push axis is reduced by (1+e)/2 for EACH body in opposite
-  // directions — a symmetric impulse, so momentum is conserved exactly.
-  // Runs BEFORE resolve() so the impulse is computed from the OVERLAPPING
-  // position — resolve() then separates the boxes and zeroes the mover's
-  // into-the-peer velocity (the "stopping against it" part). Only when the
-  // mover is actually closing on the peer — at rest this is a no-op, so
-  // stacking/settling behavior is untouched.
-  for (const p of others) {
-    const evx = e.vx ?? 0, evy = e.vy ?? 0;
-    if (!evx && !evy) break; // nothing to transfer
-    const eb = e.worldBox(), pb = p.worldBox();
-    const penX = Math.min(eb.x + eb.w - pb.x, pb.x + pb.w - eb.x);
-    const penY = Math.min(eb.y + eb.h - pb.y, pb.y + pb.h - eb.y);
-    if (penX <= 0 || penY <= 0) continue; // not overlapping
-    // Push axis = minimum penetration (same rule as resolve()).
-    if (penX <= penY) {
-      if (Math.abs(evx) < 1) continue; // moving vertically into a side wall — no shove
-      const nx = Math.sign((pb.x + pb.w / 2) - (eb.x + eb.w / 2)) || 1; // e → peer
-      const rel = (evx - (p.vx ?? 0)) * nx; // >0 when closing in on the peer
-      if (rel <= 0) continue;
-      const hand = (1 + BARREL_TRANSFER_RESTITUTION) / 2; // symmetric impulse
-      e.vx -= nx * rel * hand;
-      p.vx = (p.vx ?? 0) + nx * rel * hand;
-    } else {
-      if (Math.abs(evy) < 1) continue;
-      const ny = Math.sign((pb.y + pb.h / 2) - (eb.y + eb.h / 2)) || 1; // e → peer
-      const rel = (evy - (p.vy ?? 0)) * ny;
-      if (rel <= 0) continue;
-      const hand = (1 + BARREL_TRANSFER_RESTITUTION) / 2; // symmetric impulse
-      e.vy -= ny * rel * hand;
-      p.vy = (p.vy ?? 0) + ny * rel * hand;
-    }
-  }
-  resolve(e, [...statics, ...others.map(p => p.worldBox())], { prevBottom });
-  // Landing snap: zero fall velocity when resting on a surface.
-  const wb = e.worldBox();
-  for (const s of statics) {
-    if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
-    const gap = s.y - (wb.y + wb.h);
-    if (gap >= -2 && gap <= 2 && e.vy > 0) { e.vy = 0; break; }
-  }
-}
 
 // --- Rolling-barrel impacts (declaration of impact) ---------------------------
 // A knocked barrel is a physical object with momentum: when it is MOVING fast
@@ -355,6 +232,24 @@ export function fallingBarrelImpact(b) {
   const bb = b.worldBox();
   const hb = h.worldBox ? h.worldBox() : { x: h.x, y: h.y, w: h.w, h: h.h };
   if (!aabbOverlap(bb, hb)) return;
+  // STOMP GATE — the barrel must be driving DOWN onto the hero's HEAD from
+  // above. Two geometric tests (both required):
+  //   1. The hero's HEAD REGION (top 25% of the body) overlaps the barrel's
+  //      LOWER half — your head is under the barrel's midline, i.e. it fell
+  //      ONTO you, not past/beside you. Using a region (not just the top
+  //      edge) matters for tall heroes: with a 91px hero and a 48px barrel,
+  //      "top edge inside lower half" needs ≥33px of overlap, which a fast
+  //      barrel can skip in one frame.
+  //   2. barrel's BOTTOM edge at or below the hero's TOP edge — the barrel is
+  //      still arriving from above. If its bottom is already ABOVE your head
+  //      you're level with it in the air: a side touch, NOT a stomp. This is
+  //      the case that used to cook barrels on mid-air contact.
+  const heroTop = hb.y;
+  const headBottom = hb.y + hb.h * 0.25; // head region: top quarter of the body
+  const barrelMidY = bb.y + bb.h / 2;
+  const barrelBottom = bb.y + bb.h;
+  if (headBottom <= barrelMidY) return;    // head not under the barrel — no stomp
+  if (barrelBottom < heroTop) return;      // barrel still above your head — no stomp
 
   // Launch the barrel off the hero: upward + horizontally away from the hero's
   // center. applyKnockback writes vx/vy; stepDynamicSolid carries the arc.
@@ -1374,6 +1269,15 @@ export function update(dt) {
   // from "arrived from underneath". Capture it here — hero.update() above has
   // already integrated x/y for this step.
   const heroPrevBottom = hero.worldBox().y + hero.worldBox().h - hero.vy * dt;
+  // Head-bonk: a jumping/falling hero hitting a RESTING barrel from above
+  // bounces softly and shoves the barrel (shared physics, core/physics.js)
+  // instead of stopping dead against it. Runs before resolve() so the
+  // impulse reads the overlapping position; resolve() then separates.
+  if (!hero.dying) {
+    for (const b of dynBarrels) {
+      if (heroBonkDynamic(hero, b)) break; // one bonk per frame
+    }
+  }
   const hit = resolve(hero, [...SOLIDS, ...barrelSolidBoxes], {
     prevBottom: heroPrevBottom,
     ignoreOneWay: hero.droppingThrough,

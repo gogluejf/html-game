@@ -179,7 +179,18 @@ export function resolve(entity, solids, opts = {}) {
     };
 
     // Minimum-penetration axis first (tie → X); then re-test the other axis.
-    if (penX <= penY) {
+    // EXCEPTION — head-hit intent: a RISING entity whose center is in the
+    // solid's lower half is bonking its head on the solid's BOTTOM face.
+    // Barrels are short boxes (32×48) and the hero is tall, so that overlap
+    // usually has LARGER horizontal penetration than vertical — blind
+    // min-penetration would pick X and shove the hero sideways out of the
+    // barrel (the "jumped under a barrel and teleported to its side" glitch).
+    // The intent decides: head in the lower half + rising → resolve on Y
+    // (push the hero back down off the bottom face), same as any ceiling hit.
+    const eCY = b.y + b.h / 2;
+    const sMidY = s.y + s.h / 2;
+    const headHit = entity.vy < 0 && eCY < sMidY && penY > 0;
+    if (!headHit && penX <= penY) {
       pushAxis('x');
       const p2 = Math.min(b.y + b.h - s.y, s.y + s.h - b.y);
       const px2 = Math.min(b.x + b.w - s.x, s.x + s.w - b.x);
