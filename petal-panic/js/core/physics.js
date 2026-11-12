@@ -249,6 +249,12 @@ export function stepDynamicSolid(e, dt, statics, peers) {
     if (Math.abs(e.vx) < 2) e.vx = 0; // rest threshold: kill sub-pixel creep
   }
   const others = peers.filter(p => p !== e && p.alive);
+  // Universal intangibility: an intangible entity (or peer) is not a collision
+  // body — no momentum transfer, no solid-vs-solid resolve. This replaces the
+  // old barrel-only _phaseThrough special case; ANY entity can phase by
+  // setting .intangible. An intangible body keeps normal terrain physics
+  // (gravity, wall bounces, landing) so its arc still feels physical.
+  const phasePeers = (e.intangible ? [] : others).filter(p => !p.intangible);
   // Wall bounce (static version of the transfer below): runs BEFORE resolve()
   // so the impact speed is read from the OVERLAPPING position; resolve()'s
   // zero-velocity rule then cancels the into-wall part of the rebound.
@@ -259,7 +265,7 @@ export function stepDynamicSolid(e, dt, statics, peers) {
   // along the overlap axis instead of stopping dead. Equal-mass impulse with
   // restitution — see applyAxisImpulse. At rest this is a no-op, so stacking
   // and settling behavior is untouched.
-  for (const p of others) {
+  for (const p of phasePeers) {
     const evx = e.vx ?? 0, evy = e.vy ?? 0;
     if (!evx && !evy) break; // nothing to transfer
     const eb = e.worldBox(), pb = p.worldBox();
@@ -273,7 +279,7 @@ export function stepDynamicSolid(e, dt, statics, peers) {
       applyAxisImpulse(e, p, axisNormal(eb, pb, 'y'), 'vy', BARREL_TRANSFER_RESTITUTION);
     }
   }
-  resolve(e, [...statics, ...others.map(p => p.worldBox())], { prevBottom });
+  resolve(e, [...statics, ...phasePeers.map(p => p.worldBox())], { prevBottom });
   // Landing snap: zero fall velocity when resting on a surface.
   const wb = e.worldBox();
   for (const s of statics) {

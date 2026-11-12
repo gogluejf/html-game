@@ -76,6 +76,10 @@ export function resolve(entity, solids, opts = {}) {
   let blockedX = false;
 
   for (const s of solids) {
+    // Universal intangibility: an intangible solid is not a collision body —
+    // skip it entirely. This is the single choke point that makes any entity
+    // "vanish from the collision world" for everyone who resolves against it.
+    if (s.intangible) continue;
     // Recompute the box after each axis push so the second axis sees the
     // corrected position (stale-reference bug otherwise).
     let b = entity.worldBox ? entity.worldBox() : entity;

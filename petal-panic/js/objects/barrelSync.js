@@ -34,6 +34,10 @@ export function refreshBarrelSolidBoxes() {
   const boxes = ctx.barrelSolidBoxes;
   boxes.length = 0;
   for (const object of ctx.collisionWorld.entities) {
+    // Universal intangibility: an intangible entity is not a collision body —
+    // it must NOT be a solid surface for the hero or anyone else. It stays
+    // physically present (integrates, detonates), just not in the box list.
+    if (object.intangible) continue;
     if (object instanceof GameObj && object.alive && !object.destroyed) {
       boxes.push({ ...object.worldBox(), owner: object });
     }

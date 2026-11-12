@@ -208,13 +208,13 @@ const FALLING_BARREL_COOLDOWN = 0.3; // re-arm window per barrel
 // launched barrel (kick-a-barrel-and-it-blows-up feel).
 const STOMP_KNOCKBACK = { base: 260, scaleBySpeed: 0, hitstun: 0, iFrames: 0, dirMode: 'fromAttacker', pop: 120 };
 const STOMP_FUSE = 0.45;             // seconds of cooking after the head-hit
-// STAR POWER barrel pop: launch the barrel off the hero like a stomp, then let
-// it cook for a beat before detonating — the delayed blast is the satisfaction.
-// NOTE: barrels have knockbackResist 0.5 (light props), so the impulse DIVIDES
-// by 0.5 → these numbers land at 2× their face value. Tuned HARD on purpose:
-// star power should feel like the barrel gets yeeted across the room.
-const STAR_BARREL_KNOCKBACK = { base: 900, scaleBySpeed: 0, hitstun: 0, iFrames: 0, dirMode: 'fromAttacker', pop: 700 };
-const STAR_BARREL_FUSE = 0.35;       // shorter than stomp: star feels snappier
+// STAR POWER barrel pop: shove the barrel in front of the hero like an enemy
+// knockback — a horizontal push with a SMALL fixed `pop` lobe (the same shape
+// as enemy body-contact knockback: dirMode fromAttacker + modest pop). That's
+// what reads as "pushed" instead of "launched into orbit". Barrels have
+// knockbackResist 0.5, so impulses land at 2× face value.
+const STAR_BARREL_KNOCKBACK = { base: 420, scaleBySpeed: 0, hitstun: 0, iFrames: 0, dirMode: 'fromAttacker', pop: 160 };
+const STAR_BARREL_FUSE = 0.25;       // snappy: they pop soon after the launch
 
 /**
  * Impact check for one falling barrel against the hero. Called from the
@@ -284,8 +284,9 @@ export function tickFallingBarrelFuse(b, dt) {
   // Landed? stepDynamicSolid zeroes vy on a surface; treat "no longer falling"
   // as the detonation trigger so a short hop still blows where it settles.
   const landed = (b.vy ?? 0) <= 1;
-  if (b._fuse <= 0 || landed) {
+  if (b._fuse <= 0 || (landed && (b.vy ?? 0) >= 0)) {
     b._fuse = null;
+    b.intangible = false; // universal phase ends: back in the collision world at detonation
     const dealt = b.hit(Number.MAX_SAFE_INTEGER, b, 'stomp');
     if (b.destroyed && !b._destroyHandled) {
       b.onDestroyed?.({ source: b, provenance: 'STOMP' }, { accepted: true, dealt, destroyed: true });
@@ -1155,6 +1156,16 @@ export function update(dt) {
   const dynBarrels = [...barrels, ...woodBarrels, ...coinBarrels]
     .filter(b => b.alive)
     .sort((a, b) => b.y - a.y); // bottom-up: lower barrels settle first
+  // STAR POWER phase-through: a cooked (fuse-armed) barrel passes through
+  // OTHER BARRELS for the WHOLE flight — no peer collision / momentum transfer —
+  // but keeps NORMAL terrain physics (gravity, friction, wall bounces, landing).
+  // That's what makes the arc feel physical instead of floaty: it flies clean
+  // through a barrel stack, bounces off walls like any launched barrel, and
+  // detonates on fuse expiry or where it lands. The flag is set ONCE at launch
+  // (star-power touch below) and cleared by tickFallingBarrelFuse at detonation
+  // — it is NOT re-derived from hero.starPower each frame, so a barrel still
+  // cooking when the star expires keeps flying clean instead of slamming back
+  // into the stack mid-flight.
   for (const b of dynBarrels) {
     b.update(dt);
     stepDynamicSolid(b, dt, SOLIDS, dynBarrels);
@@ -1294,14 +1305,21 @@ export function update(dt) {
       for (const b of dynBarrels) {
         if (!b.alive || b.destroyed || b._fuse != null) continue;
         if (!aabbOverlap(hbx, b.worldBox())) continue;
-        const dirX = Math.sign((b.x + b.w / 2) - (hbx.x + hbx.w / 2)) || 1;
-        applyKnockback(b, hero, STAR_BARREL_KNOCKBACK, { x: dirX, y: -1 });
+        // Enemy-style knockback: push horizontally in front of the hero (away
+        // from you) with a SMALL fixed pop lobe — the same shape as enemy
+        // body-contact knockback. Gravity owns the rest of the arc; it pops
+        // where it lands (or on the fuse if it sails off-screen).
+        const awayX = Math.sign((b.x + b.w / 2) - (hbx.x + hbx.w / 2)) || 1;
+        applyKnockback(b, hero, STAR_BARREL_KNOCKBACK, { x: awayX, y: 0 });
         b._fuse = STAR_BARREL_FUSE; // tickFallingBarrelFuse cooks + detonates
+        b.intangible = true;       // universal phase: clean flight for the WHOLE cook (cleared at detonation)
         requestHitstop(STAR_POWER_HITSTOP_FRAMES);
         Effects.triggerShake(STAR_POWER_SHAKE);
+        break; // ONE barrel per touch frame — the rest pop as you walk into them
       }
     }
     for (const b of dynBarrels) {
+      if (b._fuse != null) continue; // star-launched barrels are already cooking — no bonk
       if (heroBonkDynamic(hero, b)) break; // one bonk per frame
     }
     // Walk-push creep: a GENTLE grounded press against a resting barrel's side
