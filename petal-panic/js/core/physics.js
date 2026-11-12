@@ -50,6 +50,16 @@ export const HERO_BONK_MIN_SPEED = 140;           // px/s closing before it's a 
 export const HERO_BONK_RESTITUTION = 0.28;        // hero keeps ~28% of fall speed
 export const HERO_BONK_TRANSFER = 0.6;            // share of closing speed given to the barrel
 
+/** Hero walking into a RESTING barrel: no shove impulse (that felt like
+ *  pushing), but a hard stop reads as a bug too. Instead the barrel creeps
+ *  at this CONSTANT slow speed along X while the hero stays pressed against
+ *  it — heavy-wood "it's moving... barely" feel. Capped well BELOW
+ *  BARREL_WALL_BOUNCE_MIN_SPEED (120) so a creeping barrel that reaches a
+ *  wall just settles there (no bounce), and far below any real impact
+ *  impulse (super melee transfer, stomp launch, barrel-on-barrel) so those
+ *  keep their full shove. */
+export const HERO_PUSH_CREEP_SPEED = 12;          // px/s — constant, speed-independent
+
 // ---------------------------------------------------------------------------
 // Primitives
 // ---------------------------------------------------------------------------
@@ -160,6 +170,43 @@ export function heroBonkDynamic(hero, barrel, opts = {}) {
   // not a hard stop); the barrel takes TRANSFER of it along the same axis.
   hero.vy = -v * rest;
   barrel.vy = (barrel.vy ?? 0) + ny * rel * transfer;
+  return true;
+}
+
+/**
+ * Hero walk-push creep: while the hero is GENTLY pressed against a resting
+ * barrel's side (below the bonk gate — no impact), the barrel creeps at a
+ * constant HERO_PUSH_CREEP_SPEED along X in the direction the hero is
+ * walking. This replaces the removed shove impulse: walking into a barrel no
+ * longer stops dead, but it moves so slowly it reads as "heavy wood", not
+ * "pushing".
+ *
+ * Rules:
+ *   - Only when the hero's vertical velocity is negligible (grounded press,
+ *     not a jump clipping the side) and the horizontal closing speed is below
+ *     the bonk gate (a fast hit is an impact, handled by resolve() blocking).
+ *   - The barrel's existing vx is preserved when it's faster than the creep
+ *     (a real impulse from super melee / stomp / barrel-on-barrel always wins;
+ *     the creep never overwrites or extends it).
+ *   - stepDynamicSolid's friction still applies to the creep every frame, so
+ *     the barrel settles the moment the hero stops pressing.
+ * @returns {boolean} true if the creep was applied
+ */
+export function heroPushCreep(hero, barrel, opts = {}) {
+  const creep = opts.creepSpeed ?? HERO_PUSH_CREEP_SPEED;
+  const minSpeed = opts.minSpeed ?? HERO_BONK_MIN_SPEED;
+  const hb = hero.worldBox();
+  const bb = barrel.worldBox();
+  const { penX, penY } = penetration(hb, bb);
+  if (penX <= 0 || penY <= 0) return false;
+  const vx = hero.vx ?? 0;
+  if (Math.abs(vx) < 1) return false;                    // not pressing horizontally
+  if (Math.abs(hero.vy ?? 0) > 40) return false;         // airborne clip, not a grounded press
+  if (Math.abs(vx) >= minSpeed) return false;            // fast contact = impact, not a push
+  const nx = Math.sign(vx);                              // direction the hero walks
+  const cur = barrel.vx ?? 0;
+  if (Math.abs(cur) >= creep) return false;              // a real impulse already owns the barrel
+  barrel.vx = nx * creep;
   return true;
 }
 

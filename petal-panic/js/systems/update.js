@@ -43,7 +43,7 @@ import { Theater } from '../debug/effect-theater.js';
 import { AttackTheater } from '../debug/attack-theater.js';
 import { record } from '../stats.js';
 import { isGrounded, standingOnOneWay } from '../hero/physics.js';
-import { stepDynamicSolid, heroBonkDynamic } from '../core/physics.js';
+import { stepDynamicSolid, heroBonkDynamic, heroPushCreep } from '../core/physics.js';
 // Re-export for tests that import the shared physics step via update.js.
 export { stepDynamicSolid };
 import { isLethalFall, getDeathFadeAlpha, finishHeroDeath, DEATH_FADE_DURATION } from '../hero/death.js';
@@ -1276,6 +1276,13 @@ export function update(dt) {
   if (!hero.dying) {
     for (const b of dynBarrels) {
       if (heroBonkDynamic(hero, b)) break; // one bonk per frame
+    }
+    // Walk-push creep: a GENTLE grounded press against a resting barrel's side
+    // makes it crawl at HERO_PUSH_CREEP_SPEED instead of stopping dead. Runs
+    // after the bonk pass (bonk is an impact; creep is sub-bonk-speed only),
+    // and never touches a barrel already carrying a real impulse.
+    for (const b of dynBarrels) {
+      heroPushCreep(hero, b);
     }
   }
   const hit = resolve(hero, [...SOLIDS, ...barrelSolidBoxes], {

@@ -16,8 +16,8 @@ loadTestMacros();
 import { strict as assert } from 'node:assert';
 import {
   penetration, axisNormal, applyAxisImpulse, bounceOffStatic,
-  heroBonkDynamic, stepDynamicSolid,
-  HERO_BONK_MIN_SPEED, HERO_BONK_RESTITUTION, HERO_BONK_TRANSFER,
+  heroBonkDynamic, heroPushCreep, stepDynamicSolid,
+  HERO_BONK_MIN_SPEED, HERO_BONK_RESTITUTION, HERO_BONK_TRANSFER, HERO_PUSH_CREEP_SPEED,
 } from '../core/physics.js';
 import { resolve } from '../core/collision.js';
 
@@ -124,6 +124,51 @@ ok('heroBonkDynamic: SIDE hit at run speed does NOT shove the barrel on X (no pu
   assert.equal(hit, false, 'side hit must not bonk');
   assert.equal(hero.vx, 250, 'hero vx untouched');
   assert.equal(barrel.vx, 0, 'barrel vx untouched — no horizontal push');
+});
+
+ok('heroPushCreep: gentle grounded press makes the barrel crawl at creep speed', () => {
+  // Side-overlap geometry (penX > penY): hero's lower half alongside the barrel.
+  const hero = box(0, 20, 32, 91, 200, 0);     // running right, grounded
+  const barrel = box(24, 70, 32, 48, 0, 0);    // penX=28, penY=17 → side contact
+  const applied = heroPushCreep(hero, barrel);
+  assert.ok(applied, 'creep applied');
+  assert.equal(barrel.vx, HERO_PUSH_CREEP_SPEED, `barrel.vx=${barrel.vx} expected ${HERO_PUSH_CREEP_SPEED}`);
+  assert.equal(hero.vx, 200, 'hero vx untouched (resolve blocks the hero)');
+});
+
+ok('heroPushCreep: direction follows the hero\'s walk direction', () => {
+  const hero = box(56, 20, 32, 91, -200, 0);   // running LEFT into the barrel's right side
+  const barrel = box(24, 70, 32, 48, 0, 0);
+  heroPushCreep(hero, barrel);
+  assert.equal(barrel.vx, -HERO_PUSH_CREEP_SPEED, `barrel.vx=${barrel.vx}`);
+});
+
+ok('heroPushCreep: fast contact (>= bonk gate) is an impact, NOT a creep', () => {
+  const hero = box(0, 20, 32, 91, HERO_BONK_MIN_SPEED + 10, 0);
+  const barrel = box(24, 70, 32, 48, 0, 0);
+  assert.equal(heroPushCreep(hero, barrel), false);
+  assert.equal(barrel.vx, 0);
+});
+
+ok('heroPushCreep: airborne side clip (|vy| high) does not creep', () => {
+  const hero = box(0, 20, 32, 91, 200, -300);  // jumping past the side
+  const barrel = box(24, 70, 32, 48, 0, 0);
+  assert.equal(heroPushCreep(hero, barrel), false);
+  assert.equal(barrel.vx, 0);
+});
+
+ok('heroPushCreep: never overwrites a real impulse already on the barrel', () => {
+  const hero = box(0, 20, 32, 91, 200, 0);
+  const barrel = box(24, 70, 32, 48, 300, 0);  // e.g. super-melee transfer in flight
+  assert.equal(heroPushCreep(hero, barrel), false);
+  assert.equal(barrel.vx, 300, 'existing impulse preserved');
+});
+
+ok('heroPushCreep: no overlap / no horizontal press = no-op', () => {
+  const far = box(0, 40, 32, 91, 200, 0);
+  assert.equal(heroPushCreep(far, box(200, 60, 32, 48, 0, 0)), false);
+  const still = box(0, 40, 32, 91, 0, 0);      // standing against it, not pressing
+  assert.equal(heroPushCreep(still, box(24, 60, 32, 48, 0, 0)), false);
 });
 
 ok('applyAxisImpulse: equal-mass collision conserves momentum', () => {
