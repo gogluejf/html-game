@@ -137,12 +137,15 @@ export function processAllHitboxes() {
     // boss pre-COMBAT. Kept for clarity / future refactor safety.
     if (target === ctx.boss && !ctx.bossZone.bossCanTakeDamage()) return;
     // Self-protection on connect (knockback.md ): the FIRST clean
-    // hit of a special melee swing arms the hero's protection window for the
-    // rest of that swing. The callback only fires when the box actually struck
-    // a target — a whiff never reaches here, so it grants nothing. Normal
-    // melee and supermove connects intentionally do NOT arm it (acceptance #4).
+    // hit of a special melee swing OR a normal melee jab arms the hero's
+    // protection window for the rest of that swing. The callback only fires
+    // when the box actually struck a target — a whiff never reaches here, so
+    // it grants nothing. Supermove connects intentionally do NOT arm it
+    // (acceptance #4).
     if (hb.method === 'specialMelee' && hb.owner === h) {
       h.markSpecialConnect();
+    } else if (hb.method === 'melee' && hb.owner === h) {
+      h.markMeleeConnect();
     }
     // VFX / juice on hit. Generic juice (blood sparkles, enemy shake, white
     // flash) lives in processHitboxes() itself — the engine owns it so every

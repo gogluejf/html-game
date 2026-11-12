@@ -963,6 +963,12 @@ export class Hero extends Entity {
       return;
     }
     this.meleeFrame += dt / this.MELEE_FRAME_DURATION;
+    // Self-protection on connect (markMeleeConnect): the window is counted in
+    // swing frames, so it decays one frame per tick while the jab is running.
+    // Armed during active → drained to exactly zero by recovery's end.
+    if (this._connectProtectFrames > 0) {
+      this._connectProtectFrames = Math.max(0, this._connectProtectFrames - 1);
+    }
     if (this.meleeFrame >= this.MELEE_TOTAL_FRAMES) {
       this.meleeActive = false;
       this.meleeFrame = 0;
@@ -1242,13 +1248,29 @@ export class Hero extends Entity {
   }
 
   /**
-   * True while the hero is protected by a clean special-melee connect
-   * (knockback.md ): a sweep that landed during its
-   * active phase keeps the hero immune to contact damage until that swing's
-   * active+recovery phases end. Whiffs grant nothing; normal melee and
-   * projectiles never set this window.
+   * True while the hero is protected by a clean melee connect
+   * (knockback.md): a special-melee sweep OR a normal jab that landed keeps
+   * the hero immune to CONTACT damage until that swing's active+recovery end.
+   * Whiffs grant nothing. Projectiles never set this window.
    */
   get connectProtected() { return this._connectProtectFrames > 0; }
+
+  /**
+   * Arm the self-protection window after a CLEAN connect on the NORMAL melee
+   * hitbox — same rule as markSpecialConnect but for the jab. Called from the
+   * unified hitbox system's onHit callback, which fires only when the box
+   * actually struck a target. Window = remainder of the current swing
+   * (active + recovery frames), so a kicked enemy's follow-through body or
+   * contact-detonation (e.g. an explosive monkey shoved into you) cannot clip
+   * the hero during the connect. Idempotent within a swing.
+   */
+  markMeleeConnect() {
+    if (!this.meleeActive) return;
+    const total = this.MELEE_TOTAL_FRAMES;
+    const f = Math.floor(this.meleeFrame);
+    const remaining = Math.max(0, total - f);
+    this._connectProtectFrames = Math.max(this._connectProtectFrames, remaining);
+  }
 
   /**
    * Arm the self-protection window after a CLEAN connect on the special

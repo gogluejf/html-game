@@ -49,7 +49,7 @@ const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }
  * ~360-636) so the hierarchy reads: jab < sweep < dash. No pop: the jab
  * shoves horizontally at body level.
  */
-const MELEE_KNOCKBACK = { base: 150, scaleBySpeed: 0.2, hitstun: 0.30, dirMode: 'fromAttacker' };
+const MELEE_KNOCKBACK = { base: 180, scaleBySpeed: 0.25, hitstun: 0.35, dirMode: 'fromAttacker' };
 
 /**
  * Shared supermove dash box + knockback (thin, full body height, in front).
@@ -81,7 +81,7 @@ const SWEEP = {
   // Knockback (knockback.md §11): aggressive forward pushback along the
   // lunge velocity — clears the path ahead of the advancing sweep.
   // pop: 40 px/s upward (§5) — a small hop; lighter than the supermove loft.
-  knockback: { base: 320, scaleBySpeed: 0.4, hitstun: 0.28, dirMode: 'alongVelocity', pop: 40 },
+  knockback: { base: 320, scaleBySpeed: 0.4, hitstun: 0.45, dirMode: 'alongVelocity', pop: 40 },
 };
 
 export const HEROES = {
