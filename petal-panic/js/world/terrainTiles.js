@@ -128,6 +128,8 @@ export function tileSolid(s, level, seed) {
   // Platform theming: pick ONE random pair (0/1/2) per solid so all tiles
   // on the same platform share the same shape family.
   const platformPair = kind === 'platform' ? Math.floor(rng.next() * 3) : null;
+  let platformDecoUsed = false; // max 1 decorated tile per platform
+  let blockDecoUsed = false;     // max 1 decorated tile per block
 
   const tiles = [];
   // Columns RIGHT → LEFT (proper overlay: earlier-drawn right tiles sit under
@@ -142,7 +144,13 @@ export function tileSolid(s, level, seed) {
       // (full width × 1u) — the sprite pinning happens in tileSprite.js via
       // targetH = PLATFORM_DRAW_H so the drawn slab tops out at the platform
       // level exactly.
-      const frame = pickFrame(rng, frameCount, kind, platformPair);
+      let frame;
+      if (platformDecoUsed) {
+        frame = platformPair + 3; // force plain — deco budget spent
+      } else {
+        frame = pickFrame(rng, frameCount, kind, platformPair);
+        if (frame <= platformPair) platformDecoUsed = true;
+      }
       const imgKey = anim ? anim.frames[frame % anim.frames.length].file
         : `platform_${colW === 1 ? 'single' : colW === 2 ? 'double' : 'triple'}_f${frame + 1}.png`;
       const colX = cursorRight - colW * UNIT_PX_X;
@@ -166,7 +174,13 @@ export function tileSolid(s, level, seed) {
       for (let r = 0; r < rows.length; r++) {
         const rowH = rows[r] * UNIT_PX_Y;
         rowY -= rowH;
-        const frame = pickFrame(rng, frameCount, kind);
+        let frame;
+          if (blockDecoUsed) {
+            frame = 1; // force plain (f2)
+          } else {
+            frame = pickFrame(rng, frameCount, kind);
+            if (frame === 0) blockDecoUsed = true;
+          }
         const vname = rows[r] === 1 ? 'single' : rows[r] === 2 ? 'double' : 'triple';
         const imgKey = anim ? anim.frames[frame % anim.frames.length].file
           : `block_${vname}_f${frame + 1}.png`;
