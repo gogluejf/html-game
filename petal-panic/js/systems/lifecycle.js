@@ -529,27 +529,6 @@ export function placeHeroAtEntry(h) {
 }
 
 /**
- * RESET THE ATTEMPT STATE — the wallet/inventory concern ONLY.
- *
- * Rolls the wallet back to the zone-entry snapshot (anti-farming), restores
- * the zone arrangement, refills energy, and clears weapon/specials/shield/
- * super (state-persistence.md §2.1/§2.2). Does NOT move the hero and does NOT
- * touch lives (the caller owns the life count). Called by restartAttempt only.
- * @param {Hero} h
- * @param {object} c the area context (entity lists to restore)
- */
-export function resetAttemptState(h, c) {
-  // Accounting rollback: restore the wallet to the zone's entry snapshot so a
-  // failed attempt's kills/coins do NOT accumulate into the fresh attempt.
-  restoreAreaEntryStats(h);
-  restoreArea(c);
-  // Full energy + clean transient flags (death flags, velocity).
-  resetHeroTransient(h);
-  // Weapon gone, specials/shield/super cleared (the doc's "weapon" column).
-  resetHeroInventory(h);
-}
-
-/**
  * FAILURE RESTART (die / manual retry / continue) — state-persistence.md §2.1–2.2.
  *
  * The full failure sequence: open/consume the life bucket, roll the wallet +
