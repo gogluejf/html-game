@@ -1,199 +1,199 @@
 {
-  "file": "petal-panic/assets/heroes/balthazar/crouch_sheet.png",
-  "size": "1728x453",
-  "rows": 2,
-  "cols": 4,
-  "kind": "animation",
-  "description": "balthazar crouch (prone aim breathing cycle, 8 frames from GIF)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/balthazar/crouch_sheet.png",
+ "size": "1728x453",
+ "rows": 2,
+ "cols": 4,
+ "kind": "animation",
+ "description": "balthazar crouch (prone aim breathing cycle, 8 frames from GIF)",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "crouch",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "frames": [
     {
-      "name": "balthazar",
-      "anim": "crouch",
-      "frames_dir": "petal-panic/assets/heroes/balthazar",
-      "frames": [
-        {
-          "file": "crouch_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            2,
-            433,
-            222
-          ],
-          "offset": {
-            "x": -216.5,
-            "y": -222
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "crouch_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            433,
-            1,
-            432,
-            223
-          ],
-          "offset": {
-            "x": -216,
-            "y": -223
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "crouch_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            866,
-            0,
-            428,
-            226
-          ],
-          "offset": {
-            "x": -214,
-            "y": -226
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "crouch_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1298,
-            0,
-            428,
-            225
-          ],
-          "offset": {
-            "x": -214,
-            "y": -225
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "crouch_f5.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            2,
-            226,
-            428,
-            227
-          ],
-          "offset": {
-            "x": -214,
-            "y": -227
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "crouch_f6.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            434,
-            228,
-            430,
-            223
-          ],
-          "offset": {
-            "x": -215,
-            "y": -223
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "crouch_f7.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            865,
-            228,
-            431,
-            222
-          ],
-          "offset": {
-            "x": -215.5,
-            "y": -222
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        },
-        {
-          "file": "crouch_f8.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            1296,
-            228,
-            432,
-            222
-          ],
-          "offset": {
-            "x": -216,
-            "y": -222
-          },
-          "scale": {
-            "sx": 1,
-            "sy": 1
-          },
-          "boxes": [],
-          "durUnits": 1
-        }
-      ],
-      "fps": 8,
-      "playback": "loop",
-      "direction": "forward",
-      "collision": {
-        "x": -198,
-        "y": -208,
-        "w": 396,
-        "h": 192
-      },
-      "pivot": {
-        "x": 0,
-        "y": -112
-      },
-      "markers": []
+     "file": "crouch_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      2,
+      433,
+      222
+     ],
+     "offset": {
+      "x": -216.5,
+      "y": -222
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "crouch_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      433,
+      1,
+      432,
+      223
+     ],
+     "offset": {
+      "x": -216,
+      "y": -223
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "crouch_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      866,
+      0,
+      428,
+      226
+     ],
+     "offset": {
+      "x": -214,
+      "y": -226
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "crouch_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1298,
+      0,
+      428,
+      225
+     ],
+     "offset": {
+      "x": -214,
+      "y": -225
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "crouch_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      2,
+      226,
+      428,
+      227
+     ],
+     "offset": {
+      "x": -214,
+      "y": -227
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "crouch_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      434,
+      228,
+      430,
+      223
+     ],
+     "offset": {
+      "x": -215,
+      "y": -223
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "crouch_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      865,
+      228,
+      431,
+      222
+     ],
+     "offset": {
+      "x": -215.5,
+      "y": -222
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "crouch_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1296,
+      228,
+      432,
+      222
+     ],
+     "offset": {
+      "x": -216,
+      "y": -222
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ]
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": -185,
+    "y": -214,
+    "w": 370,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0,
+    "y": -116
+   },
+   "markers": []
+  }
+ ]
 }

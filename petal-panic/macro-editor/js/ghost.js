@@ -7,7 +7,7 @@ import { app } from './state.js';
 import { cv, s2c as s2cLocal, $ } from './viewport.js';
 import { showToast } from './toast.js';
 import { buildRideWorld } from '../../js/world/ghostRider.js';
-import { createHeadlessHero, stepHeadless } from '../../js/hero/headless.js';
+import { createHeadlessHero, stepHeadless, ensureHeadlessSprites } from '../../js/hero/headless.js';
 import { HEROES, resolveHeroStats } from '../../js/hero/heroDefs.js';
 import { predictFrame, feetPos } from '../../js/world/platformMover.js';
 import { traversalRoute } from '../../js/world/macros.js';
@@ -166,7 +166,7 @@ function advanceGoal(){
 }
 
 /** Start (or restart) the test ride for the current macro draft. */
-export function startRide(){
+export async function startRide(){
   if (!app.cur || !app.cur.st) return;
   stopRide(false); // kill any existing ride + trail
   const st = app.cur.st;
@@ -182,6 +182,11 @@ export function startRide(){
   // otherwise a stronger selected hero (Scarlet) clears platforms the flag
   // correctly marks unreachable, and the editor looks wrong.
   const heroKey = 'balthazar';
+  // Force-load the sheet sprites so the headless hero gets the SAME dynamic
+  // per-anim collision box as the real game hero. Without this, createHeadlessHero
+  // silently falls back to the square pre-sprite box (91×91) and the editor
+  // simulates/renders a fat rectangle instead of the slim sheet-sized hero.
+  await ensureHeadlessSprites(heroKey);
   const _spawnHero = () => {
     const h = createHeadlessHero(heroKey, { x: 0, y: 0 });
     const bh = h.worldBox().h;
