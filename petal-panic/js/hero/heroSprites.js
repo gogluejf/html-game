@@ -45,7 +45,7 @@ export async function loadHeroSprites(heroId) {
       'idle_aim_45up', 'idle_aim_45down',
       'run_aim_front', 'run_aim_up', 'run_aim_down',
       'run_aim_45up', 'run_aim_45down',
-      'melee', 'super_melee', 'superpower', 'supermove',
+      'melee', 'air_melee', 'super_melee', 'superpower', 'supermove',
       'hit',
     ];
     const urls = names.map((n) => new URL(`${n}_sheet.json`, base).href);
@@ -188,9 +188,15 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   }
   if (hero.meleeActive && hero.sprite.anims.melee) {
     delete hero._idlePatternClock;
+    // Airborne swings play the `air_melee` sheet when one exists — captured at
+    // swing start (hero._meleeAirborne). The flag is fixed for the whole swing:
+    // landing mid-swing keeps the air art (the hitbox/anim stay in lockstep),
+    // and a coyote-time swing started just after leaving the ground plays the
+    // grounded sheet.
+    const want = (hero._meleeAirborne && hero.sprite.anims.air_melee) ? 'air_melee' : 'melee';
     if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
-    if (hero._spriteAnim !== 'melee') {
-      try { hero.setAnim('melee'); } catch { /* keep current */ }
+    if (hero._spriteAnim !== want) {
+      try { hero.setAnim(want); } catch { /* keep current */ }
     }
     return;
   }

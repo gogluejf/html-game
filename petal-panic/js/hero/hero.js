@@ -839,6 +839,11 @@ export class Hero extends Entity {
     if (this.meleeCooldown > 0 || this.meleeActive || this.specialMeleeActive) return;
     this.meleeFrame = 0;
     this.meleeActive = true;
+    // Airborne at swing START → play the `air_melee` sheet for the whole swing
+    // (captured once, so landing mid-swing keeps the air art in lockstep with
+    // the hitbox). Grounded starts keep the grounded `melee` sheet even during
+    // the coyote-time grace window after leaving a ledge.
+    this._meleeAirborne = !this.grounded;
     this.meleeCooldown = this.MELEE_TOTAL_FRAMES * this.MELEE_FRAME_DURATION;
     // Jump the attack anim to frame 0 so it plays from the windup. The sheet
     // player is time-driven (SpritePlayer), so rewind it via setProgress(0);
@@ -851,7 +856,7 @@ export class Hero extends Entity {
    * slide regardless of how many frames the sheet has. No-op when no sheet
    * is attached (primitive path / node tests). */
   _meleeAnimProgress(p) {
-    const name = this.specialMeleeActive ? 'super_melee' : 'melee';
+    const name = this.specialMeleeActive ? 'super_melee' : (this._meleeAirborne ? 'air_melee' : 'melee');
     if (this._spriteAnim === name && this._player) this.setProgress(p);
   }
 
@@ -931,6 +936,7 @@ export class Hero extends Entity {
     if (this.meleeFrame >= this.MELEE_TOTAL_FRAMES) {
       this.meleeActive = false;
       this.meleeFrame = 0;
+      this._meleeAirborne = false;
       // Clamp to exactly 0: the decrement above can leave a tiny positive float
       // (~1e-16) when the last tick overshoots the boundary. tryMelee()'s guard
       // (`meleeCooldown > 0`) would then reject a buffered 'normal' attack that
@@ -969,6 +975,7 @@ export class Hero extends Entity {
   endNormalMelee() {
     this.meleeActive = false;
     this.meleeFrame = 0;
+    this._meleeAirborne = false;
     this.meleeCooldown = 0;
     this._flushPendingCrouch();
   }
@@ -1110,7 +1117,8 @@ export class Hero extends Entity {
   get MELEE_DURATION() {
     const d = this.heroDef.meleeTiming?.duration;
     if (d != null && Number.isFinite(d)) return d;
-    if (this._spriteAnim === 'melee' && this._player) return this._player.cycleDuration;
+    const sheetName = this._meleeAirborne ? 'air_melee' : 'melee';
+    if (this._spriteAnim === sheetName && this._player) return this._player.cycleDuration;
     return 0.4;
   }
 
@@ -1436,6 +1444,7 @@ export class Hero extends Entity {
     this.MAX_JUMPS = 2;          // ground jump + 1 air jump
     this.meleeActive = false;
     this.meleeFrame = 0;
+    this._meleeAirborne = false;
     this.meleeCooldown = 0;
     this.pendingMelee = null;
     this.specialMeleeActive = false;

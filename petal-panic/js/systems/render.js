@@ -609,7 +609,7 @@ export function heroAnimName(h) {
   switch (loc) {
     case 'dead': return 'dead';
     case 'supermove': return 'supermove';
-    case 'attack': return h.specialMeleeActive ? 'super_melee' : 'melee';
+    case 'attack': return h.specialMeleeActive ? 'super_melee' : (h._meleeAirborne ? 'air_melee' : 'melee');
     case 'hitstun': return 'hitstun';
     case 'slide': return 'slide';
     case 'crouch': return 'crouch';
