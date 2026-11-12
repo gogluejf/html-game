@@ -1,8 +1,8 @@
 {
  "file": "petal-panic/assets/heroes/scarlet_vale/idle_special_sheet.png",
- "size": "1578x434",
- "rows": 1,
- "cols": 8,
+ "size": "839x1207",
+ "rows": 4,
+ "cols": 4,
  "kind": "animation",
  "description": "scarlet_vale idle (8 frames)",
  "entities": [
@@ -17,13 +17,13 @@
      "col": 0,
      "bbox": [
       0,
-      1,
-      194,
-      432
+      2,
+      220,
+      297
      ],
      "offset": {
-      "x": -221.5,
-      "y": -443
+      "x": -110,
+      "y": -297
      },
      "scale": {
       "sx": 1,
@@ -37,14 +37,14 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      194,
-      0,
-      193,
-      433
+      220,
+      2,
+      206,
+      297
      ],
      "offset": {
-      "x": -221.5,
-      "y": -443
+      "x": -103,
+      "y": -297
      },
      "scale": {
       "sx": 1,
@@ -58,14 +58,14 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      387,
-      3,
-      197,
-      427
+      427,
+      1,
+      198,
+      299
      ],
      "offset": {
-      "x": -221.5,
-      "y": -443
+      "x": -99,
+      "y": -299
      },
      "scale": {
       "sx": 1,
@@ -79,14 +79,14 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      584,
-      3,
-      198,
-      427
+      640,
+      0,
+      186,
+      301
      ],
      "offset": {
-      "x": -221.5,
-      "y": -443
+      "x": -93,
+      "y": -301
      },
      "scale": {
       "sx": 1,
@@ -97,17 +97,17 @@
     },
     {
      "file": "idle_special_f5.png",
-     "row": 0,
-     "col": 4,
+     "row": 1,
+     "col": 0,
      "bbox": [
-      782,
-      3,
-      202,
-      428
+      21,
+      301,
+      178,
+      300
      ],
      "offset": {
-      "x": -221.5,
-      "y": -443
+      "x": -89,
+      "y": -300
      },
      "scale": {
       "sx": 1,
@@ -118,17 +118,17 @@
     },
     {
      "file": "idle_special_f6.png",
-     "row": 0,
-     "col": 5,
+     "row": 1,
+     "col": 1,
      "bbox": [
-      984,
-      1,
-      201,
-      431
+      237,
+      302,
+      172,
+      299
      ],
      "offset": {
-      "x": -221.5,
-      "y": -443
+      "x": -86,
+      "y": -299
      },
      "scale": {
       "sx": 1,
@@ -139,17 +139,17 @@
     },
     {
      "file": "idle_special_f7.png",
-     "row": 0,
-     "col": 6,
+     "row": 1,
+     "col": 2,
      "bbox": [
-      1185,
-      0,
-      199,
-      433
+      444,
+      301,
+      165,
+      301
      ],
      "offset": {
-      "x": -221.5,
-      "y": -443
+      "x": -82.5,
+      "y": -301
      },
      "scale": {
       "sx": 1,
@@ -160,17 +160,185 @@
     },
     {
      "file": "idle_special_f8.png",
-     "row": 0,
-     "col": 7,
+     "row": 1,
+     "col": 3,
      "bbox": [
-      1384,
-      0,
-      194,
-      434
+      652,
+      301,
+      162,
+      301
      ],
      "offset": {
-      "x": -221.5,
-      "y": -443
+      "x": -81,
+      "y": -301
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      31,
+      603,
+      157,
+      301
+     ],
+     "offset": {
+      "x": -78.5,
+      "y": -301
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      235,
+      603,
+      175,
+      301
+     ],
+     "offset": {
+      "x": -87.5,
+      "y": -301
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      434,
+      602,
+      184,
+      303
+     ],
+     "offset": {
+      "x": -92,
+      "y": -303
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      642,
+      603,
+      181,
+      301
+     ],
+     "offset": {
+      "x": -90.5,
+      "y": -301
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      16,
+      905,
+      187,
+      302
+     ],
+     "offset": {
+      "x": -93.5,
+      "y": -302
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      226,
+      906,
+      194,
+      300
+     ],
+     "offset": {
+      "x": -97,
+      "y": -300
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      426,
+      906,
+      201,
+      299
+     ],
+     "offset": {
+      "x": -100.5,
+      "y": -299
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "idle_special_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      627,
+      907,
+      212,
+      298
+     ],
+     "offset": {
+      "x": -106,
+      "y": -298
      },
      "scale": {
       "sx": 1,
@@ -180,18 +348,18 @@
      "durUnits": 1
     }
    ],
-   "fps": 7,
+   "fps": 8,
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": -78,
-    "y": -373,
-    "w": 176,
-    "h": 350
+    "x": -45,
+    "y": -265,
+    "w": 129,
+    "h": 256
    },
    "pivot": {
-    "x": 10,
-    "y": -198
+    "x": 20,
+    "y": -137
    },
    "markers": []
   }
