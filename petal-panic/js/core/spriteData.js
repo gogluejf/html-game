@@ -208,6 +208,32 @@ export function uniformScale(animData, targetHeightPx) {
 }
 
 /**
+ * Total playback duration in seconds for one full pass of the animation.
+ * Accounts for: frame count, fps, per-frame durUnits (multiplier on the
+ * base 1/fps slot), and playback mode ('once' = 1 pass, 'loop' = 1 pass
+ * for VFX purposes, 'pingpong' = 2 passes).
+ * @param {object} animData - AnimData from parseSheet()
+ * @returns {number} duration in seconds
+ */
+export function getAnimDuration(animData) {
+  const frames = animData.frames ?? [];
+  const n = frames.length;
+  if (n === 0) return 0;
+  const fps = animData.fps ?? 12;
+  const baseSlot = 1 / fps;
+  // Sum per-frame durations (durUnits multiplies the base slot)
+  let totalSlots = 0;
+  for (let i = 0; i < n; i++) {
+    const du = frames[i].duration != null ? frames[i].duration : 1;
+    totalSlots += du;
+  }
+  let dur = totalSlots * baseSlot;
+  // Pingpong plays forward then backward (minus first/last to avoid repeat)
+  if (animData.mode === 'pingpong') dur *= 2;
+  return dur;
+}
+
+/**
  * Place ONE sheet frame relative to its animation's collision box — the
  * single source of truth for the DELTA RULE (§22): the frame's natural size
  * (× per-frame tuning scale) is positioned by (frameOffset − pivot), and the

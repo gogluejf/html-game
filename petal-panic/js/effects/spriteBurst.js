@@ -65,13 +65,16 @@ export function blastFallbackDrawer(ctx, s) {
  * @param {{x?:number, y?:number, size?:number, duration?:number, anim?:object, fallback?:Function}} params
  * @returns {{update:Function, render:Function, done:boolean}}
  */
+import { getAnimDuration } from '../core/spriteData.js';
+
 export function spriteBurst(params = {}) {
-  const { x = 0, y = 0, size = DEFAULT_SIZE, duration = DEFAULT_DURATION, anim, fallback } = params;
+  const { x = 0, y = 0, size = DEFAULT_SIZE, anim, fallback, fromAlpha = 1, toAlpha = 0.5 } = params;
   const hasSheet = !!(anim?.frames?.length && anim.collisionBox);
   if (!hasSheet && typeof fallback !== 'function') {
     throw new Error('spriteBurst: requires an anim with frames + collisionBox, or a fallback drawer');
   }
   const frames = hasSheet ? anim.frames : null;
+  const duration = params.duration ?? (hasSheet ? getAnimDuration(anim) : DEFAULT_DURATION);
   // Scale reference: the authored collision box height (§4). The VFX is
   // centered on (x,y) either way — the box only sizes the art.
   const scale = hasSheet ? size / anim.collisionBox.h : 1;
@@ -91,7 +94,8 @@ export function spriteBurst(params = {}) {
           const h = (img.naturalHeight ?? 32) * scale;
           if (typeof ctx.drawImage === 'function') {
             ctx.save();
-            ctx.globalAlpha = Math.max(0, 1 - t / duration);
+            const progress = t / duration;
+            ctx.globalAlpha = fromAlpha + (toAlpha - fromAlpha) * progress;
             ctx.drawImage(img, x - w / 2, y - h / 2, w, h);
             ctx.restore();
           }

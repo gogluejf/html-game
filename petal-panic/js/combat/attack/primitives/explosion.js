@@ -114,8 +114,8 @@ registerPrimitive('explosion', {
     // Detonation burst art: sheet anim when the asset is loaded (high-graphic),
     // procedural flash core + shock ring otherwise (primitive mode). The
     // effect renders whichever input applies; this primitive owns both looks.
-    const ex = getSpecialSpriteData('explosion')?.anims.explode;
-    fireDeclared({ type: 'sprite-burst', params: { x: params.x, y: params.y, size: 64, duration: 0.5, anim: ex, fallback: blastFallbackDrawer } }, h.declaredEffectTypes());
+    const ex = getSpecialSpriteData('explosion_smoke')?.anims.explode_smoke;
+    fireDeclared({ type: 'sprite-burst', params: { x: params.x, y: params.y, size: 64, anim: ex, fallback: blastFallbackDrawer } }, h.declaredEffectTypes());
     if (params.screenFlash !== false) fireDeclared({ type: 'screen-flash', params: { strength: 1, viewW: VIEW_W, viewH: VIEW_H } }, h.declaredEffectTypes());
     if (params.shake !== false) fireDeclared({ type: 'camera-shake', params: { intensity: 4 } }, h.declaredEffectTypes());
 
