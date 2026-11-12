@@ -58,7 +58,7 @@ export const HERO_BONK_TRANSFER = 0.6;            // share of closing speed give
  *  wall just settles there (no bounce), and far below any real impact
  *  impulse (super melee transfer, stomp launch, barrel-on-barrel) so those
  *  keep their full shove. */
-export const HERO_PUSH_CREEP_SPEED = 12;          // px/s — constant, speed-independent
+export const HERO_PUSH_CREEP_SPEED = 24;          // px/s — constant, speed-independent
 
 // ---------------------------------------------------------------------------
 // Primitives
