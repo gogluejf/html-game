@@ -540,6 +540,10 @@ export function loadActiveZone(zone, content) {
  */
 function regenerateWorld(oldCtx) {
   world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, newGameSeed());
+  // ctx.world is a stable reference read by zoneLifecycle.js (retry / death /
+  // advance reinstalls). Keep it pointed at the fresh world or later zone
+  // switches would pull content from the previous game's world.
+  ctx.world = world;
 
   // Re-create the boss for the fresh game (it is a fresh entity per game).
   const oldBoss = boss;
@@ -754,11 +758,19 @@ onTransition((from, to) => {
     // generation seed (saveMeta.seed) so the run resumes on the exact terrain
     // + spawns it was played on. In-session continues skip this: the live
     // world already matches. Legacy saves without a seed keep today's behavior
-    // (the module-load world).
+    // (the module-load world). Level Select / Boss Rush are the same rule:
+    // starting a zone from the menu must not silently fall back to a stale
+    // or freshly-rolled world — if the save names a different seed, rebuild.
     const sm = loadStore().saveMeta;
     if (sm && Number.isInteger(sm.seed) && sm.seed !== getLastWorldSeed()) {
       world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, sm.seed);
-      console.log(`[lifecycle] continue: rebuilt world from saved seed ${sm.seed}`);
+      // CRITICAL: ctx.world is a STABLE reference read by resetActiveZoneContent /
+      // continueFromGameOver / stepClearSequence (zoneLifecycle.js). Swapping only
+      // the local `world` leaves ctx pointing at the PREVIOUS game's world, so any
+      // later zone reinstall (retry, death-restart, advance) pulls terrain +
+      // population from the stale world — the "retry spawns me in a NEW 1-1" bug.
+      ctx.world = world;
+      console.log(`[lifecycle] ${from} continue: rebuilt world from saved seed ${sm.seed}`);
     }
     // Persistent-column resume (state-persistence.md §2.6): AFTER the seed
     // rebuild and BEFORE the zone installs, restore lives + continues + the

@@ -579,3 +579,54 @@ test('boss flow: death during the boss zone restarts the whole zone (dormant)', 
   assert.equal(m.bossVisible(), false, 'the boss is invisible again after reset');
   assert.equal(m.bossCanTakeDamage(), false, 'the boss is untouchable again after reset');
 });
+
+// =============================================================================
+// Group 6 — Regression: live retry after a clear-sequence advance
+// =============================================================================
+// BUG: start a level → pass an area (clear sequence installs the NEXT zone) →
+// die → OVER → Retry. The retry must restart the zone the hero is CURRENTLY in
+// (the advanced one), not a stale previous zone. Before the fix, retryLevel
+// left h.checkpoint pointing at the pre-advance zone's spawn, so confirming the
+// entry screen dropped the hero into the wrong area — always the same one.
+
+test('retry after advancing to area 2: restarts area 2 at area 2\'s spawn (not the stale area 1 checkpoint)', () => {
+  resetRuntimeToAreaOne();
+  const hero = U.getHero();
+
+  // Pass area 1: the clear sequence advances the hero to area 2 and installs
+  // its content; on completion the checkpoint is area 2's spawn.
+  advanceToNextArea(2);
+  const z2 = U.getActiveZone(hero);
+  assert.equal(z2.areaIdx, 2, 'area 2 is active after the advance');
+  const cpAfterAdvance = { ...hero.checkpoint };
+  assert.equal(cpAfterAdvance.x, z2.spawn.x, 'checkpoint tracks area 2\'s spawn after the advance');
+
+  // Simulate dying in area 2 (lives remain → OVER via the caller route).
+  setState(S.PLAY);
+  hero.lives = 3;
+  hero.x = z2.spawn.x + 500; // walked partway into area 2
+  setState(S.OVER);
+
+  // THE BUGGY STATE: the checkpoint still references the PREVIOUS zone's
+  // spawn (stale reference from before the advance installed the new one).
+  const zones = buildLevelZones(LEVEL_DEF);
+  const z1 = zones.find((z) => z.kind === 'area' && z.areaIdx === 1);
+  hero.checkpoint = { x: z1.spawn.x, y: z1.spawn.y - hero.h };
+
+  // Paid manual retry.
+  const applied = U.retryLevel();
+  assert.equal(applied, true, 'retry applies when lives remain');
+  assert.equal(getState(), S.AREA_ENTRY, 'entry sequence started');
+
+  // The fix: retryLevel force-corrects the checkpoint from the ACTIVE zone's
+  // static spawn data BEFORE the entry screen opens.
+  assert.equal(hero.currentArea, 2, 'hero is still in area 2');
+  assert.equal(hero.checkpoint.x, z2.spawn.x, 'checkpoint re-synced to area 2\'s spawn (stale area 1 value corrected)');
+  assert.equal(hero.checkpoint.y, z2.spawn.y - hero.h, 'checkpoint y matches area 2\'s floor');
+
+  // Confirming the entry screen places the hero at the CORRECTED checkpoint.
+  L.areaEntryOnAction('confirm', hero);
+  assert.equal(getState(), S.PLAY, 'back in PLAY after confirming');
+  assert.ok(Math.abs(hero.x - z2.spawn.x) < 1, 'hero spawned at area 2\'s entry (not the stale area 1 spot)');
+  assert.ok(Math.abs(hero.y - (z2.spawn.y - hero.h)) < 1, 'hero feet on area 2\'s floor');
+});

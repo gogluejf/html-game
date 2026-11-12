@@ -564,6 +564,17 @@ export function retryLevel() {
   // restores the preserved arrangement + hero placement + wallet rollback +
   // inventory reset — identical to the death path).
   resetActiveZoneContent();
+  // BUG FIX (stale-zone retry): after a death the hero's checkpoint / camera
+  // can still reference the PREVIOUS zone (e.g. the area you were standing in
+  // before the clear-sequence advance installed the next one). retryLevel
+  // reinstalls the ACTIVE zone's content above, but restartAttempt later places
+  // the hero at h.checkpoint — so force-correct the checkpoint from the
+  // authoritative zone data (static, never stale) and re-clamp the camera.
+  // Same pattern as continueFromGameOver's vertical-zone-corruption fix.
+  const zone = ctx.getActiveZone(hero);
+  const sp = zone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+  hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
+  ctx.camera.setZoneBounds(zone);
   showAreaEntry(hero, ctx.areaContext);
   console.log(`[lifecycle] PAUSE → AREA_ENTRY (manual retry, lives: ${hero.lives})`);
   return true;

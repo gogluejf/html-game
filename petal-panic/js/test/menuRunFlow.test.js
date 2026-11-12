@@ -522,3 +522,49 @@ for (const entry of ['manual', 'timed']) {
     }
   });
 }
+
+// --- Regression: seed-rebuild must re-point ctx.world -------------------------
+// BUG: the MENU/LEVEL_SELECT/BOSS_RUSH → AREA_ENTRY hook rebuilds `world` from
+// saveMeta.seed when it differs from the live world's seed, but only swapped
+// the LOCAL `world` binding. ctx.world (the stable reference zoneLifecycle.js
+// reads for every zone reinstall — retry, death-restart, clear-sequence advance)
+// kept pointing at the PREVIOUS game's world object. Result: after a reload-
+// Continue into a different-seed run, the first in-run retry/death reinstalls
+// terrain + population from the STALE world → "retry spawns me in a NEW 1-1"
+// (a layout that belongs to no live run) and wrong-zone landings elsewhere.
+
+test('seed-rebuild on menu continue re-points ctx.world at the rebuilt world', async () => {
+  const { ctx } = await import('../world/context.js');
+  const { getLastWorldSeed } = await import('../world/build.js');
+
+  PS.resetStore();
+  const h = U.getHero();
+  // The live run's world (module-load seed or a prior newGame roll).
+  const liveWorld = ctx.world;
+  const liveSeed = getLastWorldSeed();
+
+  // A save from a DIFFERENT run: same level/area, different seed.
+  let savedSeed = liveSeed + 1;
+  if (savedSeed === liveSeed) savedSeed = liveSeed + 2;
+  writeSave({ level: 1, area: 1, score: 0, seed: savedSeed, timestamp: 1 });
+
+  setState(S.MENU);
+  assert.equal(L.continueFromMenu(h), true, 'continue routes to AREA_ENTRY');
+  await Promise.resolve(); // the menu-entry flag is queued via queueMicrotask
+
+  // The hook rebuilt the world from the saved seed AND re-pointed the stable
+  // ctx.world reference at it (the fix). Before the fix ctx.world was still
+  // `liveWorld` and every later reinstall pulled stale content.
+  assert.equal(getLastWorldSeed(), savedSeed, 'world rebuilt from the saved seed');
+  assert.notEqual(ctx.world, liveWorld, 'ctx.world points at the REBUILT world (not the stale one)');
+  assert.ok(ctx.world.world.has(1), 'rebuilt world carries area 1 content');
+
+  // The resume installs the SAVED world's area 1 (fresh instances from the new
+  // seed), not the previous run's cached entities.
+  L.areaEntryOnAction('confirm', h);
+  assert.equal(getState(), S.PLAY, 'back in PLAY after confirming the entry screen');
+  assert.ok(ctx.realEnemies.length > 0 || ctx.barrels.length > 0, 'zone content installed');
+
+  // Cleanup: restore the live world so later tests see a consistent runtime.
+  PS.resetStore();
+});
