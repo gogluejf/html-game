@@ -1,193 +1,291 @@
 {
-  "file": "petal-panic/assets/heroes/balthazar/run_aim_front_sheet.png",
-  "size": "1190x1028",
-  "rows": 4,
-  "cols": 4,
-  "kind": "animation",
-  "description": "balthazar run_aim_front (16 frames from GIF)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/balthazar/run_aim_front_sheet.png",
+ "size": "1190x769",
+ "rows": 3,
+ "cols": 4,
+ "kind": "animation",
+ "description": "balthazar run_aim_front (16 frames from GIF)",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "run_aim_front",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "frames": [
     {
-      "name": "balthazar",
-      "anim": "run_aim_front",
-      "frames_dir": "petal-panic/assets/heroes/balthazar",
-      "frames": [
-        {
-          "file": "run_aim_front_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            13,
-            0,
-            272,
-            252
-          ]
-        },
-        {
-          "file": "run_aim_front_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            305,
-            0,
-            281,
-            253
-          ]
-        },
-        {
-          "file": "run_aim_front_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            600,
-            0,
-            288,
-            252
-          ]
-        },
-        {
-          "file": "run_aim_front_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            899,
-            8,
-            287,
-            236
-          ]
-        },
-        {
-          "file": "run_aim_front_f5.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            5,
-            255,
-            289,
-            250
-          ]
-        },
-        {
-          "file": "run_aim_front_f6.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            300,
-            253,
-            292,
-            255
-          ]
-        },
-        {
-          "file": "run_aim_front_f7.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            593,
-            253,
-            302,
-            255
-          ]
-        },
-        {
-          "file": "run_aim_front_f8.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            895,
-            254,
-            295,
-            253
-          ]
-        },
-        {
-          "file": "run_aim_front_f9.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            0,
-            509,
-            299,
-            257
-          ]
-        },
-        {
-          "file": "run_aim_front_f10.png",
-          "row": 2,
-          "col": 1,
-          "bbox": [
-            299,
-            512,
-            294,
-            250
-          ]
-        },
-        {
-          "file": "run_aim_front_f11.png",
-          "row": 2,
-          "col": 2,
-          "bbox": [
-            600,
-            509,
-            288,
-            257
-          ]
-        },
-        {
-          "file": "run_aim_front_f12.png",
-          "row": 2,
-          "col": 3,
-          "bbox": [
-            905,
-            508,
-            275,
-            259
-          ]
-        },
-        {
-          "file": "run_aim_front_f13.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            13,
-            768,
-            273,
-            258
-          ]
-        },
-        {
-          "file": "run_aim_front_f14.png",
-          "row": 3,
-          "col": 1,
-          "bbox": [
-            305,
-            767,
-            281,
-            261
-          ]
-        },
-        {
-          "file": "run_aim_front_f15.png",
-          "row": 3,
-          "col": 2,
-          "bbox": [
-            604,
-            767,
-            279,
-            260
-          ]
-        },
-        {
-          "file": "run_aim_front_f16.png",
-          "row": 3,
-          "col": 3,
-          "bbox": [
-            907,
-            768,
-            271,
-            258
-          ]
-        }
-      ]
+     "file": "run_aim_front_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      6,
+      0,
+      281,
+      253
+     ],
+     "offset": {
+      "x": 0,
+      "y": -253
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      301,
+      0,
+      288,
+      252
+     ],
+     "offset": {
+      "x": 0,
+      "y": -252
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      600,
+      8,
+      287,
+      236
+     ],
+     "offset": {
+      "x": 2,
+      "y": -249
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      896,
+      1,
+      289,
+      250
+     ],
+     "offset": {
+      "x": 0,
+      "y": -250
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      1,
+      254,
+      292,
+      255
+     ],
+     "offset": {
+      "x": 0,
+      "y": -255
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      294,
+      254,
+      302,
+      255
+     ],
+     "offset": {
+      "x": 0,
+      "y": -255
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      596,
+      255,
+      295,
+      253
+     ],
+     "offset": {
+      "x": 0,
+      "y": -253
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      891,
+      253,
+      299,
+      257
+     ],
+     "offset": {
+      "x": 0,
+      "y": -257
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      514,
+      294,
+      250
+     ],
+     "offset": {
+      "x": 2,
+      "y": -252
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      301,
+      511,
+      288,
+      257
+     ],
+     "offset": {
+      "x": 0,
+      "y": -257
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      606,
+      510,
+      275,
+      259
+     ],
+     "offset": {
+      "x": 0,
+      "y": -259
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_front_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      904,
+      510,
+      273,
+      258
+     ],
+     "offset": {
+      "x": 0,
+      "y": -258
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ]
+   ],
+   "fps": 12,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 63,
+    "y": -252,
+    "w": 140,
+    "h": 243
+   },
+   "pivot": {
+    "x": 137,
+    "y": -122
+   },
+   "markers": [
+    {
+     "label": "muzzle",
+     "x": 279,
+     "y": -194,
+     "radiusOn": true,
+     "radius": 115
+    }
+   ]
+  }
+ ]
 }

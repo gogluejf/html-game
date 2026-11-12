@@ -1,193 +1,375 @@
 {
-  "file": "petal-panic/assets/heroes/balthazar/run_aim_down_sheet.png",
-  "size": "990x1117",
-  "rows": 4,
-  "cols": 4,
-  "kind": "animation",
-  "description": "balthazar run_aim_down (16 frames from GIF)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/balthazar/run_aim_down_sheet.png",
+ "size": "990x1117",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "balthazar run_aim_down (16 frames from GIF)",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "run_aim_down",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "frames": [
     {
-      "name": "balthazar",
-      "anim": "run_aim_down",
-      "frames_dir": "petal-panic/assets/heroes/balthazar",
-      "frames": [
-        {
-          "file": "run_aim_down_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            18,
-            5,
-            212,
-            269
-          ]
-        },
-        {
-          "file": "run_aim_down_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            258,
-            2,
-            229,
-            276
-          ]
-        },
-        {
-          "file": "run_aim_down_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            504,
-            0,
-            235,
-            280
-          ]
-        },
-        {
-          "file": "run_aim_down_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            747,
-            5,
-            242,
-            269
-          ]
-        },
-        {
-          "file": "run_aim_down_f5.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            4,
-            285,
-            240,
-            268
-          ]
-        },
-        {
-          "file": "run_aim_down_f6.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            248,
-            280,
-            250,
-            279
-          ]
-        },
-        {
-          "file": "run_aim_down_f7.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            498,
-            281,
-            248,
-            277
-          ]
-        },
-        {
-          "file": "run_aim_down_f8.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            746,
-            286,
-            244,
-            267
-          ]
-        },
-        {
-          "file": "run_aim_down_f9.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            0,
-            563,
-            248,
-            270
-          ]
-        },
-        {
-          "file": "run_aim_down_f10.png",
-          "row": 2,
-          "col": 1,
-          "bbox": [
-            251,
-            566,
-            243,
-            265
-          ]
-        },
-        {
-          "file": "run_aim_down_f11.png",
-          "row": 2,
-          "col": 2,
-          "bbox": [
-            506,
-            559,
-            232,
-            279
-          ]
-        },
-        {
-          "file": "run_aim_down_f12.png",
-          "row": 2,
-          "col": 3,
-          "bbox": [
-            752,
-            564,
-            231,
-            269
-          ]
-        },
-        {
-          "file": "run_aim_down_f13.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            6,
-            842,
-            236,
-            270
-          ]
-        },
-        {
-          "file": "run_aim_down_f14.png",
-          "row": 3,
-          "col": 1,
-          "bbox": [
-            257,
-            838,
-            231,
-            279
-          ]
-        },
-        {
-          "file": "run_aim_down_f15.png",
-          "row": 3,
-          "col": 2,
-          "bbox": [
-            516,
-            842,
-            211,
-            270
-          ]
-        },
-        {
-          "file": "run_aim_down_f16.png",
-          "row": 3,
-          "col": 3,
-          "bbox": [
-            759,
-            842,
-            217,
-            270
-          ]
-        }
-      ]
+     "file": "run_aim_down_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      18,
+      5,
+      212,
+      269
+     ],
+     "offset": {
+      "x": 0,
+      "y": -269
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      258,
+      2,
+      229,
+      276
+     ],
+     "offset": {
+      "x": -7,
+      "y": -268
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      504,
+      0,
+      235,
+      280
+     ],
+     "offset": {
+      "x": -5,
+      "y": -271
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      747,
+      5,
+      242,
+      269
+     ],
+     "offset": {
+      "x": 0,
+      "y": -269
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      4,
+      285,
+      240,
+      268
+     ],
+     "offset": {
+      "x": 1,
+      "y": -272
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      248,
+      280,
+      250,
+      279
+     ],
+     "offset": {
+      "x": 0,
+      "y": -276
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      498,
+      281,
+      248,
+      277
+     ],
+     "offset": {
+      "x": -2,
+      "y": -269
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      746,
+      286,
+      244,
+      267
+     ],
+     "offset": {
+      "x": 0,
+      "y": -267
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      563,
+      248,
+      270
+     ],
+     "offset": {
+      "x": 0,
+      "y": -270
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      251,
+      566,
+      243,
+      265
+     ],
+     "offset": {
+      "x": 0,
+      "y": -265
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      506,
+      559,
+      232,
+      279
+     ],
+     "offset": {
+      "x": 0,
+      "y": -271
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      752,
+      564,
+      231,
+      269
+     ],
+     "offset": {
+      "x": 0,
+      "y": -269
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      6,
+      842,
+      236,
+      270
+     ],
+     "offset": {
+      "x": 0,
+      "y": -270
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      257,
+      838,
+      231,
+      279
+     ],
+     "offset": {
+      "x": -1,
+      "y": -270
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      516,
+      842,
+      211,
+      270
+     ],
+     "offset": {
+      "x": 0,
+      "y": -270
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_aim_down_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      759,
+      842,
+      217,
+      270
+     ],
+     "offset": {
+      "x": -7,
+      "y": -270
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-  ]
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 56,
+    "y": -276,
+    "w": 148,
+    "h": 269
+   },
+   "pivot": {
+    "x": 102,
+    "y": -130
+   },
+   "markers": [
+    {
+     "label": "muzzle",
+     "x": 200,
+     "y": -32,
+     "radiusOn": true,
+     "radius": 115
+    }
+   ]
+  }
+ ]
 }

@@ -50,7 +50,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 80,
+       "y": -406,
+       "w": 205,
+       "h": 133
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -71,7 +79,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 32,
+       "y": -364,
+       "w": 362,
+       "h": 252
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -92,7 +108,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 188,
+       "y": -332,
+       "w": 259,
+       "h": 205
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -113,7 +137,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 221,
+       "y": -375,
+       "w": 258,
+       "h": 231
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -134,16 +166,24 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 49,
+       "y": -337,
+       "w": 372,
+       "h": 232
+      }
+     ],
      "durUnits": 1
     }
    ],
    "playback": "loop",
    "direction": "forward",
    "collision": {
-    "x": 64,
+    "x": 109,
     "y": -293,
-    "w": 232,
+    "w": 156,
     "h": 274
    },
    "pivot": {

@@ -1,8 +1,8 @@
 {
  "file": "petal-panic/assets/heroes/balthazar/idle_aim_down_sheet.png",
- "size": "2123x398",
+ "size": "1585x394",
  "rows": 1,
- "cols": 8,
+ "cols": 6,
  "kind": "animation",
  "description": "balthazar idle_aim_down (8 frames)",
  "entities": [
@@ -18,86 +18,146 @@
      "bbox": [
       0,
       0,
-      274,
-      398
-     ]
+      265,
+      388
+     ],
+     "offset": {
+      "x": 0,
+      "y": -388
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_aim_down_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
-      274,
+      265,
       0,
-      264,
-      398
-     ]
+      266,
+      368
+     ],
+     "offset": {
+      "x": 0,
+      "y": -368
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_aim_down_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
-      538,
-      5,
-      265,
-      388
-     ]
+      531,
+      0,
+      266,
+      379
+     ],
+     "offset": {
+      "x": 0,
+      "y": -379
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_aim_down_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
-      803,
-      15,
-      266,
-      368
-     ]
+      797,
+      0,
+      264,
+      371
+     ],
+     "offset": {
+      "x": 0,
+      "y": -371
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_aim_down_f5.png",
      "row": 0,
      "col": 4,
      "bbox": [
-      1069,
-      9,
-      266,
-      379
-     ]
+      1061,
+      0,
+      262,
+      383
+     ],
+     "offset": {
+      "x": 0,
+      "y": -383
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "idle_aim_down_f6.png",
      "row": 0,
      "col": 5,
      "bbox": [
-      1335,
-      13,
-      264,
-      371
-     ]
-    },
-    {
-     "file": "idle_aim_down_f7.png",
-     "row": 0,
-     "col": 6,
-     "bbox": [
-      1599,
-      7,
-      262,
-      383
-     ]
-    },
-    {
-     "file": "idle_aim_down_f8.png",
-     "row": 0,
-     "col": 7,
-     "bbox": [
-      1861,
-      2,
+      1323,
+      0,
       262,
       394
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -394
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "fps": 12,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 46,
+    "y": -380,
+    "w": 170,
+    "h": 365
+   },
+   "pivot": {
+    "x": 131,
+    "y": -197
+   },
+   "markers": [
+    {
+     "label": "muzzle",
+     "x": 148,
+     "y": -23,
+     "radiusOn": true,
+     "radius": 115
     }
    ]
   }

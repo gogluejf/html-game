@@ -1,127 +1,313 @@
 {
-  "file": "petal-panic/assets/heroes/balthazar/super_melee_sheet.png",
-  "size": "1927x742",
-  "rows": 2,
-  "cols": 5,
-  "kind": "animation",
-  "description": "balthazar super_melee (10 frames from 5x2 grid PNG)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/balthazar/super_melee_sheet.png",
+ "size": "1927x742",
+ "rows": 2,
+ "cols": 5,
+ "kind": "animation",
+ "description": "balthazar super_melee (10 frames from 5x2 grid PNG)",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "super_melee",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "frames": [
     {
-      "name": "balthazar",
-      "anim": "super_melee",
-      "frames_dir": "petal-panic/assets/heroes/balthazar",
-      "frames": [
-        {
-          "file": "super_melee_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            10,
-            0,
-            357,
-            400
-          ]
-        },
-        {
-          "file": "super_melee_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            395,
-            13,
-            365,
-            373
-          ]
-        },
-        {
-          "file": "super_melee_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            777,
-            39,
-            397,
-            322
-          ]
-        },
-        {
-          "file": "super_melee_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1175,
-            34,
-            344,
-            332
-          ]
-        },
-        {
-          "file": "super_melee_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1519,
-            62,
-            408,
-            275
-          ]
-        },
-        {
-          "file": "super_melee_f6.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            0,
-            427,
-            378,
-            288
-          ]
-        },
-        {
-          "file": "super_melee_f7.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            378,
-            434,
-            399,
-            274
-          ]
-        },
-        {
-          "file": "super_melee_f8.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            777,
-            423,
-            398,
-            295
-          ]
-        },
-        {
-          "file": "super_melee_f9.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            1175,
-            424,
-            343,
-            294
-          ]
-        },
-        {
-          "file": "super_melee_f10.png",
-          "row": 1,
-          "col": 4,
-          "bbox": [
-            1552,
-            400,
-            341,
-            342
-          ]
-        }
-      ]
+     "file": "super_melee_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      10,
+      0,
+      357,
+      400
+     ],
+     "offset": {
+      "x": 0,
+      "y": -400
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      395,
+      13,
+      365,
+      373
+     ],
+     "offset": {
+      "x": 0,
+      "y": -373
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 253,
+       "y": -314,
+       "w": 148,
+       "h": 174
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      777,
+      39,
+      397,
+      322
+     ],
+     "offset": {
+      "x": 0,
+      "y": -322
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 286,
+       "y": -153,
+       "w": 145,
+       "h": 157
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1175,
+      34,
+      344,
+      332
+     ],
+     "offset": {
+      "x": 0,
+      "y": -332
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 204,
+       "y": -168,
+       "w": 165,
+       "h": 201
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1519,
+      62,
+      408,
+      275
+     ],
+     "offset": {
+      "x": 0,
+      "y": -275
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 198,
+       "y": -170,
+       "w": 252,
+       "h": 176
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f6.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      427,
+      378,
+      288
+     ],
+     "offset": {
+      "x": 0,
+      "y": -288
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 186,
+       "y": -210,
+       "w": 214,
+       "h": 214
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f7.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      378,
+      434,
+      399,
+      274
+     ],
+     "offset": {
+      "x": 0,
+      "y": -274
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 153,
+       "y": -220,
+       "w": 265,
+       "h": 226
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f8.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      777,
+      423,
+      398,
+      295
+     ],
+     "offset": {
+      "x": 0,
+      "y": -295
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 226,
+       "y": -190,
+       "w": 224,
+       "h": 214
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f9.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1175,
+      424,
+      343,
+      294
+     ],
+     "offset": {
+      "x": 0,
+      "y": -294
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 127,
+       "y": -192,
+       "w": 271,
+       "h": 209
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "super_melee_f10.png",
+     "row": 1,
+     "col": 4,
+     "bbox": [
+      1552,
+      400,
+      341,
+      342
+     ],
+     "offset": {
+      "x": 0,
+      "y": -342
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 239,
+       "y": -292,
+       "w": 142,
+       "h": 180
+      }
+     ],
+     "durUnits": 1
     }
-  ]
+   ],
+   "fps": 8,
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 74,
+    "y": -392,
+    "w": 221,
+    "h": 378
+   },
+   "pivot": {
+    "x": 185,
+    "y": -203
+   },
+   "markers": []
+  }
+ ]
 }
