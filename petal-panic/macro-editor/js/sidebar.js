@@ -259,7 +259,10 @@ function onInspectorChange(sel, el){
     const result = validateMacroCandidate(st, normalized, { targetKind: 'unit', targetIndex: sel.index });
     if (!result.valid){
       showToast(result.reason, 'error');
-      syncInspector(true); // revert display to current values
+      // Revert the DISPLAYED value only — never rebuild the DOM. A full
+      // syncInspector(true) would destroy focus mid-edit (next arrow key
+      // then hits the macro-list navigation instead of the input).
+      el.value = String(u[key] ?? '');
       return;
     }
     pushUndo();
@@ -282,7 +285,8 @@ function onInspectorChange(sel, el){
     const result = validateMacroCandidate(st, proposed, { targetKind: 'slot', targetIndex: sel.index });
     if (!result.valid){
       showToast(result.reason, 'error');
-      syncInspector(true);
+      // Revert the DISPLAYED value only — never rebuild the DOM (focus).
+      el.value = key === 'type' ? p.type : (key === 'value' ? String(p.value ?? 'random') : String(p[key] ?? ''));
       return;
     }
     pushUndo();
