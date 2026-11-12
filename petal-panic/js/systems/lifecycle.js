@@ -24,7 +24,7 @@
 // effects) so the rules are unit-testable in node without a DOM.
 
 import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetHeroInventory } from './gameRules.js';
-import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y, ZONE_ENTRY_DROP_PX } from '../world/level.js';
+import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y, ZONE_ENTRY_DROP_PX, ZONE_ENTRY_DROP_PX_VERTICAL } from '../world/level.js';
 import { getLevelConfig, LEVEL_CONFIGS, AREA_BOSS } from '../world/levelConfigs.js';
 import { getLastWorldSeed } from '../world/build.js';
 import { Hero, WEAPON_THORN } from '../hero/hero.js';
@@ -504,19 +504,23 @@ export function startArea(h, level, areaIdx) {
  */
 export function placeHeroAtEntry(h) {
   // Position the hero at the zone entry with a drop offset.
-  // Priority: h.checkpoint (explicit, set by tests/callers) > zone.spawn > current pos.
-  // zone.spawn.y is the FLOOR (feet). h.checkpoint stores top-left (already -h.h).
-  const cp = h.checkpoint;
+  // zone.spawn is authoritative when the zone matches the hero's current
+  // level/area. Fallback to h.checkpoint for unit tests / bare callers.
   const zone = wctx.getActiveZone?.(h);
-  if (cp && typeof cp === 'object') {
-    h.x = cp.x;
-    h.y = cp.y - ZONE_ENTRY_DROP_PX;
-  } else if (zone?.spawn) {
+  const zoneMatches = zone?.spawn && zone.level === h.currentLevel &&
+    (zone.areaIdx === h.currentArea || (zone.kind === 'boss' && h.currentArea >= 5));
+  const drop = (zone?.orientation === 'vertical') ? ZONE_ENTRY_DROP_PX_VERTICAL : ZONE_ENTRY_DROP_PX;
+  if (zoneMatches) {
     h.x = zone.spawn.x;
-    h.y = zone.spawn.y - h.h - ZONE_ENTRY_DROP_PX;
+    h.y = zone.spawn.y - h.h - drop;
+  } else if (h.checkpoint && typeof h.checkpoint === 'object') {
+    h.x = h.checkpoint.x;
+    h.y = h.checkpoint.y - drop;
   } else {
-    h.y -= ZONE_ENTRY_DROP_PX;
+    h.y -= drop;
   }
+  // Clear stale checkpoint so it can't leak into the next zone entry.
+  delete h.checkpoint;
   h.vx = 0;
   h.vy = 0;
   h.dying = false;

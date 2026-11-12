@@ -167,8 +167,8 @@ test('restartAttempt: restores area arrangement and places hero at entry', () =>
   assert.equal(ctx.coins.active.length, 0, 'coins cleared');
 
   // Hero placed at entry with i-frames.
-  assert.equal(h.x, 100, 'hero at entry x');
-  assert.equal(h.y, 400 - ZONE_ENTRY_DROP_PX, 'hero at entry y (with drop)');
+  assert.equal(h.x, ZONE_ENTRY_X, 'hero at entry x');
+  assert.equal(h.y, ZONE_GROUND_Y - h.h - ZONE_ENTRY_DROP_PX, 'hero at entry y (with drop)');
   assert.equal(h.energy, h.maxEnergy, 'full energy');
   assert.ok(h.invincible, 'i-frames active (invincible)');
 });
@@ -278,7 +278,7 @@ test('death in an area restarts that same area (same arrangement)', () => {
   // Same area, same arrangement restored.
   assert.equal(ctx._enemy.x, 2000, 'enemy back at original position');
   assert.equal(ctx._enemy.hp, 40, 'enemy HP restored');
-  assert.equal(h.x, 100, 'hero at area entry');
+  assert.equal(h.x, ZONE_ENTRY_X, 'hero at area entry');
   assert.equal(h.lives, 2, 'lives decremented by caller, not by restartAttempt');
 });
 
@@ -693,7 +693,7 @@ test('retryLevel: reset sequence matches death (coins rolled back, energy full, 
   assert.equal(hero.shield, 0, 'shield cleared');
   assert.equal(hero.supermoveMeter, 0, 'super meter cleared');
   assert.ok(hero.invincible, 'respawn i-frames active');
-  assert.ok(Math.abs(hero.x - hero.checkpoint.x) < 1, 'placed at checkpoint');
+  assert.ok(Math.abs(hero.x - ZONE_ENTRY_X) < 1, 'placed at zone entry');
 });
 
 // --- REGRESSION: the advance flag is ONE-SHOT (state-persistence.md §2.3/§4b) ---
