@@ -28,7 +28,7 @@
 
 import {createRng, makeBlock} from './terrain.js';
 import { GRAVITY, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
-import { HEROES } from '../hero/heroDefs.js';
+import { HEROES, resolveHeroStats } from '../hero/heroDefs.js';
 import { BARREL_DEF, BARREL_TYPES } from '../objects/object.js';
 import { ENEMY_TYPE_IDS } from './enemyTypes.js';
 import { POWERUP_ROLL_TYPES } from '../objects/powerup.js';
@@ -98,11 +98,8 @@ export const EXIT_CLEAR = H_EXIT_CLEAR;
  * floor to whole units: any gap wider than this is IMPOSSIBLE and must be
  * flagged by validation.
  *
- * With the current stats (scarlet: 250 px/s, jump 500; balthazar: 180 px/s,
- * jump 420; GRAVITY 1500; DOUBLE_JUMP_FACTOR 0.85):
- *   scarlet:    250 · (2·500/1500 + 2·425/1500) = 250 · 1.1667 ≈ 291.7 px
- *   balthazar:  180 · (2·420/1500 + 2·357/1500) = 180 · 1.0360 ≈ 186.5 px
- *   min ≈ 186 px → 186 / 48 ≈ 3.87 → floor = 3 width-units.
+ * The numbers are derived live from HEROES[*].stats + consts.js — no baked-in
+ * arithmetic here, so a stat retune changes this automatically.
  */
 
 /**
@@ -265,11 +262,11 @@ export function superAssistReachForStats(stats, risePx) {
   // Altitude at super end: burst holds at totalApex, decel drops decelDrop.
   const altitudeAtSuperEnd = totalApex - decelDrop;
 
-  // A 3-row (144px) rise is NOT physically clearable with this hero kit:
-  // the full double-jump apex is ~101px and the super burst holds at that
-  // same apex (it does not add height). Keep the hard cut so the envelope
-  // never lies about altitude (BUG-2 note: such surfaces must be flagged
-  // unreachable by layer 1, not "cleared" by the mover).
+  // A rise beyond the full double-jump apex is NOT physically clearable with
+  // this hero kit: the super burst holds AT the apex (it does not add height).
+  // Keep the hard cut so the envelope never lies about altitude (BUG-2 note:
+  // such surfaces must be flagged unreachable by layer 1, not "cleared" by
+  // the mover). Apex value is derived live from stats — see heroDefs.js.
   if (risePx > totalApex) return -1;
 
   // Phase 2+3: super burst + decel (fixed distances).
@@ -277,7 +274,7 @@ export function superAssistReachForStats(stats, risePx) {
 
   // BUG-3: for DOWNWARD hops (target below the source top) the old model
   // still paid the full "run + double jump to second apex" cost and then
-  // dropped from totalApex — a fantasy dash fired 203px up in the air that
+  // dropped from totalApex — a fantasy dash fired high in the air that
   // the mover never does. Real behavior: jump off the edge, fire the dash
   // near the arc's peak while FALLING toward the target, carry level from
   // there. The mover fires the super at the DOUBLE-jump apex (platformMover:
@@ -344,7 +341,9 @@ export const ZONE_WIDTH_UNITS = VERTICAL_ZONE_WIDTH_UNITS;
 const _doubleJumpApexPx = (() => {
   let min = Infinity;
   for (const hero of Object.values(HEROES)) {
-    const { jump } = hero.stats;
+    // UNIT→PX conversion point: def stats are unit-native; GRAVITY is px/s²,
+    // so resolve through the canonical resolver (same as the runtime hero).
+    const { jump } = resolveHeroStats(hero);
     const firstApex = (jump * jump) / (2 * GRAVITY);
     const secondJump = DOUBLE_JUMP_FACTOR * jump;
     const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);

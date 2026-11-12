@@ -62,9 +62,16 @@ export function walkToNearestEdge(hero, world, goal, standingOn, stepFn, dt = 1 
     goal.x1 > standingOn.x0 && goal.x0 < standingOn.x1;
   if (goalBelowOverlap) return false;
   const gcx = (goal.x0 + goal.x1) / 2;
-  const targetX = gcx >= f.x ? standingOn.x1 : standingOn.x0;
-  if (Math.abs(f.x - targetX) < 4) return false;
+  let targetX = gcx >= f.x ? standingOn.x1 : standingOn.x0;
   const dir = targetX > f.x ? 1 : -1;
+  // A solid face can sit EXACTLY on the target (e.g. a taller block whose top
+  // starts where this surface ends): clamp to the nearest blocking face using
+  // the LIVE collision box, and bail out entirely if the box already touches
+  // it (approach genuinely blocked — let the caller pick from here).
+  const clamped = clampWalkTargetForSolids(hero, world, targetX, dir);
+  if (clamped == null) return false;
+  targetX = clamped;
+  if (Math.abs(f.x - targetX) < 4) return false;
   for (let i = 0; i < 60; i++){
     const inp = { left: dir < 0, right: dir > 0, up: false, down: false, jump: false, super: false };
     const prevX = feetPos(hero).x;
@@ -75,6 +82,45 @@ export function walkToNearestEdge(hero, world, goal, standingOn, stepFn, dt = 1 
   }
   settleHero(hero, world);
   return true;
+}
+
+/** Clamp a walk target so the hero's FULL live collision box stops clear of
+ *  any non-one-way solid face between the hero and the target.
+ *  Returns the clamped target x, or null when the box ALREADY touches the
+ *  blocking face (the approach is physically impossible — the caller should
+ *  transfer to the picker instead of walking forever).
+ *  Geometry-only: reads hero.worldBox() each call, so dynamic per-anim widths
+ *  are respected. Works for both directions. */
+export function clampWalkTargetForSolids(hero, world, targetX, dir){
+  if (!world?.solids?.length || dir === 0) return targetX;
+  const wb = hero.worldBox();
+  const halfW = wb.w / 2;
+  // Feet-x position where the box edge just touches the face:
+  //   dir>0: boxRight = feetX + halfW = face → feetX = face - halfW
+  //   dir<0: boxLeft  = feetX - halfW = face → feetX = face + halfW
+  const stopFeetAt = (face) => dir > 0 ? face - halfW : face + halfW;
+  let limit = null;
+  for (const s of world.solids){
+    if (s.oneWay) continue;
+    if (s.y >= wb.y + wb.h - 2) continue; // floor under feet doesn't block X
+    if (s.y + s.h <= wb.y || s.y >= wb.y + wb.h) continue; // no vertical overlap
+    const face = dir > 0 ? s.x : s.x + s.w;
+    // Only faces ahead of the hero (or ON it) along the travel direction.
+    const d = dir > 0 ? face - (wb.x + halfW) : (wb.x + halfW) - face;
+    if (d < 0) continue;
+    const stopX = stopFeetAt(face);
+    if (limit == null || (dir > 0 ? stopX < limit : stopX > limit)) limit = stopX;
+  }
+  if (limit == null) return targetX;
+  // Box already touching/inside the face → approach blocked.
+  const curFeet = feetPos(hero).x;
+  if (dir > 0 ? curFeet >= limit - 1e-9 : curFeet <= limit + 1e-9) return null;
+  // Face exactly AT (or beyond) the target: clamp to it. Keep the old strict
+  // test for faces strictly between hero and target; the equality case is the
+  // proven first-hop stall (wall sitting exactly on the source edge).
+  const blocksPath = dir > 0 ? limit <= targetX : limit >= targetX;
+  if (!blocksPath) return targetX;
+  return limit;
 }
 
 /** Create a fresh brain state for a ride over `goals` (ordered landing list).
@@ -223,32 +269,27 @@ export function decideInput(b, hero, world){
       // A SOLID BLOCK can sit ON the source surface between us and the goal
       // center (newMacro #3→#7: a 1-row block stacked on the platform). Walking
       // to the goal center then runs straight into the block's face and
-      // wall-pins before any pick is made → every candidate hard-misses. When a
-      // solid face blocks the path to targetX, clamp the walk target just in
-      // front of that face so the hero stops where it can actually launch over
-      // the block (the picker's jump trigger now arms there too).
+      // wall-pins before any pick is made → every candidate hard-misses. The
+      // clamp below handles BOTH that case and the first-hop stall where the
+      // goal's own top face sits EXACTLY at the walk target (stretchedPyramid /
+      // pyramid3 / mixedCrossing / blockPlatformBridge / newMacro): it uses the
+      // hero's LIVE collision box (dynamic per-anim width) instead of feet +6,
+      // includes walls exactly AT the target, and reports "approach blocked"
+      // when the box already touches the face so we transfer to the picker
+      // immediately instead of walking into the wall forever.
+      let approachBlocked = false;
       if (world.solids?.length){
-        const wb = hero.worldBox();
         const dirToTarget = targetX > f.x ? 1 : targetX < f.x ? -1 : 0;
         if (dirToTarget !== 0){
-          let blockFace = null;
-          for (const s of world.solids){
-            if (s.oneWay) continue;
-            if (s.y >= f.y - 2) continue;                 // floor under feet doesn't block X
-            if (s.y + s.h <= wb.y || s.y >= wb.y + wb.h) continue; // no vertical overlap
-            const face = dirToTarget > 0 ? s.x : s.x + s.w;
-            const d = dirToTarget > 0 ? face - f.x : f.x - face;
-            if (d > 0 && (blockFace == null || d < blockFace.d)) blockFace = { d, face };
-          }
-          if (blockFace && (dirToTarget > 0 ? blockFace.face < targetX : blockFace.face > targetX)){
-            targetX = blockFace.face - dirToTarget * 6; // stop ~6px short of the face
-          }
+          const clamped = clampWalkTargetForSolids(hero, world, targetX, dirToTarget);
+          if (clamped == null) approachBlocked = true;
+          else targetX = clamped;
         }
       }
       if (!b.mem._walkEdge || Math.abs(f.x - b.mem._walkEdge.targetX) > 4){
         b.mem._walkEdge = { targetX, dir: targetX > f.x ? 1 : -1 };
       }
-      if (Math.abs(f.x - b.mem._walkEdge.targetX) > 4){
+      if (Math.abs(f.x - b.mem._walkEdge.targetX) > 4 && !approachBlocked){
         inp.left = b.mem._walkEdge.dir < 0;
         inp.right = b.mem._walkEdge.dir > 0;
         return inp;

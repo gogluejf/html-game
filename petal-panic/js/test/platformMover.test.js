@@ -6,7 +6,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { buildRideWorld } from '../world/ghostRider.js';
-import { createHeadlessHero } from '../hero/headless.js';
+import { createHeadlessHero, ensureHeadlessSprites } from '../hero/headless.js';
+
+// Prime the sheet-sprite cache so headless heroes wear the SAME dynamic
+// per-anim collision box as the real game hero (see headless.js).
+await ensureHeadlessSprites('balthazar');
 import { HEROES } from '../hero/heroDefs.js';
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { moveToward, stepAndCorrect, feetPos } from '../world/platformMover.js';

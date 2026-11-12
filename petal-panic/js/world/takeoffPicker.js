@@ -28,6 +28,7 @@
 import { stepHeadless } from '../hero/headless.js';
 import { feetPos } from './platformMover.js';
 import { minHeroSuperAssistReachPx } from './macros.js';
+import { GRAVITY, DOUBLE_JUMP_FACTOR } from '../consts.js';
 
 const DT = 1 / 60;
 const MAX_SIM_FRAMES = 240;      // ~1.5 s per candidate — enough for any arc
@@ -141,13 +142,42 @@ function simulateCandidate(hero, goal, world, params, script){
   return { score, detail: `rest#${bestRest.surf} dx=${Math.round(dx)} dy=${Math.round(dy)}@f${bestRest.frame}` };
 }
 
-/** Shallow clone: fresh hero at the same spot with the same velocity/budget. */
+/** Shallow clone: fresh hero at the same spot with the same velocity/budget.
+ *  Copies every anim/box-relevant field too so the clone matches the source
+ *  hero frame-for-frame (boxes are anim-dependent since the tuck cutover):
+ *  pose height (_targetHScale), active sheet anim (setAnim re-derives the
+ *  sheet-owned width + scale from the CURRENT h, exactly as the game does on
+ *  a real anim switch), coyote/fall-grace/jump-buffer timers, drop-through,
+ *  supermove dash state, and facing. */
 function makeClone(src, spawn){
   // The ride always uses balthazar (ghost + tests); keep it simple.
   const h = headlessRef.createHeadlessHero('balthazar', spawn);
   h.vx = src.vx; h.vy = src.vy;
   h.jumpsUsed = src.jumpsUsed;
   h.supermoveMeter = src.supermoveMeter;
+  h.facing = src.facing;
+  h.crouching = src.crouching;
+  h.grounded = src.grounded;
+  // Pose height (standing / crouch / jump tuck) — feet stay planted because
+  // the clone spawns at the source's top-left y, mirroring applyJumpHeight's
+  // own y-delta rule for the SAME _targetHScale.
+  h._targetHScale = src._targetHScale ?? 1;
+  // Active sheet anim: setAnim() clears _baseW and re-fits scale + width from
+  // the collision-box aspect at the CURRENT h — identical to the live switch.
+  if (src._spriteAnim && h.sprite?.anims?.[src._spriteAnim]) {
+    try { h.setAnim(src._spriteAnim); } catch { /* keep default box */ }
+  }
+  // Timers that gate input edges / grace windows.
+  h._coyote = src._coyote ?? 0;
+  h._fallAnimGrace = src._fallAnimGrace ?? 0;
+  h._jumpBuffer = src._jumpBuffer ?? 0;
+  h._prevJumpHeld = src._prevJumpHeld ?? false;
+  h._dropTimer = src._dropTimer ?? 0;
+  // Supermove dash playback state (mid-dash clones must resume in-phase).
+  h.supermoveActive = src.supermoveActive;
+  h.supermovePhase = src.supermovePhase;
+  h.supermoveTimer = src.supermoveTimer;
+  h._supermoveElapsed = src._supermoveElapsed;
   return h;
 }
 // Lazy import holder (filled at module load below).
@@ -296,7 +326,13 @@ function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world,
       toEdge = dir > 0 ? Math.max(0, goalRef.x0 - f.x) : Math.max(0, f.x - goalRef.x1);
     }
 
-    const triggerPx = 30 + k * 10; // k=0→30px, k=4→70px, k=8→110px
+    // Trigger distance (px) from the surface edge. Engine-derived: one jump
+    // impulse covers `jump / GRAVITY` s of rise, so at run speed a grounded
+    // hero needs ~speed·jump/GRAVITY px of runway to launch with full height;
+    // k scales that window (k=-2 → ~0px = edge/coyote launch, larger k =
+    // earlier, more conservative arm). Derived live from the CURRENT stats,
+    // so a retune rescales the whole ladder — no frozen pixel literals.
+    const triggerPx = Math.max(0, paramsRef.speed * (paramsRef.jump / GRAVITY) * k);
 
     // GROUNDED: arm the jump when close to the edge (or immediately for a
     // vertical climb). Latch the direction for edge launches so the arc
@@ -367,10 +403,12 @@ export function buildCandidates(hero, goal, world, params, fromSurface){
   const f = feetPos(hero);
   const rise = f.y - goal.y; // >0 goal higher
   const cands = [];
-  // k=-2 → triggerPx = 30 + (-2*10) = 10px from edge (near-coyote). Covers the
-  // case where the hero lands right at the lip and the 30/70/110px triggers are
-  // all already behind it. k=0/4/8 → 30/70/110px as before.
-  const K = [-2, 0, 4, 8]; // trigger distances (px): 10 / 30 / 70 / 110 from the edge
+  // k = launch-lead multiplier (searched per gap). The trigger distance is
+  // params.speed · (params.jump / GRAVITY) · k inside makeJumpScript — i.e.
+  // k × the horizontal runway a full jump impulse needs at run speed.
+  // -2 ≈ at-the-edge/coyote; larger = earlier arm. Dimensionless, so it
+  // rescales automatically with any stat retune.
+  const K = [-2, 0, 4, 8];
 
   // Drop hop: goal at or below our level → walking off the edge is the natural
   // move. No rise threshold: a 1-row pyramid step (rise=-48) must walk off,
@@ -403,11 +441,20 @@ export function buildCandidates(hero, goal, world, params, fromSurface){
     }
   }
 
-  // Super-fire delay (frames after DJ/first-jump) is SEARCHED per gap, like k
-  // is searched for the jump trigger. Too early → burst ends short of the goal;
-  // too late → overshoots past it. The sim scores each and keeps the one that
-  // lands, so every gap gets its own optimal timing (no global constant).
-  const SUPER_DELAYS = [12, 18, 24, 30];
+  // Super-fire delay (frames after DJ/first-jump completes) is SEARCHED per
+  // gap, like k is searched for the jump trigger. Too early → burst ends short
+  // of the goal; too late → overshoots past it. The sim scores each and keeps
+  // the one that lands, so every gap gets its own optimal timing (no global
+  // constant).
+  //
+  // Delays are generated from the hero's CURRENT double-jump airtime (jump +
+  // GRAVITY, same derivation as macros.js), not frozen frame counts: a
+  // retuned jump rescales the search space. Ladder spans ~10% to ~35% of the
+  // full arc — wide enough to bracket the optimal fire point at any stat set.
+  const djAirtime = (params.jump / GRAVITY) * (1 + DOUBLE_JUMP_FACTOR)
+    + Math.sqrt(2 * ((params.jump * params.jump) / (2 * GRAVITY)
+      + ((DOUBLE_JUMP_FACTOR * params.jump) ** 2) / (2 * GRAVITY)) / GRAVITY);
+  const SUPER_DELAYS = [0.1, 0.18, 0.26, 0.34].map(f => Math.max(1, Math.round(f * djAirtime / DT)));
 
   for (const k of K){
     cands.push({ id: `SINGLE@${k}`, pref: PREF.SINGLE, script: makeJumpScript(goal, k, false, false, params, {}, fromSurface, world), state: {} });

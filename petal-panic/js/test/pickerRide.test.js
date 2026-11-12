@@ -23,6 +23,11 @@ import { fileURLToPath } from 'node:url';
 
 import { traversalRoute } from '../world/macros.js';
 import { runPickerRide } from '../world/pickerRide.js';
+import { ensureHeadlessSprites } from '../hero/headless.js';
+
+// Prime the sheet-sprite cache so the ride hero wears the SAME dynamic
+// per-anim collision box as the real game hero (see headless.js).
+await ensureHeadlessSprites('balthazar');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MACRO_DIR = path.join(__dirname, '../../macros/levels');

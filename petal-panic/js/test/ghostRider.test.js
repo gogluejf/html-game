@@ -7,7 +7,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runGhostRide, buildRideWorld } from '../world/ghostRider.js';
-import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
+import { createHeadlessHero, stepHeadless, ensureHeadlessSprites } from '../hero/headless.js';
+
+// Prime the sheet-sprite cache so headless heroes wear the SAME dynamic
+// per-anim collision box as the real game hero (see headless.js).
+await ensureHeadlessSprites('balthazar');
 import { HEROES } from '../hero/heroDefs.js';
 import { UNIT_PX_X } from '../world/macros.js';
 

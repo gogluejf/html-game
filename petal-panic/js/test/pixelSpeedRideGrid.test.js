@@ -17,7 +17,11 @@ import assert from 'node:assert/strict';
 
 import { GRAVITY, DOUBLE_JUMP_FACTOR, UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
 import { HEROES, resolveHeroStats } from '../hero/heroDefs.js';
-import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
+import { createHeadlessHero, stepHeadless, ensureHeadlessSprites } from '../hero/headless.js';
+
+// Prime the sheet-sprite cache so headless heroes wear the SAME dynamic
+// per-anim collision box as the real game hero (see headless.js).
+await ensureHeadlessSprites('balthazar');
 import { buildRideWorld } from '../world/ghostRider.js';
 import { RIDE_PARAMS } from '../world/pickerRide.js';
 import {

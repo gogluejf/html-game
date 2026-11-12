@@ -10,6 +10,21 @@ import { Hero } from './hero.js';
 import { HEROES } from './heroDefs.js';
 import { resolve } from '../core/collision.js';
 import { GRAVITY } from '../consts.js';
+import { attachHeroSprites, updateHeroLocomotionAnim, HERO_SPRITE_DIRS } from './heroSprites.js';
+
+/**
+ * Prime the sheet-sprite cache for a hero so createHeadlessHero() can attach
+ * dynamic per-anim collision boxes SYNCHRONOUSLY (the ride path is sync).
+ * Await this once before creating heroes / running rides in node tests and
+ * tools. In the browser the game loop has already loaded the sheets, so the
+ * cache hit makes this a no-op. Safe to call repeatedly.
+ * @param {'scarlet'|'balthazar'} [heroKey]
+ */
+export async function ensureHeadlessSprites(heroKey = 'balthazar') {
+  const dir = HERO_SPRITE_DIRS[heroKey] ?? heroKey;
+  const { loadHeroSprites } = await import('./heroSprites.js');
+  return loadHeroSprites(dir);
+}
 
 /**
  * Build a hero instance wired for headless stepping.
@@ -23,6 +38,13 @@ export function createHeadlessHero(heroKey = 'balthazar', spawn = { x: 0, y: 0 }
   hero.draw = () => {};
   // Infinite supers during test rides: geometry clearability, not meter pacing.
   hero.supermoveMeter = hero.SUPERMOVE_MAX;
+  // Dynamic per-anim collision box (sheet-owned width + jump/crouch tuck),
+  // exactly like the real game hero. No-op until ensureHeadlessSprites() has
+  // primed the cache (node) or the game loop loaded the sheets (browser).
+  try { attachHeroSprites(hero, HERO_SPRITE_DIRS[heroKey] ?? heroKey); } catch { /* keep default box */ }
+  if (hero.sprite?.anims?.idle) {
+    try { hero.setAnim('idle'); } catch { /* keep default box */ }
+  }
   return hero;
 }
 
@@ -40,6 +62,10 @@ export function createHeadlessHero(heroKey = 'balthazar', spawn = { x: 0, y: 0 }
 export function stepHeadless(hero, dt, input, solids) {
   const prevBottom = hero.worldBox().y + hero.worldBox().h - hero.vy * dt;
   hero.update(dt, input);
+  // Same anim binding the game loop runs after physics (systems/update.js):
+  // switches idle/run/jump and resizes the sheet-owned collision box to the
+  // active frame. No-op when no sprite data is attached (unprimed node path).
+  updateHeroLocomotionAnim(hero, input, dt);
   const hit = resolve(hero, solids, {
     prevBottom,
     ignoreOneWay: !!hero.droppingThrough,
