@@ -20,7 +20,17 @@
       0,
       270,
       262
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -262
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f2.png",
@@ -31,7 +41,17 @@
       2,
       281,
       258
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -258
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f3.png",
@@ -42,7 +62,17 @@
       1,
       297,
       259
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -259
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f4.png",
@@ -53,7 +83,17 @@
       2,
       305,
       257
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -257
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f5.png",
@@ -64,7 +104,17 @@
       273,
       270,
       256
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -256
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f6.png",
@@ -75,7 +125,17 @@
       272,
       272,
       258
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -258
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f7.png",
@@ -86,7 +146,17 @@
       262,
       274,
       278
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -278
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f8.png",
@@ -97,7 +167,17 @@
       269,
       305,
       264
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -264
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f9.png",
@@ -108,7 +188,17 @@
       558,
       300,
       259
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -259
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f10.png",
@@ -119,7 +209,17 @@
       557,
       270,
       260
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -260
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f11.png",
@@ -130,7 +230,17 @@
       576,
       274,
       222
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -222
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f12.png",
@@ -141,7 +251,17 @@
       540,
       240,
       295
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -295
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f13.png",
@@ -152,7 +272,17 @@
       838,
       231,
       296
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -296
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f14.png",
@@ -163,7 +293,17 @@
       838,
       229,
       295
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -295
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f15.png",
@@ -174,7 +314,17 @@
       837,
       204,
       297
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -297
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "supermove_f16.png",
@@ -185,17 +335,33 @@
       835,
       194,
       302
-     ]
+     ],
+     "offset": {
+      "x": 0,
+      "y": -302
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
    ],
    "collision": {
-    "x": -152.5,
-    "y": -302,
-    "w": 305,
-    "h": 302
+    "x": 70,
+    "y": -250,
+    "w": 174,
+    "h": 238
    },
    "playback": "once",
-   "direction": "forward"
+   "direction": "forward",
+   "fps": 16,
+   "pivot": {
+    "x": 157,
+    "y": -131
+   },
+   "markers": []
   }
  ]
 }
