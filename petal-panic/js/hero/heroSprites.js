@@ -15,7 +15,6 @@ import { loadFrames } from '../core/frameLoader.js';
 import { uniformScale } from '../core/spriteData.js';
 import { SpritePlayer } from '../core/spritePlayer.js';
 import { CROUCH_HEIGHT_SCALE } from './hero.js';
-import { SUPERMOVE_DUR } from '../consts.js';
 
 /** Module-level cache: heroId → { data, frames }. */
 const heroSpriteCache = new Map();
@@ -60,12 +59,6 @@ export async function loadHeroSprites(heroId) {
     const sheets = results.filter(Boolean);
     if (sheets.length === 0) return null;
     const data = parseSheet(sheets);
-    // Supermove sheet: the art must span the WHOLE dash duration. The dash
-    // clocks it via setProgress, but the fps is still what a player would see
-    // in any non-dash context — derive it from the attack duration so the
-    // authored frames play at exactly (frame count ÷ SUPERMOVE_DUR).
-    const sm = data.anims.supermove;
-    if (sm && sm.frames?.length) sm.fps = sm.frames.length / SUPERMOVE_DUR;
     // sprites.md §4: every anim needs an authored collision box as the scale
     // reference. Hero sheets are only partially authored; any anim still
     // missing one is dropped so setAnim() can never reach uniformScale()
@@ -177,17 +170,42 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
     return;
   }
 
-  // Supermove dash: the supermove sheet plays for the WHOLE dash, clocked by
-  // the dash itself (setProgress in updateSupermove). The sheet's fps is
-  // derived from the attack duration at load time (frame count ÷ SUPERMOVE_DUR),
-  // so the art and the hitbox window end together.
+  // Supermove dash: the supermove sheet plays at its AUTHORED fps (the
+  // SpritePlayer ticks it in hero.update's anim tick) — no progress mapping.
+  // The 0.6s dash covers only the first part of the cycle; the remainder
+  // finishes as a visual freeze tail AFTER the dash ends (branch below).
   if (hero.supermoveActive && hero.sprite.anims.supermove) {
     delete hero._idlePatternClock;
-    // A jump-cancel out of the decel phase ends the dash early — the generic
-    // switch below reclaims idle/run/jump on the next frame.
+    // A jump-cancel out of the decel phase ends the dash early — the freeze
+    // tail branch below still lets the art finish before reclaiming locomotion.
     if (hero._spriteAnim !== 'supermove') {
       try { hero.setAnim('supermove'); } catch { /* keep current */ }
     }
+    // The dash is AIRBORNE (burst pins vy=0, no gravity) — the body must carry
+    // the same half-height jump tuck as any other air pose. Without it the box
+    // stays full standing height and the sheet (scaled to that height) renders
+    // ~half a body BELOW the floor line: feet hanging under the surface. The
+    // tuck shrinks box + art together so the dash pose sits where the air pose
+    // belongs. Idempotent when already tucked (e.g. dash launched from a jump);
+    // landing after the dash restores full height via the grounded branch.
+    hero.applyJumpHeight(true);
+    return;
+  }
+
+  // Supermove freeze tail: the dash physics are over (normal control has
+  // resumed) but the sheet is still mid-cycle — hold the supermove pose until
+  // playback reaches its terminal frame, then fall through so the generic
+  // switch reclaims idle/run/jump. Purely visual: input/physics are already
+  // normal, only the sprite stays on the sheet.
+  if (hero._spriteAnim === 'supermove' && hero.sprite.anims.supermove
+      && (!hero._player || !hero._player.isDone)) {
+    delete hero._idlePatternClock;
+    // The tail usually plays out in the air (the dash ends mid-flight) — keep
+    // the jump tuck for as long as the pose holds so the art stays at air
+    // height. If we're already grounded, restore standing height instead so a
+    // landed tail doesn't float at half size.
+    if (hero.grounded) hero.applyJumpHeight(false);
+    else hero.applyJumpHeight(true);
     return;
   }
 
