@@ -13,6 +13,8 @@ import { retainBombContact } from './attack/primitives/projectile.js';
 import { LAYER } from '../consts.js';
 import { heroDamage as damage, flashTarget } from './damage.js';
 import { applyKnockback } from './knockback.js';
+import { applyHit } from './hitResolution.js';
+import { Team, AttackProvenance } from './targeting.js';
 import { explodeSpecial } from './shooting.js';
 import { isSpecialType } from '../objects/specialWeapons.js';
 import { Effects } from '../effects.js';
@@ -65,14 +67,25 @@ const STAR_POWER_HITSTOP_FRAMES = 5;
  */
 export function starPowerKill(hero, victim) {
   if (!victim || !victim.alive || victim.aiState === 'dead') return;
-  // Lethal through the normal pipeline: takeDamage() routes via central
-  // damage(), flashes white, and enters the death pipeline at hp <= 0.
+  // Lethal through the unified resolver (M3): one applyHit() carries damage +
+  // declarative reaction. CONTACT provenance is first-class in the eligibility
+  // matrix (ALLY may strike ENEMY/BOSS/DESTRUCTIBLE), so the kill now fires
+  // onHit/onDestroyed callbacks like every other hit. The launch impulse is
+  // applied by applyHit's reaction block via the single applyKnockback() choke
+  // point — away from the hero horizontally + strong upward pop.
   const amt = Math.max(victim.hp ?? 1, victim.stats?.stamina ?? 1);
-  victim.takeDamage(amt, hero, 'contact');
-  // Big launch: away from the hero horizontally + strong upward pop.
   const hcx = hero.x + hero.w / 2, vcx = victim.x + victim.w / 2;
   const dirX = Math.sign(vcx - hcx) || 1;
-  applyKnockback(victim, hero, STAR_POWER_KNOCKBACK, { x: dirX, y: 0 });
+  applyHit({
+    provenance: AttackProvenance.CONTACT,
+    source: hero,
+    target: victim,
+    damage: amt,
+    team: Team.ALLY,
+    method: 'contact',
+    reaction: STAR_POWER_KNOCKBACK,
+    direction: { x: dirX, y: 0 },
+  });
   // Juice: freeze the whole sim for ~83ms + shake. Max-merge semantics mean
   // overlapping kills hold the larger window, never stack.
   requestHitstop(STAR_POWER_HITSTOP_FRAMES);

@@ -1,9 +1,12 @@
 // Petal Panic — unified hit resolver (unified-hit-resolution plan §3).
 // Single entry point `applyHit(context)` for all damage routing: validates,
 // checks team eligibility, routes by target class, fires reactions + callbacks.
-// This is the M2 skeleton; M3 wires real knockback / death pipelines in.
+// M3: the knockback reaction is wired in — context.reaction (a KnockbackSetting)
+// + context.direction are applied via applyKnockback() AFTER damage, so every
+// damaging path gets mass/pop/hitstun/i-frames from the single choke point.
 
 import { Team, TargetClass, AttackProvenance, assertProvenance, getTargetClass } from './targeting.js';
+import { applyKnockback } from './knockback.js';
 
 /** What a given attacker team may legally strike. */
 const ELIGIBLE = {
@@ -71,10 +74,19 @@ export function applyHit(context) {
 
   const destroyed = !!(target.destroyed || target.alive === false);
 
-  // --- Reactions (knockback: M3 placeholder — set vx/vy) -------------------
-  if (knockback && !destroyed) {
-    target.vx = (target.vx ?? 0) + (knockback.vx ?? 0);
-    target.vy = (target.vy ?? 0) + (knockback.vy ?? 0);
+  // --- Reactions (M3: declarative knockback via the single choke point) ----
+  // context.reaction is a KnockbackSetting (data on the attack/def); direction
+  // is the caller-normalized push normal. Applied AFTER damage so the impulse
+  // lands before any death-pipeline velocity wipe, and skipped for destroyed
+  // targets (a corpse's slide owns its own motion). Legacy raw {vx,vy} deltas
+  // still work during migration — new callers use reaction/direction.
+  if (!destroyed) {
+    if (context.reaction) {
+      applyKnockback(target, source, context.reaction, context.direction ?? { x: 0, y: 0 });
+    } else if (knockback) {
+      target.vx = (target.vx ?? 0) + (knockback.vx ?? 0);
+      target.vy = (target.vy ?? 0) + (knockback.vy ?? 0);
+    }
   }
 
   const result = { accepted: true, dealt, destroyed };

@@ -16,7 +16,6 @@
 
 import { LAYER } from '../consts.js';
 import { Effects } from '../effects.js';
-import { applyKnockback } from './knockback.js';
 import { applyHit } from './hitResolution.js';
 import { Team, AttackProvenance } from './targeting.js';
 
@@ -123,13 +122,12 @@ export function processHitboxes(hitboxes, targets, onHit) {
         if (t.dying) continue;
       }
 
-      // Knockback BEFORE damage: the impulse must land on a still-alive victim
-      // so its physics integrate it. takeDamage() → die() zeroes vx/vy, and a
-      // corpse's velocity is wiped before the death slide plays — applying the
-      // shove after damage meant same-frame kills never flew off. The hitbox
-      // carries the setting (hb.knockback); direction follows dirMode, with the
-      // attacker's velocity as the motion term. Hero victims keep their own
-      // reaction path (takeHit) — this only shoves enemy/boss/solid targets.
+      // Knockback is DECLARATIVE (M3): the hitbox carries the setting
+      // (hb.knockback); direction follows dirMode. The unified resolver applies
+      // it via applyKnockback() after damage — same single choke point every
+      // other path uses. Hero victims keep their own reaction path (takeHit) —
+      // this only shoves enemy/boss/solid targets.
+      let kbNormal = null;
       if (hb.knockback && t.layer !== LAYER.HERO) {
         const kb = hb.knockback;
         let nx, ny;
@@ -145,17 +143,14 @@ export function processHitboxes(hitboxes, targets, onHit) {
           const len = Math.hypot(dx, dy) || 1;
           nx = dx / len; ny = dy / len;
         }
-        applyKnockback(t, hb.owner, kb, { x: nx, y: ny });
+        kbNormal = { x: nx, y: ny };
       }
 
       // Route damage through the unified resolver (unified-hit-resolution §3).
       // applyHit() validates, checks team eligibility, routes by target class
-      // (takeDamage → hit → central damage()), and fires target.onHit(context,
-      // result) — that callback is the hook reward logic (e.g. popSuperCoinHit)
-      // hangs off. The hero has neither takeDamage nor hit, so it falls through
-      // to central damage(), which drains energy/shield and flags death — same
-      // as before this migration. Knockback + i-frames + VFX juice stay owned
-      // here (see below) so the reaction timing is unchanged.
+      // (takeDamage → hit → central damage()), fires target.onHit(context,
+      // result), and applies the declarative knockback reaction (context.reaction)
+      // through the single applyKnockback() choke point.
       const provenance = METHOD_PROVENANCE[hb.method] ?? AttackProvenance.MELEE;
       const pipeline = typeof t.takeDamage === 'function' || typeof t.hit === 'function';
       const res = applyHit({
@@ -164,7 +159,8 @@ export function processHitboxes(hitboxes, targets, onHit) {
         target: t,
         damage: hb.damage,
         team: TEAM_CONST[hb.team] ?? Team.NEUTRAL,
-        knockback: null, // handled explicitly below (dirMode-aware)
+        reaction: kbNormal ? hb.knockback : null,
+        direction: kbNormal,
         method: hb.method,
       });
       const dealt = res.accepted ? res.dealt : 0;
