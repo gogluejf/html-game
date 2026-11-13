@@ -24,13 +24,6 @@
   ],
   "placements": [
     {
-      "slot": "powerup-1",
-      "type": "powerup",
-      "x": 10,
-      "y": 2,
-      "value": "random"
-    },
-    {
       "slot": "powerup-2",
       "type": "powerup",
       "x": 16,
@@ -43,6 +36,13 @@
       "x": 13,
       "y": 2,
       "value": "random"
+    },
+    {
+      "slot": "enemy-1",
+      "type": "enemy",
+      "x": 11,
+      "y": 2,
+      "value": "vine_hound"
     }
   ]
 }

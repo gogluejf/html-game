@@ -29,13 +29,6 @@
   ],
   "placements": [
     {
-      "slot": "on-t1",
-      "x": 6,
-      "type": "enemy",
-      "y": 2,
-      "value": "random"
-    },
-    {
       "slot": "on-t1b",
       "x": 8,
       "type": "barrel",
@@ -55,6 +48,41 @@
       "type": "barrel",
       "y": 3,
       "value": "random"
+    },
+    {
+      "slot": "enemy-1",
+      "x": 6,
+      "type": "enemy",
+      "y": 2,
+      "value": "vine_hound"
+    },
+    {
+      "slot": "enemy-2",
+      "x": 3,
+      "type": "enemy",
+      "y": 0,
+      "value": "vine_hound"
+    },
+    {
+      "slot": "enemy-3",
+      "x": 11,
+      "type": "enemy",
+      "y": 0,
+      "value": "vine_hound"
+    },
+    {
+      "slot": "enemy-5",
+      "x": 14,
+      "type": "enemy",
+      "y": 0,
+      "value": "vine_hound"
+    },
+    {
+      "slot": "enemy-7",
+      "x": 4,
+      "type": "enemy",
+      "y": 6,
+      "value": "vine_hound"
     }
   ]
 }

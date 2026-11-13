@@ -35,7 +35,7 @@
       "x": 8,
       "type": "enemy",
       "y": 1,
-      "value": "random"
+      "value": "vine_hound"
     },
     {
       "slot": "landing-enemy2",

@@ -96,6 +96,13 @@
       "x": 21,
       "y": 0,
       "value": "random"
+    },
+    {
+      "slot": "enemy-1",
+      "type": "enemy",
+      "x": 9,
+      "y": 2,
+      "value": "vine_hound"
     }
   ]
 }

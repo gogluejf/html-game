@@ -55,6 +55,12 @@
       "y": 0,
       "x": 24,
       "width": 2
+    },
+    {
+      "kind": "platform",
+      "x": 9,
+      "y": 5,
+      "width": 3
     }
   ],
   "placements": [
@@ -100,5 +106,9 @@
       "y": 3,
       "value": "random"
     }
-  ]
+  ],
+  "clearance": {
+    "status": "cleared",
+    "contentSignature": "0fc6d486"
+  }
 }

@@ -90,21 +90,42 @@
       "type": "barrel",
       "x": 10,
       "y": 2,
-      "value": "random"
+      "value": "wood"
     },
     {
       "slot": "barrel-5",
       "type": "barrel",
       "x": 22,
       "y": 4,
-      "value": "random"
+      "value": "wood"
     },
     {
       "slot": "barrel-6",
       "type": "barrel",
       "x": 23,
       "y": 4,
-      "value": "random"
+      "value": "wood"
+    },
+    {
+      "slot": "barrel-7",
+      "type": "barrel",
+      "x": 15,
+      "y": 2,
+      "value": "coin"
+    },
+    {
+      "slot": "enemy-1",
+      "type": "enemy",
+      "x": 12,
+      "y": 2,
+      "value": "vine_hound"
+    },
+    {
+      "slot": "enemy-2",
+      "type": "enemy",
+      "x": 19,
+      "y": 4,
+      "value": "vine_hound"
     }
   ]
 }
