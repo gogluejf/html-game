@@ -1090,6 +1090,15 @@ export class Hero extends Entity {
       entry = this.heroDef.specialMelee.hitbox;
     } else if (attackName === ATTACK_SUPERMOVE) {
       if (!this.supermoveActive) return null;
+      // Sheet-authored box first (supermove sheet plays during the dash — its
+      // per-frame boxes ARE the damage window, exactly like melee/super_melee);
+      // the heroDef table entry is the fallback for frames/sheets without an
+      // authored box.
+      const sheetBox = this._sheetAttackBox('supermove');
+      if (sheetBox) {
+        const box = this._sheetBoxToWorld(sheetBox);
+        return { ...box, knockback: this._attackKnockback(attackName), _source: 'sheet' };
+      }
       const box = this.heroDef.attacks[ATTACK_SUPERMOVE].box;
       entry = { ...box, bh: box.bh === 'body' ? this.h : box.bh };
     } else {
@@ -1150,7 +1159,7 @@ export class Hero extends Entity {
    * null when the active frame has no authored box (windup/recovery) or no
    * sheet data is attached (node tests / primitive path) — callers fall back
    * to the hand-tuned heroDefs tables.
-   * @param {string} animName 'melee' | 'air_melee' | 'super_melee'
+   * @param {string} animName 'melee' | 'air_melee' | 'super_melee' | 'supermove'
    * @returns {?{x:number,y:number,w:number,h:number}} anchor-space box
    */
   _sheetAttackBox(animName) {

@@ -181,14 +181,13 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
     if (hero._spriteAnim !== 'supermove') {
       try { hero.setAnim('supermove'); } catch { /* keep current */ }
     }
-    // The dash is AIRBORNE (burst pins vy=0, no gravity) — the body must carry
-    // the same half-height jump tuck as any other air pose. Without it the box
-    // stays full standing height and the sheet (scaled to that height) renders
-    // ~half a body BELOW the floor line: feet hanging under the surface. The
-    // tuck shrinks box + art together so the dash pose sits where the air pose
-    // belongs. Idempotent when already tucked (e.g. dash launched from a jump);
-    // landing after the dash restores full height via the grounded branch.
-    hero.applyJumpHeight(true);
+    // The dash is airborne but the sheet is a FULL-BODY pose (feet at y=0 on
+    // every frame, like idle/run/melee) — it renders at FULL standing height.
+    // If we launched from a crouch or a tucked jump, restore standing height
+    // for the whole dash so art + box stay consistent (same rule as the melee
+    // branches). NO jump-tuck here: tucking the box while the scale stays
+    // full-height is what made the dash art float low over the floor.
+    if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
     return;
   }
 
@@ -200,12 +199,11 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   if (hero._spriteAnim === 'supermove' && hero.sprite.anims.supermove
       && (!hero._player || !hero._player.isDone)) {
     delete hero._idlePatternClock;
-    // The tail usually plays out in the air (the dash ends mid-flight) — keep
-    // the jump tuck for as long as the pose holds so the art stays at air
-    // height. If we're already grounded, restore standing height instead so a
-    // landed tail doesn't float at half size.
-    if (hero.grounded) hero.applyJumpHeight(false);
-    else hero.applyJumpHeight(true);
+    // The tail usually plays out in the air (the dash ends mid-flight) — the
+    // sheet is a full-body pose, so if we're grounded make sure we're at
+    // standing height; airborne we leave height alone (the air branch's tuck
+    // only applies to the jump anim, and this branch owns the frame).
+    if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
     return;
   }
 
