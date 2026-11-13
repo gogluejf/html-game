@@ -161,8 +161,9 @@ export function roundRect(ctx, x, y, w, h, r) {
  * @param {number} cx — center X of the bar
  * @param {number} y — vertical center
  * @param {{icons:(string|{icon:string,isActive?:()=>boolean})[], label:string, active?:boolean}[]} entries
+ * @param {{align?:string}} [o] 'left' anchors the bar's left edge at cx instead of centering.
  */
-export function drawNavBar(ctx, cx, y, entries) {
+export function drawNavBar(ctx, cx, y, entries, o = {}) {
   const gap = 8;       // chip-to-chip gap within an entry
   const dotGap = 20;   // space between entries (the "·" separator)
   const wordGap = 6;   // chip-to-word gap
@@ -196,7 +197,7 @@ export function drawNavBar(ctx, cx, y, entries) {
     return { chipWidths, wordW };
   });
 
-  let px = cx - total / 2;
+  let px = o.align === 'left' ? cx : cx - total / 2;
   ctx.save();
   ctx.textBaseline = 'middle';
 

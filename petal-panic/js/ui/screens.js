@@ -69,6 +69,7 @@ export function loadImages() {
     homePortrait: '../../assets/interface/home/scarlet_portrait_f1.png',
     squidLogo: '../../assets/interface/squid_os_logo/squid_os_logo_f1.png',
     logo: '../../assets/interface/home/logo_f1.png',
+    menuArt: '../../assets/interface/menu/world_map_f1.png',
     selectScarlet: '../../assets/interface/select/scarlet_vale_f1.png',
     selectBalthazar: '../../assets/interface/select/balthazar_f1.png',
     selectNone: '../../assets/interface/select/none_f1.png',
@@ -663,6 +664,14 @@ const MENU_ROW_GAP = 38;        // gap between option rows
 const MENU_PILL_W = 260;        // focus-pill width (wider than pause's 240)
 const MENU_NAV_GAP = 20;        // space between last row and the nav bar
 
+// --- Menu two-pane layout (level-select / boss-rush pattern) -----------------
+// Left ~70%: big art placeholder. Right ~30%: left-aligned option list.
+const MENU_ART_X = 24;          // art box left edge
+const MENU_ART_Y = 96;          // art box top edge
+const MENU_ART_W = 640;         // ≈ 70% of the 960 viewport
+const MENU_ART_H = 400;         // leaves headroom for the title + nav strip
+const MENU_LIST_X = 700;        // option-list anchor X (left-aligned)
+
 /**
  * Shared parameterized option-list renderer (F3): draws the pause-style
  * centered list — title, rows with the pink focus pill, and the keycap nav
@@ -681,10 +690,13 @@ const MENU_NAV_GAP = 20;        // space between last row and the nav bar
  * @param {number} [o.pillW]          focus-pill width (default 240)
  * @param {Array} [o.navEntries]      navHintEntries() result for the bar
  * @param {number} [o.navGap]         extra space between last row and bar (default 24)
+ * @param {number} [o.alignX]         anchor X for LEFT-aligned layout. When set,
+ *                                    rows/pill/nav are left-anchored here instead
+ *                                    of centered on VIEW_W/2 (menu two-pane).
  */
 export function drawOptionList(ctx, {
   title, titleY, titleSize = 56, items, focus, startY,
-  gap = PILL_ROW_GAP, pillW = null, navEntries, navGap = 24,
+  gap = PILL_ROW_GAP, pillW = null, navEntries, navGap = 24, alignX = null,
 }) {
   if (title) {
     drawMarqueeTitle(ctx, title, VIEW_W / 2, titleY, titleSize, { color: CREAM });
@@ -700,32 +712,37 @@ export function drawOptionList(ctx, {
     return Math.ceil(w) + 36; // arrow room + horizontal padding
   });
   const maxPill = pillW ?? Math.max(...pillWidths);
+  const center = alignX == null;
 
   for (let i = 0; i < items.length; i++) {
     const y = startY + i * gap;
     const focused = i === focus;
     if (focused) {
       const w = Math.min(pillWidths[i], maxPill);
+      const px = center ? VIEW_W / 2 - w / 2 : alignX;
       ctx.save();
       ctx.fillStyle = COLOR_PILL_FILL;
-      roundRect(ctx, VIEW_W / 2 - w / 2, y - PILL_Y_OFF, w, PILL_H, PILL_R);
+      roundRect(ctx, px, y - PILL_Y_OFF, w, PILL_H, PILL_R);
       ctx.fill();
       ctx.strokeStyle = COLOR_PILL_STROKE;
       ctx.lineWidth = 1;
-      roundRect(ctx, VIEW_W / 2 - w / 2, y - PILL_Y_OFF, w, PILL_H, PILL_R);
+      roundRect(ctx, px, y - PILL_Y_OFF, w, PILL_H, PILL_R);
       ctx.stroke();
       ctx.restore();
     }
-    drawPrompt(ctx, (focused ? '▸ ' : '  ') + items[i].label, VIEW_W / 2, y + 2,
+    drawPrompt(ctx, (focused ? '▸ ' : '  ') + items[i].label,
+      center ? VIEW_W / 2 : alignX, y + 2,
       focused ? OPT_FONT_FOCUSED : OPT_FONT_NORMAL, {
         color: !items[i].enabled ? COLOR_OPT_DISABLED
              : (focused ? COLOR_OPT_FOCUSED : COLOR_OPT_NORMAL),
+        align: center ? undefined : 'left',
       });
   }
 
   if (navEntries) {
     const hintY = startY + items.length * gap + navGap;
-    drawNavBar(ctx, VIEW_W / 2, hintY, navEntries);
+    drawNavBar(ctx, center ? VIEW_W / 2 : alignX, hintY, navEntries,
+      center ? undefined : { align: 'left' });
   }
 }
 
@@ -789,6 +806,25 @@ export const Menu = {
       return;
     }
 
+    // Left pane (~70%): big art placeholder — same card language as Level
+    // Select / Boss Rush detail cards. The real key art lands later; until
+    // then a dashed placeholder box stands in (world_map image when loaded).
+    const art = images.menuArt;
+    if (art && art.complete && art.naturalWidth > 0) {
+      ctx.save();
+      roundRect(ctx, MENU_ART_X, MENU_ART_Y, MENU_ART_W, MENU_ART_H, 12);
+      ctx.clip();
+      drawFitted(ctx, art, MENU_ART_X, MENU_ART_Y, MENU_ART_W, MENU_ART_H);
+      ctx.restore();
+      ctx.strokeStyle = COLOR_PILL_STROKE;
+      ctx.lineWidth = 2;
+      roundRect(ctx, MENU_ART_X, MENU_ART_Y, MENU_ART_W, MENU_ART_H, 12);
+      ctx.stroke();
+    } else {
+      drawPlaceholder(ctx, MENU_ART_X, MENU_ART_Y, MENU_ART_W, MENU_ART_H, 'KEY ART');
+    }
+
+    // Right pane (~30%): left-aligned option list.
     drawOptionList(ctx, {
       title: 'PETAL PANIC',
       titleY: MENU_TITLE_Y,
@@ -799,6 +835,7 @@ export const Menu = {
       gap: MENU_ROW_GAP,
       pillW: MENU_PILL_W,
       navGap: MENU_NAV_GAP,
+      alignX: MENU_LIST_X,
       navEntries: navHintEntries([
         { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
         { action: 'confirm', opts: { mode: 'select_layout' } },
