@@ -56,7 +56,7 @@ const _slotMelee = makeSlot(_hbMelee, {
   resetFlag: { get: () => !!ctx.hero._meleeHbReset, set: v => ctx.hero._meleeHbReset = v },
 });
 
-// Hero supermove dash slot.
+// Hero supermove slot.
 const _hbSuper = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, method: 'super' });
 _hitboxes.push(_hbSuper);
 const _slotSuper = makeSlot(_hbSuper, {

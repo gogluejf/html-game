@@ -14,7 +14,6 @@ import { parseSheet } from '../core/spriteData.js';
 import { loadFrames } from '../core/frameLoader.js';
 import { uniformScale } from '../core/spriteData.js';
 import { SpritePlayer } from '../core/spritePlayer.js';
-import { CROUCH_HEIGHT_SCALE } from './hero.js';
 
 /** Module-level cache: heroId → { data, frames }. */
 const heroSpriteCache = new Map();
@@ -97,13 +96,6 @@ export function attachHeroSprites(hero, heroId) {
  *  hero is "standing" even with residual friction drift. */
 const RUN_SPEED_THRESHOLD = 20;
 
-// Airborne jump pose height as a fraction of standing targetH — mirrors the
-// crouch transform (CROUCH_HEIGHT_SCALE) but for the JUMP state. While the
-// hero is airborne in its jump/djump/fall phase the body is drawn at half
-// height (a tucked/jumping pose); landing restores full height. Pure code
-// constant — no sheet data.
-export const JUMP_HEIGHT_SCALE = 0.5;
-
 // Idle playback pattern: while standing still, play the `idle` anim for this
 // many full cycles, then (if an `idle_special` sheet exists) the special idle
 // for that many cycles — then repeat.
@@ -160,50 +152,40 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   if ((hero.hitStunned || hitPoseActive) && hero.sprite.anims.hit) {
     delete hero._idlePatternClock;
     // The hit pose is FULL standing height, always (airborne or grounded):
-    // restore any crouch/jump tuck for the duration of the pose. When playback
-    // ends and control returns, the normal branches re-derive height from the
-    // live crouching/grounded state — no manual reset needed.
-    if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
+    // setAnim('hit') applies the sheet's hScale (1.0) and re-fits art + box
+    // together — height follows the playing anim, no manual restore needed.
     if (hero._spriteAnim !== 'hit') {
       try { hero.setAnim('hit'); } catch { /* keep current */ }
     }
     return;
   }
 
-  // Supermove dash: the supermove sheet plays at its AUTHORED fps (the
+  // Supermove supermove: the supermove sheet plays at its AUTHORED fps (the
   // SpritePlayer ticks it in hero.update's anim tick) — no progress mapping.
-  // The 0.6s dash covers only the first part of the cycle; the remainder
-  // finishes as a visual freeze tail AFTER the dash ends (branch below).
+  // The 0.6s supermove covers only the first part of the cycle; the remainder
+  // finishes as a visual freeze tail AFTER the supermove ends (branch below).
   if (hero.supermoveActive && hero.sprite.anims.supermove) {
     delete hero._idlePatternClock;
-    // A jump-cancel out of the decel phase ends the dash early — the freeze
+    // A jump-cancel out of the decel phase ends the supermove early — the freeze
     // tail branch below still lets the art finish before reclaiming locomotion.
+    // Height is anim-owned: setAnim('supermove') applies the sheet's hScale
+    // (full-body pose = 1.0), so the supermove renders at standing height whether
+    // we launched from the ground, a crouch, or a tucked jump.
     if (hero._spriteAnim !== 'supermove') {
       try { hero.setAnim('supermove'); } catch { /* keep current */ }
     }
-    // The dash is airborne but the sheet is a FULL-BODY pose (feet at y=0 on
-    // every frame, like idle/run/melee) — it renders at FULL standing height.
-    // If we launched from a crouch or a tucked jump, restore standing height
-    // for the whole dash so art + box stay consistent (same rule as the melee
-    // branches). NO jump-tuck here: tucking the box while the scale stays
-    // full-height is what made the dash art float low over the floor.
-    if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
     return;
   }
 
-  // Supermove freeze tail: the dash physics are over (normal control has
+  // Supermove freeze tail: the supermove physics are over (normal control has
   // resumed) but the sheet is still mid-cycle — hold the supermove pose until
   // playback reaches its terminal frame, then fall through so the generic
   // switch reclaims idle/run/jump. Purely visual: input/physics are already
-  // normal, only the sprite stays on the sheet.
+  // normal, only the sprite stays on the sheet. Height stays with the pose
+  // (anim-owned) until the next setAnim switches it.
   if (hero._spriteAnim === 'supermove' && hero.sprite.anims.supermove
       && (!hero._player || !hero._player.isDone)) {
     delete hero._idlePatternClock;
-    // The tail usually plays out in the air (the dash ends mid-flight) — the
-    // sheet is a full-body pose, so if we're grounded make sure we're at
-    // standing height; airborne we leave height alone (the air branch's tuck
-    // only applies to the jump anim, and this branch owns the frame).
-    if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
     return;
   }
 
@@ -213,11 +195,8 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   // idle/run/crouch — no per-attack end-of-swing reset needed.
   if (hero.specialMeleeActive && hero.sprite.anims.super_melee) {
     delete hero._idlePatternClock; // left idle — restart pattern next stand-still
-    // If we landed mid-swing, the airborne jump-tuck (JUMP_HEIGHT_SCALE) must
-    // not persist into the grounded attack — restore full standing height so
-    // the super_melee art + hitbox render at correct size for the rest of the
-    // swing. No-op while genuinely airborne (applyJumpHeight is idempotent).
-    if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
+    // Height is anim-owned: setAnim applies the sheet's hScale, so landing
+    // mid-swing just switches to the grounded sheet and the height follows.
     if (hero._spriteAnim !== 'super_melee') {
       try { hero.setAnim('super_melee'); } catch { /* keep current */ }
     }
@@ -229,18 +208,17 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
     // swing start (hero._meleeAirborne). The flag is fixed for the whole swing:
     // landing mid-swing keeps the air art (the hitbox/anim stay in lockstep),
     // and a coyote-time swing started just after leaving the ground plays the
-    // grounded sheet.
+    // grounded sheet. Height follows whichever sheet is active (hScale).
     const want = (hero._meleeAirborne && hero.sprite.anims.air_melee) ? 'air_melee' : 'melee';
-    if (hero.grounded && hero._targetHScale !== 1) hero.applyJumpHeight(false);
     if (hero._spriteAnim !== want) {
       try { hero.setAnim(want); } catch { /* keep current */ }
     }
     return;
   }
 
-  // Crouch owns its own height (applyCrouchHeight + CROUCH_HEIGHT_SCALE) — it
-  // must win over the run/idle switch. setAnim() no longer touches _targetHScale,
-  // so crouched height is preserved automatically across anim switches.
+  // Crouch owns its own height via the crouch sheet's hScale (0.5) — it
+  // must win over the run/idle switch. Height follows the playing anim
+  // (setAnim applies hScale), so crouched height is preserved automatically.
   //
   // EXCEPT while airborne with a jump initiated: a jump launched from a crouch
   // exits the crouch state atomically in hero.update, but a Down held through
@@ -257,79 +235,38 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
   if (hero.crouching && (hero.grounded || inFallGrace)) {
     delete hero._idlePatternClock;
     const want = (shooting && hero.sprite.anims.crouch_shoot) ? 'crouch_shoot' : 'crouch';
+    // Height is anim-owned: setAnim applies the crouch sheet's hScale (0.5)
+    // and re-fits art + box together — no separate height step, no re-fit.
+    // This also self-heals stale full-height states (e.g. the frame after a
+    // hit pose ends): switching to the crouch sheet tucks atomically.
     if (hero._spriteAnim !== want) {
       try {
         hero.setAnim(want);
-      } catch { /* keep current */ }
-    }
-    // Height: this branch REQUIRES the crouched scale. applyCrouchHeight only
-    // runs on the entry/exit state transitions in hero.update (input-gated),
-    // so paths that reach here with a stale full-height scale — notably the
-    // frame right after a hit pose ends (the hit branch forces full height for
-    // its whole playback, and crouch entry was skipped while stunned) — would
-    // otherwise render the crouch sheet at FULL size: a huge croucher with a
-    // full-height box. Re-asserting here makes the branch self-consistent:
-    // crouching true ⇒ crouched height, always.
-    if (hero._targetHScale !== CROUCH_HEIGHT_SCALE) hero.applyCrouchHeight(true);
-    // setAnim() fits the sheet onto this.h at SWITCH time, but the crouch
-    // height change happens in a separate step (applyCrouchHeight) — re-derive
-    // scale + width from the active sheet + CURRENT h so both axes follow the
-    // sheet aspect at the crouched height (same rule as setAnim, re-run).
-    const cb = hero.sprite?.anims?.[hero._spriteAnim]?.collisionBox;
-    if (cb) {
-      try {
-        hero._spriteScale = uniformScale(hero.sprite.anims[hero._spriteAnim], hero.h);
-        hero.w = cb.w * hero._spriteScale;
       } catch { /* keep current */ }
     }
     return;
   }
 
   // Airborne jump pose: while NOT grounded (and not mid-attack/crouch above),
-  // play the `jump` anim and tuck the body to half height — the same pure-code
-  // transform as crouch (JUMP_HEIGHT_SCALE × targetH), so the collision box +
-  // art shrink together for the whole air time. Landing (grounded again) is
-  // handled by the grounded branch below restoring full height via setAnim's
-  // preserved _targetHScale — we explicitly reset it here on the land frame so
-  // a hero who was tucked in the air snaps back to standing height immediately.
+  // play the `jump` anim — its sheet declares hScale 0.5, so setAnim tucks
+  // box + art together for the whole air time (height follows the playing
+  // anim; there is no separate "air tuck" step). Landing switches back to a
+  // full-height sheet and the height restores on that setAnim.
   //
   // Fall grace (hero._fallAnimGrace): an UNJUMPED air entry (walked off a
   // ledge, knocked into the air) keeps the last grounded anim for a short
-  // window before the jump tuck takes over — snapping into the tucked pose on
+  // window before the jump pose takes over — snapping into the tucked pose on
   // the exact frame you leave a platform reads as a flinch. A real jump never
   // sees this window (jumpsUsed > 0 from the launch frame).
   if (!hero.grounded && !(hero.jumpsUsed === 0 && hero._fallAnimGrace > 0)) {
     delete hero._idlePatternClock; // airborne — restart pattern on landing+stand
-    // BUGFIX (jump-height oscillation): the old code restored full height here
-    // whenever _targetHScale !== 1 — but a tucked air frame ALWAYS has scale
-    // 0.5, so this fired EVERY air frame: restore (y += 45.6) then tuck
-    // (y -= 45.6) twice per frame = the ±48px jitter/pop during jumps and
-    // super-melee. The land-frame restore is owned by the grounded branch
-    // below (line ~273), so the air branch must NOT touch height on entry.
     if (hero.sprite.anims.jump) {
       if (hero._spriteAnim !== 'jump') {
         try { hero.setAnim('jump'); } catch { /* keep current */ }
       }
-      // Tucked half-height for the duration of the air (feet stay planted via
-      // the y adjust inside applyJumpHeight, same rule as crouch).
-      hero.applyJumpHeight(true);
-      // setAnim() fit the jump sheet onto FULL targetH, but we just tucked the
-      // body to half height — re-derive scale + width from the CURRENT h so the
-      // art matches the tucked box (same re-fit the crouch branch does). Without
-      // this the jump art renders at full size over a half-height box.
-      const cb = hero.sprite?.anims?.[hero._spriteAnim]?.collisionBox;
-      if (cb) {
-        try {
-          hero._spriteScale = uniformScale(hero.sprite.anims[hero._spriteAnim], hero.h);
-          hero.w = cb.w * hero._spriteScale;
-        } catch { /* keep current */ }
-      }
     }
     return;
   }
-  // Just landed: make sure we're at full standing height (the air branch sets
-  // this every air frame; this guards against any path that left us tucked).
-  if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
 
   // Fall-grace window (unjumped air entry): the jump-tuck branch above is
   // suppressed, so fall through to the grounded-style switch below and keep

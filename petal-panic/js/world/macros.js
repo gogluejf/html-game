@@ -274,12 +274,12 @@ export function superAssistReachForStats(stats, risePx) {
 
   // BUG-3: for DOWNWARD hops (target below the source top) the old model
   // still paid the full "run + double jump to second apex" cost and then
-  // dropped from totalApex — a fantasy dash fired high in the air that
-  // the mover never does. Real behavior: jump off the edge, fire the dash
+  // dropped from totalApex — a fantasy supermove fired high in the air that
+  // the mover never does. Real behavior: jump off the edge, fire the supermove
   // near the arc's peak while FALLING toward the target, carry level from
   // there. The mover fires the super at the DOUBLE-jump apex (platformMover:
   // `mem.djDone && jumpsUsed===2 && vy>=0`), i.e. at totalApex with vy=0,
-  // then holds level through the burst phase. Model the dash at totalApex.
+  // then holds level through the burst phase. Model the supermove at totalApex.
   if (risePx <= 0) {
     const dashAltitude = totalApex; // j2 apex — where the mover actually fires
     const preSuperDistDown = speed * (jump / GRAVITY + secondJump / GRAVITY); // run to j2 apex

@@ -48,7 +48,7 @@ ok('respawn grace grants invincible (NOT intangible)', () => {
   assert.equal(h.intangible, false);
 });
 
-ok('supermove dash grants BOTH invincible and intangible', () => {
+ok('supermove dash grants invincible (NOT intangible — stays a body in the world)', () => {
   const h = mkHero();
   h.facing = 1;
   h.supermoveMeter = h.SUPERMOVE_MAX; // full meter so the trigger fires
@@ -56,7 +56,7 @@ ok('supermove dash grants BOTH invincible and intangible', () => {
   h.update(DT, inp);
   assert.ok(h.supermoveActive, 'dash should be active');
   assert.equal(h.invincible, true, 'dash is untouchable');
-  assert.equal(h.intangible, true, 'dash phases through solids');
+  assert.equal(h.intangible, false, 'dash does NOT leave the collision system (immunity.md)');
 });
 
 ok('star powerup grants invincible + starPower (NOT intangible)', () => {
@@ -71,7 +71,9 @@ ok('star powerup grants invincible + starPower (NOT intangible)', () => {
 ok('starPower clears when the invincible window expires', () => {
   const h = mkHero();
   POWERUP_DEFS.invincibility.apply(h);
-  for (let i = 0; i < Math.ceil(5 / DT) + 2; i++) h.update(DT, {});
+  // syncImmunityStates() is the single expiry site (immunity.md) — in the full
+  // game loop it runs every frame after timers.tick(); drive it explicitly here.
+  for (let i = 0; i < Math.ceil(7 / DT) + 2; i++) { h.timers.tick(DT); h.syncImmunityStates(); }
   assert.equal(h.invincible, false);
   assert.equal(h.starPower, false, 'star ends with the window');
 });

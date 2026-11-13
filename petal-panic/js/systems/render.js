@@ -248,7 +248,7 @@ export function render(ctx, alpha = 1) {
         if (h.invulnFx && !h.invulnFx.done) {
           // Invulnerability flicker (§27) is an effect now: it owns the look
           // per source ('powerup' color flicker / 'hit' transparent blink /
-          // 'dash' none) and REPLACES the normal draw while active. The
+          // 'supermove' none) and REPLACES the normal draw while active. The
           // instance is stepped by hero.syncInvulnFx() from the 'intangible'
           // timer fraction, so phase math lives in invulnFlicker.js.
           h.invulnFx.render(ctx);
@@ -593,7 +593,13 @@ export function render(ctx, alpha = 1) {
  * airborne + falling (vy > 0) → 'fall'; airborne at rest → idle.
  */
 export function heroAnimName(h) {
-  // Composed domain view (hero.locomotion, §31) — single derivation point.
+  // OUT OF THE BOX: report the anim ACTUALLY bound to the sprite (_spriteAnim,
+  // set by setAnim) — the label must match the pixels, not the gameplay state.
+  // State-derived names drift in edge windows (supermove freeze tail still
+  // plays the sheet while locomotion already says 'idle'; hit pose outlives
+  // hit-stun; fall-grace keeps run/idle airborne). No sheet attached (tests /
+  // primitive path) → fall back to the composed state view.
+  if (h._spriteAnim && h.sprite?.anims?.[h._spriteAnim]) return h._spriteAnim;
   const loc = h.locomotion ?? (() => {
     // Plain test fixtures without getters keep working via raw fields.
     if (h.dying) return 'dead';
@@ -743,7 +749,7 @@ function drawDebugOverlay(ctx, alpha = 1) {
   const mh = hero.meleeHitboxWorld;
   _drawAtkBox(mh, mh ? `melee·${mh._source ?? '?'}` : null);
 
-  // Super dash hitbox in YELLOW when active (debug only) — same as melee.
+  // Super supermove hitbox in YELLOW when active (debug only) — same as melee.
   const sh = hero.supermoveHitboxWorld;
   _drawAtkBox(sh, sh ? `super·${sh._source ?? '?'}` : null);
 

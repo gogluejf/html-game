@@ -68,7 +68,7 @@ function simulateCandidate(hero, goal, world, params, script){
   let wasAirborne = false; // a "rest" only counts AFTER the hero leaves the ground —
                            // otherwise the takeoff frame (still on the source
                            // surface) gets scored as a rest and a bad candidate
-                           // (e.g. DOUBLE_S that dashes off-world) wins on a
+                           // (e.g. DOUBLE_S that supermovees off-world) wins on a
                            // phantom low score instead of hard-missing.
 
   // Initialize onOneWay from hero's current position (is it standing on a one-way?)
@@ -148,7 +148,7 @@ function simulateCandidate(hero, goal, world, params, script){
  *  pose height (_targetHScale), active sheet anim (setAnim re-derives the
  *  sheet-owned width + scale from the CURRENT h, exactly as the game does on
  *  a real anim switch), coyote/fall-grace/jump-buffer timers, drop-through,
- *  supermove dash state, and facing. */
+ *  supermove state, and facing. */
 function makeClone(src, spawn){
   // The ride always uses balthazar (ghost + tests); keep it simple.
   const h = headlessRef.createHeadlessHero('balthazar', spawn);
@@ -173,7 +173,7 @@ function makeClone(src, spawn){
   h._jumpBuffer = src._jumpBuffer ?? 0;
   h._prevJumpHeld = src._prevJumpHeld ?? false;
   h._dropTimer = src._dropTimer ?? 0;
-  // Supermove dash playback state (mid-dash clones must resume in-phase).
+  // Supermove supermove playback state (mid-supermove clones must resume in-phase).
   h.supermoveActive = src.supermoveActive;
   h.supermovePhase = src.supermovePhase;
   h.supermoveTimer = src.supermoveTimer;

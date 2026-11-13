@@ -527,9 +527,7 @@ export function placeHeroAtEntry(h) {
   h.deathTimer = 0;
   h.alive = true;
   // Brief entry i-frames so the fade-in reveal isn't instantly lethal.
-  h.invincible = true;
-  h.invulnSource = 'hit';
-  h.timers.set('invincible', h.RESPAWN_IFRAMES ?? 2);
+  h.setInvincible('hit', h.RESPAWN_IFRAMES ?? 2);
 }
 
 /**

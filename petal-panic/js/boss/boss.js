@@ -236,9 +236,7 @@ export class Elephant extends Enemy {
       const dealt = damage(this, hero, this.stats.attack, 'melee');
       if (dealt > 0) {
         hero.loseSelectedSpecial(); // special-weapons.md: damaging hit drops it
-        hero.invincible = true;
-        hero.invulnSource = 'hit';
-        hero.timers.set('invincible', Math.max(hero.timers.get('invincible'), 0.3));
+        hero.setInvincible('hit', Math.max(hero.timers.get('invincible'), 0.3));
         return true;
       }
     }

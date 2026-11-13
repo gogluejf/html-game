@@ -284,7 +284,7 @@ function handleDebugKeys(e) {
   switch (e.code) {
     case 'KeyF': // God mode toggle
       Debug.god = !Debug.god;
-      if (!Debug.god) { ctx.hero.invincible = false; ctx.hero.starPower = false; }
+      if (!Debug.god) { ctx.hero.clearInvincible('god'); }
       Debug.logEvent(`god mode ${Debug.god ? 'ON' : 'OFF'}`);
       break;
     case 'KeyZ': // Slow-mo / freeze cycle
@@ -486,9 +486,9 @@ function swapHero() {
   if (saved.invincible) {
     const remaining = hero.timers.get('invincible');
     if (remaining > 0) {
-      nh.timers.set('invincible', remaining);
-      nh.invulnSource = hero.invulnSource ?? 'hit';
-      nh.starPower = !!hero.starPower;
+      // Re-grant through the state API so flag + timer + source stay in sync.
+      nh.setInvincible(hero.invulnSource ?? 'hit', remaining);
+      if (hero.starPower) nh.starPower = true;
     } else {
       nh.invincible = false;
       nh.starPower = false;
@@ -521,7 +521,7 @@ function swapHero() {
 /** Per-frame god-mode enforcement: invincible (weapons are unlimited by design). */
 export function applyGodMode(dt) {
   if (!Debug.god) return;
-  ctx.hero.invincible = true;
+  ctx.hero.setInvincible('god'); // open-ended; cleared when god mode toggles off
 }
 
 // --- Frame-by-frame box/hitbox trace (auto-gated) ----------------------------

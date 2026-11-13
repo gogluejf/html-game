@@ -400,9 +400,7 @@ export function registerCollisionHandlers(collisionWorld) {
         heroEnt.hitstunTimer = 0;
       }
       if (heroEnt.iFrameTimer > 0) {
-        heroEnt.invincible = true;
-        heroEnt.invulnSource = 'hit';
-        heroEnt.timers.set('invincible', Math.max(heroEnt.timers.get('invincible'), heroEnt.iFrameTimer));
+        heroEnt.setInvincible('hit', Math.max(heroEnt.timers.get('invincible'), heroEnt.iFrameTimer));
         heroEnt.iFrameTimer = 0;
       }
       // Stamp the hit time so the HUD plays the 'hit' expression briefly.

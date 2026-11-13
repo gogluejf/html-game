@@ -14,7 +14,6 @@ import { SPECIAL_TYPES } from '../objects/specialWeapons.js';
 import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats } from './heroDefs.js';
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { heroDamage } from '../combat/damage.js';
-import { JUMP_HEIGHT_SCALE } from './heroSprites.js';
 import { placeSheetFrame } from '../core/spriteData.js';
 import { invulnFlicker, INVISIBLE } from '../effects/invulnFlicker.js';
 import { blink } from '../effects/blink.js';
@@ -263,18 +262,18 @@ export class Hero extends Entity {
     // Crouch height is a code constant (CROUCH_HEIGHT_SCALE) — no sheet data.
 
     // --- Super move (design §22-§23) ------------------------------------------
-    // Charges over time; when full the hero can dash forward. Triggered by the
-    // super intent when the meter is full. The dash has TWO explicit phases
+    // Charges over time; when full the hero can supermove forward. Triggered by the
+    // super intent when the meter is full. The supermove has TWO explicit phases
     // (§23): a committed BURST (first ~60% — high horizontal speed, no gravity,
     // jump CANNOT cancel) and a DECEL/recovery tail (last ~40% — gravity
     // resumes, horizontal speed decays, jump MAY cancel out of it).
     this.supermoveMeter = 0;         // 0..100
     this.SUPERMOVE_MAX = 100;
     this.SUPERMOVE_CHARGE_RATE = 20; // per second → 5s to full
-    this.supermoveActive = false;    // true while the dash is playing
+    this.supermoveActive = false;    // true while the supermove is playing
     this.supermovePhase = null;      // 'burst' | 'decel' | null (not dashing)
     this.supermoveTimer = 0;         // seconds remaining in the CURRENT phase
-    this._supermoveElapsed = 0;      // total seconds since trigger (never resets mid-dash)
+    this._supermoveElapsed = 0;      // total seconds since trigger (never resets mid-supermove)
     // Supermove damage box is SHEET-AUTHORED ONLY (per-frame `attack` boxes on
     // the supermove sheet, resolved live in attackHitboxWorld) — no cached
     // geometry here. Consumers read supermoveHitboxWorld each frame.
@@ -441,12 +440,9 @@ export class Hero extends Entity {
     // Hit-stun (§24/§26): input locked, physics keep running; knockback decays
     // under friction during the window and control resumes cleanly after.
     this.timers.set('rec', profile.recovery);
-    // Damage-immune for the i-frame duration (§27): drives both the state flag
-    // and the render blink (which reads the timer's remaining fraction).
-    // Source tag 'hit' → transparent flicker (same family as level-entry grace).
-    this.invincible = true;
-    this.invulnSource = 'hit';
-    this.timers.set('invincible', Math.max(this.timers.get('invincible'), profile.iFrames));
+    // Damage-immune for the i-frame duration (§27 / immunity.md): one call owns
+    // flag + timer + source tag. Source 'hit' → transparent blink look.
+    this.setInvincible('hit', Math.max(this.timers.get('invincible'), profile.iFrames));
     // Stamp the hit time so the HUD can play the 'hit' expression briefly.
     this.lastHitAt = performance.now();
     return true;
@@ -473,6 +469,10 @@ export class Hero extends Entity {
       return;
     }
     const src = this.invulnSource ?? 'hit';
+    // Event-based grants (no timer — e.g. supermove, god mode) have no
+    // fraction to clock against: the render path draws them plain (no look
+    // is registered for those sources), so there is nothing to step here.
+    if (!this.timers.has('invincible')) return;
     // Reuse the live instance only for the same look AND the same window. A
     // re-hit that EXTENDS the invincible timer respawns the effect with the
     // new duration so the blink covers the whole (longer) window — the
@@ -542,8 +542,11 @@ export class Hero extends Entity {
           this._pendingCrouch = true;
         } else {
           this.crouching = true;
-          // Height is a pure code transform (CROUCH_HEIGHT_SCALE × targetH).
-          this.applyCrouchHeight(true);
+          // Tuck the box NOW so state + height are atomic on the press frame.
+          // In the full game setAnim re-applies the same value when the crouch
+          // sheet binds (hScale 0.5) — idempotent, no double y-adjust.
+          // Sheetless contexts (node tests) get the tuck from here alone.
+          this.applyPoseHeight(CROUCH_HEIGHT_SCALE);
         }
       }
     }
@@ -575,8 +578,8 @@ export class Hero extends Entity {
     this.sliding = this.crouching && Math.abs(this.vx) > 0.5;
 
     if (this.supermoveActive) {
-      // Super dash owns vx/vy — skip all normal movement control.
-      // (updateSupermove below will set the dash velocity.)
+      // Super supermove owns vx/vy — skip all normal movement control.
+      // (updateSupermove below will set the supermove velocity.)
     } else if (this.specialMeleeActive && this.specialMeleePhase !== 'recovery') {
       // Special melee windup/active (§15): the committed trajectory OWNS vx —
       // held input cannot steer or reverse it mid-attack. updateSpecialMelee
@@ -703,7 +706,7 @@ export class Hero extends Entity {
       this._jumpBuffer = 0;
     }
     // Supermove jump cancellation (§23): the committed burst is NOT cancellable;
-    // once the dash enters its recovery/deceleration phase a fresh Jump press
+    // once the supermove enters its recovery/deceleration phase a fresh Jump press
     // cancels out of the remaining recovery (handled by endSupermove below).
     if (this.supermoveActive && this.supermovePhase === 'decel' && jumpPressed) {
       this.endSupermove();
@@ -724,7 +727,7 @@ export class Hero extends Entity {
     this._prevJumpHeld = input.jump;
 
     // --- Gravity ------------------------------------------------------------
-    // During a supermove dash the dash owns vy: the committed burst phase has
+    // During a supermove the supermove owns vy: the committed burst phase has
     // no gravity (airborne slide); the decel phase applies gravity inside
     // updateSupermove() so the hero drops back toward the ground.
     if (!this.supermoveActive || this.supermovePhase === 'decel') {
@@ -743,17 +746,14 @@ export class Hero extends Entity {
     // --- Timers -------------------------------------------------------------
     // Unified labeled timers (invincible, rapid, rec, ...) advance together.
     this.timers.tick(dt);
+    // Immunity states self-expire here (immunity.md): duration-based grants
+    // drop on the exact frame they hit zero; starPower ends with its window.
+    this.syncImmunityStates();
     // Fall-grace clock: decays only while airborne with no jump initiated —
     // the window that keeps the last grounded anim playing after a ledge
     // walk-off before the jump-tuck pose takes over.
     if (!this.grounded && this.jumpsUsed === 0 && this._fallAnimGrace > 0) {
       this._fallAnimGrace = Math.max(0, this._fallAnimGrace - dt);
-    }
-    if (this.invincible && this.timers.expired('invincible')) {
-      this.invincible = false;
-      this.invulnSource = null;
-      // Star power ends with the invincibility window.
-      this.starPower = false;
     }
     // Keep the invulnerability effect in lockstep with the timer.
     this.syncInvulnFx(dt);
@@ -784,7 +784,7 @@ export class Hero extends Entity {
     // mutually exclusive (startSpecialMelee refuses while a normal swing is up).
     this.updateSpecialMelee(dt, input);
 
-    // --- Super move charge + dash -------------------------------------------
+    // --- Super move charge + supermove -------------------------------------------
     this.updateSupermove(dt, input);
 
     // --- Anim tick ----------------------------------------------------------
@@ -1030,7 +1030,7 @@ export class Hero extends Entity {
     this._pendingCrouch = null;
     if (want && !this.crouching && this.grounded) {
       this.crouching = true;
-      this.applyCrouchHeight(true);
+      this.applyPoseHeight(CROUCH_HEIGHT_SCALE);
     } else if (!want && this.crouching) {
       this.exitCrouch();
     }
@@ -1050,7 +1050,7 @@ export class Hero extends Entity {
    *                  produce a box.
    *   specialMelee { hitbox: {ox,oy,bw,bh} } — exposed on every ACTIVE-phase
    *                  frame (per-hero differences come from the data).
-   *   supermove    { box: {ox,oy,bw,bh|'body'} } — exposed for the whole dash;
+   *   supermove    { box: {ox,oy,bw,bh|'body'} } — exposed for the whole supermove;
    *                  'body' resolves to the hero's full body height.
    *
    * Mirroring: ox is an offset in the FACING direction; facing left flips the
@@ -1086,10 +1086,12 @@ export class Hero extends Entity {
       }
       entry = this.heroDef.specialMelee.hitbox;
     } else if (attackName === ATTACK_SUPERMOVE) {
-      if (!this.supermoveActive) return null;
       // Sheet-authored box ONLY (melee active-frame pattern): the per-frame
       // `attack` boxes on the supermove sheet ARE the damage window. No table
-      // fallback — a frame without an authored box deals no damage.
+      // fallback — a frame without an authored box deals no damage. The window
+      // spans the WHOLE sheet playback — supermove AND the post-supermove visual tail —
+      // because _sheetAttackBox already gates on _spriteAnim === 'supermove',
+      // which stays set until the player reaches its terminal frame.
       const sheetBox = this._sheetAttackBox('supermove');
       if (!sheetBox) return null;
       const box = this._sheetBoxToWorld(sheetBox);
@@ -1506,35 +1508,18 @@ export class Hero extends Entity {
   exitCrouch() {
     this.crouching = false;
     this.sliding = false;
-    this.applyCrouchHeight(false);
+    this.applyPoseHeight(1);
   }
 
   /**
-   * Apply/clear crouch height. Pure code transform: crouched h = targetH ×
-   * CROUCH_HEIGHT_SCALE. Feet stay planted: y adjusts by the height delta.
-   * Works for ANY hero with no per-sheet data.
-   * @param {boolean} crouching
+   * Set the pose height scale directly (state-driven paths: crouch entry/exit).
+   * In the full game the ACTIVE SHEET's hScale is the source of truth and
+   * setAnim() owns the value — these calls just make the STATE transition
+   * atomic on the press/release frame (and cover sheetless contexts). When
+   * the values match, nothing happens (no double y-adjust).
+   * @param {number} hs height scale (1 = standing, 0.5 = tucked pose)
    */
-  applyCrouchHeight(crouching) {
-    const hs = crouching ? CROUCH_HEIGHT_SCALE : 1;
-    if (hs === this._targetHScale) return;
-    const prevH = this.h;
-    this._targetHScale = hs;
-    const newH = this.h;
-    if (newH !== prevH) this.y += prevH - newH;
-  }
-
-  /**
-   * Apply/clear the airborne jump pose height. Same pure-code transform as
-   * crouch but driven by the JUMP state (JUMP_HEIGHT_SCALE): while airborne in
-   * the jump/djump/fall phase the body tucks to half height, and landing
-   * restores full height. Feet stay planted via the same y-delta adjust.
-   * Kept separate from applyCrouchHeight so the two poses can be tuned
-   * independently (both currently 0.5).
-   * @param {boolean} airborne
-   */
-  applyJumpHeight(airborne) {
-    const hs = airborne ? JUMP_HEIGHT_SCALE : 1;
+  applyPoseHeight(hs) {
     if (hs === this._targetHScale) return;
     const prevH = this.h;
     this._targetHScale = hs;
@@ -1602,11 +1587,8 @@ export class Hero extends Entity {
     this.alive = true;
     this.dying = false;
     this.deathTimer = 0;
-    this.invincible = true;
-    // Respawn grace uses the level-entry look (transparent flicker) — tag it
-    // like 'hit' so the render path picks the same effect family.
-    this.invulnSource = 'hit';
-    this.timers.set('invincible', Hero.RESPAWN_IFRAMES);
+    // Respawn grace (immunity.md): one call owns flag + timer + source tag.
+    this.setInvincible('hit', Hero.RESPAWN_IFRAMES);
     this.exitCrouch();
     this.jumpsUsed = 0;          // 0=grounded, 1=first jump used, 2=double jump used
     this.MAX_JUMPS = 2;          // ground jump + 1 air jump
@@ -1624,14 +1606,11 @@ export class Hero extends Entity {
     this.supermoveTimer = 0;
     this._supermoveElapsed = 0;
     this._fallAnimGrace = 0;
-    // Respawn i-frames (§27): the 'invincible' timer drives BOTH the flag and
-    // the blink — the flag must stay true while the timer is active.
-    this.invincible = true;
   }
 
   /**
-   * Super move: charge over time, trigger dash on super intent when full.
-   * The dash plays out in two explicit phases (design §23):
+   * Super move: charge over time, trigger supermove on super intent when full.
+   * The supermove plays out in two explicit phases (design §23):
    *   burst — committed: high horizontal speed, no gravity, jump CANNOT cancel.
    *   decel — recovery: gravity resumes, horizontal speed decays, jump MAY
    *           cancel out of the remaining recovery.
@@ -1639,7 +1618,7 @@ export class Hero extends Entity {
    * @param {object} input { super: boolean }
    */
   updateSupermove(dt, input) {
-    // Charge the meter (only when not already full and not mid-dash).
+    // Charge the meter (only when not already full and not mid-supermove).
     if (!this.supermoveActive && this.supermoveMeter < this.SUPERMOVE_MAX) {
       this.supermoveMeter = Math.min(this.SUPERMOVE_MAX, this.supermoveMeter + this.SUPERMOVE_CHARGE_RATE * dt);
     }
@@ -1649,20 +1628,20 @@ export class Hero extends Entity {
       this.triggerSupermove();
     }
 
-    // Dash playback: committed burst → decelerating recovery. The sheet art
+    // supermove playback: committed burst → decelerating recovery. The sheet art
     // is NOT progress-mapped — it plays at its authored fps (the SpritePlayer
-    // ticks below), so the dash covers only the first part of the cycle and
+    // ticks below), so the supermove covers only the first part of the cycle and
     // the remainder finishes as a visual freeze tail after endSupermove()
     // (see _supermoveTail in heroSprites.js).
     if (this.supermoveActive) {
       const dir = this.facing;
       // §22 velocity profile: ONE continuous linear ramp from SUPERMOVE_SPEED at
-      // dash start down to SUPERMOVE_RESIDUAL at dash end, driven by TOTAL elapsed
+      // supermove start down to SUPERMOVE_RESIDUAL at supermove end, driven by TOTAL elapsed
       // time since the trigger. The phase split (burst vs decel) only governs
       // gravity and jump-cancel eligibility — it must NOT create a velocity
       // discontinuity at the handoff (supermoveTimer resets between phases).
       this._supermoveElapsed += dt;
-      const f = Math.min(1, this._supermoveElapsed / SUPERMOVE_DUR); // 0→1 across the whole dash
+      const f = Math.min(1, this._supermoveElapsed / SUPERMOVE_DUR); // 0→1 across the whole supermove
       this.vx = dir * (SUPERMOVE_SPEED + (SUPERMOVE_RESIDUAL - SUPERMOVE_SPEED) * f);
       if (this.supermovePhase === 'burst') {
         // Committed: no gravity (handled by the gate in update()).
@@ -1682,7 +1661,7 @@ export class Hero extends Entity {
     }
   }
 
-  /** Start the super dash. Resets meter, sets active state, swaps anim. */
+  /** Start the super supermove. Resets meter, sets active state, swaps anim. */
   triggerSupermove() {
     // §24: combat inputs are locked during hit-stun — no supermove activation.
     if (this.hitStunned) return;
@@ -1695,21 +1674,12 @@ export class Hero extends Entity {
     this.supermovePhase = 'burst';
     this.supermoveTimer = this.burstDur;
     this._supermoveElapsed = 0; // total elapsed since trigger (drives the velocity ramp)
-    // The dash is BOTH untouchable and phases-through for its window:
-    //   invincible — damage-immune for at least the dash window via the
-    //     'invincible' timer. max() so an existing longer grant (i-frames /
-    //     star powerup) is never truncated; we remember the pre-dash value so
-    //     endSupermove() can restore it when a jump-cancel ends the dash early.
-    //   intangible — phases through platform tops (platformMover.js relies on
-    //     this + vy=0 flat to pass through one-way surfaces).
-    this._preSupermoveInvincible = this.timers.get('invincible');
-    this.invincible = true;
-    this.intangible = true;
-    // Dash gets NO visual effect (speed sells it) — tag 'dash' so the render
-    // path skips both flickers. A pre-existing longer grant keeps its source
-    // only if the dash didn't extend the window.
-    if (SUPERMOVE_DUR > this._preSupermoveInvincible) this.invulnSource = 'dash';
-    this.timers.set('invincible', Math.max(this._preSupermoveInvincible, SUPERMOVE_DUR));
+    // The supermove is untouchable for its whole window (immunity.md):
+    // EVENT-BASED invincibility — no timer. It starts here and ends in
+    // endSupermove() (natural end or jump-cancel), so immunity can never
+    // outlive the move. A pre-existing longer grant (i-frames / star) is
+    // untouched: scoped clear only removes the supermove's own tag.
+    this.setInvincible('supermove'); // open-ended, cleared by endSupermove()
     // Swap to the supermove animation.
     if (this.anims.supermove) {
       this._prevAnim = this.anim;
@@ -1719,7 +1689,7 @@ export class Hero extends Entity {
   }
 
   /**
-   * End the dash early (jump-cancel during the decel phase) or naturally at the
+   * End the supermove early (jump-cancel during the decel phase) or naturally at the
    * end of the decel phase. Retains a small residual forward nudge so the hero
    * does not stop dead in mid-air (§22 "do not stop unnaturally"). Normal
    * control/gravity resume immediately after.
@@ -1729,38 +1699,11 @@ export class Hero extends Entity {
     this.supermovePhase = null;
     this.supermoveTimer = 0;
     this.vx = this.facing * SUPERMOVE_RESIDUAL;
-    // The supermove-granted immunity ends with the dash. Restore whatever
-    // intangibility existed BEFORE the dash (i-frames/powerup, or none) so a
-    // jump-cancel never leaves the hero invulnerable past the visible dash.
-    // _preSupermoveInvincible was captured as the REMAINING seconds at trigger
-    // time; subtract the total elapsed since the trigger to get what that
-    // pre-dash grant SHOULD have left — this correctly zeroes out a short
-    // pre-grant (e.g. 0.3s i-frames) that naturally expired during the dash.
-    // If something ELSE extended the timer DURING the dash (a powerup pickup),
-    // its remaining window is still in the live timer and must not be
-    // truncated by restoring the shorter pre-dash value.
-    const pre = this._preSupermoveInvincible ?? 0;
-    const preRemaining = Math.max(0, pre - this._supermoveElapsed);
-    // If something ELSE extended the timer beyond SUPERMOVE_DUR during the dash
-    // (e.g. a star powerup pickup), that excess belongs to the other source and
-    // must survive. We only remove the supermove-granted portion.
-    const current = this.timers.get('invincible');
-    const otherExcess = Math.max(0, current - SUPERMOVE_DUR);
-    const restored = Math.max(preRemaining, otherExcess);
-    if (restored > 0) {
-      this.timers.set('invincible', restored);
-      this.invincible = true;
-      // The surviving grant belongs to its original source — 'dash' visual is
-      // gone with the dash. Re-hit/respawn/powerup re-tag at their own sites.
-      if (this.invulnSource === 'dash') this.invulnSource = 'hit';
-    } else {
-      this.timers.clear('invincible');
-      this.invincible = false;
-      this.starPower = false;
-    }
-    // Phases-through ends with the dash unconditionally (nothing else grants it).
-    this.intangible = false;
-    this._preSupermoveInvincible = 0;
+    // The supermove's immunity ends exactly here (immunity.md scoped clear):
+    // only the 'supermove' grant is removed. A star or i-frame grant that was
+    // live before or picked up during the move survives untouched — its own
+    // timer owns its lifetime.
+    this.clearInvincible('supermove');
     // Restore previous animation.
     if (this._prevAnim) {
       this.anim = this._prevAnim;
@@ -1769,9 +1712,9 @@ export class Hero extends Entity {
   }
 
   /**
-   * World-space AABB of the super dash hitbox, or null when not dashing.
+   * World-space AABB of the super supermove hitbox, or null when not dashing.
    * Delegates to the §30 resolver — a thin full-body-height box in front of
-   * the hero that deals damage to enemies plowed through during the dash.
+   * the hero that deals damage to enemies plowed through during the supermove.
    * @returns {{x:number,y:number,w:number,h:number}|null}
    */
   get supermoveHitboxWorld() { return this.attackHitboxWorld(ATTACK_SUPERMOVE); }

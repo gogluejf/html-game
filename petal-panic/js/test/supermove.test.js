@@ -39,7 +39,7 @@ const startDash = (h, facing = 1) => {
   h.update(DT, inp);
 };
 // Advance N frames with no input; returns the frame index (1-based) on which
-// the dash ended, or -1 if it never ended within the budget.
+// the supermove ended, or -1 if it never ended within the budget.
 const runUntilEnd = (h, maxFrames = 240) => {
   for (let i = 1; i <= maxFrames; i++) {
     h.update(DT, noInput());
@@ -49,7 +49,7 @@ const runUntilEnd = (h, maxFrames = 240) => {
 };
 
 console.log('Phase split (§22/§23)');
-await ok('dash starts in the committed burst phase', () => {
+await ok('supermove starts in the committed burst phase', () => {
   const h = makeHero();
   startDash(h);
   assert.equal(h.supermoveActive, true);
@@ -63,7 +63,7 @@ await ok('phase durations are a 60/40 split of the total', () => {
   assert.ok(Math.abs(h.decelDur - SUPERMOVE_DUR * 0.4) < 1e-9, `decel=${h.decelDur}`);
 });
 
-await ok('full uncancelled dash runs exactly the total duration', () => {
+await ok('full uncancelled supermove runs exactly the total duration', () => {
   const h = makeHero();
   startDash(h);
   const endFrame = runUntilEnd(h);
@@ -72,7 +72,7 @@ await ok('full uncancelled dash runs exactly the total duration', () => {
 });
 
 console.log('Burst is committed (AC #1)');
-await ok('jump pressed during the first 60% does NOT cancel the dash', () => {
+await ok('jump pressed during the first 60% does NOT cancel the supermove', () => {
   const h = makeHero();
   startDash(h);
   // Press jump while still inside the burst (frame 5 of ~22).
@@ -94,7 +94,7 @@ await ok('no gravity during the burst (airborne slide)', () => {
 });
 
 console.log('Velocity ramp continuity (§22)');
-await ok('vx is monotonically decreasing across the whole dash (no jump at phase handoff)', () => {
+await ok('vx is monotonically decreasing across the whole supermove (no jump at phase handoff)', () => {
   const h = makeHero();
   startDash(h);
   let prev = Infinity;
@@ -106,13 +106,13 @@ await ok('vx is monotonically decreasing across the whole dash (no jump at phase
     assert.ok(h.vx <= prev + 1e-9,
       `vx increased at frame ${i} (${prev} → ${h.vx}) — discontinuity at handoff?`);
     prev = h.vx;
-    if (i > 60) throw new Error('dash did not end in time');
+    if (i > 60) throw new Error('supermove did not end in time');
   }
   assert.ok(sawBurst && sawDecel, 'sampled both phases');
 });
 
 console.log('Decel is jump-cancellable (AC #2)');
-await ok('jump pressed during the last 40% ends the dash early with residual forward vx', () => {
+await ok('jump pressed during the last 40% ends the supermove early with residual forward vx', () => {
   const h = makeHero();
   startDash(h);
   // Skip ahead past the burst (21.6 frames) into the decel phase.
@@ -121,7 +121,7 @@ await ok('jump pressed during the last 40% ends the dash early with residual for
   // Fresh jump press cancels out of the recovery.
   let inp = noInput(); inp.jump = true;
   h.update(DT, inp);
-  assert.equal(h.supermoveActive, false, 'decel jump must end the dash');
+  assert.equal(h.supermoveActive, false, 'decel jump must end the supermove');
   assert.equal(h.supermovePhase, null);
   assert.ok(h.vx > 0, `residual forward nudge expected, got vx=${h.vx}`);
   assert.ok(h.vx < SUPERMOVE_SPEED, 'residual must be small, not full burst speed');
@@ -138,96 +138,87 @@ await ok('a held jump that started in the burst does NOT cancel once in decel (f
     h.update(DT, hold);
     if (h.supermovePhase === 'decel') enteredDecel = true;
   }
-  assert.ok(enteredDecel, 'dash should have reached the decel phase');
-  // The dash may still be running OR already finished naturally — either way it
+  assert.ok(enteredDecel, 'supermove should have reached the decel phase');
+  // The supermove may still be running OR already finished naturally — either way it
   // was NOT cancelled by the stale held jump (a fresh edge is required).
   assert.equal(h.supermovePhase, null, 'no fresh edge → no mid-decel cancel');
 });
 
-console.log('Intangibility window (AC #3/#5)');
-await ok('supermove uses the shared invincible timer, not a separate bookkeeping path', () => {
+console.log('Immunity window (immunity.md: event-based invincible, no intangible)');
+await ok('supermove grants invincible WITHOUT intangible (stays a body in the world)', () => {
   const h = makeHero();
   startDash(h);
   assert.equal(h.invincible, true);
-  assert.equal(h.intangible, true, 'dash also phases through solids');
-  assert.ok(Math.abs(h.timers.get('invincible') - SUPERMOVE_DUR) < 1e-9,
-    `invincible timer should equal the dash duration, got ${h.timers.get('invincible')}`);
+  assert.equal(h.invulnSource, 'supermove', 'source tag drives the (absent) visual');
+  assert.equal(h.intangible, false, 'supermove does NOT leave the collision system');
 });
 
-await ok('intangibility lasts exactly the dash duration (timer-driven)', () => {
+await ok('invincibility lasts exactly the supermove duration (cleared at endSupermove)', () => {
   const h = makeHero();
   startDash(h);
   const endFrame = runUntilEnd(h);
-  // On the ending frame the dash has just closed; the shared timer has ticked
-  // the same number of frames, so it expires on the very same frame.
-  assert.equal(h.invincible, false, 'invincible flag should clear when the dash ends');
-  assert.equal(h.intangible, false, 'phases-through clears with the dash');
-  assert.equal(h.timers.get('invincible'), 0, 'shared timer should be spent at dash end');
-  assert.ok(endFrame > 0, 'dash should have ended');
+  // On the ending frame the supermove has just closed; the scoped clear ran.
+  assert.equal(h.invincible, false, 'invincible flag should clear when the supermove ends');
+  assert.equal(h.intangible, false, 'no ghost state was ever granted');
+  assert.ok(endFrame > 0, 'supermove should have ended');
 });
 
 await ok('jump-cancel during decel clears the supermove-granted invincibility', () => {
   const h = makeHero();
   startDash(h);
   assert.equal(h.invincible, true, 'dashing hero must be invincible');
-  assert.equal(h.intangible, true, 'dashing hero also phases through solids');
   // Skip ahead past the burst into the decel phase.
   for (let i = 0; i < 23 && h.supermoveActive; i++) h.update(DT, noInput());
   assert.equal(h.supermovePhase, 'decel', `should be in decel, was ${h.supermovePhase}`);
   // Fresh jump press cancels out of the recovery.
   let inp = noInput(); inp.jump = true;
   h.update(DT, inp);
-  assert.equal(h.supermoveActive, false, 'decel jump must end the dash');
-  // The dash is over → the supermove immunity must NOT linger.
-  assert.equal(h.invincible, false, 'hero must not stay invincible after a cancelled dash');
-  assert.equal(h.intangible, false, 'phases-through must clear with the dash');
-  assert.equal(h.timers.get('invincible'), 0, 'invincible timer must be cleared on cancel');
+  assert.equal(h.supermoveActive, false, 'decel jump must end the supermove');
+  // The supermove is over → the supermove immunity must NOT linger.
+  assert.equal(h.invincible, false, 'hero must not stay invincible after a cancelled supermove');
+  assert.equal(h.intangible, false, 'no ghost state lingers either');
 });
 
 await ok('jump-cancel restores a pre-existing longer invincibility grant', () => {
   const h = makeHero();
-  // Pre-existing i-frame window (e.g. from a recent hit) that outlasts the dash.
-  h.invincible = true;
-  h.invulnSource = 'hit';
-  h.timers.set('invincible', 2.0);
+  // Pre-existing i-frame window (e.g. from a recent hit) that outlasts the supermove.
+  h.setInvincible('hit', 2.0);
   startDash(h);
-  // Supermove must not truncate the existing longer grant: it stays at the
-  // pre-dash value (the trigger frame's own tick has already advanced it).
+  // Supermove must not truncate the existing longer grant: its timer-backed
+  // window is untouched by the event-based supermove claim.
   assert.ok(h.timers.get('invincible') > SUPERMOVE_DUR,
     `existing 2s grant must survive trigger, got ${h.timers.get('invincible')}`);
-  // Cancel mid-dash.
+  assert.equal(h.invulnSource, 'hit', 'longer timer-backed grant keeps its own source');
+  // Cancel mid-supermove.
   for (let i = 0; i < 23 && h.supermoveActive; i++) h.update(DT, noInput());
   let inp = noInput(); inp.jump = true;
   h.update(DT, inp);
   assert.equal(h.supermoveActive, false);
-  // Restored to the pre-dash remaining: the trigger re-set the timer to the
-  // full pre-dash duration (2.0s), then 25 frames have ticked by cancel time
+  // Restored to the pre-supermove remaining: the trigger re-set the timer to the
+  // full pre-supermove duration (2.0s), then 25 frames have ticked by cancel time
   // (1 on the trigger frame + 24 more).
   assert.equal(h.invincible, true, 'pre-existing invincibility must be restored');
   const expected = Math.max(0, 2.0 - (25 * DT));
   assert.ok(Math.abs(h.timers.get('invincible') - expected) < 2 * DT + 1e-6,
-    `restored timer ≈ pre-dash remaining, got ${h.timers.get('invincible')} want ${expected}`);
+    `restored timer ≈ pre-supermove remaining, got ${h.timers.get('invincible')} want ${expected}`);
 });
 
-await ok('a shorter pre-existing grant that expires during the dash is NOT restored', () => {
+await ok('a shorter pre-existing grant that expires during the supermove is NOT restored', () => {
   const h = makeHero();
-  // Short i-frame window (0.3s) that will naturally expire during the 0.6s dash.
-  h.invincible = true;
-  h.invulnSource = 'hit';
-  h.timers.set('invincible', 0.3);
+  // Short i-frame window (0.3s) that will naturally expire during the 0.6s supermove.
+  h.setInvincible('hit', 0.3);
   startDash(h);
-  // The shared timer was bumped up to cover the dash, but the ORIGINAL 0.3s
-  // grant only lasts 0.3s of real time — it must be gone when the dash ends.
+  // The supermove claims the flag event-based; the 0.3s timer keeps ticking and
+  // self-expires mid-supermove — at which point syncImmunityStates drops the flag.
   for (let i = 0; i < 23 && h.supermoveActive; i++) h.update(DT, noInput());
   assert.equal(h.supermovePhase, 'decel', `should be in decel, was ${h.supermovePhase}`);
   let inp = noInput(); inp.jump = true;
   h.update(DT, inp);
-  assert.equal(h.supermoveActive, false, 'decel jump must end the dash');
-  // 24 frames × DT ≈ 0.4s have elapsed since trigger > the 0.3s pre-grant →
-  // the original immunity is long expired and must NOT linger after the cancel.
+  assert.equal(h.supermoveActive, false, 'decel jump must end the supermove');
+  // ~0.4s elapsed since trigger > the 0.3s pre-grant → the original immunity is
+  // long expired and must NOT linger after the cancel either.
   assert.equal(h.invincible, false, 'expired pre-grant must not be resurrected by the cancel');
-  assert.equal(h.intangible, false, 'phases-through clears with the dash');
-  assert.equal(h.timers.get('invincible'), 0, 'invincible timer must be cleared on cancel');
+  assert.equal(h.intangible, false, 'no ghost state lingers');
 });
 
 console.log('Respawn i-frames (§27)');
@@ -263,8 +254,8 @@ await ok('heroAnimName returns supermove while dashing and the previous state af
   runUntilEnd(h);
   assert.equal(h.supermoveActive, false);
   assert.equal(h.anim, prevAnim, 'anim should restore to the previous clip');
-  // After the dash the hero is airborne with residual vx → run (not idle, not supermove).
-  assert.notEqual(heroAnimName(h), 'supermove', 'supermove anim must not persist after the dash');
+  // After the supermove the hero is airborne with residual vx → run (not idle, not supermove).
+  assert.notEqual(heroAnimName(h), 'supermove', 'supermove anim must not persist after the supermove');
 });
 
 console.log(`\n${passed} passed`);

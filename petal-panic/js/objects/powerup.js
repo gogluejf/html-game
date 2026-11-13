@@ -29,15 +29,10 @@ export const POWERUP_SIZE = 28;
 export const POWERUP_DEFS = {
   invincibility: { label: 'Invincible!',  color: '#3498db', duration: 7,
                    apply: (hero) => {
-                     // Star power (mario star): untouchable AND kills on touch.
-                     // The contact handler reads hero.starPower for the kill;
-                     // every damage gate reads hero.invincible.
-                     hero.invincible = true;
-                     hero.starPower = true;
-                     // Source tag 'powerup' → SMB1-style color flicker in the
-                     // render path (distinct from hit/respawn transparent blink).
-                     hero.invulnSource = 'powerup';
-                     hero.timers.set('invincible', Math.max(hero.timers.get('invincible'), 7));
+                     // Star power (mario star / immunity.md): one call owns the
+                     // whole state — contact-kills PLUS invincible for the same
+                     // window. Source 'powerup' → SMB1-style color flicker.
+                     hero.setStarPower(7);
                    } },
   // Special drop (special-weapons.md): grants a RANDOM special weapon — bomb or
   // petal saw — identical for both heroes. The hero's slot model owns placement

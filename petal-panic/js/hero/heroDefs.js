@@ -15,7 +15,7 @@
 //                       from body center (ox positive = in front of facing).
 //   specialMelee.hitbox — single box exposed during every ACTIVE phase frame
 //                       (per-hero differences live here, not in code branches).
-//   supermove.box     — box exposed for the whole dash; bh: 'body' derives the
+//   supermove.box     — box exposed for the whole supermove; bh: 'body' derives the
 //                       full body height at runtime (heroes differ in h).
 //
 // Knockback (docs/architecture/knockback.md §11): committed attacks carry a
@@ -45,20 +45,20 @@ const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }
  * Normal-melee knockback: a readable jab shove — pushes the victim back AND
  * stuns them long enough that they CANNOT keep attacking through the hit
  * (hitstun skips ai(), so a whipping/chasing enemy is frozen for the whole
- * window). Tuned well below the committed attacks (sweep ~320-440, dash
- * ~360-636) so the hierarchy reads: jab < sweep < dash. No pop: the jab
+ * window). Tuned well below the committed attacks (sweep ~320-440, supermove
+ * ~360-636) so the hierarchy reads: jab < sweep < supermove. No pop: the jab
  * shoves horizontally at body level.
  */
 const MELEE_KNOCKBACK = { base: 180, scaleBySpeed: 0.25, hitstun: 0.35, dirMode: 'fromAttacker' };
 
 /**
  * Shared supermove knockback (knockback.md §11): the strongest shove — big
- * base heft, scales hardest with dash speed, longest stun, pushed along the
- * dash velocity. The damage BOX itself is sheet-authored only (per-frame
+ * base heft, scales hardest with supermove speed, longest stun, pushed along the
+ * supermove velocity. The damage BOX itself is sheet-authored only (per-frame
  * `attack` boxes on the supermove sheet) — no hardcoded hitbox.
  */
 // pop: 90 px/s upward launch (§5) — with GRAVITY 1500 a light enemy rises ~2.7px
-// and hangs ~0.12s: a modest loft at dash speed (tuned down from the original
+// and hangs ~0.12s: a modest loft at supermove speed (tuned down from the original
 // 150 rocket). The strongest of the three committed attacks.
 const SUPERMOVE_KNOCKBACK = { base: 360, scaleBySpeed: 0.3, hitstun: 0.30, dirMode: 'alongVelocity', pop: 90 };
 

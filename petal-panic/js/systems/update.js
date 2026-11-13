@@ -287,7 +287,7 @@ export function tickFallingBarrelFuse(b, dt) {
   const landed = (b.vy ?? 0) <= 1;
   if (b._fuse <= 0 || (landed && (b.vy ?? 0) >= 0)) {
     b._fuse = null;
-    b.intangible = false; // universal phase ends: back in the collision world at detonation
+    b.clearIntangible(); // back in the collision world at detonation
     const dealt = b.hit(Number.MAX_SAFE_INTEGER, b, 'stomp');
     if (b.destroyed && !b._destroyHandled) {
       b.onDestroyed?.({ source: b, provenance: 'STOMP' }, { accepted: true, dealt, destroyed: true });
@@ -1358,7 +1358,7 @@ export function update(dt) {
         const awayX = Math.sign((b.x + b.w / 2) - (hbx.x + hbx.w / 2)) || 1;
         applyKnockback(b, hero, STAR_BARREL_KNOCKBACK, { x: awayX, y: 0 });
         b._fuse = STAR_BARREL_FUSE; // tickFallingBarrelFuse cooks + detonates
-        b.intangible = true;       // universal phase: clean flight for the WHOLE cook (cleared at detonation)
+        b.setIntangible(STAR_BARREL_FUSE); // ghost flight for the whole cook (cleared at detonation)
         requestHitstop(STAR_POWER_HITSTOP_FRAMES);
         Effects.triggerShake(STAR_POWER_SHAKE);
         break; // ONE barrel per touch frame — the rest pop as you walk into them
@@ -1378,7 +1378,9 @@ export function update(dt) {
   }
   const hit = resolve(hero, [...SOLIDS, ...barrelSolidBoxes], {
     prevBottom: heroPrevBottom,
-    ignoreOneWay: hero.droppingThrough,
+    // One-way tops are ignored while drop-through is active OR during the
+    // flat supermove burst (vy=0 committed line phases through platform tops).
+    ignoreOneWay: hero.droppingThrough || (hero.supermoveActive && hero.supermovePhase === 'burst'),
   });
   // Shared top-surface collision before broadphase; payloads after dispatch.
   // Owned surfaces (live destructibles) get a PRE-terrain contact offer: a

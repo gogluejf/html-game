@@ -77,9 +77,9 @@ export class Entity {
     }
     this._baseW = opts.baseW ?? (opts.w != null ? opts.w : null);
 
-    // Per-anim height scale (default 1). The hero's crouch system overrides
-    // this via applyCrouchHeight() using CROUCH_HEIGHT_SCALE — setAnim never
-    // reads a sheet field for it.
+    // Pose height scale (default 1). ANIM-OWNED: setAnim() is the single
+    // writer, applying the active sheet's hScale field (crouch/jump sheets
+    // declare 0.5; standing/attack/supermove sheets omit it = 1.0).
     this._targetHScale = 1;
 
     // Size-owner guard (sprites.md contract): a sprite-based entity must be
@@ -133,14 +133,23 @@ export class Entity {
     // --- State ----------------------------------------------------------------
     this.alive = true;
     this.visible = true;
-    // Two distinct immunity concepts (mario star vs "just can't be touched"):
-    //   invincible  — damage-immune window (hit i-frames, respawn grace, boss
-    //                 stomp, supermove dash, star powerup). Driven by the
-    //                 'invincible' labeled timer; every damage gate reads THIS.
-    //   intangible  — phases through solids (supermove dash only). Platform
-    //                 movers rely on it to let the flat dash pass through tops.
+
+    // --- Immunity states (docs/engine/immunity.md) ---------------------------
+    // Three independent, entity-level states. ANY entity can hold any of them;
+    // damage, collision and contact rules all read these same flags so they
+    // can never disagree.
+    //   invincible  — takes no damage; still a normal body in the world.
+    //   starPower   — invincible PLUS contact kills (implies invincible).
+    //   intangible  — out of the collision system entirely (ghost physics).
+    // Lifecycle is owned by the set*/clear* methods below — trigger sites
+    // never touch the flags or timers directly.
     this.invincible = false;
+    this.starPower = false;
     this.intangible = false;
+    // Source tag for the ACTIVE invincibility grant ('hit' | 'powerup' |
+    // 'supermove' | ...). The render layer derives the visual from it;
+    // scoped clears use it to remove only their own grant.
+    this.invulnSource = null;
     this.debugColor = opts.debugColor ?? '#fff';
 
     // --- Time-to-live (TTL) ---------------------------------------------------
@@ -327,18 +336,21 @@ export class Entity {
     // the sheet only provides scale + repeat art.
     if (this.sprite.boxFromSheet !== false) this._baseW = null;
     this._spriteAnim = name;
-    // Height scale is NOT read from sheet data — the hero's crouch system
-    // (applyCrouchHeight) owns _targetHScale exclusively. setAnim preserves
-    // whatever value is already set (1 for standing, CROUCH_HEIGHT_SCALE for
-    // crouched) so switching anims mid-crouch doesn't restore full height.
+    // POSE HEIGHT IS ANIM-OWNED (declarative): the sheet's hScale field is the
+    // single source of truth for body height in this pose. crouch/jump sheets
+    // declare 0.5 (tucked); standing/attack/supermove sheets omit it (1.0).
+    // setAnim() is the ONLY writer of _targetHScale — box and art are derived
+    // from the same number below, so they can never drift apart. Feet stay
+    // planted via the y adjust when the height changes.
     const prevH = this.h;
+    this._targetHScale = data.hScale ?? 1;
     const newH = this.h;
     if (newH !== prevH) this.y += prevH - newH;
-    // §4: target height in Y-units → px. Scale fits the sheet's collision box
-    // height onto targetH × UNIT_PX. Width is derived by the getter:
-    //   - baseW set → fixed width (constructor-owned, art scales to fit)
-    //   - no baseW  → sheet aspect ratio × scale (sheet-owned)
-    const targetUnits = this._targetH;
+    // §4: target height in Y-units → px (POSED height — already reflects the
+    // active anim's hScale). Scale fits the sheet's collision box height onto
+    // that, so art and box share one derivation. Width is derived by the
+    // getter: baseW set → fixed width; no baseW → sheet aspect × scale.
+    const targetUnits = this._targetH * this._targetHScale;
     this._spriteScale = uniformScale(data, targetUnits * UNIT_PX);
     // Playback (T3.2): build a SpritePlayer ONLY for anims that declare a
     // playback mode. mode 'none' = frame POOL (terrain tiles etc.) — frames
@@ -516,6 +528,86 @@ export class Entity {
   // a one-frame jump.
 
   static TELEPORT_PX = 256;
+
+  // ===========================================================================
+  // Immunity states (docs/engine/immunity.md)
+  //
+  // Three entity-level states, each with ONE owner of its lifecycle:
+  //   setInvincible(source, duration?) / clearInvincible(source)
+  //   setStarPower(duration)            / (ends with its own timer)
+  //   setIntangible(duration)           / clearIntangible()
+  // Trigger sites call these — never the flags or timers directly.
+  // Duration = undefined → event-based: the state stays until explicitly
+  // cleared (e.g. supermove lives from trigger to endSupermove).
+  // Scoped clears remove ONLY their own grant, so overlapping states
+  // (star picked up mid-supermove) survive each other's endings.
+  // ===========================================================================
+
+  /**
+   * Grant damage immunity. Duration-based (ms→s number) or open-ended
+   * (duration omitted → cleared via clearInvincible(source)). A new grant
+   * never shortens a live longer one; a different source replaces the tag
+   * only if it owns the (longer-or-equal) window.
+   */
+  setInvincible(source, duration) {
+    const current = this.timers.get('invincible') ?? 0;
+    if (duration == null) {
+      // Event-based: no countdown — just claim the flag + tag. A live
+      // timer-backed grant from another source is left untouched.
+      this.invincible = true;
+      if (current <= 0 || this.invulnSource === source) this.invulnSource = source;
+      return;
+    }
+    if (duration >= current) {
+      this.timers.set('invincible', duration);
+      this.invulnSource = source;
+    }
+    this.invincible = true;
+  }
+
+  /**
+   * Remove the invincibility grant owned by `source`. If another source's
+   * grant is still live in the shared timer, it survives untouched.
+   */
+  clearInvincible(source) {
+    if (this.invulnSource !== source) return; // not our grant — leave it
+    this.invincible = false;
+    this.invulnSource = null;
+    this.timers.clear('invincible');
+    // Star power rides on the same window — drop it with the grant.
+    this.starPower = false;
+  }
+
+  /** Mario-star: invincible PLUS contact-kills for `duration` seconds. */
+  setStarPower(duration) {
+    this.starPower = true;
+    this.setInvincible('powerup', duration);
+  }
+
+  /** Ghost physics: out of the collision system for `duration` seconds. */
+  setIntangible(duration) {
+    this.intangible = true;
+    this.timers.set('intangible', duration);
+  }
+
+  /** Snap back into the collision world (barrel detonation path). */
+  clearIntangible() {
+    this.intangible = false;
+    this.timers.clear('intangible');
+  }
+
+  /**
+   * Per-frame state maintenance — call after timers.tick(). Self-expires
+   * duration-based grants on the exact frame they hit zero.
+   */
+  syncImmunityStates() {
+    if (this.invincible && this.timers.expired('invincible')) {
+      this.clearInvincible(this.invulnSource);
+    }
+    if (this.intangible && this.timers.expired('intangible')) {
+      this.clearIntangible();
+    }
+  }
 
   /** Snapshot x/y as the new "previous" position. Called once per entity at
    * the top of each fixed physics step (before integration). */

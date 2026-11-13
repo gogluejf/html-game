@@ -135,10 +135,10 @@ function singleApexPx(params){
 //
 //   jump     — single jump clears it (easy hop / low lip)
 //   dj       — jump + double jump (rise above single apex, gap within carry)
-//   super    — jump + super dash (gap too wide for a DJ arc to carry; the
-//              dash is horizontal, so rise only needs to be survivable)
+//   super    — jump + super supermove (gap too wide for a DJ arc to carry; the
+//              supermove is horizontal, so rise only needs to be survivable)
 //   retreat  — unreachable FROM HERE (rise beyond total DJ apex AND no
-//              useful gap dash): walk back toward the approach edge and let
+//              useful gap supermove): walk back toward the approach edge and let
 //              the next takeoff re-classify. NOT "unreachable period" — that
 //              verdict belongs to the BFS envelope (traversalRoute), not here.
 // ---------------------------------------------------------------------------
@@ -162,7 +162,8 @@ function djCarryPxFor(params, rise){
   // (mem.wantJump is armed at every committed takeoff). Sizing the carry with
   // a SINGLE-jump arc understates it badly for small rises (rise=48 → 88px
   // instead of ~330px), which makes the super gate fire on hops a plain DJ
-  // arc clears easily — and the dash (intangible, vy=0 flat) then phases
+  // arc clears easily — and the supermove (flat vy=0 burst, one-way tops
+  // ignored during the burst) then phases through the platform top
   // THROUGH the platform top and the hero falls past it (newMacro #3).
   if (!params.hasDoubleJump && rise <= apex1) {
     // No DJ available: single-jump carry only.
@@ -206,7 +207,7 @@ export function classifyTakeoff(hero, goal, world, params){
 
   // Beyond the total DJ apex → unreachable FROM HERE. Super does NOT help:
   // it is a pure horizontal burst (verified headless: firing it keeps vy=0,
-  // it dashes along the current height and adds zero climb). Such goals need
+  // it supermovees along the current height and adds zero climb). Such goals need
   // a routing fix — approach from an adjacent elevated surface first.
   if (rise > totalApex + world.UY * 0.5) {
     return { plan: 'retreat', rise, gap: gapToNearEdge(f, goal, dir), dir };
@@ -276,7 +277,7 @@ function hasSolidAheadOrOneWay(hero, world, distPx, dir){
 /** Is there ANY ground (solid or one-way) under the space between the hero
  *  and the goal span's near edge, at or below foot level? If yes, the "gap"
  *  is approachable — run/walk across it, no super needed. Only a TRUE hole
- *  (nothing under the whole interval) justifies arming the dash. */
+ *  (nothing under the whole interval) justifies arming the supermove. */
 function groundBetween(hero, world, goal, dx){
   const f = feetPos(hero);
   const xNear = dx > 0 ? f.x : goal.x1;
@@ -393,7 +394,7 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
         inp.jump = true;
         mem.wantJump = true;
         // Overhead hop: the goal is ABOVE us — DJ-stack territory, never a
-        // super dash (a horizontal burst gains no height here).
+        // super supermove (a horizontal burst gains no height here).
         return inp;
       }
     }
@@ -435,7 +436,7 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
           // DJ re-press mis-times (fires after the apex → wasted impulse).
           mem.vaultRise = climbRise;
           // NEVER arm super for a vault: the wall height decides the jump, not
-          // the goal. A super dash into the wall face pins the hero (vx huge,
+          // the goal. A super supermove into the wall face pins the hero (vx huge,
           // blockedX) and kills the climb. DJ alone clears any wall ≤ ~101px.
           return inp;
         }
@@ -504,19 +505,19 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
         // ESCALATION: the DJ impulse is being committed NOW. Do NOT fire the
         // super on this same frame — the engine processes super first and
         // blocks jump input during an active supermove, so the DJ press gets
-        // eaten (trace: J stayed 1, dash ran flat). Instead ARM it; the
+        // eaten (trace: J stayed 1, supermove ran flat). Instead ARM it; the
         // armSuper block below fires it next frame once jumpsUsed === 2
         // confirms the DJ actually landed.
         if (params.canSuper && !hero.supermoveActive && !mem.superFired) {
           const shortNow = dx > 0 ? (goal.x0 - f.x) : (f.x - goal.x1);
-          // Only dash when the DJ arc ALONE provably lands short of the span:
+          // Only supermove when the DJ arc ALONE provably lands short of the span:
           // djCarryPxFor is the horizontal distance a jump+DJ arc covers from
           // takeoff to landing on the goal top. If shortNow <= that carry, a
-          // plain DJ connects — and a super here is actively harmful (the dash
-          // is intangible + vy=0 flat, so it phases THROUGH the platform top
+          // plain DJ connects — and a super here is actively harmful (the supermove
+          // burst ignores one-way tops + vy=0 flat, so it phases THROUGH the platform top
           // and the hero falls past it: easyPlatformHop #1, newMacro #3).
           // Also require a real hole: no ground under the way AND no wall face
-          // between us and the span (raw distance alone dashes into #1's face
+          // between us and the span (raw distance alone supermovees into #1's face
           // on newMacro #0, pinned at x270).
           if (shortNow > djCarryPxFor(params, rise) + world.UX * 0.25
               && !groundBetween(hero, world, goal, dx)
@@ -537,13 +538,13 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
   // Super, armed at takeoff by the classifier (wide gap): fire ONLY after the
   // double jump has actually committed (djDone && jumpsUsed === 2). Firing
   // earlier — e.g. at vy≈0 while the DJ's fresh-press edge is still pending —
-  // starts the dash first, and the engine blocks jump input during an active
+  // starts the supermove first, and the engine blocks jump input during an active
   // supermove, so the DJ gets eaten and the arc loses its second impulse
-  // (newMacro #3: j stayed 1, dash ran out 100px short).
+  // (newMacro #3: j stayed 1, supermove ran out 100px short).
   // Fire at the APEX of jump 2 (vy crossing from rising to falling), NOT the
   // frame after the DJ commit — that's still ~15 frames into j2's ascent
-  // (vy≈-300), and a dash there flies flat high above low targets. At j2's
-  // apex the hero is at maximum height; the dash carries level from there.
+  // (vy≈-300), and a supermove there flies flat high above low targets. At j2's
+  // apex the hero is at maximum height; the supermove carries level from there.
   if (mem.armSuper && params.canSuper && !hero.supermoveActive && !mem.superFired &&
       !hero.grounded && mem.djDone && hero.jumpsUsed === 2 && hero.vy >= 0) {
     inp.super = true;

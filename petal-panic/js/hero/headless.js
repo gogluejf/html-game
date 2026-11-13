@@ -68,7 +68,8 @@ export function stepHeadless(hero, dt, input, solids) {
   updateHeroLocomotionAnim(hero, input, dt);
   const hit = resolve(hero, solids, {
     prevBottom,
-    ignoreOneWay: !!hero.droppingThrough,
+    // Drop-through window OR the flat supermove burst (phases through tops).
+    ignoreOneWay: !!hero.droppingThrough || (hero.supermoveActive && hero.supermovePhase === 'burst'),
   });
   hero.setGrounded(groundedProbe(hero, hit, solids));
   return { hit, grounded: hero.grounded, onOneWay: standingOnOneWayProbe(hero, solids) };
