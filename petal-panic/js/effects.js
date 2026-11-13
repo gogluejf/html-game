@@ -29,6 +29,7 @@
 
 import { particles } from './effects/particles.js';
 import { VIEW_W, VIEW_H } from './core/view.js'; // viewport dims for screen-space overlay fires
+import { getSpecialSpriteData } from './objects/projectile.js';
 import {
   fireManual,
   updateEffects as stepEngine,
@@ -275,6 +276,42 @@ export const Effects = {
     const before = particles.count;
     return spawnCounted({ x, y }, before, () => {
       fireManual({ type: 'particle-burst', params: { x, y, count } });
+    });
+  },
+
+  /**
+   * Full-alpha smoke-ring sprite burst at a world point. Shared by barrel
+   * breaks and hero landings so both use the same asset, size, and fade.
+   * @param {number} x world x
+   * @param {number} y world y
+   */
+  fireSmokeRing(x, y) {
+    const anim = getSpecialSpriteData('smoke_ring')?.anims.ring;
+    if (!anim) return; // pre-boot or failed load — skip silently
+    fireManual({ type: 'sprite-burst', params: { x, y, size: 48, anim, fromAlpha: 1, toAlpha: 0 } });
+  },
+
+  /**
+   * Dust sprite burst when the hero lands from a jump: centered on the active
+   * collision box's bottom-center (feet touching the surface). Uses the dust
+   * impact sheet via sprite-burst, with full starting alpha.
+   * @param {object} hero entity exposing worldBox()
+   */
+  fireHeroLandingBurst(hero) {
+    if (!hero?.worldBox) return;
+    const anim = getSpecialSpriteData('dust_impact')?.anims.impact;
+    if (!anim) return; // pre-boot or failed load — skip silently
+    const box = hero.worldBox();
+    fireManual({
+      type: 'sprite-burst',
+      params: {
+        x: box.x + box.w / 2,
+        y: box.y + box.h,
+        size: 48,
+        anim,
+        fromAlpha: 1,
+        toAlpha: 0,
+      },
     });
   },
 

@@ -6,14 +6,10 @@ import { LAYER, UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { roomFloorTop } from '../world/level.js';
 import { Effects } from '../effects.js';
-import { fireManual } from '../effects/index.js';
-import { getSpecialSpriteData } from './projectile.js';
 
 /** Fire a smoke ring sprite-burst at (x, y) for non-explosive barrel breaks. */
 function fireSmokeRing(x, y) {
-  const anim = getSpecialSpriteData('smoke_ring')?.anims.ring;
-  if (!anim) return; // pre-boot or failed load — skip silently
-  fireManual({ type: 'sprite-burst', params: { x, y, size: 48, anim, fromAlpha: 1, toAlpha: 0 } });
+  Effects.fireSmokeRing(x, y);
 }
 import { particles, coins } from '../effects/particles.js';
 import { GameObj, BARREL_DAMAGE, SUPERCOIN_BARREL_DEF, PROPANE_BARREL_DEF, TOXIC_BARREL_DEF } from './object.js';

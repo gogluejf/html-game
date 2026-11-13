@@ -19,6 +19,7 @@ import { placeSheetFrame } from '../core/spriteData.js';
 import { invulnFlicker, INVISIBLE } from '../effects/invulnFlicker.js';
 import { blink } from '../effects/blink.js';
 import { ctx } from '../world/context.js';
+import { Effects } from '../effects.js';
 
 // Invincibility looks (design §27) — the HERO owns them. Two separate effects,
 // each one job:
@@ -1550,6 +1551,7 @@ export class Hero extends Entity {
       // Just landed: reset jump count for double-jump.
       this.jumpsUsed = 0;
       this._fallAnimGrace = 0;
+      Effects.fireHeroLandingBurst(this);
     }
     if (!grounded && this.grounded) {
       // Walked off a ledge: start coyote grace window.
