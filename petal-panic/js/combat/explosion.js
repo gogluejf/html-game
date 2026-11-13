@@ -18,6 +18,7 @@
 import { applyKnockback } from './knockback.js';
 import { applyHit } from './hitResolution.js';
 import { AttackProvenance } from './targeting.js';
+import { LAYER } from '../consts.js';
 
 // --- Alignment (explosion.md §2) --------------------------------------------
 // Which side does the blast hurt? This is the single field that decides target
@@ -30,7 +31,10 @@ export const TEAMS = Object.freeze(['ally', 'foe', 'neutral']);
 // A barrel is a neutral hazard: it shoves everyone radially. 380 px/s matches
 // the hero's pre-refactor 'explosion' profile strength so the hero's feel is
 // preserved exactly when routed through takeHit(); enemies get shoved by this
-// same radial shove. Vector = px/s along the radial normal + 60 upward loft.
+// same radial shove. Vector = px/s oriented per victim along the radial line
+// (blast center → victim). NOTE: y is a bias ALONG that line, not a fixed
+// world-up loft — keep it small (or 0 for pure radial) so victims on the far
+// side of the blast aren't pushed back toward the center.
 export const BARREL_EXPLOSION_KNOCKBACK = Object.freeze({
   x: 380, y: -60, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial',
 });
@@ -183,7 +187,11 @@ export function resolveExplosion(explosion, targets) {
       if ((hero._lastEnergyLost ?? 0) > 0) {
         hero.takeHit({ source: 'explosion', dirX: tc.cx - cx, dirY: tc.cy - cy });
       }
-    } else if (isEnemy(t)) {
+    } else if (isEnemy(t) || t.layer === LAYER.SOLID) {
+      // Radial shove for enemies AND destructible solids (barrels): a barrel
+      // sitting on the blast flies UP, one beside it flies sideways — the
+      // per-victim normal is what makes the blast read as "away from center".
+      // Barrels' knockbackResist 0.5 makes them launch 2x harder than enemies.
       const normal = radialNormal({ cx, cy }, tc);
       applyKnockback(t, {
         x: normal.x * knockback.x,

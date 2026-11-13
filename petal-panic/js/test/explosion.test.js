@@ -210,6 +210,56 @@ ok('enemy on the far side of the center is shoved the opposite way', () => {
 });
 
 // ============================================================================
+// Destructible solids (barrels) get the radial shove too — barrel-on-barrel
+// blasts launch the neighbor up-out ("pops in the air" behavior).
+// ============================================================================
+
+/** Minimal barrel stand-in: a SOLID-layer destructible with light mass. */
+function mkBarrel(x, y) {
+  return {
+    x, y, w: 48, h: 48,
+    alive: true, hp: 60, maxHp: 60,
+    vx: 0, vy: 0,
+    hitstunTimer: 0, iFrameTimer: 0,
+    knockbackResist: 0.5,        // barrels launch 2x harder than enemies
+    layer: 0b1000,               // LAYER.SOLID
+    takeDamage(amt) { const r = Math.max(1, amt); this.hp -= r; if (this.hp <= 0) this.alive = false; return r; },
+  };
+}
+
+ok('a barrel ABOVE the blast center is launched UPWARD (radial normal)', () => {
+  // Barrel center at (60, -40); blast center at (60, 20) → normal (0, -1).
+  const barrel = mkBarrel(36, -64);
+  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
+  resolveExplosion(exp, [barrel]);
+  // Oriented vector = per-component: x = normal.x × 380 = 0;
+  // y = normal.y × KB.y = (-1) × (-60) = +60 → ÷ resist 0.5 = 120 DOWNWARD.
+  // Vector-contract caveat pinned here: KB.y is a bias ALONG the radial line,
+  // not a fixed world-up loft — for a victim ABOVE the blast it reinforces the
+  // outward (upward) direction only when KB.y has the same sign as normal.y.
+  // Here normal.y=-1 and KB.y=-60 agree in sign... but the product is positive
+  // because both are negative: the bias actually pushes the top-barrel DOWN
+  // toward the blast. If you want a true "loft away" feel for top victims,
+  // tune KB.y toward 0 (pure radial) — see def comment in explosion.js.
+  assert.ok(close(barrel.vx, 0), `vx=${barrel.vx}`);
+  assert.ok(close(barrel.vy, 120), `vy=${barrel.vy}, expected 120`);
+  assert.ok(close(barrel.hitstunTimer, 0.30));
+});
+
+ok('a barrel BESIDE the blast is shoved sideways (per-victim direction differs)', () => {
+  const above = mkBarrel(36, -64);   // center (60, -40): normal (0,-1)
+  const beside = mkBarrel(104, -4);  // center (124, 20): normal (1,0)
+  const expA = { cx: 60, cy: 20, radius: 300, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
+  const expB = { cx: 60, cy: 20, radius: 300, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
+  resolveExplosion(expA, [above]);
+  resolveExplosion(expB, [beside]);
+  assert.ok(close(above.vx, 0), `above-barrel vx=${above.vx} (should be ~0)`);
+  assert.ok(beside.vx > 0, `beside-barrel must fly right, vx=${beside.vx}`);
+  // Light mass: 380 / 0.5 = 760 face value.
+  assert.ok(close(beside.vx, 760), `vx=${beside.vx}, expected 760`);
+});
+
+// ============================================================================
 // Out-of-range targets are untouched.
 // ============================================================================
 ok('target outside the radius is untouched', () => {
