@@ -15,6 +15,7 @@ import { loadFrames } from '../core/frameLoader.js';
 import { uniformScale } from '../core/spriteData.js';
 import { SpritePlayer } from '../core/spritePlayer.js';
 import { CROUCH_HEIGHT_SCALE } from './hero.js';
+import { SUPERMOVE_DUR } from '../consts.js';
 
 /** Module-level cache: heroId → { data, frames }. */
 const heroSpriteCache = new Map();
@@ -59,6 +60,12 @@ export async function loadHeroSprites(heroId) {
     const sheets = results.filter(Boolean);
     if (sheets.length === 0) return null;
     const data = parseSheet(sheets);
+    // Supermove sheet: the art must span the WHOLE dash duration. The dash
+    // clocks it via setProgress, but the fps is still what a player would see
+    // in any non-dash context — derive it from the attack duration so the
+    // authored frames play at exactly (frame count ÷ SUPERMOVE_DUR).
+    const sm = data.anims.supermove;
+    if (sm && sm.frames?.length) sm.fps = sm.frames.length / SUPERMOVE_DUR;
     // sprites.md §4: every anim needs an authored collision box as the scale
     // reference. Hero sheets are only partially authored; any anim still
     // missing one is dropped so setAnim() can never reach uniformScale()
@@ -166,6 +173,20 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
     if (hero._targetHScale !== 1) hero.applyJumpHeight(false);
     if (hero._spriteAnim !== 'hit') {
       try { hero.setAnim('hit'); } catch { /* keep current */ }
+    }
+    return;
+  }
+
+  // Supermove dash: the supermove sheet plays for the WHOLE dash, clocked by
+  // the dash itself (setProgress in updateSupermove). The sheet's fps is
+  // derived from the attack duration at load time (frame count ÷ SUPERMOVE_DUR),
+  // so the art and the hitbox window end together.
+  if (hero.supermoveActive && hero.sprite.anims.supermove) {
+    delete hero._idlePatternClock;
+    // A jump-cancel out of the decel phase ends the dash early — the generic
+    // switch below reclaims idle/run/jump on the next frame.
+    if (hero._spriteAnim !== 'supermove') {
+      try { hero.setAnim('supermove'); } catch { /* keep current */ }
     }
     return;
   }

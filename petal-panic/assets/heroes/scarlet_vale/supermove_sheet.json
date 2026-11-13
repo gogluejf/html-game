@@ -349,13 +349,13 @@
     }
    ],
    "fps": 8,
-   "playback": "loop",
+   "playback": "once",
    "direction": "forward",
    "collision": {
-    "x": 130,
-    "y": -230,
-    "w": 122,
-    "h": 222
+    "x": -181.0,
+    "y": -271,
+    "w": 362,
+    "h": 271
    },
    "pivot": {
     "x": 191,

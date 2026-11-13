@@ -1,193 +1,201 @@
 {
-  "file": "petal-panic/assets/heroes/ringo/supermove_sheet.png",
-  "size": "1117x1171",
-  "rows": 4,
-  "cols": 4,
-  "kind": "animation",
-  "description": "ringo supermove (16 frames from GIF)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/ringo/supermove_sheet.png",
+ "size": "1117x1171",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "ringo supermove (16 frames from GIF)",
+ "entities": [
+  {
+   "name": "ringo",
+   "anim": "supermove",
+   "frames_dir": "petal-panic/assets/heroes/ringo",
+   "frames": [
     {
-      "name": "ringo",
-      "anim": "supermove",
-      "frames_dir": "petal-panic/assets/heroes/ringo",
-      "frames": [
-        {
-          "file": "supermove_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            18,
-            0,
-            216,
-            298
-          ]
-        },
-        {
-          "file": "supermove_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            278,
-            4,
-            226,
-            290
-          ]
-        },
-        {
-          "file": "supermove_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            579,
-            6,
-            218,
-            286
-          ]
-        },
-        {
-          "file": "supermove_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            846,
-            7,
-            269,
-            283
-          ]
-        },
-        {
-          "file": "supermove_f5.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            22,
-            300,
-            208,
-            285
-          ]
-        },
-        {
-          "file": "supermove_f6.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            289,
-            299,
-            204,
-            287
-          ]
-        },
-        {
-          "file": "supermove_f7.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            583,
-            298,
-            209,
-            289
-          ]
-        },
-        {
-          "file": "supermove_f8.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            845,
-            298,
-            272,
-            289
-          ]
-        },
-        {
-          "file": "supermove_f9.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            24,
-            587,
-            203,
-            297
-          ]
-        },
-        {
-          "file": "supermove_f10.png",
-          "row": 2,
-          "col": 1,
-          "bbox": [
-            272,
-            590,
-            238,
-            291
-          ]
-        },
-        {
-          "file": "supermove_f11.png",
-          "row": 2,
-          "col": 2,
-          "bbox": [
-            561,
-            593,
-            254,
-            284
-          ]
-        },
-        {
-          "file": "supermove_f12.png",
-          "row": 2,
-          "col": 3,
-          "bbox": [
-            850,
-            596,
-            261,
-            278
-          ]
-        },
-        {
-          "file": "supermove_f13.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            0,
-            884,
-            252,
-            287
-          ]
-        },
-        {
-          "file": "supermove_f14.png",
-          "row": 3,
-          "col": 1,
-          "bbox": [
-            252,
-            887,
-            279,
-            280
-          ]
-        },
-        {
-          "file": "supermove_f15.png",
-          "row": 3,
-          "col": 2,
-          "bbox": [
-            531,
-            891,
-            314,
-            273
-          ]
-        },
-        {
-          "file": "supermove_f16.png",
-          "row": 3,
-          "col": 3,
-          "bbox": [
-            853,
-            897,
-            256,
-            260
-          ]
-        }
-      ]
+     "file": "supermove_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      18,
+      0,
+      216,
+      298
+     ]
+    },
+    {
+     "file": "supermove_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      278,
+      4,
+      226,
+      290
+     ]
+    },
+    {
+     "file": "supermove_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      579,
+      6,
+      218,
+      286
+     ]
+    },
+    {
+     "file": "supermove_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      846,
+      7,
+      269,
+      283
+     ]
+    },
+    {
+     "file": "supermove_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      22,
+      300,
+      208,
+      285
+     ]
+    },
+    {
+     "file": "supermove_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      289,
+      299,
+      204,
+      287
+     ]
+    },
+    {
+     "file": "supermove_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      583,
+      298,
+      209,
+      289
+     ]
+    },
+    {
+     "file": "supermove_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      845,
+      298,
+      272,
+      289
+     ]
+    },
+    {
+     "file": "supermove_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      24,
+      587,
+      203,
+      297
+     ]
+    },
+    {
+     "file": "supermove_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      272,
+      590,
+      238,
+      291
+     ]
+    },
+    {
+     "file": "supermove_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      561,
+      593,
+      254,
+      284
+     ]
+    },
+    {
+     "file": "supermove_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      850,
+      596,
+      261,
+      278
+     ]
+    },
+    {
+     "file": "supermove_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      0,
+      884,
+      252,
+      287
+     ]
+    },
+    {
+     "file": "supermove_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      252,
+      887,
+      279,
+      280
+     ]
+    },
+    {
+     "file": "supermove_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      531,
+      891,
+      314,
+      273
+     ]
+    },
+    {
+     "file": "supermove_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      853,
+      897,
+      256,
+      260
+     ]
     }
-  ]
+   ],
+   "collision": {
+    "x": -157.0,
+    "y": -298,
+    "w": 314,
+    "h": 298
+   },
+   "playback": "once",
+   "direction": "forward"
+  }
+ ]
 }

@@ -1,193 +1,201 @@
 {
-  "file": "petal-panic/assets/heroes/balthazar/supermove_sheet.png",
-  "size": "1183x1137",
-  "rows": 4,
-  "cols": 4,
-  "kind": "animation",
-  "description": "balthazar supermove (16 frames from GIF)",
-  "entities": [
+ "file": "petal-panic/assets/heroes/balthazar/supermove_sheet.png",
+ "size": "1183x1137",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "balthazar supermove (16 frames from GIF)",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "supermove",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "frames": [
     {
-      "name": "balthazar",
-      "anim": "supermove",
-      "frames_dir": "petal-panic/assets/heroes/balthazar",
-      "frames": [
-        {
-          "file": "supermove_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            15,
-            0,
-            270,
-            262
-          ]
-        },
-        {
-          "file": "supermove_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            300,
-            2,
-            281,
-            258
-          ]
-        },
-        {
-          "file": "supermove_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            581,
-            1,
-            297,
-            259
-          ]
-        },
-        {
-          "file": "supermove_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            878,
-            2,
-            305,
-            257
-          ]
-        },
-        {
-          "file": "supermove_f5.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            15,
-            273,
-            270,
-            256
-          ]
-        },
-        {
-          "file": "supermove_f6.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            304,
-            272,
-            272,
-            258
-          ]
-        },
-        {
-          "file": "supermove_f7.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            592,
-            262,
-            274,
-            278
-          ]
-        },
-        {
-          "file": "supermove_f8.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            878,
-            269,
-            305,
-            264
-          ]
-        },
-        {
-          "file": "supermove_f9.png",
-          "row": 2,
-          "col": 0,
-          "bbox": [
-            0,
-            558,
-            300,
-            259
-          ]
-        },
-        {
-          "file": "supermove_f10.png",
-          "row": 2,
-          "col": 1,
-          "bbox": [
-            305,
-            557,
-            270,
-            260
-          ]
-        },
-        {
-          "file": "supermove_f11.png",
-          "row": 2,
-          "col": 2,
-          "bbox": [
-            592,
-            576,
-            274,
-            222
-          ]
-        },
-        {
-          "file": "supermove_f12.png",
-          "row": 2,
-          "col": 3,
-          "bbox": [
-            910,
-            540,
-            240,
-            295
-          ]
-        },
-        {
-          "file": "supermove_f13.png",
-          "row": 3,
-          "col": 0,
-          "bbox": [
-            34,
-            838,
-            231,
-            296
-          ]
-        },
-        {
-          "file": "supermove_f14.png",
-          "row": 3,
-          "col": 1,
-          "bbox": [
-            326,
-            838,
-            229,
-            295
-          ]
-        },
-        {
-          "file": "supermove_f15.png",
-          "row": 3,
-          "col": 2,
-          "bbox": [
-            627,
-            837,
-            204,
-            297
-          ]
-        },
-        {
-          "file": "supermove_f16.png",
-          "row": 3,
-          "col": 3,
-          "bbox": [
-            933,
-            835,
-            194,
-            302
-          ]
-        }
-      ]
+     "file": "supermove_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      15,
+      0,
+      270,
+      262
+     ]
+    },
+    {
+     "file": "supermove_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      300,
+      2,
+      281,
+      258
+     ]
+    },
+    {
+     "file": "supermove_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      581,
+      1,
+      297,
+      259
+     ]
+    },
+    {
+     "file": "supermove_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      878,
+      2,
+      305,
+      257
+     ]
+    },
+    {
+     "file": "supermove_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      15,
+      273,
+      270,
+      256
+     ]
+    },
+    {
+     "file": "supermove_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      304,
+      272,
+      272,
+      258
+     ]
+    },
+    {
+     "file": "supermove_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      592,
+      262,
+      274,
+      278
+     ]
+    },
+    {
+     "file": "supermove_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      878,
+      269,
+      305,
+      264
+     ]
+    },
+    {
+     "file": "supermove_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      558,
+      300,
+      259
+     ]
+    },
+    {
+     "file": "supermove_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      305,
+      557,
+      270,
+      260
+     ]
+    },
+    {
+     "file": "supermove_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      592,
+      576,
+      274,
+      222
+     ]
+    },
+    {
+     "file": "supermove_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      910,
+      540,
+      240,
+      295
+     ]
+    },
+    {
+     "file": "supermove_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      34,
+      838,
+      231,
+      296
+     ]
+    },
+    {
+     "file": "supermove_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      326,
+      838,
+      229,
+      295
+     ]
+    },
+    {
+     "file": "supermove_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      627,
+      837,
+      204,
+      297
+     ]
+    },
+    {
+     "file": "supermove_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      933,
+      835,
+      194,
+      302
+     ]
     }
-  ]
+   ],
+   "collision": {
+    "x": -152.5,
+    "y": -302,
+    "w": 305,
+    "h": 302
+   },
+   "playback": "once",
+   "direction": "forward"
+  }
+ ]
 }

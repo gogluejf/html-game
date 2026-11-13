@@ -1659,8 +1659,10 @@ export class Hero extends Entity {
       const f = Math.min(1, this._supermoveElapsed / SUPERMOVE_DUR); // 0→1 across the whole dash
       this.vx = dir * (SUPERMOVE_SPEED + (SUPERMOVE_RESIDUAL - SUPERMOVE_SPEED) * f);
       // Drive the supermove sheet on the dash clock: map normalized elapsed
-      // time onto the sheet player so the art spans the WHOLE dash duration
-      // (sheet fps is irrelevant). No-op when no sheet is attached.
+      // time onto the sheet player so the art spans the WHOLE dash duration.
+      // The sheet's fps is DERIVED from the attack duration (frame count ÷
+      // SUPERMOVE_DUR), so the authored frames play at exactly that rate and
+      // the last frame lands on the dash end. No-op when no sheet is attached.
       if (this._spriteAnim === 'supermove' && this._player) this.setProgress(f);
       if (this.supermovePhase === 'burst') {
         // Committed: no gravity (handled by the gate in update()).
