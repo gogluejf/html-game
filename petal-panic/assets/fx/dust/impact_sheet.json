@@ -1,10 +1,10 @@
 {
  "file": "petal-panic/assets/fx/dust/impact_sheet.png",
- "size": "2106x379",
- "rows": 2,
- "cols": 6,
+ "size": "2498x204",
+ "rows": 1,
+ "cols": 8,
  "kind": "animation",
- "description": "dust impact puff effect (12 frames)",
+ "description": "dust impact (8 frames) \u2014 carved",
  "entities": [
   {
    "name": "dust",
@@ -16,135 +16,185 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      90,
-      66,
+      0,
+      80,
       200,
       43
-     ]
+     ],
+     "offset": {
+      "x": -100,
+      "y": -43
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "impact_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
-      433,
-      59,
+      200,
+      73,
       247,
       57
-     ]
+     ],
+     "offset": {
+      "x": -123.5,
+      "y": -57
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "impact_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
-      760,
-      45,
+      447,
+      60,
       275,
       84
-     ]
+     ],
+     "offset": {
+      "x": -137.5,
+      "y": -84
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "impact_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
-      1063,
-      29,
+      722,
+      44,
       326,
       116
-     ]
+     ],
+     "offset": {
+      "x": -163,
+      "y": -116
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "impact_f5.png",
      "row": 0,
      "col": 4,
      "bbox": [
-      1389,
-      12,
+      1048,
+      27,
       342,
       150
-     ]
+     ],
+     "offset": {
+      "x": -171,
+      "y": -150
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "impact_f6.png",
      "row": 0,
      "col": 5,
      "bbox": [
-      1731,
-      0,
+      1390,
+      14,
       375,
       175
-     ]
+     ],
+     "offset": {
+      "x": -187.5,
+      "y": -175
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "impact_f7.png",
-     "row": 1,
-     "col": 0,
+     "row": 0,
+     "col": 6,
      "bbox": [
+      1765,
       0,
-      175,
       380,
       204
-     ]
+     ],
+     "offset": {
+      "x": -190,
+      "y": -204
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     },
     {
      "file": "impact_f8.png",
-     "row": 1,
-     "col": 1,
+     "row": 0,
+     "col": 7,
      "bbox": [
-      380,
-      184,
+      2145,
+      9,
       353,
       185
-     ]
-    },
-    {
-     "file": "impact_f9.png",
-     "row": 1,
-     "col": 2,
-     "bbox": [
-      733,
-      203,
-      330,
-      148
-     ]
-    },
-    {
-     "file": "impact_f10.png",
-     "row": 1,
-     "col": 3,
-     "bbox": [
-      1069,
-      223,
-      313,
-      107
-     ]
-    },
-    {
-     "file": "impact_f11.png",
-     "row": 1,
-     "col": 4,
-     "bbox": [
-      1421,
-      236,
-      278,
-      81
-     ]
-    },
-    {
-     "file": "impact_f12.png",
-     "row": 1,
-     "col": 5,
-     "bbox": [
-      1792,
-      246,
-      253,
-      61
-     ]
+     ],
+     "offset": {
+      "x": -176.5,
+      "y": -185
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
     }
-   ]
+   ],
+   "fps": 12,
+   "playback": "once",
+   "direction": "forward",
+   "collision": {
+    "x": -96,
+    "y": -35,
+    "w": 192,
+    "h": 35
+   },
+   "pivot": {
+    "x": 0,
+    "y": -17
+   },
+   "markers": []
   }
  ],
- "updated": "2026-11-11"
+ "updated": "2026-11-12"
 }
