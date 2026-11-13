@@ -88,9 +88,10 @@ export function applyHit(context) {
   // hitstun / iFrames) — hand-written on the attack def or derived from live
   // motion. applyKnockback() divides by the victim's mass and applies it.
   // Applied AFTER damage so the impulse lands before any death-pipeline
-  // velocity wipe; skipped for destroyed targets (a corpse's slide owns its
-  // own motion).
-  if (!destroyed && context.knockback) {
+  // velocity wipe. Freshly-killed targets STILL ride the shove: Enemy.takeDamage
+  // restores alive=true for the death anim, so the corpse arcs off with the
+  // same launch as a survivor — uniform behavior, no special case.
+  if (context.knockback) {
     applyKnockback(target, context.knockback);
   }
 

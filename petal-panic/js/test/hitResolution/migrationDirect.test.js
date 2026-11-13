@@ -23,7 +23,7 @@ test('MELEE (post-migration) — ally hitbox drains enemy hp and applies knockba
   const attacker = { x: -40, y: 0, w: 32, h: 48, vx: 0, vy: 0 };
   const enemy = makeEnemy(0, 0); // hp 50, defense 0 → full 12 lands
   const hb = makeHitbox({ owner: attacker, team: 'ally', box: { x: -10, y: 0, w: 40, h: 48 }, damage: 12, method: 'melee' });
-  hb.knockback = { base: 200, scaleBySpeed: 0, hitstun: 0.25, iFrames: 0.5, dirMode: 'fromAttacker' };
+  hb.knockback = { x: 200, y: 0, hitstun: 0.25, iFrames: 0.5, dirMode: 'fromAttacker' };
   resetHitbox(hb);
   processHitboxes([hb], [enemy]);
   assert.equal(enemy.hp, 38, 'damage routed through applyHit() still drains hp');

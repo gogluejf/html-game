@@ -34,7 +34,7 @@ test('MELEE — ally hitbox drains enemy hp and applies knockback', () => {
   const attacker = { x: -40, y: 0, w: 32, h: 48, vx: 0, vy: 0 };
   const enemy = makeEnemy(0, 0);
   const hb = makeHitbox({ owner: attacker, team: 'ally', box: { x: -10, y: 0, w: 40, h: 48 }, damage: 12, method: 'melee' });
-  hb.knockback = { base: 200, scaleBySpeed: 0, hitstun: 0.25, iFrames: 0.5, dirMode: 'fromAttacker' };
+  hb.knockback = { x: 200, y: 0, hitstun: 0.25, iFrames: 0.5, dirMode: 'fromAttacker' };
   resetHitbox(hb);
   processHitboxes([hb], [enemy]);
   assert.equal(enemy.hp, 38);
@@ -92,9 +92,9 @@ test('DASH — resolveDashDirection returns 0 for non-finite input', () => {
   assert.equal(resolveDashDirection(1.57), 1.57);
 });
 
-test('DASH — normalizeSegment derives knockback.base from speed when omitted', () => {
+test('DASH — normalizeSegment derives knockback.x from speed when omitted', () => {
   const seg = normalizeSegment({ speed: 400, knockback: {} });
-  assert.equal(seg.knockback.base, 100); // 400 * 0.25
+  assert.equal(seg.knockback.x, 100); // 400 * 0.25
   assert.equal(seg.duration, 0.18, 'default duration');
 });
 

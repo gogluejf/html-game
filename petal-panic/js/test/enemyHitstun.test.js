@@ -74,14 +74,17 @@ ok('ai() does not run on the frame the timer crosses zero, resumes next', () => 
 });
 
 // --- Acceptance 2: physics still integrate during stun -----------------------
-ok('horizontal knockback velocity integrates while stunned (shove visible)', () => {
+ok('horizontal knockback velocity integrates while stunned, decaying with friction', () => {
   const e = new SpyEnemy();
   e.gravity = 0; // isolate horizontal motion
   e.vx = 300;
   e.hitstunTimer = 0.1;
   const x0 = e.x;
   e.update(DT, HERO, null);
-  assert.ok(close(e.x - x0, 300 * DT), `expected dx=${300 * DT}, got ${e.x - x0}`);
+  // Friction bleeds the shove off each frame (0.85^1 of 300) so a stun slide
+  // is short and settles instead of lingering forever.
+  const expected = 300 * 0.85 * DT;
+  assert.ok(close(e.x - x0, expected), `expected dx=${expected}, got ${e.x - x0}`);
   assert.equal(e.aiCalls, 0, 'AI did not overwrite the knockback velocity');
 });
 

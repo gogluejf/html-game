@@ -22,6 +22,10 @@ import { LAYER, GRAVITY, MAX_FALL_SPEED, UNIT_PX_Y } from '../consts.js';
 import { UNIT_PX_X } from '../world/macros.js';
 import { heroDamage as damage, flashTarget } from '../combat/damage.js';
 
+/** Per-frame vx decay while a shove is the only velocity owner (stun + death).
+ * 0.85 matches the hero's ground friction — a 370 px/s shove settles in ~0.2s. */
+const ENEMY_KNOCKBACK_FRICTION = 0.85;
+
 export class Enemy extends Entity {
   /**
    * @param {object} def enemy definition (see design §6): id, name, w, h,
@@ -127,11 +131,14 @@ export class Enemy extends Entity {
       }
       // Still integrate physics so a dying body that was just knocked back
       // slides/arcs off before fading, instead of teleporting to its death spot.
-      // ai() is intentionally skipped (the corpse takes no action).
+      // ai() is intentionally skipped (the corpse takes no action). Friction
+      // bleeds the shove off so the slide is short and settles.
       if (this.gravity > 0) {
         this.vy += GRAVITY * this.gravity * dt;
         if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
       }
+      this.vx *= ENEMY_KNOCKBACK_FRICTION;
+      if (Math.abs(this.vx) < 1) this.vx = 0;
       this.x += this.vx * dt;
       this.y += this.vy * dt;
       return;
@@ -155,6 +162,15 @@ export class Enemy extends Entity {
     if (this.gravity > 0) {
       this.vy += GRAVITY * this.gravity * dt;
       if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
+    }
+    // Knockback decay: AI-owned states SET vx every frame (chase/roll/pacing),
+    // so only the stun window and the death pipeline carry a shove — bleed it
+    // off with friction there or the velocity lingers forever and leaks into
+    // the next action (or rides the corpse in a random direction).
+    const aiOwnsVx = !this.stunned && this.aiState !== 'dead';
+    if (!aiOwnsVx) {
+      this.vx *= ENEMY_KNOCKBACK_FRICTION;
+      if (Math.abs(this.vx) < 1) this.vx = 0;
     }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
