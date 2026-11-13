@@ -584,13 +584,157 @@
       "commit_count": 16,
       "repo_name": "/home/goglue/src/html-game",
       "created_at": "2026-10-12T15:03:29.303144"
+    },
+    {
+      "id": "2026-10-12_-attack-engine-v2",
+      "title": "\ud83c\udfaf ATTACK ENGINE v2",
+      "dates": [
+        "2026-10-12",
+        "2026-10-21"
+      ],
+      "summary": "Full primitive + macro attack library, Attack Theater sandbox, real weapon slots + shield system",
+      "bullets": [
+        "Primitive library: projectile, ballistic/bomb, spread, melee hitbox, explosion, body contact, charge, orbit, boomerang, surface wave, dust zone",
+        "Macro layer: burstShot, radialShot, clusterBomb, molotov, missileRain, skyMissile, stomp/stompWave, dashCombo, laneSequence, circusBall, reticleShot",
+        "Attack Theater (F4) \u2014 live sandbox for every attack, dumb-host pattern",
+        "Specials became real weapons in slots (ammo counting died)",
+        "Shield system: HUD bar + damage priority"
+      ],
+      "value": 9,
+      "tags": [
+        "combat",
+        "attack-engine",
+        "macros"
+      ],
+      "commit_count": 194,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-11-12T23:00:57.066912"
+    },
+    {
+      "id": "2026-10-21_-sprite-engine-v1",
+      "title": "\ud83d\uddbc\ufe0f SPRITE ENGINE v1",
+      "dates": [
+        "2026-10-21",
+        "2026-11-09"
+      ],
+      "summary": "Real art everywhere, square-grid migration, no-bbox contract, sprite editor with clipboard + per-frame tuning",
+      "bullets": [
+        "Real art everywhere: terrain tiling, barrels, checkpoints, parallax backgrounds, floor as sprite entity",
+        "Square-grid migration (pixel-space physics preserved)",
+        "No-bbox contract: collision boxes authored per-sheet, top-left anchor convention",
+        "Sprite editor: Ctrl+C/V/X clipboard, pixel-exact paste, per-frame tuning, animated gallery preview",
+        "All 5 heroes got full anim sets + doubled hero height (48\u219296px)"
+      ],
+      "value": 9,
+      "tags": [
+        "sprites",
+        "assets",
+        "editor"
+      ],
+      "commit_count": 536,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-11-12T23:00:58.824285"
+    },
+    {
+      "id": "2026-11-09_-combat-feel",
+      "title": "\ud83d\udca5 COMBAT FEEL",
+      "dates": [
+        "2026-11-09",
+        "2026-11-12"
+      ],
+      "summary": "Unified hit resolution M1\u2013M4, melee connect-protection, sheet-authored hitboxes, star power contact kills",
+      "bullets": [
+        "Unified hit resolution (M1\u2013M4): one resolver, team routing, provenance tracking",
+        "Melee connect-protection (landed swings can't be clipped back)",
+        "Sheet-authored attack hitboxes (melee/air_melee/super_melee)",
+        "Super melee timing fix (protection window matches the swing)",
+        "Star power: contact kills + hitstop",
+        "invincible/intangible split"
+      ],
+      "value": 8,
+      "tags": [
+        "combat",
+        "hit-resolution",
+        "melee"
+      ],
+      "commit_count": 120,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-11-12T23:01:00.542269"
+    },
+    {
+      "id": "2026-11-11_-barrels",
+      "title": "\ud83d\udee2\ufe0f BARRELS",
+      "dates": [
+        "2026-11-11",
+        "2026-11-11"
+      ],
+      "summary": "Barrel physics: stacking, wall bounce, momentum transfer, stomp kick-and-cook detonation",
+      "bullets": [
+        "Shared dynamic-solid step (barrels stack)",
+        "Wall bounce with energy absorption",
+        "Momentum transfer between barrels, walk-push creep, head-region stomp gate",
+        "Falling-barrel stomp \u2192 kick-and-cook detonation"
+      ],
+      "value": 7,
+      "tags": [
+        "barrels",
+        "physics"
+      ],
+      "commit_count": 42,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-11-12T23:01:01.936410"
+    },
+    {
+      "id": "2026-11-12_-save-continue-fixes",
+      "title": "\ud83d\udc1b SAVE/CONTINUE FIXES",
+      "dates": [
+        "2026-11-12",
+        "2026-11-12"
+      ],
+      "summary": "Retry and continue no longer drop you into stale levels or zombie entities",
+      "bullets": [
+        "Retry no longer drops you into a stale/wrong level (ctx.world + checkpoint sync)",
+        "Entities recreated on continue (no zombie enemies / dead barrels)"
+      ],
+      "value": 5,
+      "tags": [
+        "save",
+        "continue",
+        "bugfix"
+      ],
+      "commit_count": 0,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-11-12T23:01:03.297965"
+    },
+    {
+      "id": "2026-10-20_-music",
+      "title": "\ud83c\udfb5 MUSIC",
+      "dates": [
+        "2026-10-20",
+        "2026-10-31"
+      ],
+      "summary": "Music composer v3: measure-based architecture, craft-law audits, jukebox server with deep links + new tracks",
+      "bullets": [
+        "Music composer v3: measure-based architecture, craft-law audits",
+        "Jukebox server with deep links",
+        "New tracks: PETAL RUSH, ACID SEVEN, BIG TOP SHRED",
+        "Via Napoli fight tracks"
+      ],
+      "value": 7,
+      "tags": [
+        "music",
+        "jukebox"
+      ],
+      "commit_count": 336,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-11-12T23:01:04.726263"
     }
   ],
   "index": {
-    "total_entries": 22,
-    "total_commits": 803,
+    "total_entries": 28,
+    "total_commits": 2031,
     "avg_value": 7.5,
     "date_start": "2026-09-12",
-    "date_end": "2026-10-10"
+    "date_end": "2026-11-12"
   }
 }

@@ -400,11 +400,11 @@ body {
 <main class="wrap">
   <div class="stats-bar">
     <div class="stat">
-      <div class="num">22</div>
+      <div class="num">28</div>
       <div class="label">Entries</div>
     </div>
     <div class="stat">
-      <div class="num">803</div>
+      <div class="num">2031</div>
       <div class="label">Commits</div>
     </div>
     <div class="stat">
@@ -412,13 +412,157 @@ body {
       <div class="label">Avg Impact</div>
     </div>
     <div class="stat">
-      <div class="num" style="font-size:1rem">Last week<br><span style='font-size:0.7rem;color:var(--text-dim)'>12 Sep – 10 Oct</span></div>
+      <div class="num" style="font-size:1rem">This week<br><span style='font-size:0.7rem;color:var(--text-dim)'>12 Sep – 12 Nov</span></div>
       <div class="label">Coverage</div>
     </div>
   </div>
 
   <div class="entries">
     
+        <div class="entry-row fx" data-dates="2026-11-12,2026-11-12" data-value="5">
+          <div class="date-stamp">
+            <span class="stamp-day">12</span>
+            <span class="stamp-month">NOV</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🐛 SAVE/CONTINUE FIXES</h3>
+              <div class="entry-meta">
+                
+              </div>
+            </div>
+            <p class="entry-summary">Retry and continue no longer drop you into stale levels or zombie entities</p>
+            <ul class="entry-bullets"><li>Retry no longer drops you into a stale/wrong level (ctx.world + checkpoint sync)</li><li>Entities recreated on continue (no zombie enemies / dead barrels)</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:50%;background:hsl(53, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(53, 75%, 45%)">5/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">save</span><span class="tag">continue</span><span class="tag">bugfix</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-11-11,2026-11-11" data-value="7">
+          <div class="date-stamp">
+            <span class="stamp-day">11</span>
+            <span class="stamp-month">NOV</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🛢️ BARRELS</h3>
+              <div class="entry-meta">
+                <span class="badge">42 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Barrel physics: stacking, wall bounce, momentum transfer, stomp kick-and-cook detonation</p>
+            <ul class="entry-bullets"><li>Shared dynamic-solid step (barrels stack)</li><li>Wall bounce with energy absorption</li><li>Momentum transfer between barrels, walk-push creep, head-region stomp gate</li><li>Falling-barrel stomp → kick-and-cook detonation</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:70%;background:hsl(80, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(80, 75%, 45%)">7/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">barrels</span><span class="tag">physics</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-11-09,2026-11-12" data-value="8">
+          <div class="date-stamp">
+            <span class="stamp-day">9-12</span>
+            <span class="stamp-month">NOV</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>💥 COMBAT FEEL</h3>
+              <div class="entry-meta">
+                <span class="badge">120 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Unified hit resolution M1–M4, melee connect-protection, sheet-authored hitboxes, star power contact kills</p>
+            <ul class="entry-bullets"><li>Unified hit resolution (M1–M4): one resolver, team routing, provenance tracking</li><li>Melee connect-protection (landed swings can't be clipped back)</li><li>Sheet-authored attack hitboxes (melee/air_melee/super_melee)</li><li>Super melee timing fix (protection window matches the swing)</li><li>Star power: contact kills + hitstop</li><li>invincible/intangible split</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:80%;background:hsl(93, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(93, 75%, 45%)">8/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">combat</span><span class="tag">hit-resolution</span><span class="tag">melee</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-10-21,2026-11-09" data-value="9">
+          <div class="date-stamp">
+            <span class="stamp-day">21 OCT – 9 NOV</span>
+            <span class="stamp-month"></span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🖼️ SPRITE ENGINE v1</h3>
+              <div class="entry-meta">
+                <span class="badge">536 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Real art everywhere, square-grid migration, no-bbox contract, sprite editor with clipboard + per-frame tuning</p>
+            <ul class="entry-bullets"><li>Real art everywhere: terrain tiling, barrels, checkpoints, parallax backgrounds, floor as sprite entity</li><li>Square-grid migration (pixel-space physics preserved)</li><li>No-bbox contract: collision boxes authored per-sheet, top-left anchor convention</li><li>Sprite editor: Ctrl+C/V/X clipboard, pixel-exact paste, per-frame tuning, animated gallery preview</li><li>All 5 heroes got full anim sets + doubled hero height (48→96px)</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:90%;background:hsl(106, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(106, 75%, 45%)">9/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">sprites</span><span class="tag">assets</span><span class="tag">editor</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-10-20,2026-10-31" data-value="7">
+          <div class="date-stamp">
+            <span class="stamp-day">20-31</span>
+            <span class="stamp-month">OCT</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🎵 MUSIC</h3>
+              <div class="entry-meta">
+                <span class="badge">336 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Music composer v3: measure-based architecture, craft-law audits, jukebox server with deep links + new tracks</p>
+            <ul class="entry-bullets"><li>Music composer v3: measure-based architecture, craft-law audits</li><li>Jukebox server with deep links</li><li>New tracks: PETAL RUSH, ACID SEVEN, BIG TOP SHRED</li><li>Via Napoli fight tracks</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:70%;background:hsl(80, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(80, 75%, 45%)">7/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">music</span><span class="tag">jukebox</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-10-12,2026-10-21" data-value="9">
+          <div class="date-stamp">
+            <span class="stamp-day">12-21</span>
+            <span class="stamp-month">OCT</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🎯 ATTACK ENGINE v2</h3>
+              <div class="entry-meta">
+                <span class="badge">194 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Full primitive + macro attack library, Attack Theater sandbox, real weapon slots + shield system</p>
+            <ul class="entry-bullets"><li>Primitive library: projectile, ballistic/bomb, spread, melee hitbox, explosion, body contact, charge, orbit, boomerang, surface wave, dust zone</li><li>Macro layer: burstShot, radialShot, clusterBomb, molotov, missileRain, skyMissile, stomp/stompWave, dashCombo, laneSequence, circusBall, reticleShot</li><li>Attack Theater (F4) — live sandbox for every attack, dumb-host pattern</li><li>Specials became real weapons in slots (ammo counting died)</li><li>Shield system: HUD bar + damage priority</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:90%;background:hsl(106, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(106, 75%, 45%)">9/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">combat</span><span class="tag">attack-engine</span><span class="tag">macros</span></div>
+          </div>
+        </div>
         <div class="entry-row fx" data-dates="2026-10-09,2026-10-10" data-value="6">
           <div class="date-stamp">
             <span class="stamp-day">9-10</span>
@@ -952,7 +1096,7 @@ body {
 
 <footer class="site-footer">
   <div class="wrap">
-    <p>Generated by Squid-OS changelog skill · 2026-10-12 15:03</p>
+    <p>Generated by Squid-OS changelog skill · 2026-11-12 23:01</p>
   </div>
 </footer>
 
