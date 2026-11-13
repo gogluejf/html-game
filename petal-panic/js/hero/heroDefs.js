@@ -52,15 +52,11 @@ const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }
 const MELEE_KNOCKBACK = { base: 180, scaleBySpeed: 0.25, hitstun: 0.35, dirMode: 'fromAttacker' };
 
 /**
- * Shared supermove dash box + knockback (thin, full body height, in front).
- * Both heroes share the same supermove launch character (knockback.md §11):
- * the strongest shove — big base heft, scales hardest with dash speed, longest
- * stun, pushed along the dash velocity.
+ * Shared supermove knockback (knockback.md §11): the strongest shove — big
+ * base heft, scales hardest with dash speed, longest stun, pushed along the
+ * dash velocity. The damage BOX itself is sheet-authored only (per-frame
+ * `attack` boxes on the supermove sheet) — no hardcoded hitbox.
  */
-// Anchored to the active collision-box CENTER (see Hero.attackHitboxWorld).
-// bh: 'body' resolves to the hero's full body height; oy: 0 centers it on the
-// body center so it spans the full height symmetrically (no drift below feet).
-const SUPERMOVE_HITBOX = { ox: 20, oy: 0, bw: 16, bh: 'body' };
 // pop: 90 px/s upward launch (§5) — with GRAVITY 1500 a light enemy rises ~2.7px
 // and hangs ~0.12s: a modest loft at dash speed (tuned down from the original
 // 150 rocket). The strongest of the three committed attacks.
@@ -109,7 +105,7 @@ export const HEROES = {
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
       [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockback: MELEE_KNOCKBACK },
-      [ATTACK_SUPERMOVE]: { box: SUPERMOVE_HITBOX, knockback: SUPERMOVE_KNOCKBACK },
+      [ATTACK_SUPERMOVE]: { knockback: SUPERMOVE_KNOCKBACK },
     },
   },
   balthazar: {
@@ -132,7 +128,7 @@ export const HEROES = {
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
       [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockback: MELEE_KNOCKBACK },
-      [ATTACK_SUPERMOVE]: { box: SUPERMOVE_HITBOX, knockback: SUPERMOVE_KNOCKBACK },
+      [ATTACK_SUPERMOVE]: { knockback: SUPERMOVE_KNOCKBACK },
     },
   },
 };

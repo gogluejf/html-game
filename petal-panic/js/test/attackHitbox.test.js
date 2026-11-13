@@ -67,7 +67,10 @@ ok('every hero carries an attacks table with all three entries', () => {
     assert.ok(Array.isArray(atk[ATTACK_MELEE].frames), `${id} melee frames must be a per-frame array`);
     assert.ok(atk[ATTACK_MELEE].frames.length >= 5, `${id} melee frames must span the 5-frame swing`);
     assert.ok(atk[ATTACK_SPECIAL_MELEE] ?? HEROES[id].specialMelee.hitbox, `${id} missing special melee hitbox data`);
-    assert.ok(atk[ATTACK_SUPERMOVE].box, `${id} missing supermove box data`);
+    // Supermove: NO hardcoded box — the damage window is sheet-authored only
+    // (per-frame `attack` boxes). The table keeps knockback data.
+    assert.equal(atk[ATTACK_SUPERMOVE].box, undefined, `${id} supermove must not carry a hardcoded box`);
+    assert.ok(atk[ATTACK_SUPERMOVE].knockback, `${id} missing supermove knockback data`);
   }
 });
 ok('per-hero special melee differences come from DATA, not code branches', () => {
@@ -115,13 +118,14 @@ ok('special melee: table-fallback box present on every frame without a sheet', (
   h.specialMeleeActive = false;
   assert.equal(h.attackHitboxWorld(ATTACK_SPECIAL_MELEE), null, 'idle hero → null');
 });
-ok('supermove: box for the whole dash, null when idle or after end', () => {
+ok('supermove: sheet-only box — null without authored sheet boxes', () => {
   const h = makeHero();
   assert.equal(h.attackHitboxWorld(ATTACK_SUPERMOVE), null, 'before trigger → null');
   startDash(h);
-  const during = h.attackHitboxWorld(ATTACK_SUPERMOVE);
-  assert.ok(during, 'dashing → box expected');
-  assert.equal(during.h, h.h, 'body-height box matches the hero height');
+  // Node tests attach no sprite sheets (Image undefined) → _sheetAttackBox
+  // finds nothing → NO damage box. The box exists only when the supermove
+  // sheet carries per-frame `attack` boxes (melee active-frame pattern).
+  assert.equal(h.attackHitboxWorld(ATTACK_SUPERMOVE), null, 'no sheet boxes → null mid-dash');
   // Run the dash out naturally.
   for (let i = 0; i < 120 && h.supermoveActive; i++) h.update(DT, noInput());
   assert.equal(h.supermoveActive, false);
@@ -150,12 +154,13 @@ for (const id of ['scarlet', 'balthazar']) {
   });
   ok(`${id}: supermove mirrors correctly for facing ±1`, () => {
     const h = makeHero(id, 100, 100);
-    const raw = HEROES[id].attacks[ATTACK_SUPERMOVE].box;
-    const entry = { ...raw, bh: raw.bh === 'body' ? h.h : raw.bh };
+    // Sheet-only box: node tests have no sheet attached → null both facings.
+    // (In-game the per-frame sheet boxes mirror via _sheetBoxToWorld, same as
+    // melee — covered by the browser debug overlay.)
     startDash(h, 1);
-    assertMirrored(h.attackHitboxWorld(ATTACK_SUPERMOVE), 1, entry, h);
-    h.facing = -1; // mid-dash turn: the box must follow the new facing
-    assertMirrored(h.attackHitboxWorld(ATTACK_SUPERMOVE), -1, entry, h);
+    assert.equal(h.attackHitboxWorld(ATTACK_SUPERMOVE), null);
+    h.facing = -1;
+    assert.equal(h.attackHitboxWorld(ATTACK_SUPERMOVE), null);
   });
 }
 

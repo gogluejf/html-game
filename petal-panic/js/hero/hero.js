@@ -275,12 +275,9 @@ export class Hero extends Entity {
     this.supermovePhase = null;      // 'burst' | 'decel' | null (not dashing)
     this.supermoveTimer = 0;         // seconds remaining in the CURRENT phase
     this._supermoveElapsed = 0;      // total seconds since trigger (never resets mid-dash)
-    // §30: supermove hitbox geometry is DATA in the hero's attacks table
-    // (heroDefs.js); bh 'body' resolves to the full body height here so the
-    // box tracks each hero's own h. Same shape as meleeHitbox for consumers.
-    const _superHbData = this.heroDef.attacks[ATTACK_SUPERMOVE].box;
-    const _superBh = _superHbData.bh === 'body' ? this.h : _superHbData.bh;
-    this.supermoveHitbox = { ..._superHbData, bh: _superBh };
+    // Supermove damage box is SHEET-AUTHORED ONLY (per-frame `attack` boxes on
+    // the supermove sheet, resolved live in attackHitboxWorld) — no cached
+    // geometry here. Consumers read supermoveHitboxWorld each frame.
 
     // Anim registry (real sprites later; placeholder frames attached by caller).
     this.anims = {};
@@ -1090,17 +1087,13 @@ export class Hero extends Entity {
       entry = this.heroDef.specialMelee.hitbox;
     } else if (attackName === ATTACK_SUPERMOVE) {
       if (!this.supermoveActive) return null;
-      // Sheet-authored box first (supermove sheet plays during the dash — its
-      // per-frame boxes ARE the damage window, exactly like melee/super_melee);
-      // the heroDef table entry is the fallback for frames/sheets without an
-      // authored box.
+      // Sheet-authored box ONLY (melee active-frame pattern): the per-frame
+      // `attack` boxes on the supermove sheet ARE the damage window. No table
+      // fallback — a frame without an authored box deals no damage.
       const sheetBox = this._sheetAttackBox('supermove');
-      if (sheetBox) {
-        const box = this._sheetBoxToWorld(sheetBox);
-        return { ...box, knockback: this._attackKnockback(attackName), _source: 'sheet' };
-      }
-      const box = this.heroDef.attacks[ATTACK_SUPERMOVE].box;
-      entry = { ...box, bh: box.bh === 'body' ? this.h : box.bh };
+      if (!sheetBox) return null;
+      const box = this._sheetBoxToWorld(sheetBox);
+      return { ...box, knockback: this._attackKnockback(attackName), _source: 'sheet' };
     } else {
       throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
     }
