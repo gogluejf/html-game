@@ -220,6 +220,11 @@ const FALLING_BARREL_COOLDOWN = 0.3; // re-arm window per barrel
 // The blast fires at its CURRENT position, so the explosion travels with the
 // launched barrel (kick-a-barrel-and-it-blows-up feel).
 const STOMP_KNOCKBACK = { x: 260, y: -120, hitstun: 0, iFrames: 0 };
+// The stomp POP: applied as a SET (b.vy = STOMP_POP_VY) after the applyHit
+// shove, because the barrel arrives falling >= FALLING_BARREL_MIN_VY and an
+// additive lobe can't reverse it. -420 vs GRAVITY 1500 → ~0.28s of rise,
+// apex ~59px above the head — a clean visible hop before the arc comes down.
+const STOMP_POP_VY = -420;
 const STOMP_FUSE = 0.45;             // seconds of cooking after the head-hit
 // STAR POWER barrel pop: shove the barrel in front of the hero like an enemy
 // knockback — a horizontal push with a SMALL fixed `pop` lobe (the same shape
@@ -285,6 +290,12 @@ export function fallingBarrelImpact(b) {
     method: 'stomp',
     knockback: { x: STOMP_KNOCKBACK.x * dirX, y: STOMP_KNOCKBACK.y },
   });
+  // POP: the barrel arrived falling fast (>= FALLING_BARREL_MIN_VY down) and
+  // applyKnockback only ADDS its vector — a -120 lobe against a 300+ fall
+  // leaves it still moving down (no visible bounce). A stomp must REVERSE the
+  // fall into a clean hop, so set vy to the launch value outright; the
+  // sideways shove from applyHit is kept as-is.
+  b.vy = STOMP_POP_VY;
   // Arm the fuse. It cooks while airborne; landing or fuse-expiry detonates.
   b._fuse = STOMP_FUSE;
   record(h, { kind: 'enemyStomped' });
