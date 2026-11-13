@@ -71,7 +71,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 27,
+       "y": -200,
+       "w": 65,
+       "h": 75
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -92,8 +100,16 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
-     "durUnits": 1
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 48,
+       "y": -208,
+       "w": 65,
+       "h": 75
+      }
+     ],
+     "durUnits": 3
     },
     {
      "file": "supermove_f5.png",
@@ -113,7 +129,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 58,
+       "y": -213,
+       "w": 65,
+       "h": 75
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -155,7 +179,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 18,
+       "y": -153,
+       "w": 65,
+       "h": 117
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -176,7 +208,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 10,
+       "y": -135,
+       "w": 121,
+       "h": 111
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -197,8 +237,16 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
-     "durUnits": 1
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 16,
+       "y": -189,
+       "w": 128,
+       "h": 95
+      }
+     ],
+     "durUnits": 3
     },
     {
      "file": "supermove_f10.png",
@@ -218,7 +266,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 6,
+       "y": -173,
+       "w": 81,
+       "h": 133
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -239,7 +295,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 12,
+       "y": -180,
+       "w": 65,
+       "h": 127
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -260,7 +324,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 19,
+       "y": -196,
+       "w": 95,
+       "h": 75
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -281,8 +353,16 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
-     "durUnits": 1
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 29,
+       "y": -242,
+       "w": 117,
+       "h": 116
+      }
+     ],
+     "durUnits": 3
     },
     {
      "file": "supermove_f14.png",
@@ -302,7 +382,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 13,
+       "y": -146,
+       "w": 69,
+       "h": 127
+      }
+     ],
      "durUnits": 1
     },
     {

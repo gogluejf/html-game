@@ -142,13 +142,13 @@
     "x": 1,
     "y": -618,
     "w": 241,
-    "h": 595
+    "h": 578
    },
    "playback": "loop",
    "direction": "ping_pong",
    "pivot": {
-    "x": 121,
-    "y": -297
+    "x": 122,
+    "y": -329
    },
    "markers": [],
    "fps": 8
