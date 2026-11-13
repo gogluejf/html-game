@@ -124,15 +124,20 @@ export function processHitboxes(hitboxes, targets, onHit) {
 
       // Knockback is a VECTOR on the hitbox (hb.knockback = { x, y } px/s).
       // Direction follows dirMode: 'alongVelocity' rides the owner's live
-      // velocity; otherwise it points source-center → target-center. The
-      // unified resolver applies it via applyKnockback() after damage — same
-      // single choke point every other path uses. Hero victims keep their own
-      // reaction path (takeHit) — this only shoves enemy/boss/solid targets.
+      // velocity; 'fixed' uses the vector as-is (the macro owns direction —
+      // e.g. dashCombo always pushes along the committed dash); otherwise it
+      // points source-center → target-center. The unified resolver applies it
+      // via applyKnockback() after damage — same single choke point every
+      // other path uses. Hero victims keep their own reaction path (takeHit)
+      // — this only shoves enemy/boss/solid targets.
       let kbVector = null;
       if (hb.knockback && t.layer !== LAYER.HERO) {
         const kb = hb.knockback;
         let nx, ny;
-        if (kb.dirMode === 'alongVelocity') {
+        if (kb.dirMode === 'fixed') {
+          // Vector already oriented by its owner (macro) — apply as-is.
+          kbVector = { x: kb.x ?? 0, y: kb.y ?? 0, hitstun: kb.hitstun, iFrames: kb.iFrames };
+        } else if (kb.dirMode === 'alongVelocity') {
           const len = Math.hypot(hb.owner?.vx || 0, hb.owner?.vy || 0) || 1;
           nx = (hb.owner?.vx || 0) / len;
           ny = (hb.owner?.vy || 0) / len;

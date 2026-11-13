@@ -124,18 +124,17 @@ registerPrimitive('shockwave', {
         // Ring passed over this entity this tick?
         if (dist <= curRadius && dist > prevRadius) {
           hitSet.add(ent);
-          // Apply damage
-          applyHit({ provenance: AttackProvenance.SHOCKWAVE, source: ctx.attacker ?? null, target: ent, damage: dmg, team: Team.NEUTRAL });
-          // Radial knockback: push away from center
+          // Radial shove vector (away from center) rides the SAME applyHit
+          // call as the damage — one door, no manual vx/vy math.
           const angle = Math.atan2(ey - cy, ex - cx);
-          const kx = Math.cos(angle) * kbInt;
-          const ky = Math.sin(angle) * kbInt;
-          if (typeof ent.applyKnockback === 'function') {
-            ent.applyKnockback(kx, ky);
-          } else {
-            ent.vx = (ent.vx ?? 0) + kx;
-            ent.vy = (ent.vy ?? 0) + ky;
-          }
+          applyHit({
+            provenance: AttackProvenance.SHOCKWAVE,
+            source: ctx.attacker ?? null,
+            target: ent,
+            damage: dmg,
+            team: Team.NEUTRAL,
+            knockback: { x: Math.cos(angle) * kbInt, y: Math.sin(angle) * kbInt },
+          });
         }
       }
 

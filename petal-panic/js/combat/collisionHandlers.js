@@ -387,33 +387,40 @@ export function registerCollisionHandlers(collisionWorld) {
     if (source._contactCd > 0) return;
     source._contactCd = CONTACT_COOLDOWN;
     const amt = source.stats?.attack ?? 10;
-    const dealt = damage(source, heroEnt, amt, 'contact');
-    // Body-contact knockback (§9): a shove vector carried on the enemy.
-    // The x component IS the strength (px/s); y carries the small upward
-    // lobe. Charging enemies read harder: calculateKnockback() adds the
-    // enemy's live velocity × weight along the push direction (motion term).
-    if (dealt > 0) {
-      // Special loss (special-weapons.md): a hit that costs damage drops the
-      // selected special. i-frame/connect-protected paths early-return above.
-      heroEnt.loseSelectedSpecial();
-      const hcx = heroEnt.x + heroEnt.w / 2, scx = source.x + source.w / 2;
-      const dirX = Math.sign(hcx - scx) || (heroEnt.facing * -1);
-      // Push normal: horizontal away from attacker + small upward lobe.
-      const rawLen = Math.hypot(dirX, -0.6) || 1;
-      const nx = dirX / rawLen, ny = -0.6 / rawLen;
-      const bk = source.bodyKnockback ?? {};
-      // Motion term: how fast the enemy is moving INTO the hero along the
-      // push normal (head-on only — clamped >= 0), scaled by its weight.
-      const headOn = Math.max(0, (source.vx ?? 0) * nx + (source.vy ?? 0) * ny);
-      const motion = headOn * (source.stats?.weight ?? 1);
-      // Two added terms (not one product) so a zero component can't collapse
-      // to -0 and lose the lobe's sign.
-      applyKnockback(heroEnt, {
+    // Body-contact shove vector (§9): carried on the enemy. The x component IS
+    // the strength (px/s); y carries the small upward lobe. Push normal is
+    // horizontal away from attacker + lobe; the motion term adds the enemy's
+    // live velocity × weight along that normal (head-on only, clamped >= 0),
+    // so a charging boss reads harder for free.
+    const hcx = heroEnt.x + heroEnt.w / 2, scx = source.x + source.w / 2;
+    const dirX = Math.sign(hcx - scx) || (heroEnt.facing * -1);
+    const rawLen = Math.hypot(dirX, -0.6) || 1;
+    const nx = dirX / rawLen, ny = -0.6 / rawLen;
+    const bk = source.bodyKnockback ?? {};
+    const headOn = Math.max(0, (source.vx ?? 0) * nx + (source.vy ?? 0) * ny);
+    const motion = headOn * (source.stats?.weight ?? 1);
+    // ONE door: applyHit() owns the damage AND the shove — the vector rides
+    // the context and lands exactly when damage lands (immune heroes absorb
+    // both via the resolver's immunity gate).
+    const res = applyHit({
+      provenance: AttackProvenance.CONTACT,
+      source,
+      target: heroEnt,
+      damage: amt,
+      team: Team.FOE,
+      method: 'contact',
+      knockback: {
         x: nx * (bk.x ?? 0) + nx * motion,
         y: ny * (bk.y ?? 0) + ny * motion,
         hitstun: bk.hitstun,
         iFrames: bk.iFrames,
-      });
+      },
+    });
+    const dealt = res.dealt;
+    if (dealt > 0) {
+      // Special loss (special-weapons.md): a hit that costs damage drops the
+      // selected special. i-frame/connect-protected paths early-return above.
+      heroEnt.loseSelectedSpecial();
       // ON-HIT SEPARATION (pinball bumper): the impulse alone is a suggestion —
       // weak hits (idle enemy, no motion term) leave the hero parked inside
       // the attacker's box for the whole stun. Push the boxes apart NOW so the

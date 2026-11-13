@@ -33,7 +33,6 @@
 import { defineMacro } from '../defineMacro.js';
 import { AttackHandle } from '../engine.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../../hitbox.js';
-import { applyKnockback } from '../../knockback.js';
 import { aabbOverlap } from '../../../core/collision.js';
 import { fireDeclared } from '../../../effects/index.js';
 
@@ -94,7 +93,7 @@ export function normalizeSegment(seg = {}) {
     freezeFrames: seg.freezeFrames ?? 0.12,
     hitbox: seg.hitbox ?? { w: 48, h: 40, offset: { x: 30, y: 0 }, activeFrames: null },
     damage: seg.damage ?? 10,
-    knockback: seg.knockback ? { ...seg.knockback } : null,
+    knockback: seg.knockback ? { ...seg.knockback, dirMode: 'fixed' } : null,
     shove: seg.shove ?? 0.6,
   };
   // Relative knockback: if the segment declares knockback but no explicit x,
@@ -325,21 +324,10 @@ defineMacro('dashCombo', {
       processHitboxes([s.hb], pendingTargets, (hb, target, dealt) => {
         connections++;
         h._emit('hit', { target, dealt, segmentIndex: s.segmentIndex });
-        // Knockback rides the hitbox and is applied HERE — the shared
-        // applyKnockback() path every host uses (gameplay's hitboxes.js does
-        // the same in its onHit callback). Direction = dash direction (the
-        // attacker may have already passed the target by the finisher), so
-        // the push always follows the committed dash, not current positions.
-        // Fires only when the box actually connected (onHit gate), so a whiff
-        // never shoves — same once-per-freeze guarantee as before.
-        if (hb.knockback && target.alive !== false) {
-          applyKnockback(target, {
-            x: sign * (hb.knockback.x ?? 0),
-            y: hb.knockback.y ?? 0,
-            hitstun: hb.knockback.hitstun,
-            iFrames: hb.knockback.iFrames,
-          });
-        }
+        // Knockback rides the hitbox (dirMode 'fixed') and is applied by
+        // processHitboxes → applyHit({ knockback }) — the single choke point.
+        // Direction = committed dash direction, owned by this macro via the
+        // fixed vector; a whiff never shoves (onHit gate), same as before.
         // Hit juice on the VICTIM: sparkle + shake scaling with segment index
         // (early hits shake less than the finisher).
         const tcx = target.x + target.w / 2, tcy = target.y + target.h / 2;
