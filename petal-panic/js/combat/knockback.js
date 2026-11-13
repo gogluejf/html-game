@@ -12,6 +12,10 @@
 // the VICTIM's mass (knockbackResist divides the impulse) and sets the stun /
 // protection timers. Pure functions: no DOM, no globals.
 
+import { Debug } from '../debug/debug.js';
+
+const _id = (e) => e?.type ?? e?.id ?? e?.constructor?.name ?? 'unknown';
+
 /**
  * Offense helper: derive a knockback vector from the attacker's live state.
  * The attacker's velocity IS the direction AND the force — a charging body
@@ -47,8 +51,10 @@ export function applyKnockback(victim, kb) {
 
   // Mass resists knockback as a divisor (§3). Default resist 1 → unchanged.
   const resist = victim.knockbackResist ?? 1;
-  victim.vx = (victim.vx ?? 0) + fx / resist;
-  victim.vy = (victim.vy ?? 0) + fy / resist;
+  const dx = fx / resist, dy = fy / resist;
+  victim.vx = (victim.vx ?? 0) + dx;
+  victim.vy = (victim.vy ?? 0) + dy;
+  Debug.logEvent(`[kb] ${_id(victim)} += {x:${dx.toFixed(1)}, y:${dy.toFixed(1)}} (resist=${resist}, stun=${kb.hitstun ?? 0}, iF=${kb.iFrames ?? 0})`);
 
   // Stun (§6): never shorten an existing longer stun.
   victim.hitstunTimer = Math.max(victim.hitstunTimer ?? 0, kb.hitstun ?? 0);

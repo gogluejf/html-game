@@ -51,7 +51,7 @@ function mkEnemy(x, y, hp = 30) {
   return e;
 }
 
-const KB = { x: 380, y: -60, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial' };
+const KB = { x: 380, y: 0, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial' };
 
 /** A plain non-null detonator stand-in (no combatStats — damage() tolerates that). */
 const DETONATOR = { x: 0, y: 0, w: 40, h: 40, alive: true, type: 'detonator' };
@@ -95,9 +95,9 @@ ok('neutral explosion shoves the enemy radially away from center', () => {
   const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
   // Normal from center (60,20) to enemy center (180,20) = (1, 0).
-  // Vector oriented along the normal: x = 380/1 = 380; y = -60 × 0 = 0.
+  // Whole-vector scale by normal (1,0): vx = 380, vy = 0.
   assert.ok(close(enemy.vx, 380), `vx=${enemy.vx}, expected 380`);
-  assert.ok(close(enemy.vy, 0), `vy=${enemy.vy}, expected 0 (loft has no vertical component along a horizontal normal)`);
+  assert.ok(close(enemy.vy, 0), `vy=${enemy.vy}, expected 0 (pure radial)`);
   assert.ok(close(enemy.hitstunTimer, 0.30), `hitstun=${enemy.hitstunTimer}`);
 });
 
@@ -196,9 +196,9 @@ ok('enemy knockback points radially away from the blast center (diagonal)', () =
   const exp = { cx: 60, cy: 20, radius: 300, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
   const n = 1 / Math.SQRT2;        // normalized (1,1)/√2
+  // Whole-vector scale: both components = n × 380 — exactly along the line.
   assert.ok(close(enemy.vx, n * 380), `vx=${enemy.vx}, expected ${(n * 380).toFixed(4)}`);
-  // vy = normal.y × vector.y = √½ × -60.
-  assert.ok(close(enemy.vy, n * -60), `vy=${enemy.vy}, expected ${(n * -60).toFixed(4)}`);
+  assert.ok(close(enemy.vy, n * 380), `vy=${enemy.vy}, expected ${(n * 380).toFixed(4)}`);
 });
 
 ok('enemy on the far side of the center is shoved the opposite way', () => {
@@ -227,22 +227,16 @@ function mkBarrel(x, y) {
   };
 }
 
-ok('a barrel ABOVE the blast center is launched UPWARD (radial normal)', () => {
+ok('a barrel ABOVE the blast center is launched UPWARD (out of the blast)', () => {
   // Barrel center at (60, -40); blast center at (60, 20) → normal (0, -1).
+  // Whole-vector scale: shove = normal × 380 = (0, -380) → ÷ resist 0.5
+  // = (0, -760): straight UP, out of the blast. This is the regression that
+  // used to shove the top barrel DOWNWARD (per-component × old y:-60 bias).
   const barrel = mkBarrel(36, -64);
   const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [barrel]);
-  // Oriented vector = per-component: x = normal.x × 380 = 0;
-  // y = normal.y × KB.y = (-1) × (-60) = +60 → ÷ resist 0.5 = 120 DOWNWARD.
-  // Vector-contract caveat pinned here: KB.y is a bias ALONG the radial line,
-  // not a fixed world-up loft — for a victim ABOVE the blast it reinforces the
-  // outward (upward) direction only when KB.y has the same sign as normal.y.
-  // Here normal.y=-1 and KB.y=-60 agree in sign... but the product is positive
-  // because both are negative: the bias actually pushes the top-barrel DOWN
-  // toward the blast. If you want a true "loft away" feel for top victims,
-  // tune KB.y toward 0 (pure radial) — see def comment in explosion.js.
   assert.ok(close(barrel.vx, 0), `vx=${barrel.vx}`);
-  assert.ok(close(barrel.vy, 120), `vy=${barrel.vy}, expected 120`);
+  assert.ok(close(barrel.vy, -760), `vy=${barrel.vy}, expected -760 (launched UP)`);
   assert.ok(close(barrel.hitstunTimer, 0.30));
 });
 
@@ -275,19 +269,30 @@ ok('target outside the radius is untouched', () => {
 // ============================================================================
 // Hero behavior preservation: routed through takeHit('explosion').
 // ============================================================================
-ok('hero knocked back via takeHit("explosion") profile (strength 380, rec 0.30, iFrames 0.60)', () => {
+ok('hero shoved radially through the unified choke point (no special case)', () => {
   const hero = mkHero();
-  // Hero box is targetH×48 tall and square pre-sprite; center = (w/2, h/2).
-  // Place the blast at the SAME y as the hero center so dirY = 0 exactly:
-  // dirX < 0 → normal (-1, 0) → pure horizontal shove of 380.
+  // Blast at the SAME y as the hero center → normal (-1, 0) → pure horizontal
+  // shove of 380 (hero resist 1). Timers come from the vector's hitstun/iFrames
+  // via applyKnockback — the hero no longer routes through takeHit profiles.
   const hc = { x: hero.x + hero.w / 2, y: hero.y + hero.h / 2 };
   const exp = { cx: hc.x + 100, cy: hc.y, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   resolveExplosion(exp, [hero]);
   assert.ok(close(hero.vx, -380), `vx=${hero.vx}, expected -380`);
   assert.ok(close(hero.vy, 0), `vy=${hero.vy}, expected 0`);
-  assert.ok(close(hero.timers.get('rec'), 0.30), `rec=${hero.timers.get('rec')}`);
-  assert.ok(close(hero.timers.get('invincible'), 0.60), `invincible=${hero.timers.get('invincible')}`);
-  assert.equal(hero.invincible, true, 'hero invincible after blast');
+  assert.ok(close(hero.hitstunTimer, 0.30), `hitstun=${hero.hitstunTimer}`);
+  assert.ok(close(hero.iFrameTimer, 0.60), `iFrame=${hero.iFrameTimer}`);
+});
+
+ok('an invincible hero absorbs the whole blast (damage AND shove, unified gate)', () => {
+  const hero = mkHero();
+  hero.setInvincible('test', 1.0);   // in an invincibility window
+  const hc = { x: hero.x + hero.w / 2, y: hero.y + hero.h / 2 };
+  const before = hero.energy;
+  const exp = { cx: hc.x + 100, cy: hc.y, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
+  const result = resolveExplosion(exp, [hero]);
+  assert.equal(result.hit.length, 0, 'immune hero must not register a hit');
+  assert.ok(close(hero.energy, before), 'no energy lost while invincible');
+  assert.ok(close(hero.vx, 0), `no shove while invincible, vx=${hero.vx}`);
 });
 
 // Dead targets are skipped.

@@ -68,6 +68,7 @@ export const Debug = {
   logEvent(msg) {
     this.log.push({ t: performance.now(), msg });
     if (this.log.length > this.LOG_MAX) this.log.shift();
+    if (typeof console !== 'undefined') console.log(`[pp] ${msg}`);
   },
 
   /**

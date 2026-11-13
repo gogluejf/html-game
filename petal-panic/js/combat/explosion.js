@@ -15,10 +15,8 @@
 // summary, leaving VFX / screen shake / telemetry / world removal to the caller.
 // That keeps the acceptance criteria unit-testable in node without a DOM.
 
-import { applyKnockback } from './knockback.js';
 import { applyHit } from './hitResolution.js';
 import { AttackProvenance } from './targeting.js';
-import { LAYER } from '../consts.js';
 
 // --- Alignment (explosion.md §2) --------------------------------------------
 // Which side does the blast hurt? This is the single field that decides target
@@ -31,18 +29,19 @@ export const TEAMS = Object.freeze(['ally', 'foe', 'neutral']);
 // A barrel is a neutral hazard: it shoves everyone radially. 380 px/s matches
 // the hero's pre-refactor 'explosion' profile strength so the hero's feel is
 // preserved exactly when routed through takeHit(); enemies get shoved by this
-// same radial shove. Vector = px/s oriented per victim along the radial line
-// (blast center → victim). NOTE: y is a bias ALONG that line, not a fixed
-// world-up loft — keep it small (or 0 for pure radial) so victims on the far
-// side of the blast aren't pushed back toward the center.
+// same radial shove. PURE RADIAL (y: 0): the radial line itself is the launch
+// direction — a victim above the blast flies UP, one beside flies sideways.
+// Do NOT add a y bias here: oriented per-component (normal.y × KB.y) it pushes
+// far-side victims INWARD toward the center (sign flip), not outward.
 export const BARREL_EXPLOSION_KNOCKBACK = Object.freeze({
-  x: 380, y: -60, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial',
+  x: 380, y: 0, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial',
 });
 
 // A Jack-O-Lantern is a foe-side self-detonation: it threatens the player but spares
-// its own kind. Foe-appropriate shove — a bit softer than a barrel.
+// its own kind. Foe-appropriate shove — a bit softer than a barrel. Pure radial
+// for the same reason (see BARREL_EXPLOSION_KNOCKBACK).
 export const JACKO_EXPLOSION_KNOCKBACK = Object.freeze({
-  x: 300, y: -50, hitstun: 0.25, iFrames: 0.40, dirMode: 'radial',
+  x: 300, y: 0, hitstun: 0.25, iFrames: 0.40, dirMode: 'radial',
 });
 
 /**
@@ -159,7 +158,6 @@ function isEnemy(target) {
  */
 export function resolveExplosion(explosion, targets) {
   const { cx, cy, radius, damage: dmg, team, knockback } = explosion;
-  const hero = ctxHero(explosion);
   const hit = [];
 
   for (const t of targets) {
@@ -168,38 +166,34 @@ export function resolveExplosion(explosion, targets) {
     const tc = centerOf(t);
     if (!withinRadius(cx, cy, tc.cx, tc.cy, radius)) continue;
 
-    // Damage: real enemies run their own death pipeline via takeDamage(); others
-    // use central damage(). Source is the detonator (explosion.self) for telemetry.
+    // Damage + shove through the SINGLE choke point. applyHit() owns every
+    // "who gets hit" decision (eligibility, alive, i-frames) — the shove just
+    // rides along as context.knockback and lands exactly when damage lands.
+    // The radial normal is pure geometry (blast center → this victim), so it
+    // is computed here where the blast position is known; the vector is the
+    // whole strength scaled by that unit normal (strength along the radial
+    // line). Barrels' knockbackResist 0.5 makes them launch 2x harder than
+    // enemies from the same impulse — mass differences live on the VICTIM,
+    // never in this loop.
     const source = explosion.self ?? null;
-    const res = applyHit({ provenance: AttackProvenance.EXPLOSION, source, target: t, damage: dmg, team });
+    const normal = radialNormal({ cx, cy }, tc);
+    const res = applyHit({
+      provenance: AttackProvenance.EXPLOSION,
+      source,
+      target: t,
+      damage: dmg,
+      team,
+      knockback: {
+        x: normal.x * knockback.x,
+        y: normal.y * knockback.x,
+        hitstun: knockback.hitstun,
+        iFrames: knockback.iFrames,
+      },
+    });
     const dealt = res.dealt;
     if (dealt <= 0) continue;
 
     hit.push(t);
-
-    // Special loss (special-weapons.md): blast damage on the hero drops the
-    // selected special (takeHit below handles knockback/i-frames only).
-    if (t === hero) hero.loseSelectedSpecial();
-
-    // Radial knockback away from the blast center.
-    if (t === hero) {
-      // Only flinch/stun if actual energy was lost (shield-only = no reaction).
-      if ((hero._lastEnergyLost ?? 0) > 0) {
-        hero.takeHit({ source: 'explosion', dirX: tc.cx - cx, dirY: tc.cy - cy });
-      }
-    } else if (isEnemy(t) || t.layer === LAYER.SOLID) {
-      // Radial shove for enemies AND destructible solids (barrels): a barrel
-      // sitting on the blast flies UP, one beside it flies sideways — the
-      // per-victim normal is what makes the blast read as "away from center".
-      // Barrels' knockbackResist 0.5 makes them launch 2x harder than enemies.
-      const normal = radialNormal({ cx, cy }, tc);
-      applyKnockback(t, {
-        x: normal.x * knockback.x,
-        y: normal.y * knockback.y,
-        hitstun: knockback.hitstun,
-        iFrames: knockback.iFrames,
-      });
-    }
   }
 
   return { center: { cx, cy }, radius, hit };

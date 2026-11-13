@@ -7,6 +7,9 @@
 
 import { Team, TargetClass, AttackProvenance, assertProvenance, getTargetClass } from './targeting.js';
 import { applyKnockback } from './knockback.js';
+import { Debug } from '../debug/debug.js';
+
+const _id = (e) => e?.type ?? e?.id ?? e?.constructor?.name ?? 'unknown';
 
 /** What a given attacker team may legally strike. */
 const ELIGIBLE = {
@@ -37,6 +40,13 @@ export function applyHit(context) {
   // --- Validate -----------------------------------------------------------
   if (!target || target.destroyed || target.alive === false) {
     return { accepted: false, dealt: 0, destroyed: false, rejectReason: 'target invalid or dead' };
+  }
+  // Damage-immune targets absorb the whole hit — no damage, no shove, no
+  // callbacks. Heroes in their invincible window (i-frames, star power) and
+  // intangible entities (barrel cook) live here; this is the ONE place that
+  // decision is made so every damaging path shares it.
+  if (target.invincible || target.intangible) {
+    return { accepted: false, dealt: 0, destroyed: false, rejectReason: 'target immune' };
   }
   // Damage must be a finite number BEFORE any mutation or callback. A missing
   // or undefined damage value (bad def, unmerged params) must never reach the
@@ -83,6 +93,7 @@ export function applyHit(context) {
   // own motion). Legacy raw {vx,vy} deltas still work during migration.
   if (!destroyed) {
     if (context.knockback) {
+      Debug.logEvent(`[applyHit] ${provenance} → ${_id(target)} dmg=${dealt} kb={x:${context.knockback.x?.toFixed(1)}, y:${context.knockback.y?.toFixed(1)}, stun:${context.knockback.hitstun ?? 0}}`);
       applyKnockback(target, context.knockback);
     } else if (knockback) {
       target.vx = (target.vx ?? 0) + (knockback.vx ?? 0);
