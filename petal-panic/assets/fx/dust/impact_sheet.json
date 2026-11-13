@@ -180,18 +180,18 @@
      "durUnits": 1
     }
    ],
-   "fps": 12,
+   "fps": 16,
    "playback": "once",
    "direction": "forward",
    "collision": {
-    "x": -189,
-    "y": -128,
+    "x": -193,
+    "y": -204,
     "w": 380,
     "h": 177
    },
    "pivot": {
-    "x": 1,
-    "y": -39
+    "x": -3,
+    "y": -115
    },
    "markers": []
   }

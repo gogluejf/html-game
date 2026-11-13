@@ -25,6 +25,7 @@
 //              without a fallback, primitive mode renders nothing.
 
 import { isHighGraphic } from '../core/renderMode.js';
+import { Debug } from '../debug/debug.js';
 
 const DEFAULT_SIZE = 64;
 const DEFAULT_DURATION = 0.5;
@@ -65,10 +66,10 @@ export function blastFallbackDrawer(ctx, s) {
  * @param {{x?:number, y?:number, size?:number, duration?:number, anim?:object, fallback?:Function}} params
  * @returns {{update:Function, render:Function, done:boolean}}
  */
-import { getAnimDuration } from '../core/spriteData.js';
+import { getAnimDuration, placeSheetFrame } from '../core/spriteData.js';
 
 export function spriteBurst(params = {}) {
-  const { x = 0, y = 0, size = DEFAULT_SIZE, anim, fallback, fromAlpha = 1, toAlpha = 0.5 } = params;
+  const { x = 0, y = 0, size = DEFAULT_SIZE, anim, fallback, fromAlpha = 1, toAlpha = 0.5, anchor = 'center' } = params;
   const hasSheet = !!(anim?.frames?.length && anim.collisionBox);
   if (!hasSheet && typeof fallback !== 'function') {
     throw new Error('spriteBurst: requires an anim with frames + collisionBox, or a fallback drawer');
@@ -96,7 +97,44 @@ export function spriteBurst(params = {}) {
             ctx.save();
             const progress = t / duration;
             ctx.globalAlpha = fromAlpha + (toAlpha - fromAlpha) * progress;
-            ctx.drawImage(img, x - w / 2, y - h / 2, w, h);
+            let dx = x - w / 2, dy = y - h / 2; // default: image centered on (x,y)
+            if (anchor !== 'center' && anim.collisionBox) {
+              // Entity-sprite contract: place the frame relative to its
+              // collision box (offset − pivot delta rule), then sit the box's
+              // anchor point ON (x,y). 'bottom-center' keeps ground FX (dust
+              // landings) planted on the surface line instead of sinking half
+              // the sheet into the floor.
+              const placed = placeSheetFrame(anim, frames[idx], img, size);
+              if (placed && frames[idx].offset) {
+                const cb = anim.collisionBox;
+                const ax = cb.x + cb.w / 2;
+                const ay = anchor === 'top-center' ? cb.y : (cb.y + cb.h);
+                // placed.dx/dy = offset − pivot (delta rule). A sheet-space
+                // point P therefore renders at (dx + (P.x - offset.x)*s, ...).
+                // We want the BOX ANCHOR (ax,ay) to sit exactly on (x,y) →
+                // solve for the draw origin.
+                const ox = frames[idx].offset.x, oy = frames[idx].offset.y;
+                dx = x - (ax - ox) * placed.scale;
+                dy = y - (ay - oy) * placed.scale;
+              }
+            }
+            ctx.drawImage(img, dx, dy, w, h);
+            // Debug: expose the sheet's collision box in world space so the
+            // F3 collision layer (drawDebugOverlay) can draw it as a gray box
+            // alongside entity boxes. Computed here — only render() knows the
+            // per-frame offset transform — and consumed by the overlay pass.
+            if (Debug.enabled && (Debug.viewMode === 0 || Debug.viewMode === 2 || Debug.viewMode === 3)) {
+              const cb = anim.collisionBox;
+              const ox = frames[idx].offset?.x ?? 0, oy = frames[idx].offset?.y ?? 0;
+              this._debugBox = {
+                x: dx + (cb.x - ox) * scale,
+                y: dy + (cb.y - oy) * scale,
+                w: cb.w * scale,
+                h: cb.h * scale,
+              };
+            } else {
+              this._debugBox = null;
+            }
             ctx.restore();
           }
           return;

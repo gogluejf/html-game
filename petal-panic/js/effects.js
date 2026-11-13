@@ -309,6 +309,7 @@ export const Effects = {
         y: box.y + box.h,
         size: 48,
         anim,
+        anchor: 'bottom-center',
         fromAlpha: 1,
         toAlpha: 0,
       },

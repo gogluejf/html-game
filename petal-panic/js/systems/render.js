@@ -8,7 +8,7 @@ import { VIEW_W, VIEW_H } from '../core/view.js';
 import { LAYER } from '../consts.js';
 import { getHero, getSolids, getEnemies, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getActiveZoneKind, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, getAreaEntryFadeAlpha, bossZone } from './update.js';
 import { Effects } from '../effects.js';
-import { drawEffects } from '../effects/index.js';
+import { drawEffects, activeInstances } from '../effects/index.js';
 import { getState, S } from '../core/state.js';
 import { Debug } from '../debug/debug.js';
 import { Theater } from '../debug/effect-theater.js';
@@ -702,6 +702,19 @@ function drawDebugOverlay(ctx, alpha = 1) {
     ctx.strokeStyle = rule.color;
     ctx.strokeRect(b.x, b.y, b.w, b.h);
 
+  }
+
+  // Effect collision boxes (sprite-burst sheets): GRAY so they read as
+  // non-physical VFX anchors, distinct from the entity layer colors above.
+  // The box rect is computed by spriteBurst.render() (only it knows the
+  // per-frame offset transform) and exposed on the instance as _debugBox.
+  for (const inst of activeInstances()) {
+    const b = inst.body?._debugBox;
+    if (!b) continue;
+    ctx.fillStyle = '#9e9e9e';
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.strokeStyle = '#9e9e9e';
+    ctx.strokeRect(b.x, b.y, b.w, b.h);
   }
 
   ctx.restore();
