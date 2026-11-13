@@ -1433,28 +1433,27 @@ export class Hero extends Entity {
    */
   resolveAim(input) {
     const down = !!input.down;
+    // An explicit DIAGONAL-DOWN aim (significant horizontal + downward) is a
+    // deliberate 45° shot — it must not be swallowed by the crouch rule.
+    // Keyboard: Down IS crouch, so without this carve-out a crouched hero
+    // could never aim 45-down. Pure Down still stays horizontal (§4).
+    const hasDiagDown = Math.abs(input.aimX ?? 0) > 0.2 && (input.aimY ?? 0) > 0.2;
     // Movement lock + Down → straight-down aim (§4 "Movement Locked").
     // Must be checked first: while lockMove is held, Down does NOT crouch —
     // it aims straight down.
     if (down && input.lockMove) return DIR_DOWN;
-    // Grounded + crouching (or about to crouch via pure Down) → ALWAYS
-    // horizontal toward facing, regardless of lock state. A crouched hero
-    // cannot shoot downward (§4). Checked BEFORE the lockDir branch so that
-    // locking while crouched never captures a downward angle. We also check
-    // input.down because at lock-capture time (processInput) the hero may not
-    // have entered crouch yet this frame — the flag flips in hero.update().
-    if (this.grounded && (this.crouching || down)) return this.facing >= 0 ? DIR_RIGHT : DIR_LEFT;
+    // Grounded + crouching (or about to crouch via pure Down) → horizontal
+    // toward facing. A crouched hero cannot shoot STRAIGHT down (§4).
+    // Exception: an explicit diagonal gets through — §4 forbids straight-down
+    // from crouch, not a deliberate 45° line.
+    if (this.grounded && (this.crouching || down) && !hasDiagDown) return this.facing >= 0 ? DIR_RIGHT : DIR_LEFT;
     // Lock Direction freezes the resolved aim (design §5): the frozen aim
     // (input.aimX/aimY, set by input.js) is authoritative and wins over every
     // other contextual rule.
     if (input.lockDir) return aimFromInput(input, this.facing);
     // Grounded + Down (or already crouched) → horizontal toward facing.
-    // There is NO grounded-crouch + straight-down state (§4). The crouch flag
-    // alone must NOT win while airborne: a hero who slid/fell off a ledge with
-    // Down still held is now in the air, so Down means downward aim (§4).
-    if (this.grounded && (this.crouching || down)) return this.facing >= 0 ? DIR_RIGHT : DIR_LEFT;
-    // Airborne + Down → straight down.
-    if (down) return DIR_DOWN;
+    // Airborne + Down → straight down (unless explicit diagonal).
+    if (down && !hasDiagDown) return DIR_DOWN;
     return aimFromInput(input, this.facing);
   }
 

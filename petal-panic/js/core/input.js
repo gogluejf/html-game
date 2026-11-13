@@ -573,13 +573,27 @@ export function createInput({ target = globalThis.window, document = globalThis.
       // confirmed released (or gone) — a keyup for the exact id is NOT required,
       // because after a barrier the next keydown of a still-held key is filtered
       // and would otherwise leave the id blocked forever.
+      // Apply queued key state before re-arming barrier blocks. Otherwise a
+      // still-held key's first keydown after a barrier is quarantined and lost.
+      const drained = queue.splice(0);
+      for (const { code, down } of drained) {
+        if (down) keys.add(code); else keys.delete(code);
+      }
       for (const id of [...blocked]) {
         const code = id.startsWith('k:') ? id.slice(2) : null;
         if (code !== null ? !keys.has(code) : !physical.has(id)) blocked.delete(id);
       }
-      for (const { code, down } of queue.splice(0)) {
+      for (const { code, down } of drained) {
         change(`k:${code}`, down ? { source: 'keyboard', binding: code, value: 1 } : null);
         observe();
+      }
+      // Reconcile: any key still physically held (in keys) but missing from
+      // physical (lost to a barrier quarantine) gets re-added here.
+      for (const code of keys) {
+        const id = `k:${code}`;
+        if (!physical.has(id) && !blocked.has(id)) {
+          change(id, { source: 'keyboard', binding: code, value: 1 });
+        }
       }
       const padPhysical = new Map(); let connected = false;
       if (!suspended) for (const pad of getGamepads() || []) {
@@ -752,3 +766,4 @@ export function createInput({ target = globalThis.window, document = globalThis.
   engine.loadMapping(); return engine;
 }
 export const input = createInput();
+

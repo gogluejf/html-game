@@ -53,11 +53,12 @@ ok('grounded + Down resolves horizontal toward facing, not down/diagonal', () =>
   assert.ok(h.crouching, 'should be crouched');
   // Facing right: Down alone must NOT resolve to straight-down (6).
   assert.equal(h.resolveAim(inp), DIR_RIGHT, `facing right, got ${h.resolveAim(inp)}`);
-  // Now hold Left too while crouched: still horizontal (toward facing), never a diagonal.
+  // Now hold Left+Down while crouched: explicit diagonal gets through (§4
+  // forbids straight-down from crouch, not a deliberate 45° line).
   inp.left = true; inp.aimX = -1; inp.aimY = 1;
   h.update(DT, inp);
   assert.ok(h.crouching, 'still crouched');
-  assert.equal(h.resolveAim(inp), DIR_RIGHT, `crouched + left+down aim must stay horizontal toward facing, got ${h.resolveAim(inp)}`);
+  assert.equal(h.resolveAim(inp), 5, `crouched + left+down diagonal aims 45-down-left, got ${h.resolveAim(inp)}`);
 });
 
 ok('crouched facing left resolves horizontal left', () => {
@@ -75,14 +76,15 @@ ok('crouched facing left resolves horizontal left', () => {
 });
 
 console.log('resolveAim — airborne (AC #3)');
-ok('airborne + Down resolves straight down regardless of horizontal input', () => {
+ok('airborne + Down resolves straight down; explicit diagonal tilts', () => {
   const h = makeHero();
   h.setGrounded(false);
   h.vy = 0;
   let inp = baseIntent(); inp.down = true; inp.aimY = 1;
   assert.equal(h.resolveAim(inp), DIR_DOWN, `got ${h.resolveAim(inp)}`);
-  inp.left = true; inp.aimX = -1; // holding a horizontal direction does not tilt it
-  assert.equal(h.resolveAim(inp), DIR_DOWN, `airborne down must be straight down, got ${h.resolveAim(inp)}`);
+  // Explicit diagonal (aimX + aimY both significant) tilts to 45-down.
+  inp.left = true; inp.aimX = -1;
+  assert.equal(h.resolveAim(inp), 5, `airborne explicit diagonal aims 45-down-left, got ${h.resolveAim(inp)}`);
 });
 
 ok('crouched hero who becomes airborne still holds Down → straight down (not horizontal)', () => {
@@ -139,6 +141,29 @@ function inputFixture(hero) {
   return { engine, target,
     down: code => target.emit('keydown', { code }), up: code => target.emit('keyup', { code }) };
 }
+
+ok('keyboard Ctrl-fire preserves movement-lock downward aims for WASD and arrows', () => {
+  for (const [codes, expected] of [
+    [['KeyS'], 6], [['KeyS', 'KeyD'], 7], [['KeyS', 'KeyA'], 5],
+    [['ArrowDown'], 6], [['ArrowDown', 'ArrowRight'], 7], [['ArrowDown', 'ArrowLeft'], 5],
+  ]) {
+    const h = makeHero(); h.setGrounded(true);
+    const f = inputFixture(h);
+    f.engine.mapping.keyboard.shoot = ['ControlLeft'];
+    f.down('ControlLeft'); f.engine.poll();
+    for (const code of ['KeyO', ...codes]) {
+      f.target.emit('keydown', { code, ctrlKey: false });
+      f.engine.poll();
+    }
+    const s = f.engine.state;
+    assert.ok(s.shooting && s.lockMove, codes.join('+'));
+    assert.equal(s.moveX, 0);
+    const intent = { ...baseIntent(), down: s.crouch, lockMove: s.lockMove, shoot: s.shooting, aimX: s.aimX, aimY: s.aimY };
+    h.update(DT, intent);
+    assert.equal(h.resolveAim(intent), expected, codes.join('+'));
+    f.engine.destroy();
+  }
+});
 
 ok('REAL engage: grounded crouch holding Down + I locks horizontal toward facing, NOT down (§5)', () => {
   const h = makeHero();
@@ -203,6 +228,24 @@ ok('REAL engage: airborne holding Down + I still locks straight down (§5 exampl
 });
 
 console.log('resolveAim — movement locked (AC #4)');
+ok('movement lock turns toward aim; direction lock freezes facing', () => {
+  const h = makeHero(); h.setGrounded(true);
+  const mirroredSides = [];
+  const sync = h.syncMirror.bind(h);
+  h.syncMirror = () => { mirroredSides.push(h.facing); sync(); };
+  for (const side of [-1, 1]) {
+    h.update(DT, { ...baseIntent(), lockMove: true, shoot: true, aimX: side, aimY: 1 });
+    assert.equal(h.facing, side);
+    assert.equal(mirroredSides.at(-1), side);
+    assert.equal(h.vx, 0);
+    assert.equal(h.crouching, false);
+  }
+  h.update(DT, { ...baseIntent(), lockMove: true, aimY: 1 });
+  assert.equal(h.facing, 1, 'vertical aim preserves facing');
+  h.update(DT, { ...baseIntent(), lockMove: true, lockDir: true, aimX: -1 });
+  assert.equal(h.facing, 1, 'direction lock preserves facing even with movement lock');
+});
+
 ok('lockMove + Down resolves straight down and holds vx at 0', () => {
   const h = makeHero();
   h.setGrounded(true);
