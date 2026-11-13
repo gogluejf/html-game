@@ -438,8 +438,8 @@
     "x": -19,
     "y": -169
    },
-   "fps": 24,
-   "playback": "loop",
+   "fps": 16,
+   "playback": "once",
    "direction": "forward",
    "markers": []
   }
