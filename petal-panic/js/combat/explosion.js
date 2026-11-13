@@ -17,6 +17,10 @@
 
 import { applyHit } from './hitResolution.js';
 import { AttackProvenance } from './targeting.js';
+import { Debug } from '../debug/debug.js';
+
+const _srcName = (e) => e?.type ?? e?.id ?? 'blast';
+const _tgtName = (e) => e?.type ?? e?.id ?? e?.constructor?.name ?? '?';
 
 // --- Alignment (explosion.md §2) --------------------------------------------
 // Which side does the blast hurt? This is the single field that decides target
@@ -177,18 +181,15 @@ export function resolveExplosion(explosion, targets) {
     // never in this loop.
     const source = explosion.self ?? null;
     const normal = radialNormal({ cx, cy }, tc);
+    const kx = normal.x * knockback.x, ky = normal.y * knockback.x;
+    Debug.logEvent(`[blast] ${_srcName(source)} → ${_tgtName(t)} | blastC=(${cx.toFixed(0)},${cy.toFixed(0)}) tgtC=(${tc.cx.toFixed(0)},${tc.cy.toFixed(0)}) dir=(${normal.x.toFixed(2)},${normal.y.toFixed(2)}) kb=(${kx.toFixed(0)},${ky.toFixed(0)})`);
     const res = applyHit({
       provenance: AttackProvenance.EXPLOSION,
       source,
       target: t,
       damage: dmg,
       team,
-      knockback: {
-        x: normal.x * knockback.x,
-        y: normal.y * knockback.x,
-        hitstun: knockback.hitstun,
-        iFrames: knockback.iFrames,
-      },
+      knockback: { x: kx, y: ky, hitstun: knockback.hitstun, iFrames: knockback.iFrames },
     });
     const dealt = res.dealt;
     if (dealt <= 0) continue;

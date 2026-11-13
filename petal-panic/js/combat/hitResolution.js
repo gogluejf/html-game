@@ -7,9 +7,6 @@
 
 import { Team, TargetClass, AttackProvenance, assertProvenance, getTargetClass } from './targeting.js';
 import { applyKnockback } from './knockback.js';
-import { Debug } from '../debug/debug.js';
-
-const _id = (e) => e?.type ?? e?.id ?? e?.constructor?.name ?? 'unknown';
 
 /** What a given attacker team may legally strike. */
 const ELIGIBLE = {
@@ -93,7 +90,6 @@ export function applyHit(context) {
   // own motion). Legacy raw {vx,vy} deltas still work during migration.
   if (!destroyed) {
     if (context.knockback) {
-      Debug.logEvent(`[applyHit] ${provenance} → ${_id(target)} dmg=${dealt} kb={x:${context.knockback.x?.toFixed(1)}, y:${context.knockback.y?.toFixed(1)}, stun:${context.knockback.hitstun ?? 0}}`);
       applyKnockback(target, context.knockback);
     } else if (knockback) {
       target.vx = (target.vx ?? 0) + (knockback.vx ?? 0);

@@ -120,7 +120,7 @@ registerPrimitive('explosion', {
     if (params.screenFlash !== false) fireDeclared({ type: 'screen-flash', params: { strength: 1, viewW: VIEW_W, viewH: VIEW_H } }, h.declaredEffectTypes());
     if (params.shake !== false) fireDeclared({ type: 'camera-shake', params: { intensity: 4 } }, h.declaredEffectTypes());
 
-    Debug.logEvent(`[blast] detonate @(${params.x?.toFixed(0)},${params.y?.toFixed(0)}) r=${params.radius} team=${params.team} kb=${JSON.stringify(params.knockback ?? BARREL_EXPLOSION_KNOCKBACK)} hit=${result.hit.length}`);
+    Debug.logEvent(`[blast] source=${params.self?.type ?? params.self?.id ?? '?'} center=(${params.x?.toFixed(0)},${params.y?.toFixed(0)}) r=${params.radius} team=${params.team} hit=${result.hit.length}`);
     h._emit('detonate', { x: params.x, y: params.y, hit: result.hit.length });
     h._lastResult = result; // synchronous blast summary (macros surface it as hits)
     h._complete(result);
