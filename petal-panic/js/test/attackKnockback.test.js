@@ -136,13 +136,16 @@ ok('scarlet sweep hitbox resolves with its knockback setting', () => {
   assert.deepEqual(box.knockback, HEROES.scarlet.specialMelee.knockback);
 });
 
-ok('supermove hitbox resolves with its knockback setting (both heroes)', () => {
+ok('supermove hitbox is sheet-only: null without authored sheet boxes (both heroes)', () => {
   for (const id of ['scarlet', 'balthazar']) {
     const h = makeHero(id);
     startDash(h);
-    const box = h.attackHitboxWorld(ATTACK_SUPERMOVE);
-    assert.ok(box, `${id} dashing hero must resolve a supermove box`);
-    assert.deepEqual(box.knockback, HEROES[id].attacks[ATTACK_SUPERMOVE].knockback);
+    // Node tests attach no sprite sheets → no per-frame `attack` boxes → the
+    // dash resolves NO damage box. In-game the supermove sheet's authored
+    // boxes drive the window (melee active-frame pattern), with knockback
+    // attached from the heroDefs table at impact.
+    assert.equal(h.attackHitboxWorld(ATTACK_SUPERMOVE), null,
+      `${id} dashing hero must resolve a sheet-only supermove box (null without sheets)`);
   }
 });
 

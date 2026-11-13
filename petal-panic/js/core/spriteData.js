@@ -96,12 +96,23 @@ export function parseSheet(sheetJson) {
         markers: Array.isArray(ent.markers) ? ent.markers : [],
         // Per-frame optional extras (duration overrides, typed boxes,
         // point/radius markers) — carried through verbatim when present.
-        framesMeta: ent.frames?.map((f) => ({
-          duration: f.duration != null ? Number(f.duration) : null,
-          boxes: Array.isArray(f.boxes) ? f.boxes : [],
-          points: Array.isArray(f.points) ? f.points : [],
-          radii: Array.isArray(f.radii) ? f.radii : [],
-        })) ?? [],
+        // `durUnits` (editor field) is a MULTIPLIER on the base 1/fps slot;
+        // normalize it to seconds here so SpritePlayer sees one unit. A
+        // literal `duration` (seconds) wins when both are present.
+        framesMeta: ent.frames?.map((f) => {
+          const fpsLocal = numIn(ent.fps, 1, 1000, 'fps') ?? numIn(ent.speed, 1, 1000, 'speed') ?? SPRITE_DEFAULTS.fps;
+          let duration = f.duration != null ? Number(f.duration) : null;
+          if (duration == null && f.durUnits != null) {
+            const du = Number(f.durUnits);
+            if (Number.isFinite(du) && du > 0) duration = du / fpsLocal;
+          }
+          return {
+            duration,
+            boxes: Array.isArray(f.boxes) ? f.boxes : [],
+            points: Array.isArray(f.points) ? f.points : [],
+            radii: Array.isArray(f.radii) ? f.radii : [],
+          };
+        }) ?? [],
       };
     }
   }
@@ -229,13 +240,15 @@ export function getAnimDuration(animData) {
   if (n === 0) return 0;
   const fps = animData.fps ?? 12;
   const baseSlot = 1 / fps;
-  // Sum per-frame durations (durUnits multiplies the base slot)
-  let totalSlots = 0;
+  // Sum per-frame durations from the normalized runtime model (framesMeta):
+  // parseSheet already converted editor `durUnits` (multiplier on 1/fps) and
+  // literal `duration` (seconds) into seconds — null falls back to 1/fps.
+  let total = 0;
   for (let i = 0; i < n; i++) {
-    const du = frames[i].duration != null ? frames[i].duration : 1;
-    totalSlots += du;
+    const d = animData.framesMeta?.[i]?.duration;
+    total += d != null && Number.isFinite(d) && d > 0 ? d : baseSlot;
   }
-  let dur = totalSlots * baseSlot;
+  let dur = total;
   // Pingpong plays forward then backward (minus first/last to avoid repeat)
   if (animData.mode === 'pingpong') dur *= 2;
   return dur;
