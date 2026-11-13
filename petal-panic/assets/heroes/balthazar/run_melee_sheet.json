@@ -1,0 +1,202 @@
+{
+ "file": "petal-panic/assets/heroes/balthazar/run_melee_sheet.png",
+ "size": "2172x724",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "balthazar run_melee (6 frames from Cane-Wielding Tiger Attack sheet)",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "run_melee",
+   "frames_dir": "petal-panic/assets/heroes/balthazar",
+   "frames": [
+    {
+     "file": "run_melee_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      60,
+      264,
+      256,
+      231
+     ],
+     "offset": {
+      "x": -4,
+      "y": -236
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "run_melee_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      442,
+      228,
+      218,
+      267
+     ],
+     "offset": {
+      "x": 2,
+      "y": -270
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": -4,
+       "y": -294,
+       "w": 205,
+       "h": 112
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "run_melee_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      771,
+      244,
+      288,
+      255
+     ],
+     "offset": {
+      "x": 1,
+      "y": -256
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": -22,
+       "y": -271,
+       "w": 319,
+       "h": 206
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "run_melee_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1109,
+      256,
+      312,
+      243
+     ],
+     "offset": {
+      "x": -1,
+      "y": -248
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 121,
+       "y": -266,
+       "w": 205,
+       "h": 152
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "run_melee_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1469,
+      249,
+      331,
+      250
+     ],
+     "offset": {
+      "x": -7,
+      "y": -257
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 117,
+       "y": -268,
+       "w": 221,
+       "h": 154
+      }
+     ],
+     "durUnits": 1
+    },
+    {
+     "file": "run_melee_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1841,
+      258,
+      310,
+      239
+     ],
+     "offset": {
+      "x": -8,
+      "y": -247
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 10,
+       "y": -263,
+       "w": 306,
+       "h": 179
+      }
+     ],
+     "durUnits": 1
+    }
+   ],
+   "playback": "loop",
+   "direction": "forward",
+   "collision": {
+    "x": 81,
+    "y": -238,
+    "w": 107,
+    "h": 220
+   },
+   "pivot": {
+    "x": 135,
+    "y": -128
+   },
+   "markers": [],
+   "fps": 8
+  }
+ ],
+ "crop": {
+  "frames_dir": "petal-panic/assets/heroes/balthazar",
+  "pass": "/home/goglue/tmp/baltha-melee-v1"
+ },
+ "updated": "2026-11-12T23:19:41"
+}
