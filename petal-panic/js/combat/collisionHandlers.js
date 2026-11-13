@@ -44,8 +44,9 @@ import { entryImpactPoint, snapToImpact } from './entryImpact.js';
 export { entryImpactPoint, snapToImpact };
 import { hitstop as requestHitstop } from '../core/hitstop.js';
 
-/** Star-power launch (mario star): how hard a touched enemy/boss gets flung. */
-const STAR_POWER_KNOCKBACK = Object.freeze({ base: 420, scaleBySpeed: 0, hitstun: 0.5, pop: 260 });
+/** Star-power launch (mario star): how hard a touched enemy/boss gets flung.
+ *  Vector = px/s: 420 horizontal away from the hero + 260 upward loft. */
+const STAR_POWER_KNOCKBACK = Object.freeze({ x: 420, y: -260, hitstun: 0.5 });
 /** Screen shake magnitude for a star-power kill. */
 const STAR_POWER_SHAKE = 6;
 /** Hit-stop length in fixed frames (~83ms at 60Hz — HANDOFF Part B default). */
@@ -68,11 +69,11 @@ const STAR_POWER_HITSTOP_FRAMES = 5;
 export function starPowerKill(hero, victim) {
   if (!victim || !victim.alive || victim.aiState === 'dead') return;
   // Lethal through the unified resolver (M3): one applyHit() carries damage +
-  // declarative reaction. CONTACT provenance is first-class in the eligibility
+  // knockback vector. CONTACT provenance is first-class in the eligibility
   // matrix (ALLY may strike ENEMY/BOSS/DESTRUCTIBLE), so the kill now fires
-  // onHit/onDestroyed callbacks like every other hit. The launch impulse is
-  // applied by applyHit's reaction block via the single applyKnockback() choke
-  // point — away from the hero horizontally + strong upward pop.
+  // onHit/onDestroyed callbacks like every other hit. The launch — away from
+  // the hero horizontally + strong upward loft — rides as context.knockback
+  // and is applied by applyHit's reaction block via applyKnockback().
   const amt = Math.max(victim.hp ?? 1, victim.stats?.stamina ?? 1);
   const hcx = hero.x + hero.w / 2, vcx = victim.x + victim.w / 2;
   const dirX = Math.sign(vcx - hcx) || 1;
@@ -83,8 +84,7 @@ export function starPowerKill(hero, victim) {
     damage: amt,
     team: Team.ALLY,
     method: 'contact',
-    reaction: STAR_POWER_KNOCKBACK,
-    direction: { x: dirX, y: 0 },
+    knockback: { x: STAR_POWER_KNOCKBACK.x * dirX, y: STAR_POWER_KNOCKBACK.y, hitstun: STAR_POWER_KNOCKBACK.hitstun },
   });
   // Juice: freeze the whole sim for ~83ms + shake. Max-merge semantics mean
   // overlapping kills hold the larger window, never stack.
@@ -388,19 +388,32 @@ export function registerCollisionHandlers(collisionWorld) {
     source._contactCd = CONTACT_COOLDOWN;
     const amt = source.stats?.attack ?? 10;
     const dealt = damage(source, heroEnt, amt, 'contact');
-    // Body-contact knockback (§9): a single velocity-scaled rule carried on the
-    // enemy. Idle enemies shove less than charging ones (motion term); bosses
-    // read harder through their larger base + speed, not a separate category.
+    // Body-contact knockback (§9): a shove vector carried on the enemy.
+    // The x component IS the strength (px/s); y carries the small upward
+    // lobe. Charging enemies read harder: calculateKnockback() adds the
+    // enemy's live velocity × weight along the push direction (motion term).
     if (dealt > 0) {
       // Special loss (special-weapons.md): a hit that costs damage drops the
       // selected special. i-frame/connect-protected paths early-return above.
       heroEnt.loseSelectedSpecial();
       const hcx = heroEnt.x + heroEnt.w / 2, scx = source.x + source.w / 2;
       const dirX = Math.sign(hcx - scx) || (heroEnt.facing * -1);
-      // Build the push normal (horizontal away from attacker + small upward pop).
+      // Push normal: horizontal away from attacker + small upward lobe.
       const rawLen = Math.hypot(dirX, -0.6) || 1;
-      const normal = { x: dirX / rawLen, y: -0.6 / rawLen };
-      applyKnockback(heroEnt, source, source.bodyKnockback, normal);
+      const nx = dirX / rawLen, ny = -0.6 / rawLen;
+      const bk = source.bodyKnockback ?? {};
+      // Motion term: how fast the enemy is moving INTO the hero along the
+      // push normal (head-on only — clamped >= 0), scaled by its weight.
+      const headOn = Math.max(0, (source.vx ?? 0) * nx + (source.vy ?? 0) * ny);
+      const motion = headOn * (source.stats?.weight ?? 1);
+      // Two added terms (not one product) so a zero component can't collapse
+      // to -0 and lose the lobe's sign.
+      applyKnockback(heroEnt, {
+        x: nx * (bk.x ?? 0) + nx * motion,
+        y: ny * (bk.y ?? 0) + ny * motion,
+        hitstun: bk.hitstun,
+        iFrames: bk.iFrames,
+      });
       // ON-HIT SEPARATION (pinball bumper): the impulse alone is a suggestion —
       // weak hits (idle enemy, no motion term) leave the hero parked inside
       // the attacker's box for the whole stun. Push the boxes apart NOW so the

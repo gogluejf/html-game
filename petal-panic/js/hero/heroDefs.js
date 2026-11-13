@@ -47,20 +47,21 @@ const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }
  * (hitstun skips ai(), so a whipping/chasing enemy is frozen for the whole
  * window). Tuned well below the committed attacks (sweep ~320-440, supermove
  * ~360-636) so the hierarchy reads: jab < sweep < supermove. No pop: the jab
- * shoves horizontally at body level.
+ * shoves horizontally at body level. Vector = px/s along the push direction
+ * (dirMode 'fromAttacker' orients it per impact in hitbox.js).
  */
-const MELEE_KNOCKBACK = { base: 180, scaleBySpeed: 0.25, hitstun: 0.35, dirMode: 'fromAttacker' };
+const MELEE_KNOCKBACK = { x: 180, y: 0, hitstun: 0.35, dirMode: 'fromAttacker' };
 
 /**
  * Shared supermove knockback (knockback.md §11): the strongest shove — big
- * base heft, scales hardest with supermove speed, longest stun, pushed along the
- * supermove velocity. The damage BOX itself is sheet-authored only (per-frame
- * `attack` boxes on the supermove sheet) — no hardcoded hitbox.
+ * heft, longest stun, pushed along the supermove velocity. The damage BOX
+ * itself is sheet-authored only (per-frame `attack` boxes on the supermove
+ * sheet) — no hardcoded hitbox.
+ * Vector = px/s: 360 along the dash + 90 upward loft (y negative = up).
+ * With GRAVITY 1500 a light enemy rises ~2.7px and hangs ~0.12s: a modest
+ * loft at supermove speed. The strongest of the three committed attacks.
  */
-// pop: 90 px/s upward launch (§5) — with GRAVITY 1500 a light enemy rises ~2.7px
-// and hangs ~0.12s: a modest loft at supermove speed (tuned down from the original
-// 150 rocket). The strongest of the three committed attacks.
-const SUPERMOVE_KNOCKBACK = { base: 360, scaleBySpeed: 0.3, hitstun: 0.30, dirMode: 'alongVelocity', pop: 90 };
+const SUPERMOVE_KNOCKBACK = { x: 360, y: -90, hitstun: 0.30, dirMode: 'alongVelocity' };
 
 /**
  * §15 Special melee (Down+Melee): the ADVANCING LEG SWEEP — one shared attack
@@ -79,8 +80,8 @@ const SWEEP = {
   hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over the body — FALLBACK for sheets without authored boxes
   // Knockback (knockback.md §11): aggressive forward pushback along the
   // lunge velocity — clears the path ahead of the advancing sweep.
-  // pop: 40 px/s upward (§5) — a small hop; lighter than the supermove loft.
-  knockback: { base: 320, scaleBySpeed: 0.4, hitstun: 0.45, dirMode: 'alongVelocity', pop: 40 },
+  // Vector = px/s: 320 along the lunge + 40 upward hop (y negative = up).
+  knockback: { x: 320, y: -40, hitstun: 0.45, dirMode: 'alongVelocity' },
 };
 
 export const HEROES = {

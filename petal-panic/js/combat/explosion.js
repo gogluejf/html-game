@@ -27,17 +27,18 @@ import { AttackProvenance } from './targeting.js';
 export const TEAMS = Object.freeze(['ally', 'foe', 'neutral']);
 
 // --- Knockback characters (explosion.md §4; each lives on the blast, never inline) ---
-// A barrel is a neutral hazard: it shoves everyone radially. base 380 matches the
-// hero's pre-refactor 'explosion' profile strength so the hero's feel is preserved
-// exactly when routed through takeHit(); enemies get shoved by this same radial shove.
+// A barrel is a neutral hazard: it shoves everyone radially. 380 px/s matches
+// the hero's pre-refactor 'explosion' profile strength so the hero's feel is
+// preserved exactly when routed through takeHit(); enemies get shoved by this
+// same radial shove. Vector = px/s along the radial normal + 60 upward loft.
 export const BARREL_EXPLOSION_KNOCKBACK = Object.freeze({
-  base: 380, scaleBySpeed: 0, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial', pop: 60,
+  x: 380, y: -60, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial',
 });
 
 // A Jack-O-Lantern is a foe-side self-detonation: it threatens the player but spares
 // its own kind. Foe-appropriate shove — a bit softer than a barrel.
 export const JACKO_EXPLOSION_KNOCKBACK = Object.freeze({
-  base: 300, scaleBySpeed: 0, hitstun: 0.25, iFrames: 0.40, dirMode: 'radial', pop: 50,
+  x: 300, y: -50, hitstun: 0.25, iFrames: 0.40, dirMode: 'radial',
 });
 
 /**
@@ -184,7 +185,12 @@ export function resolveExplosion(explosion, targets) {
       }
     } else if (isEnemy(t)) {
       const normal = radialNormal({ cx, cy }, tc);
-      applyKnockback(t, { vx: 0, vy: 0 }, knockback, normal);
+      applyKnockback(t, {
+        x: normal.x * knockback.x,
+        y: normal.y * knockback.y,
+        hitstun: knockback.hitstun,
+        iFrames: knockback.iFrames,
+      });
     }
   }
 

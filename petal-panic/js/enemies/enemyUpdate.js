@@ -10,7 +10,8 @@ import { ctx } from '../world/context.js';
 import { resolve } from '../core/collision.js';
 
 import { Effects } from '../effects.js';
-import { resolveExplosion } from '../combat/explosion.js';
+import { invoke } from '../combat/attack/engine.js';
+import { getDamageables } from '../world/accessors.js';
 import { record } from '../stats.js';
 import { Debug } from '../debug/debug.js';
 import { coins } from '../effects/particles.js';
@@ -70,27 +71,24 @@ function updateRealEnemy(e, dt) {
   if (!atkHb) e._atkHitDone = false; // reset when window closes (hitbox system uses its own hitSet)
 
   // Explosion (generic): any entity that carries an `explosion` property and has
-  // latched its detonation fires the AoE blast here — the SAME path a barrel uses.
-  // The only per-source difference is WHEN the trigger fires: barrels detonate on
+  // latched its detonation fires the AoE blast here — through the SAME explosion
+  // primitive a barrel uses (invoke → fireBlast → resolveExplosion). The only
+  // per-source difference is WHEN the trigger fires: barrels detonate on
   // destruction, the Jack-O-Lantern latches `exploded` when it blows up. No
   // instanceof checks; the engine reads e.explosion and resolves uniformly.
   if (e.explosion && e.exploded && !e._explodeHandled) {
     e._explodeHandled = true;
     const cx = e.x + e.w / 2;
     const cy = e.y + e.h / 2;
-    const targets = [ctx.hero, ...ctx.realEnemies];
-    const result = resolveExplosion({
-      ...e.explosion,
-      cx, cy,
+    invoke('explosion', {
+      x: cx, y: cy,
+      radius: e.explosion.radius,
+      damage: e.explosion.damage,
+      team: e.explosion.team ?? 'neutral',
+      knockback: e.explosion.knockback,
       self: e,
-      ctx: { hero: ctx.hero },
-    }, targets);
-    // Legacy enemy-death explosion roll (pre-migration spawnExplosionVFX,
-    // preserved verbatim): 12 + floor(rand*4) → 12–15 particles.
-    const deathCount = 12 + Math.floor(Math.random() * 4);
-    Effects.spawnExplosion(cx, cy, result.radius, deathCount); // engine path — warm fire burst sized to AoE
-    Effects.bigExplosion(); // screen flash on big explosion
-    Effects.triggerShake(6); // engine path — camera-shake singleton
+      targets: getDamageables(),
+    }, { attacker: e, world: { hero: ctx.hero, targets: getDamageables() } });
     // SFX: explosion
   }
 

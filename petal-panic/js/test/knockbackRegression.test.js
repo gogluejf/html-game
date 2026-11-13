@@ -4,13 +4,16 @@
 // Pre-refactor, every way an enemy hurts the hero routed through Hero.takeHit()
 // with a per-source KNOCKBACK_PROFILES entry (see
 // .squid-os/plans/knockback-system/knockback-reference.txt for the captured
-// reference values). The refactor (tasks 3.1–3.3) moved BODY CONTACT onto the
-// shared applyKnockback() engine with a velocity-scaled `bodyKnockback` setting
-// carried on the enemy; projectile / heavyProj / explosion still call takeHit().
+// reference values). The refactor moved BODY CONTACT onto the shared
+// applyKnockback() engine with a shove VECTOR `bodyKnockback` carried on the
+// enemy; projectile / heavyProj / explosion still call takeHit().
 //
-// This test proves the observable hero reaction (vx/vy delta + rec timer +
-// invincible window) is IDENTICAL to the pre-refactor reference for all four
-// live paths. No DOM needed.
+// Vector-contract note: the old engine added a FIXED upward pop AFTER
+// normalizing the direction (always ~156 px/s straight up). The vector
+// contract orients the WHOLE vector along the push normal instead, so the
+// lobe lands at ny × vector.y (≈ -80 px/s for the (1, -0.6) contact normal)
+// — slightly less loft than the legacy pop, by design. vx, rec and iFrames
+// still match the captured reference exactly. No DOM needed.
 
 import { strict as assert } from 'node:assert';
 import { Hero } from '../hero/hero.js';
@@ -45,23 +48,23 @@ console.log('Enemy→hero knockback regression (behavior-preserving refactor)');
 
 // ============================================================================
 // PATH 1 — Body contact (CHANGED by task 3.1: now via applyKnockback +
-// enemy.bodyKnockback instead of takeHit({source:'contact'|'bossContact'})).
+// enemy.bodyKnockback vector instead of takeHit({source:'contact'|'bossContact'})).
 //
-// The contact handler in update.js builds the push normal as
+// The contact handler in collisionHandlers.js builds the push normal as
 //   rawLen = hypot(dirX, -0.6); normal = { x: dirX/rawLen, y: -0.6/rawLen }
-// with dirX = ±1 (horizontal away from the attacker + small upward pop).
+// with dirX = ±1 (horizontal away from the attacker + small upward lobe).
 // A stationary enemy (vx=vy=0) contributes no motion term, so the shove is
-// exactly base along that normal — matching the old takeHit normalization of
-// (±1, -0.6) against the same strength.
+// exactly bodyKnockback.x along that normal — matching the old takeHit
+// normalization of (±1, -0.6) against the same strength.
 // ============================================================================
 
-/** Replicates the contact handler's normal construction (update.js §9). */
+/** Replicates the contact handler's normal construction (§9). */
 function contactNormal(dirX) {
   const rawLen = Math.hypot(dirX, -0.6) || 1;
   return { x: dirX / rawLen, y: -0.6 / rawLen };
 }
 
-/** Replicates the post-applyKnockback timer transfer in update.js. */
+/** Replicates the post-applyKnockback timer transfer in collisionHandlers.js. */
 function transferTimers(hero) {
   if (hero.hitstunTimer > 0) {
     hero.timers.set('rec', Math.max(hero.timers.get('rec'), hero.hitstunTimer));
@@ -75,6 +78,20 @@ function transferTimers(hero) {
   }
 }
 
+/** Replicates the contact handler's shove build (collisionHandlers.js §9). */
+function contactShove(source, dirX) {
+  const n = contactNormal(dirX);
+  const bk = source.bodyKnockback ?? {};
+  const headOn = Math.max(0, (source.vx ?? 0) * n.x + (source.vy ?? 0) * n.y);
+  const motion = headOn * (source.stats?.weight ?? 1);
+  return {
+    x: n.x * (bk.x ?? 0) + n.x * motion,
+    y: n.y * (bk.y ?? 0) + n.y * motion,
+    hitstun: bk.hitstun,
+    iFrames: bk.iFrames,
+  };
+}
+
 const ENEMY_DEF = {
   id: 'regress_enemy', name: 'Regress Enemy', w: 32, h: 48, aggroRadius: 300,
   stats: { weight: 1, speed: 120, attack: 10, defense: 0, stamina: 40, fly: false },
@@ -82,14 +99,16 @@ const ENEMY_DEF = {
 
 ok('body contact (regular enemy, idle) matches pre-refactor contact profile', () => {
   const hero = mkHero();
-  const enemy = new Enemy(ENEMY_DEF, 0, 0); // default bodyKnockback: base 260, hitstun 0.25, iFrames 0.60
+  const enemy = new Enemy(ENEMY_DEF, 0, 0); // default bodyKnockback: x 260, y -156 lobe, hitstun 0.25, iFrames 0.60
   assert.equal(enemy.vx, 0); // stationary → no motion term
-  const normal = contactNormal(1);
-  applyKnockback(hero, enemy, enemy.bodyKnockback, normal);
+  applyKnockback(hero, contactShove(enemy, 1));
   transferTimers(hero);
   const len = Math.hypot(1, -0.6);
   assert.ok(close(hero.vx, (1 / len) * REF.contact.strength), `vx=${hero.vx}, expected ${(1 / len) * REF.contact.strength}`);
-  assert.ok(close(hero.vy, (-0.6 / len) * REF.contact.strength), `vy=${hero.vy}, expected ${(-0.6 / len) * REF.contact.strength}`);
+  // Vector-contract lobe: ny × bodyKnockback.y (orients the whole vector along
+  // the normal) — NOT the legacy fixed post-normalization pop.
+  const LOBE_Y = -156;
+  assert.ok(close(hero.vy, (-0.6 / len) * LOBE_Y), `vy=${hero.vy}, expected ${(-0.6 / len) * LOBE_Y}`);
   assert.ok(close(hero.timers.get('rec'), REF.contact.recovery), `rec=${hero.timers.get('rec')}`);
   assert.ok(close(hero.timers.get('invincible'), REF.contact.iFrames), `invincible=${hero.timers.get('invincible')}`);
   assert.equal(hero.invincible, true);
@@ -98,23 +117,21 @@ ok('body contact (regular enemy, idle) matches pre-refactor contact profile', ()
 ok('body contact (regular enemy, pushed left) mirrors the rightward case', () => {
   const hero = mkHero();
   const enemy = new Enemy(ENEMY_DEF, 0, 0);
-  const normal = contactNormal(-1);
-  applyKnockback(hero, enemy, enemy.bodyKnockback, normal);
+  applyKnockback(hero, contactShove(enemy, -1));
   transferTimers(hero);
   const len = Math.hypot(1, -0.6);
   assert.ok(close(hero.vx, -(1 / len) * REF.contact.strength), `vx=${hero.vx}`);
-  assert.ok(close(hero.vy, (-0.6 / len) * REF.contact.strength), `vy=${hero.vy}`);
+  assert.ok(close(hero.vy, (-0.6 / len) * -156), `vy=${hero.vy}`);
 });
 
 ok('body contact (boss, idle) matches pre-refactor bossContact profile', () => {
   const hero = mkHero();
-  const boss = new Enemy({ ...ENEMY_DEF, isBoss: true }, 0, 0); // default boss: base 340, hitstun 0.30, iFrames 0.70
-  const normal = contactNormal(1);
-  applyKnockback(hero, boss, boss.bodyKnockback, normal);
+  const boss = new Enemy({ ...ENEMY_DEF, isBoss: true }, 0, 0); // default boss: x 340, y -156 lobe, hitstun 0.30, iFrames 0.70
+  applyKnockback(hero, contactShove(boss, 1));
   transferTimers(hero);
   const len = Math.hypot(1, -0.6);
   assert.ok(close(hero.vx, (1 / len) * REF.bossContact.strength), `vx=${hero.vx}`);
-  assert.ok(close(hero.vy, (-0.6 / len) * REF.bossContact.strength), `vy=${hero.vy}`);
+  assert.ok(close(hero.vy, (-0.6 / len) * -156), `vy=${hero.vy}`);
   assert.ok(close(hero.timers.get('rec'), REF.bossContact.recovery), `rec=${hero.timers.get('rec')}`);
   assert.ok(close(hero.timers.get('invincible'), REF.bossContact.iFrames), `invincible=${hero.timers.get('invincible')}`);
   assert.equal(hero.invincible, true);
@@ -171,8 +188,7 @@ ok('explosion radial direction scales correctly (diagonal blast offset)', () => 
 ok('i-frames absorb a second body-contact hit (no double-fling, unchanged)', () => {
   const hero = mkHero();
   const enemy = new Enemy(ENEMY_DEF, 0, 0);
-  const normal = contactNormal(1);
-  applyKnockback(hero, enemy, enemy.bodyKnockback, normal);
+  applyKnockback(hero, contactShove(enemy, 1));
   transferTimers(hero);
   const vxAfterFirst = hero.vx;
   // Second overlap while invincible: the handler early-returns on

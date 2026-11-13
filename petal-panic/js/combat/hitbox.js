@@ -122,12 +122,13 @@ export function processHitboxes(hitboxes, targets, onHit) {
         if (t.dying) continue;
       }
 
-      // Knockback is DECLARATIVE (M3): the hitbox carries the setting
-      // (hb.knockback); direction follows dirMode. The unified resolver applies
-      // it via applyKnockback() after damage — same single choke point every
-      // other path uses. Hero victims keep their own reaction path (takeHit) —
-      // this only shoves enemy/boss/solid targets.
-      let kbNormal = null;
+      // Knockback is a VECTOR on the hitbox (hb.knockback = { x, y } px/s).
+      // Direction follows dirMode: 'alongVelocity' rides the owner's live
+      // velocity; otherwise it points source-center → target-center. The
+      // unified resolver applies it via applyKnockback() after damage — same
+      // single choke point every other path uses. Hero victims keep their own
+      // reaction path (takeHit) — this only shoves enemy/boss/solid targets.
+      let kbVector = null;
       if (hb.knockback && t.layer !== LAYER.HERO) {
         const kb = hb.knockback;
         let nx, ny;
@@ -143,14 +144,14 @@ export function processHitboxes(hitboxes, targets, onHit) {
           const len = Math.hypot(dx, dy) || 1;
           nx = dx / len; ny = dy / len;
         }
-        kbNormal = { x: nx, y: ny };
+        kbVector = { x: nx * (kb.x ?? 0), y: ny * (kb.y ?? 0), hitstun: kb.hitstun, iFrames: kb.iFrames };
       }
 
       // Route damage through the unified resolver (unified-hit-resolution §3).
       // applyHit() validates, checks team eligibility, routes by target class
       // (takeDamage → hit → central damage()), fires target.onHit(context,
-      // result), and applies the declarative knockback reaction (context.reaction)
-      // through the single applyKnockback() choke point.
+      // result), and applies the knockback vector (context.knockback) through
+      // the single applyKnockback() choke point.
       const provenance = METHOD_PROVENANCE[hb.method] ?? AttackProvenance.MELEE;
       const pipeline = typeof t.takeDamage === 'function' || typeof t.hit === 'function';
       const res = applyHit({
@@ -159,8 +160,7 @@ export function processHitboxes(hitboxes, targets, onHit) {
         target: t,
         damage: hb.damage,
         team: TEAM_CONST[hb.team] ?? Team.NEUTRAL,
-        reaction: kbNormal ? hb.knockback : null,
-        direction: kbNormal,
+        knockback: kbVector,
         method: hb.method,
       });
       const dealt = res.accepted ? res.dealt : 0;

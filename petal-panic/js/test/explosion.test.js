@@ -39,7 +39,7 @@ function mkEnemy(x, y, hp = 30) {
     vx: 0, vy: 0,
     hitstunTimer: 0, iFrameTimer: 0,
     knockbackResist: 1,
-    bodyKnockback: { base: 260, scaleBySpeed: 1.0, hitstun: 0.25, iFrames: 0.60 },
+    bodyKnockback: { x: 260, y: 0, hitstun: 0.25, iFrames: 0.60 },
     takeDamage(amt, _source, _method) {
       if (!this.alive) return 0;
       const real = Math.max(1, amt - this.defense);
@@ -51,7 +51,7 @@ function mkEnemy(x, y, hp = 30) {
   return e;
 }
 
-const KB = { base: 380, scaleBySpeed: 0, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial', pop: 60 };
+const KB = { x: 380, y: -60, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial' };
 
 /** A plain non-null detonator stand-in (no combatStats — damage() tolerates that). */
 const DETONATOR = { x: 0, y: 0, w: 40, h: 40, alive: true, type: 'detonator' };
@@ -95,9 +95,9 @@ ok('neutral explosion shoves the enemy radially away from center', () => {
   const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
   // Normal from center (60,20) to enemy center (180,20) = (1, 0).
-  // mag = base/resist = 380/1 = 380 along +x; pop adds -60 to vy.
+  // Vector oriented along the normal: x = 380/1 = 380; y = -60 × 0 = 0.
   assert.ok(close(enemy.vx, 380), `vx=${enemy.vx}, expected 380`);
-  assert.ok(close(enemy.vy, -60), `vy=${enemy.vy}, expected -60 (pop)`);
+  assert.ok(close(enemy.vy, 0), `vy=${enemy.vy}, expected 0 (loft has no vertical component along a horizontal normal)`);
   assert.ok(close(enemy.hitstunTimer, 0.30), `hitstun=${enemy.hitstunTimer}`);
 });
 
@@ -196,10 +196,9 @@ ok('enemy knockback points radially away from the blast center (diagonal)', () =
   const exp = { cx: 60, cy: 20, radius: 300, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
   const n = 1 / Math.SQRT2;        // normalized (1,1)/√2
-  const mag = 380;                  // base / resist 1
-  assert.ok(close(enemy.vx, n * mag), `vx=${enemy.vx}, expected ${(n * mag).toFixed(4)}`);
-  // vy = n*mag (outward +y) minus pop 60.
-  assert.ok(close(enemy.vy, n * mag - 60), `vy=${enemy.vy}, expected ${(n * mag - 60).toFixed(4)}`);
+  assert.ok(close(enemy.vx, n * 380), `vx=${enemy.vx}, expected ${(n * 380).toFixed(4)}`);
+  // vy = normal.y × vector.y = √½ × -60.
+  assert.ok(close(enemy.vy, n * -60), `vy=${enemy.vy}, expected ${(n * -60).toFixed(4)}`);
 });
 
 ok('enemy on the far side of the center is shoved the opposite way', () => {
@@ -207,7 +206,7 @@ ok('enemy on the far side of the center is shoved the opposite way', () => {
   const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
   assert.ok(close(enemy.vx, -380), `vx=${enemy.vx}, expected -380`);
-  assert.ok(close(enemy.vy, -60), `vy=${enemy.vy}, expected -60 (pop only)`);
+  assert.ok(close(enemy.vy, 0), `vy=${enemy.vy}, expected 0 (horizontal normal)`);
 });
 
 // ============================================================================

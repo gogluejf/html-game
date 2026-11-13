@@ -1,11 +1,13 @@
-// Knockback core — applyKnockback (design: docs/architecture/knockback.md §2–§6).
+// Knockback core (applyKnockback / calculateKnockback — the vector contract).
 // Run: node js/test/knockback.test.js
-// Pure node unit tests on knockback.js (no DOM): exact impulse magnitudes/directions
-// for base-only, motion-term (head-on vs sliding-past), mass-resistance scaling, and
-// the zero/absent no-op case. Fixed inputs, exact expected numbers within epsilon.
+//
+// The whole shove is ONE vector { x, y } in px/s. applyKnockback() finishes
+// the math with the victim's mass (knockbackResist divides the impulse) and
+// sets stun / protection timers. calculateKnockback() derives a raw vector
+// from an attacker's live velocity + weight. No DOM needed.
 
 import { strict as assert } from 'node:assert';
-import { applyKnockback } from '../combat/knockback.js';
+import { applyKnockback, calculateKnockback } from '../combat/knockback.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -15,137 +17,113 @@ function ok(name, fn) {
 const EPS = 1e-9;
 const close = (a, b) => Math.abs(a - b) < EPS;
 
-// Plain stand-in entities — no DOM, just the fields applyKnockback reads/writes.
+// Plain stand-in victim: only the fields applyKnockback reads/writes.
 const mkVictim = (resist = 1) => ({ vx: 0, vy: 0, knockbackResist: resist });
-const mkAttacker = (vx = 0, vy = 0) => ({ vx, vy });
 
-console.log('Knockback core (applyKnockback, §2–§6)');
+console.log('Knockback core (vector contract)');
 
-// --- Acceptance 1: base-only knockback imparts exactly base * resist along normal ---
-ok('base-only knockback imparts exactly base/resist along the normal', () => {
-  const v = mkVictim(1); // resist 1 → unchanged
-  const a = mkAttacker(0, 0); // stationary attacker → no motion term
-  const applied = applyKnockback(v, a, { base: 300, scaleBySpeed: 0, hitstun: 0.2 }, { x: 1, y: 0 });
-  assert.equal(applied, true);
-  assert.ok(close(v.vx, 300), `expected vx=300, got ${v.vx}`);
-  assert.ok(close(v.vy, 0), `expected vy=0, got ${v.vy}`);
-});
-
-ok('base-only respects an arbitrary normalized direction (§4/§5)', () => {
+ok('a horizontal vector imparts exactly x/resist along the axis', () => {
   const v = mkVictim(1);
-  // Normalized diagonal (unit vector): (√2/2, √2/2)
-  const n = { x: Math.SQRT1_2, y: Math.SQRT1_2 };
-  applyKnockback(v, mkAttacker(), { base: 200, scaleBySpeed: 0, hitstun: 0.1 }, n);
-  assert.ok(close(v.vx, 200 * Math.SQRT1_2), `vx=${v.vx}`);
-  assert.ok(close(v.vy, 200 * Math.SQRT1_2), `vy=${v.vy}`);
+  assert.equal(applyKnockback(v, { x: 260, y: 0 }), true);
+  assert.ok(close(v.vx, 260), `vx=${v.vx}`);
+  assert.ok(close(v.vy, 0), `vy=${v.vy}`);
 });
 
-// --- Acceptance 2: motion term adds only the into-victim velocity component ---
-ok('head-on charging attacker adds the full motion term', () => {
+ok('the y component carries the loft (negative = up)', () => {
   const v = mkVictim(1);
-  // Attacker moving straight into the victim along +x (normal +x): headOn = 400.
-  const a = mkAttacker(400, 0);
-  applyKnockback(v, a, { base: 100, scaleBySpeed: 0.5, hitstun: 0.2 }, { x: 1, y: 0 });
-  // mag = (100 + 400*0.5)/1 = 300
-  assert.ok(close(v.vx, 300), `expected vx=300, got ${v.vx}`);
+  applyKnockback(v, { x: 360, y: -90 });
+  assert.ok(close(v.vx, 360));
+  assert.ok(close(v.vy, -90), `vy=${v.vy}`);
 });
 
-ok('sliding past sideways adds ~0 to the impact (perpendicular motion ignored)', () => {
-  const v = mkVictim(1);
-  // Attacker moving purely perpendicular (+y) to the push normal (+x): headOn = 0.
-  const a = mkAttacker(0, 400);
-  applyKnockback(v, a, { base: 100, scaleBySpeed: 0.5, hitstun: 0.2 }, { x: 1, y: 0 });
-  // Only the base contributes; the sideways speed must NOT add anything.
-  assert.ok(close(v.vx, 100), `expected vx=100 (base only), got ${v.vx}`);
-  assert.ok(close(v.vy, 0), `expected vy=0, got ${v.vy}`);
-});
-
-ok('retreating attacker does not amplify the hit (motion clamped non-negative)', () => {
-  const v = mkVictim(1);
-  // Attacker moving AWAY from the victim along -x while normal is +x: headOn = -400 → clamped to 0.
-  const a = mkAttacker(-400, 0);
-  applyKnockback(v, a, { base: 100, scaleBySpeed: 0.5, hitstun: 0.2 }, { x: 1, y: 0 });
-  assert.ok(close(v.vx, 100), `expected vx=100 (clamped), got ${v.vx}`);
-});
-
-// --- Acceptance 4: heavier mass resistance scales the impulse down proportionally ---
 ok('heavier victim (higher knockbackResist) is shoved less, proportionally', () => {
-  const kb = { base: 300, scaleBySpeed: 0, hitstun: 0.2 };
-  const light = mkVictim(1);   // resist 1
-  const heavy = mkVictim(3);   // resist 3 → one third the shove
-  applyKnockback(light, mkAttacker(), kb, { x: 1, y: 0 });
-  applyKnockback(heavy, mkAttacker(), kb, { x: 1, y: 0 });
-  assert.ok(close(light.vx, 300), `light vx=${light.vx}`);
-  assert.ok(close(heavy.vx, 100), `heavy vx=${heavy.vx}`);
-  assert.ok(close(heavy.vx, light.vx / 3), 'mass divides the shove');
-});
-
-ok('mass resistance also scales the motion term', () => {
-  const kb = { base: 100, scaleBySpeed: 0.5, hitstun: 0.2 };
   const light = mkVictim(1);
   const heavy = mkVictim(2);
-  const a = mkAttacker(400, 0); // headOn 400 → motion 200; total 300
-  applyKnockback(light, a, kb, { x: 1, y: 0 });
-  applyKnockback(heavy, a, kb, { x: 1, y: 0 });
-  assert.ok(close(light.vx, 300), `light vx=${light.vx}`);
-  assert.ok(close(heavy.vx, 150), `heavy vx=${heavy.vx}`);
+  applyKnockback(light, { x: 300, y: -100 });
+  applyKnockback(heavy, { x: 300, y: -100 });
+  assert.ok(close(heavy.vx, light.vx / 2), `heavy vx=${heavy.vx}`);
+  assert.ok(close(heavy.vy, light.vy / 2), `heavy vy=${heavy.vy}`);
 });
 
-// --- Acceptance 3: absent or zero-strength knockback changes nothing (no-op) ---
-ok('null knockback is a no-op (returns false, changes nothing)', () => {
-  const v = mkVictim(1);
-  const applied = applyKnockback(v, mkAttacker(400, 0), null, { x: 1, y: 0 });
-  assert.equal(applied, false);
-  assert.ok(close(v.vx, 0) && close(v.vy, 0));
-  assert.equal(v.hitstunTimer, undefined);
-  assert.equal(v.iFrameTimer, undefined);
-});
-
-ok('undefined knockback is a no-op', () => {
-  const v = mkVictim(1);
-  assert.equal(applyKnockback(v, mkAttacker(400, 0), undefined, { x: 1, y: 0 }), false);
+ok('null/undefined knockback is a no-op (returns false, changes nothing)', () => {
+  const v = mkVictim();
+  assert.equal(applyKnockback(v, null), false);
+  assert.equal(applyKnockback(v, undefined), false);
   assert.ok(close(v.vx, 0) && close(v.vy, 0));
 });
 
-ok('zero-strength setting (no base, no scaleBySpeed) is a no-op', () => {
-  const v = mkVictim(1);
-  const applied = applyKnockback(v, mkAttacker(400, 0), { base: 0, scaleBySpeed: 0, hitstun: 0.5 }, { x: 1, y: 0 });
-  assert.equal(applied, false);
+ok('zero-strength vector is a no-op', () => {
+  const v = mkVictim();
+  assert.equal(applyKnockback(v, { x: 0, y: 0 }), false);
   assert.ok(close(v.vx, 0) && close(v.vy, 0));
-  assert.equal(v.hitstunTimer, undefined, 'no-op must not set stun either');
 });
 
-// --- Stun & protection TTLs (§6) -----------------------------------------------
+ok('stun-only vector (no impulse) still applies the timers', () => {
+  const v = mkVictim();
+  assert.equal(applyKnockback(v, { hitstun: 0.4 }), true);
+  assert.ok(close(v.hitstunTimer, 0.4));
+});
+
 ok('applied knockback sets the victim stun timer', () => {
-  const v = mkVictim(1);
-  applyKnockback(v, mkAttacker(), { base: 100, scaleBySpeed: 0, hitstun: 0.3 }, { x: 1, y: 0 });
-  assert.ok(close(v.hitstunTimer, 0.3), `hitstun=${v.hitstunTimer}`);
+  const v = mkVictim();
+  applyKnockback(v, { x: 100, y: 0, hitstun: 0.35 });
+  assert.ok(close(v.hitstunTimer, 0.35), `hitstun=${v.hitstunTimer}`);
 });
 
 ok('stun never shortens an existing longer stun', () => {
-  const v = { ...mkVictim(1), hitstunTimer: 0.5 };
-  applyKnockback(v, mkAttacker(), { base: 100, scaleBySpeed: 0, hitstun: 0.2 }, { x: 1, y: 0 });
-  assert.ok(close(v.hitstunTimer, 0.5), `should keep 0.5, got ${v.hitstunTimer}`);
+  const v = { ...mkVictim(), hitstunTimer: 0.5 };
+  applyKnockback(v, { x: 100, y: 0, hitstun: 0.2 });
+  assert.ok(close(v.hitstunTimer, 0.5));
 });
 
 ok('iFrames > 0 sets the protection window; 0 leaves it untouched', () => {
-  const withProtect = mkVictim(1);
-  applyKnockback(withProtect, mkAttacker(), { base: 100, scaleBySpeed: 0, hitstun: 0.2, iFrames: 0.6 }, { x: 1, y: 0 });
-  assert.ok(close(withProtect.iFrameTimer, 0.6), `iFrame=${withProtect.iFrameTimer}`);
-
-  const noProtect = mkVictim(1);
-  applyKnockback(noProtect, mkAttacker(), { base: 100, scaleBySpeed: 0, hitstun: 0.2, iFrames: 0 }, { x: 1, y: 0 });
-  assert.equal(noProtect.iFrameTimer, undefined, 'iFrames=0 must not create a protection window');
+  const v = mkVictim();
+  applyKnockback(v, { x: 100, y: 0, iFrames: 0.6 });
+  assert.ok(close(v.iFrameTimer, 0.6), `iFrame=${v.iFrameTimer}`);
+  const w = mkVictim();
+  applyKnockback(w, { x: 100, y: 0, iFrames: 0 });
+  assert.ok(w.iFrameTimer == null || close(w.iFrameTimer, 0));
 });
 
-// --- 2D: vertical pop on a strong upward-leaning hit (§5) -----------------------
-ok('an upward-leaning normal imparts upward velocity (victim pops off ground)', () => {
-  const v = mkVictim(1);
-  // Strong supermove-ish hit, normal leaning up-and-right (unit vector).
-  const n = { x: 0.8, y: -0.6 }; // y negative = up in screen coords
-  applyKnockback(v, mkAttacker(300, 0), { base: 600, scaleBySpeed: 0.5, hitstun: 0.5 }, n);
-  assert.ok(v.vy < 0, `expected upward (negative) vy, got ${v.vy}`);
-  assert.ok(v.vx > 0, `expected positive vx, got ${v.vx}`);
+ok('impulse ADDS to existing velocity (does not replace it)', () => {
+  const v = { vx: 50, vy: -20, knockbackResist: 1 };
+  applyKnockback(v, { x: 100, y: 30 });
+  assert.ok(close(v.vx, 150));
+  assert.ok(close(v.vy, 10));
+});
+
+// --- calculateKnockback (offense helper) ------------------------------------
+
+ok('calculateKnockback derives the vector from live velocity × weight', () => {
+  const attacker = { vx: 400, vy: 0, stats: { weight: 2 } };
+  const kb = calculateKnockback(attacker);
+  assert.ok(close(kb.x, 800), `x=${kb.x}`);
+  assert.ok(close(kb.y, 0), `y=${kb.y}`);
+});
+
+ok('calculateKnockback folds pop into y (upward chunk)', () => {
+  const attacker = { vx: 300, vy: 0, stats: { weight: 1 } };
+  const kb = calculateKnockback(attacker, 90);
+  assert.ok(close(kb.x, 300));
+  assert.ok(close(kb.y, -90), `y=${kb.y}`);
+});
+
+ok('calculateKnockback returns null for a stationary attacker with no pop', () => {
+  assert.equal(calculateKnockback({ vx: 0, vy: 0 }), null);
+});
+
+ok('calculateKnockback with pop on a stationary attacker gives a pure loft', () => {
+  const kb = calculateKnockback({ vx: 0, vy: 0 }, 120);
+  assert.ok(close(kb.x, 0));
+  assert.ok(close(kb.y, -120));
+});
+
+ok('end-to-end: offense vector through defense mass = transferred force', () => {
+  const attacker = { vx: 500, vy: 0, stats: { weight: 1.5 } };
+  const victim = mkVictim(2);
+  applyKnockback(victim, calculateKnockback(attacker));
+  // 500 × 1.5 / 2 = 375
+  assert.ok(close(victim.vx, 375), `vx=${victim.vx}`);
 });
 
 console.log(`\n${passed} passed`);

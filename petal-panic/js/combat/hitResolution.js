@@ -1,9 +1,9 @@
 // Petal Panic — unified hit resolver (unified-hit-resolution plan §3).
 // Single entry point `applyHit(context)` for all damage routing: validates,
 // checks team eligibility, routes by target class, fires reactions + callbacks.
-// M3: the knockback reaction is wired in — context.reaction (a KnockbackSetting)
-// + context.direction are applied via applyKnockback() AFTER damage, so every
-// damaging path gets mass/pop/hitstun/i-frames from the single choke point.
+// M3: the knockback reaction is wired in — context.knockback (a shove vector
+// { x, y } px/s) is applied via applyKnockback() AFTER damage, so every
+// damaging path gets mass/hitstun/i-frames from the single choke point.
 
 import { Team, TargetClass, AttackProvenance, assertProvenance, getTargetClass } from './targeting.js';
 import { applyKnockback } from './knockback.js';
@@ -74,15 +74,16 @@ export function applyHit(context) {
 
   const destroyed = !!(target.destroyed || target.alive === false);
 
-  // --- Reactions (M3: declarative knockback via the single choke point) ----
-  // context.reaction is a KnockbackSetting (data on the attack/def); direction
-  // is the caller-normalized push normal. Applied AFTER damage so the impulse
-  // lands before any death-pipeline velocity wipe, and skipped for destroyed
-  // targets (a corpse's slide owns its own motion). Legacy raw {vx,vy} deltas
-  // still work during migration — new callers use reaction/direction.
+  // --- Reactions (M3: knockback vector via the single choke point) ---------
+  // context.knockback is a shove vector { x, y } in px/s (plus optional
+  // hitstun / iFrames) — hand-written on the attack def or derived from live
+  // motion. applyKnockback() divides by the victim's mass and applies it.
+  // Applied AFTER damage so the impulse lands before any death-pipeline
+  // velocity wipe; skipped for destroyed targets (a corpse's slide owns its
+  // own motion). Legacy raw {vx,vy} deltas still work during migration.
   if (!destroyed) {
-    if (context.reaction) {
-      applyKnockback(target, source, context.reaction, context.direction ?? { x: 0, y: 0 });
+    if (context.knockback) {
+      applyKnockback(target, context.knockback);
     } else if (knockback) {
       target.vx = (target.vx ?? 0) + (knockback.vx ?? 0);
       target.vy = (target.vy ?? 0) + (knockback.vy ?? 0);

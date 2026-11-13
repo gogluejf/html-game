@@ -28,7 +28,7 @@ import { makeElephant } from '../boss/boss.js';
 import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER } from '../boss/bossZone.js';
 import { particles, coins } from '../effects/particles.js';
 import { floatTexts } from '../hero/floatText.js';
-import { applyKnockback } from '../combat/knockback.js';
+import { applyKnockback, calculateKnockback } from '../combat/knockback.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
 import { applyGodMode, setHeroRefSetter, tickDebugBarrelDrops, tickFrameTrace } from '../debug/debugHarness.js';
@@ -147,7 +147,7 @@ const solidEntities = [];
 // rolling barrel does not machine-gun an enemy every frame.
 const BARREL_IMPACT_MIN_SPEED = 120;   // px/s — slower than this = gentle roll, no hit
 const BARREL_IMPACT_DAMAGE = 15;       // flat impact damage (speed-scaled below)
-const BARREL_IMPACT_KNOCKBACK = { base: 260, hitstun: 0.25, pop: 30 };
+const BARREL_IMPACT_KNOCKBACK = { x: 260, y: -30, hitstun: 0.25 };
 const BARREL_IMPACT_MOMENTUM_LOSS = 0.45; // barrel keeps 55% of speed per impact
 
 /**
@@ -176,8 +176,14 @@ export function barrelImpactSweep(b) {
     if (dealt <= 0) continue; // i-frames/invuln absorbed it — no impact reaction
 
     // Knockback on the ENEMY along the barrel's travel direction (§ declaration
-    // of impact): the victim flies away from where the blow came from.
-    applyKnockback(e, { vx: b.vx, vy: 0 }, BARREL_IMPACT_KNOCKBACK, { x: dirX, y: 0 });
+    // of impact): the victim flies away from where the blow came from. The
+    // barrel's live speed adds a motion term (a fast barrel shoves harder).
+    const kb = calculateKnockback(b, 0);
+    applyKnockback(e, {
+      x: dirX * (BARREL_IMPACT_KNOCKBACK.x + (kb?.x ?? 0) * dirX),
+      y: BARREL_IMPACT_KNOCKBACK.y,
+      hitstun: BARREL_IMPACT_KNOCKBACK.hitstun,
+    });
     Effects.beginEnemyShake(e);
 
     // Momentum transfer: the barrel slows down — it did NOT pass through.
@@ -207,14 +213,14 @@ const FALLING_BARREL_COOLDOWN = 0.3; // re-arm window per barrel
 // detonates when the fuse expires OR it lands on a surface — whichever first.
 // The blast fires at its CURRENT position, so the explosion travels with the
 // launched barrel (kick-a-barrel-and-it-blows-up feel).
-const STOMP_KNOCKBACK = { base: 260, scaleBySpeed: 0, hitstun: 0, iFrames: 0, dirMode: 'fromAttacker', pop: 120 };
+const STOMP_KNOCKBACK = { x: 260, y: -120, hitstun: 0, iFrames: 0 };
 const STOMP_FUSE = 0.45;             // seconds of cooking after the head-hit
 // STAR POWER barrel pop: shove the barrel in front of the hero like an enemy
 // knockback — a horizontal push with a SMALL fixed `pop` lobe (the same shape
 // as enemy body-contact knockback: dirMode fromAttacker + modest pop). That's
 // what reads as "pushed" instead of "launched into orbit". Barrels have
 // knockbackResist 0.5, so impulses land at 2× face value.
-const STAR_BARREL_KNOCKBACK = { base: 420, scaleBySpeed: 0, hitstun: 0, iFrames: 0, dirMode: 'fromAttacker', pop: 160 };
+const STAR_BARREL_KNOCKBACK = { x: 420, y: -160, hitstun: 0, iFrames: 0 };
 const STAR_BARREL_FUSE = 0.25;       // snappy: they pop soon after the launch
 
 /**
@@ -262,7 +268,7 @@ export function fallingBarrelImpact(b) {
   // Launch the barrel off the hero: upward + horizontally away from the hero's
   // center. applyKnockback writes vx/vy; stepDynamicSolid carries the arc.
   const dirX = Math.sign((bb.x + bb.w / 2) - (hb.x + hb.w / 2)) || 1;
-  applyKnockback(b, h, STOMP_KNOCKBACK, { x: dirX, y: -1 });
+  applyKnockback(b, { x: STOMP_KNOCKBACK.x * dirX, y: STOMP_KNOCKBACK.y });
   // Arm the fuse. It cooks while airborne; landing or fuse-expiry detonates.
   b._fuse = STOMP_FUSE;
   record(h, { kind: 'enemyStomped' });
@@ -1356,7 +1362,7 @@ export function update(dt) {
         // body-contact knockback. Gravity owns the rest of the arc; it pops
         // where it lands (or on the fuse if it sails off-screen).
         const awayX = Math.sign((b.x + b.w / 2) - (hbx.x + hbx.w / 2)) || 1;
-        applyKnockback(b, hero, STAR_BARREL_KNOCKBACK, { x: awayX, y: 0 });
+        applyKnockback(b, { x: STAR_BARREL_KNOCKBACK.x * awayX, y: STAR_BARREL_KNOCKBACK.y });
         b._fuse = STAR_BARREL_FUSE; // tickFallingBarrelFuse cooks + detonates
         b.setIntangible(STAR_BARREL_FUSE); // ghost flight for the whole cook (cleared at detonation)
         requestHitstop(STAR_POWER_HITSTOP_FRAMES);

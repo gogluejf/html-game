@@ -152,7 +152,7 @@ const SANDBOX_PRESETS = {
     segments: [
       { frame: 'a', speed: 380, duration: 0.18, freezeFrames: 0.12, hitbox: { w: 48, h: 40, offset: { x: 30, y: 0 } }, damage: 8, knockback: null, shove: 0.6 },
       { frame: 'b', speed: 460, duration: 0.18, freezeFrames: 0.12, hitbox: { w: 52, h: 44, offset: { x: 34, y: 0 } }, damage: 10, knockback: null, shove: 0.6 },
-      { frame: 'c', speed: 520, duration: 0.16, freezeFrames: 0.14, hitbox: { w: 56, h: 48, offset: { x: 38, y: 0 } }, damage: 18, knockback: { scaleBySpeed: 0.25, hitstun: 0.3, dirMode: 'fromAttacker' }, shove: 0.6 },
+      { frame: 'c', speed: 520, duration: 0.16, freezeFrames: 0.14, hitbox: { w: 56, h: 48, offset: { x: 38, y: 0 } }, damage: 18, knockback: { hitstun: 0.3 }, shove: 0.6 },
     ],
   },
 };

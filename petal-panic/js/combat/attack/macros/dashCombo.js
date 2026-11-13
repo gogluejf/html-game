@@ -97,12 +97,12 @@ export function normalizeSegment(seg = {}) {
     knockback: seg.knockback ? { ...seg.knockback } : null,
     shove: seg.shove ?? 0.6,
   };
-  // Relative knockback: if the segment declares knockback but no explicit base,
+  // Relative knockback: if the segment declares knockback but no explicit x,
   // derive it from the segment's own dash speed (faster dash = harder launch).
   // 0.25 keeps it punchy without rocket-launching the victim — the shove during
   // travel already does most of the physical work.
-  if (out.knockback && out.knockback.base == null) {
-    out.knockback.base = Math.round(out.speed * 0.25);
+  if (out.knockback && out.knockback.x == null) {
+    out.knockback.x = Math.round(out.speed * 0.25);
   }
   return out;
 }
@@ -333,7 +333,12 @@ defineMacro('dashCombo', {
         // Fires only when the box actually connected (onHit gate), so a whiff
         // never shoves — same once-per-freeze guarantee as before.
         if (hb.knockback && target.alive !== false) {
-          applyKnockback(target, ctx.attacker, hb.knockback, { x: sign, y: 0 });
+          applyKnockback(target, {
+            x: sign * (hb.knockback.x ?? 0),
+            y: hb.knockback.y ?? 0,
+            hitstun: hb.knockback.hitstun,
+            iFrames: hb.knockback.iFrames,
+          });
         }
         // Hit juice on the VICTIM: sparkle + shake scaling with segment index
         // (early hits shake less than the finisher).
