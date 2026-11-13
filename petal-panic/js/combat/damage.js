@@ -141,7 +141,7 @@ export function heroDamage(source, target, amt, method = 'projectile') {
 /**
  * Single owner of the white hit-flash: any target whose HP/energy actually
  * decreases from an attack gets `hitFlash = 0.1` set exactly once, here.
- * Callers (damage(), Enemy.takeDamage(), GameObj.hit()) invoke this instead of
+ * Callers (heroDamage(), Enemy.takeDamage(), GameObj.takeDamage()) invoke this instead of
  * assigning the field themselves; render paths read it unchanged.
  *
  * No-op for null targets or targets without a `hitFlash` field (e.g. plain

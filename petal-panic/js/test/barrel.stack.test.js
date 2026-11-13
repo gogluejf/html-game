@@ -87,7 +87,7 @@ ok('destroying the LOWER barrel drops the UPPER one to the floor', () => {
   const upper = addBarrel(x, FLOOR_TOP - 48 - 96);
   for (let i = 0; i < 60; i++) U.update(DT);
   assert.ok(Math.abs(bottom(upper) - top(lower)) <= 2, 'precondition: upper stacked on lower');
-  lower.hit(9999, null, 'projectile'); // destroy the support
+  lower.takeDamage(9999, null, 'projectile'); // destroy the support
   assert.equal(lower.alive, false, 'lower barrel destroyed');
   for (let i = 0; i < 120; i++) U.update(DT);
   assert.ok(Math.abs(bottom(upper) - FLOOR_TOP) <= 2,

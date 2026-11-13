@@ -212,9 +212,9 @@ ok('propane molotov fan preserves damage defaults and barrels remain killable', 
   for (const e of pool.activeItems) {
     assert.equal(e.damage, 12);
     const barrel = new GameObj(WOOD_BARREL_DEF, 0, 0);
-    barrel.hit(e.damage);
+    barrel.takeDamage(e.damage);
     assert.equal(barrel.hp, 28);
-    barrel.hit(1000);
+    barrel.takeDamage(1000);
     assert.equal(barrel.destroyed, true);
     e._attackHit = true;
     e._impactPoint = { x: 100, y: 100 };
@@ -235,7 +235,7 @@ ok('invalid damage throws before mutating barrel HP or hero/enemy resources', ()
   const source = { type: 'molotov' };
   for (const invalid of [undefined, null, NaN, Infinity, -Infinity, -1, '12']) {
     const barrel = new GameObj(WOOD_BARREL_DEF, 0, 0);
-    assert.throws(() => barrel.hit(invalid, source, 'fire'),
+    assert.throws(() => barrel.takeDamage(invalid, source, 'fire'),
       { name: 'TypeError', message: /Invalid damage.*method=fire.*source=molotov/ });
     assert.equal(barrel.hp, 40);
     assert.equal(barrel.alive, true);
@@ -249,8 +249,8 @@ ok('invalid damage throws before mutating barrel HP or hero/enemy resources', ()
     }
   }
   const barrel = new GameObj(WOOD_BARREL_DEF, 0, 0);
-  assert.equal(barrel.hit(0, source), 0);
+  assert.equal(barrel.takeDamage(0, source), 0);
   assert.equal(barrel.hp, 40);
-  assert.equal(barrel.hit(12, source), 12);
+  assert.equal(barrel.takeDamage(12, source), 12);
   assert.equal(barrel.hp, 28);
 });

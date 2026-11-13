@@ -41,14 +41,14 @@ ok('damage() on a dead target does not touch hitFlash', () => {
   assert.equal(e.hitFlash, 0, 'hitFlash untouched');
 });
 
-ok('GameObj.hit() sets hitFlash when applied > 0, not when clamped to 0', () => {
+ok('GameObj.takeDamage() sets hitFlash when applied > 0, not when clamped to 0', () => {
   const o = new GameObj(OBJ_DEF, 0, 0);
-  const applied = o.hit(10, source, 'projectile');
+  const applied = o.takeDamage(10, source, 'projectile');
   assert.equal(applied, 10);
   assert.equal(o.hitFlash, 0.1, 'flash set on real hit');
   // Destroyed object: hit() returns 0 and must not re-flash.
   o.destroyed = true;
-  const again = o.hit(10, source, 'projectile');
+  const again = o.takeDamage(10, source, 'projectile');
   assert.equal(again, 0);
 });
 

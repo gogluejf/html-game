@@ -158,7 +158,7 @@ export function processHitboxes(hitboxes, targets, onHit) {
       // result), and applies the knockback vector (context.knockback) through
       // the single applyKnockback() choke point.
       const provenance = METHOD_PROVENANCE[hb.method] ?? AttackProvenance.MELEE;
-      const pipeline = typeof t.takeDamage === 'function' || typeof t.hit === 'function';
+      const pipeline = typeof t.takeDamage === 'function';
       const res = applyHit({
         provenance,
         source: hb.owner,

@@ -31,7 +31,7 @@ function drainHp(target, amt) {
  * @returns {object} HitResult
  */
 export function applyHit(context) {
-  const { provenance, source, target, damage: rawAmt, team, knockback, ctx } = context;
+  const { provenance, source, target, damage: rawAmt, team, ctx } = context;
   assertProvenance(provenance);
 
   // --- Validate -----------------------------------------------------------
@@ -41,8 +41,10 @@ export function applyHit(context) {
   // Damage-immune targets absorb the whole hit — no damage, no shove, no
   // callbacks. Heroes in their invincible window (i-frames, star power) and
   // intangible entities (barrel cook) live here; this is the ONE place that
-  // decision is made so every damaging path shares it.
-  if (target.invincible || target.intangible) {
+  // decision is made so every damaging path shares it. Zero-damage impulses
+  // (stomp / star-barrel launches) are pure physics: they still ride this door
+  // and ignore the immunity flags.
+  if ((target.invincible || target.intangible) && rawAmt > 0) {
     return { accepted: false, dealt: 0, destroyed: false, rejectReason: 'target immune' };
   }
   // Damage must be a finite number BEFORE any mutation or callback. A missing
@@ -87,14 +89,9 @@ export function applyHit(context) {
   // motion. applyKnockback() divides by the victim's mass and applies it.
   // Applied AFTER damage so the impulse lands before any death-pipeline
   // velocity wipe; skipped for destroyed targets (a corpse's slide owns its
-  // own motion). Legacy raw {vx,vy} deltas still work during migration.
-  if (!destroyed) {
-    if (context.knockback) {
-      applyKnockback(target, context.knockback);
-    } else if (knockback) {
-      target.vx = (target.vx ?? 0) + (knockback.vx ?? 0);
-      target.vy = (target.vy ?? 0) + (knockback.vy ?? 0);
-    }
+  // own motion).
+  if (!destroyed && context.knockback) {
+    applyKnockback(target, context.knockback);
   }
 
   const result = { accepted: true, dealt, destroyed };

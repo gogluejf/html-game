@@ -108,7 +108,7 @@ ok('hero can jump off a barrel (grounded reset works)', () => {
 });
 
 ok('destroyed barrel stops blocking (hero walks through its old spot)', () => {
-  barrel.hit(9999, null, 'projectile'); // kill it
+  barrel.takeDamage(9999, null, 'projectile'); // kill it
   assert.equal(barrel.alive, false, 'barrel should be destroyed');
   placeHero(barrel.x - hero.w - 4, FLOOR_TOP - hero.h);
   press('KeyD');

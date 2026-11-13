@@ -28,7 +28,7 @@ import { makeElephant } from '../boss/boss.js';
 import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER } from '../boss/bossZone.js';
 import { particles, coins } from '../effects/particles.js';
 import { floatTexts } from '../hero/floatText.js';
-import { applyKnockback, calculateKnockback } from '../combat/knockback.js';
+import { calculateKnockback } from '../combat/knockback.js';
 import { applyHit } from '../combat/hitResolution.js';
 import { AttackProvenance, Team } from '../combat/targeting.js';
 import { Effects } from '../effects.js';
@@ -273,9 +273,18 @@ export function fallingBarrelImpact(b) {
 
   // Launch the barrel off the hero: upward + horizontally away from the hero's
   // center. Pure impulse (no damage — the stomp is a physics interaction, not
-  // a hit), so applyKnockback is called directly; stepDynamicSolid carries the arc.
+  // a hit), so it rides the single door with damage: 0; stepDynamicSolid
+  // carries the arc.
   const dirX = Math.sign((bb.x + bb.w / 2) - (hb.x + hb.w / 2)) || 1;
-  applyKnockback(b, { x: STOMP_KNOCKBACK.x * dirX, y: STOMP_KNOCKBACK.y });
+  applyHit({
+    provenance: AttackProvenance.STOMP,
+    source: h,
+    target: b,
+    damage: 0,
+    team: Team.NEUTRAL,
+    method: 'stomp',
+    knockback: { x: STOMP_KNOCKBACK.x * dirX, y: STOMP_KNOCKBACK.y },
+  });
   // Arm the fuse. It cooks while airborne; landing or fuse-expiry detonates.
   b._fuse = STOMP_FUSE;
   record(h, { kind: 'enemyStomped' });
@@ -301,7 +310,7 @@ export function tickFallingBarrelFuse(b, dt) {
   if (b._fuse <= 0 || (landed && (b.vy ?? 0) >= 0)) {
     b._fuse = null;
     b.clearIntangible(); // back in the collision world at detonation
-    const dealt = b.hit(Number.MAX_SAFE_INTEGER, b, 'stomp');
+    const dealt = b.takeDamage(Number.MAX_SAFE_INTEGER, b, 'stomp');
     if (b.destroyed && !b._destroyHandled) {
       b.onDestroyed?.({ source: b, provenance: 'STOMP' }, { accepted: true, dealt, destroyed: true });
     }
@@ -1356,7 +1365,7 @@ export function update(dt) {
     // the falling-barrel stomp (launch → cook → blast). That delay is the
     // satisfaction: the barrel flies up, hangs, then BOOM. Runs before bonk/
     // creep so a starred hero never shoves or creeps a barrel. The detonation
-    // goes through GameObj.hit() → destroy() and fires onDestroyed (wired in
+    // goes through takeDamage() → destroy() and fires onDestroyed (wired in
     // update.js) which owns the full aftermath: explosion AoE + VFX for
     // explosive barrels, coin burst for coin barrels.
     if (hero.starPower) {
@@ -1365,10 +1374,18 @@ export function update(dt) {
         if (!b.alive || b.destroyed || b._fuse != null) continue;
         if (!aabbOverlap(hbx, b.worldBox())) continue;
         // Pure impulse (no damage — star power LAUNCHES the barrel, it doesn't
-        // hit it), so applyKnockback is called directly. Push horizontally in
-        // front of the hero (away from you); gravity owns the rest of the arc.
+        // hit it), so it rides the single door with damage: 0. Push horizontally
+        // in front of the hero (away from you); gravity owns the rest of the arc.
         const awayX = Math.sign((b.x + b.w / 2) - (hbx.x + hbx.w / 2)) || 1;
-        applyKnockback(b, { x: STAR_BARREL_KNOCKBACK.x * awayX, y: STAR_BARREL_KNOCKBACK.y });
+        applyHit({
+          provenance: AttackProvenance.CONTACT,
+          source: hero,
+          target: b,
+          damage: 0,
+          team: Team.ALLY,
+          method: 'starPower',
+          knockback: { x: STAR_BARREL_KNOCKBACK.x * awayX, y: STAR_BARREL_KNOCKBACK.y },
+        });
         b._fuse = STAR_BARREL_FUSE; // tickFallingBarrelFuse cooks + detonates
         b.setIntangible(STAR_BARREL_FUSE); // ghost flight for the whole cook (cleared at detonation)
         requestHitstop(STAR_POWER_HITSTOP_FRAMES);

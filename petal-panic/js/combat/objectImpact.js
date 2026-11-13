@@ -25,7 +25,7 @@ import { Team, AttackProvenance } from './targeting.js';
  *  - arcing carriers record `_attackHit` + the entry-edge `_impactPoint`
  *    (tunneling correction for detonation placement);
  *  - damage is routed through the unified resolver (applyHit), which calls
- *    `target.hit(dmg, source, 'projectile')` for DESTRUCTIBLE targets;
+ *    `target.takeDamage(dmg, source, 'projectile')` for DESTRUCTIBLE targets;
  *  - the projectile is consumed on impact either way;
  *  - `onObjectReward(target, dealt)` fires when damage landed (host-owned
  *    per-hit rewards, e.g. super-coin popcorn);

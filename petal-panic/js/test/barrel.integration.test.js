@@ -46,7 +46,7 @@ ok('friendly thorn overlaps barrel → hit event fires (PROJ_ALLY×SOLID rule)',
 // --- Full pipeline: 6 thorns destroy barrel (acceptance #2/#3) ---------------
 ok('6 thorn hits (10 dmg each) destroy a 60hp barrel', () => {
   const barrel = makeBarrel(0, 0);
-  for (let i = 0; i < 6; i++) barrel.hit(10, null, 'projectile');
+  for (let i = 0; i < 6; i++) barrel.takeDamage(10, null, 'projectile');
   assert.equal(barrel.destroyed, true);
   assert.equal(barrel.alive, false);
 });

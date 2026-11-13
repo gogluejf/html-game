@@ -79,9 +79,9 @@ test('STOMP — resolveStompBlast damages enemies in radius, spares far ones', (
   assert.ok(hits.some((h) => h.target === near));
 });
 
-test('STOMP — barrel.hit(40, hero, "stomp") destroys a wood barrel', () => {
+test('STOMP — barrel.takeDamage(40, hero, "stomp") destroys a wood barrel', () => {
   const barrel = makeWoodBarrel(0, 0);
-  const applied = barrel.hit(40, { id: 'hero' }, 'stomp');
+  const applied = barrel.takeDamage(40, { id: 'hero' }, 'stomp');
   assert.ok(applied > 0);
   assert.ok(barrel.destroyed, 'overkill stomp latches destroyed');
 });

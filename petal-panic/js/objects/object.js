@@ -279,8 +279,6 @@ export class GameObj extends Entity {
     }
     return applied;
   }
-  /** @deprecated Use takeDamage(). Kept for callers not yet migrated. */
-  hit(dmg, source, method) { return this.takeDamage(dmg, source, method); }
 
   /**
    * Destroy the object. Latches `destroyed` so it fires exactly once even if
