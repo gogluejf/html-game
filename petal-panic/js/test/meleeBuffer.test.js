@@ -14,7 +14,9 @@ function ok(name, fn) {
 }
 const DT = 1 / 60; // fixed step
 const NORMAL_SWING_DUR = (h) => h.MELEE_TOTAL_FRAMES * h.MELEE_FRAME_DURATION;
-const SPECIAL_SWING_DUR = (h) => h.specialMeleeTotalFrames * Hero.SPECIAL_MELEE_FRAME_DURATION;
+// Sheet-driven: one full cycle of the super_melee sheet at its fps; no sheet
+// attached (node path) → the legacy 11/60 s fallback inside the getter.
+const SPECIAL_SWING_DUR = (h) => h.specialMeleeDuration;
 
 // --- Helpers -----------------------------------------------------------------
 function makeHero(id = 'scarlet', x = 0, y = 0) {
@@ -132,7 +134,7 @@ ok('buffered normal cannot shorten the current special swing', () => {
   h.requestMelee('normal');           // buffer 'normal' during special windup
   const dur = SPECIAL_SWING_DUR(h);
   const ticksToFinish = runUntil(h, DT, Math.ceil(dur / DT) + 5, () => !h.specialMeleeActive);
-  assert.ok(ticksToFinish * DT >= dur - Hero.SPECIAL_MELEE_FRAME_DURATION - 1e-9,
+  assert.ok(ticksToFinish * DT >= dur - DT - 1e-9,
     `special ended early at ${ticksToFinish} ticks`);
 });
 
@@ -144,7 +146,8 @@ ok('after natural recovery the buffered special fires without re-pressing', () =
   runUntil(h, DT, 240, () => !h.meleeActive);
   // No further input at all — the special must have started on its own.
   assert.equal(h.specialMeleeActive, true);
-  assert.equal(h.specialMeleePhase, 'windup');
+  // No sheet in node tests → table-fallback phase.
+  assert.ok(['windup', 'active'].includes(h.specialMeleePhase));
   assert.equal(h.pendingMelee, null); // slot consumed
 });
 ok('after natural recovery the buffered normal fires without re-pressing', () => {

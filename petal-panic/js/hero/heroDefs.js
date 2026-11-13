@@ -76,8 +76,11 @@ const SUPERMOVE_KNOCKBACK = { base: 360, scaleBySpeed: 0.3, hitstun: 0.30, dirMo
 const SWEEP = {
   direction: 1,          // +1 = toward facing (advancing sweep, both heroes)
   travelSpeed: 300 / UNIT_PX_X, // X-units/s self-supplied horizontal movement (exactly 300 px/s at the current grid)
-  frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
-  hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over the body
+  // Timing is SHEET-OWNED: one full cycle of the per-hero `super_melee` sheet
+  // at its authored fps. The active window is the set of sheet frames carrying
+  // an authored `attack` box (Hero._specialMeleePhaseAt); windup/recovery are
+  // the unboxed frames before/after it. Tune speed by editing the sheet's fps.
+  hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over the body — FALLBACK for sheets without authored boxes
   // Knockback (knockback.md §11): aggressive forward pushback along the
   // lunge velocity — clears the path ahead of the advancing sweep.
   // pop: 40 px/s upward (§5) — a small hop; lighter than the supermove loft.
@@ -102,7 +105,7 @@ export const HEROES = {
     // §15 Special melee (Down+Melee): the shared advancing leg sweep — same
     // behavior as Balthazar's (travels TOWARD facing, sprite plays her
     // `super_melee` sheet). Shallow copy: per-hero ownership, shared values.
-    specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockback: { ...SWEEP.knockback }, frames: { ...SWEEP.frames } },
+    specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockback: { ...SWEEP.knockback } },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
       [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockback: MELEE_KNOCKBACK },
@@ -125,7 +128,7 @@ export const HEROES = {
     },
     // §15 Special melee (Down+Melee): the shared advancing leg sweep
     // (travels TOWARD facing; sprite plays the `super_melee` sheet).
-    specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockback: { ...SWEEP.knockback }, frames: { ...SWEEP.frames } },
+    specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockback: { ...SWEEP.knockback } },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
       [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockback: MELEE_KNOCKBACK },

@@ -20,13 +20,11 @@ function makeHero(id = 'scarlet', x = 0, y = 0) { return new Hero(HEROES[id], x,
 // Advance a normal swing to a specific integer frame index without update().
 function setSwingFrame(h, idx) { h.meleeActive = true; h.meleeFrame = idx; }
 // Advance a special swing to a specific integer frame index + derived phase.
+// Sheet-driven: without an attached sheet (node path) every frame is 'active'
+// (table fallback).
 function setSpecialFrame(h, idx) {
-  const cfg = h.heroDef.specialMelee;
-  const phase = idx < cfg.frames.windup ? 'windup'
-    : idx < cfg.frames.windup + cfg.frames.active ? 'active'
-    : 'recovery';
   h.specialMeleeActive = true;
-  h.specialMeleePhase = phase;
+  h.specialMeleePhase = h._specialMeleePhaseAt(idx) ?? 'active';
   h.specialMeleeFrame = idx;
 }
 // Start a real supermove dash via the production path.
@@ -108,15 +106,11 @@ ok('melee: box only on configured active frame(s), null elsewhere', () => {
   h.meleeActive = false;
   assert.equal(h.attackHitboxWorld(ATTACK_MELEE), null, 'idle hero → null');
 });
-ok('special melee: box only during the active phase', () => {
+ok('special melee: table-fallback box present on every frame without a sheet', () => {
   const h = makeHero('balthazar');
-  const cfg = HEROES.balthazar.specialMelee;
   for (let f = 0; f < h.specialMeleeTotalFrames; f++) {
     setSpecialFrame(h, f);
-    const box = h.attackHitboxWorld(ATTACK_SPECIAL_MELEE);
-    const isActive = f >= cfg.frames.windup && f < cfg.frames.windup + cfg.frames.active;
-    if (isActive) assert.ok(box, `frame ${f} is active → box expected`);
-    else assert.equal(box, null, `frame ${f} is not active → null expected`);
+    assert.ok(h.attackHitboxWorld(ATTACK_SPECIAL_MELEE), `frame ${f} → fallback box expected`);
   }
   h.specialMeleeActive = false;
   assert.equal(h.attackHitboxWorld(ATTACK_SPECIAL_MELEE), null, 'idle hero → null');

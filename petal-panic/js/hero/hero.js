@@ -1078,8 +1078,9 @@ export class Hero extends Entity {
       entry = frames[Math.floor(this.meleeFrame)] ?? null;
     } else if (attackName === ATTACK_SPECIAL_MELEE) {
       if (!this.specialMeleeActive || this.specialMeleePhase !== 'active') return null;
-      // Sheet-authored box first (super_melee sheet plays during the swing);
-      // the single SWEEP.hitbox table entry is the fallback.
+      // Sheet-authored box first (super_melee sheet plays during the swing —
+      // its per-frame boxes ARE the active window); the single heroDef table
+      // entry is the fallback for heroes/sheets without authored boxes.
       const sheetBox = this._sheetAttackBox('super_melee');
       if (sheetBox) {
         const box = this._sheetBoxToWorld(sheetBox);
@@ -1211,11 +1212,19 @@ export class Hero extends Entity {
     // so the art isn't clipped at crouch height.
     if (this.crouching) this.exitCrouch();
     this.specialMeleeActive = true;
-    this.specialMeleePhase = 'windup';
     this.specialMeleeFrame = 0;
     // Resolved movement direction: toward facing (+1 for the unified sweep).
     // Captured ONCE at trigger — it cannot be reversed mid-attack.
     this.specialMeleeDir = this.facing * cfg.direction;
+    // Rewind the sheet to frame 1 so the art plays its natural cycle in lockstep
+    // with the swing clock (updateSpecialMelee maps progress every tick). The
+    // phase is derived from the sheet frame each tick — no stored windup/active
+    // counts; frames carrying an authored attack box ARE the active window.
+    this._meleeAnimProgress(0);
+    // Initial phase: 'windup' when the sheet's first frame has no box, else the
+    // derived value ('active'). No sheet / no boxes → 'windup' (committed);
+    // updateSpecialMelee re-derives it on the first tick.
+    this.specialMeleePhase = this._spriteAnim === 'super_melee' ? this._specialMeleePhaseAt(0) ?? 'windup' : 'windup';
   }
 
   /** Duration (s) of one normal melee swing. Sheet-driven (§30 v2): the
@@ -1239,27 +1248,21 @@ export class Hero extends Entity {
 
   /** Total frames of the special swing (windup + active + recovery). */
   get specialMeleeTotalFrames() {
-    const f = this.heroDef.specialMelee.frames;
-    return f.windup + f.active + f.recovery;
+    // Sheet-driven: the swing spans one full cycle of the `super_melee` sheet.
+    const data = this.spriteAnimData;
+    if (data && this._spriteAnim === 'super_melee') return data.frames.length;
+    return 11; // no sheet attached → legacy fallback clock (node tests)
   }
 
-  /** Duration (s) of one special swing. Sheet-driven (§30 v2): defaults to
-   * one full cycle of the hero's `super_melee` sheet when the player exists;
-   * falls back to the frame count at 60fps for node tests without sprites.
-   * Per-hero override via heroDef.specialMelee.duration. */
+  /** Duration (s) of one special swing: ONE FULL CYCLE of the hero's
+   * `super_melee` sheet at its authored fps (per-frame durUnits included).
+   * No sheet attached → legacy 11/60 s fallback so headless tests keep a
+   * deterministic clock. Per-hero override via heroDef.specialMelee.duration. */
   get specialMeleeDuration() {
     const cfg = this.heroDef.specialMelee;
     if (cfg.duration != null && Number.isFinite(cfg.duration)) return cfg.duration;
-    // FIXED STEP: the swing's frame clock advances exactly one integer frame per
-    // tick at the fixed 60fps step (updateSpecialMelee), so the duration MUST be
-    // total/60. Deriving it from the sheet's cycleDuration desyncs the logical
-    // phase machine from the sheet playback: with a 16-frame @24fps sheet the
-    // swing ran ~3.5x longer than the art, so the 'active' phase (and its
-    // hitbox) stretched across most of the recovery frames — and worse, the
-    // connect-protection window (armed on first connect, decaying one swing-
-    // frame per tick) drained long before the visible swing ended, leaving the
-    // hero exposed to contact damage "right after" a landed sweep.
-    return this.specialMeleeTotalFrames / 60;
+    if (this._spriteAnim === 'super_melee' && this._player) return this._player.cycleDuration;
+    return 11 / 60;
   }
 
   /**
@@ -1307,10 +1310,38 @@ export class Hero extends Entity {
   }
 
   /**
+   * Phase of the special swing at sheet frame index `f`, derived from the
+   * SHEET DATA (no stored windup/active/recovery counts): a frame carrying an
+   * authored `attack` box is ACTIVE; frames before the first boxed frame are
+   * WINDUP, frames after the last are RECOVERY. No sheet attached → null
+   * (table-fallback path: the hitbox resolver treats every active-phase frame
+   * as having the heroDef box).
+   * @param {number} f integer sheet frame index
+   * @returns {?'windup'|'active'|'recovery'}
+   */
+  _specialMeleePhaseAt(f) {
+    const data = this.spriteAnimData;
+    if (!data || this._spriteAnim !== 'super_melee') return null;
+    const n = data.frames.length;
+    let firstBoxed = -1, lastBoxed = -1;
+    for (let i = 0; i < n; i++) {
+      if ((data.frames[i].boxes ?? []).some(b => b.label === 'attack')) {
+        if (firstBoxed < 0) firstBoxed = i;
+        lastBoxed = i;
+      }
+    }
+    if (firstBoxed < 0) return null; // no boxes anywhere — table fallback owns it
+    if (f < firstBoxed) return 'windup';
+    if (f <= lastBoxed) return 'active';
+    return 'recovery';
+  }
+
+  /**
    * Advance the special swing's frame clock by dt and drive its phases
-   * (design §15/§16). Reuses the normal melee's MELEE_FRAME_DURATION clock.
+   * (design §15/§16). The swing spans ONE FULL CYCLE of the `super_melee`
+   * sheet at its authored fps — the art plays naturally, no stretching.
    *   windup/active — committed: owns vx at travelSpeed, no jump/run cancel.
-   *   active        — hitbox exposed via specialMeleeHitboxWorld.
+   *   active        — hitbox exposed via specialMeleeHitboxWorld (sheet box).
    *   recovery      — vx decays; a fresh jump press cancels out early.
    * @param {number} dt seconds
    * @param {object} input intent (jump edge used for recovery cancel)
@@ -1320,33 +1351,27 @@ export class Hero extends Entity {
     const cfg = this.heroDef.specialMelee;
     const total = this.specialMeleeTotalFrames;
 
-    // Advance the frame clock: dt/SPECIAL_MELEE_FRAME_DURATION frames per step.
-    // The special swing's frame counts are defined at 60fps (heroDefs §15), so
-    // its frame duration is exactly 1/60s — at the fixed 60fps step each
-    // update() call advances by exactly one integer frame, no float drift.
-    // The PRE-increment value is what this update() acts on (frame N owns its
-    // own phase), so a swing started at frame 0 plays windup on its first tick
-    // and crosses each boundary on the exact tick the previous phase's last
+    // The PRE-increment value is what this tick acts on (frame N owns its own
+    // phase), so a swing started at frame 0 plays its first sheet frame on the
+    // first tick and crosses each boundary on the exact tick the previous
     // frame completes.
     const f = Math.floor(this.specialMeleeFrame);
 
-    // Phase is DERIVED from the frame count, never set imperatively:
-    //   [0, windup)                          → windup
-    //   [windup, windup+active)              → active
-    //   [windup+active, windup+active+recov) → recovery
-    //   >= total                             → done
-    let phase;
-    if (f < cfg.frames.windup) phase = 'windup';
-    else if (f < cfg.frames.windup + cfg.frames.active) phase = 'active';
-    else if (f < total) phase = 'recovery';
-    else {
-      // Natural completion: clear the swing state entirely, then let a
-      // buffered melee fire (§18 — only after full natural recovery).
+    // Natural completion once the whole sheet cycle has elapsed.
+    if (f >= total) {
       this.endSpecialMelee();
       this.executePendingMelee();
       this._prevMeleeJumpHeld = !!(input && input.jump);
       return;
     }
+
+    // Phase is DERIVED from the sheet frame every tick (box = active window)
+    // when a super_melee sheet is attached. Without one (node tests / table
+    // fallback path) the phase is imperative — callers set it directly and it
+    // must survive this tick (the table fallback has no box data to derive
+    // from, so 'active' would clobber a manually-set recovery).
+    const derived = this._specialMeleePhaseAt(f);
+    const phase = (this._spriteAnim === 'super_melee' && derived != null) ? derived : (this.specialMeleePhase ?? 'active');
     this.specialMeleePhase = phase;
 
     // Recovery cancel (§16/§19 shared rule): a fresh jump press OR any
@@ -1389,7 +1414,7 @@ export class Hero extends Entity {
 
     // Keep the visible super_melee frame aligned with the logical swing frame:
     // map normalized progress onto the sheet player so the art spans the whole
-    // slide duration (sheet fps is irrelevant). No-op when no sheet is attached.
+    // slide duration. No-op when no sheet is attached.
     this._meleeAnimProgress(f / (total - 1));
 
     // Refresh the dedicated jump-edge tracker AFTER all consumers have run,
@@ -1788,9 +1813,3 @@ export class Hero extends Entity {
 // Seconds of invincibility granted on respawn (design §1 / ). Static so
 // tests can read it without instantiating a hero.
 Hero.RESPAWN_IFRAMES = 1.0;
-
-// Special melee frame duration (design §15): FALLBACK for node tests / heroes
-// without an attached super_melee sheet. With a sheet, the swing clock is
-// sheet-driven: Hero.specialMeleeDuration = one full cycle of the `super_melee`
-// sheet (see updateSpecialMelee), so the art spans exactly the slide duration.
-Hero.SPECIAL_MELEE_FRAME_DURATION = 1 / 60;

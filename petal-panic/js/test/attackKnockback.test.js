@@ -23,10 +23,9 @@ const noInput = () => ({ left: false, right: false, up: false, down: false, jump
 const makeHero = (id) => new Hero(HEROES[id], 0, 0);
 // Advance a special swing to its ACTIVE phase so the hitbox resolves.
 function setSpecialActive(h) {
-  const f = h.heroDef.specialMelee.frames;
   h.specialMeleeActive = true;
   h.specialMeleePhase = 'active';
-  h.specialMeleeFrame = f.windup; // first active frame
+  h.specialMeleeFrame = 4; // mid-swing (table fallback: active)
 }
 // Start a real supermove dash via the production path.
 function startDash(h, facing = 1) {

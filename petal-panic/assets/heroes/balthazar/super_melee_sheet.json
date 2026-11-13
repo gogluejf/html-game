@@ -282,19 +282,10 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 239,
-       "y": -292,
-       "w": 142,
-       "h": 180
-      }
-     ],
+     "boxes": [],
      "durUnits": 1
     }
    ],
-   "fps": 12,
    "playback": "loop",
    "direction": "forward",
    "collision": {
@@ -307,7 +298,8 @@
     "x": 185,
     "y": -203
    },
-   "markers": []
+   "markers": [],
+   "fps": 24
   }
  ]
 }

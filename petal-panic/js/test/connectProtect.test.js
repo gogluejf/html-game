@@ -32,17 +32,15 @@ function makeHero(id = 'balthazar', x = 0, y = 0) {
 const noInput = () => ({ left: false, right: false, up: false, down: false, jump: false, shoot: false, super: false, melee: false });
 /** Land the special swing exactly on its first ACTIVE frame. */
 function setSpecialActive(h) {
-  const cfg = h.heroDef.specialMelee;
   h.specialMeleeActive = true;
   h.specialMeleePhase = 'active';
-  h.specialMeleeFrame = cfg.frames.windup;
+  h.specialMeleeFrame = 4; // mid-swing (table fallback: active)
 }
 /** Land the special swing exactly on its first RECOVERY frame. */
 function setSpecialRecovery(h) {
-  const cfg = h.heroDef.specialMelee;
   h.specialMeleeActive = true;
   h.specialMeleePhase = 'recovery';
-  h.specialMeleeFrame = cfg.frames.windup + cfg.frames.active;
+  h.specialMeleeFrame = 8; // post-active recovery (sheet-driven in production)
 }
 
 console.log('Acceptance #1 — a clean connect protects for the rest of the swing');
@@ -55,32 +53,29 @@ ok('markSpecialConnect arms protection during the active phase', () => {
 });
 ok('protection survives through the entire recovery phase', () => {
   const h = makeHero('scarlet');
-  const cfg = h.heroDef.specialMelee;
   setSpecialActive(h);
   h.markSpecialConnect();
-  // Step through every remaining active frame + all recovery frames.
+  // Step through every remaining frame of the swing.
   const total = h.specialMeleeTotalFrames;
-  for (let i = cfg.frames.windup; i < total - 1; i++) {
+  for (let i = 4; i < total - 1; i++) {
     h.updateSpecialMelee(DT, noInput());
     assert.ok(h.connectProtected, `still protected at frame ${i}`);
   }
 });
-ok('window length equals remaining active + all recovery frames', () => {
+ok('window length equals all frames remaining in the swing', () => {
   const h = makeHero('balthazar');
-  const cfg = h.heroDef.specialMelee;
   setSpecialActive(h);
   h.markSpecialConnect();
-  // Connected on the FIRST active frame → full active+recovery window.
-  assert.equal(h._connectProtectFrames, cfg.frames.active + cfg.frames.recovery);
+  // Connected on frame 4 → window covers every frame still owned by the swing.
+  assert.equal(h._connectProtectFrames, h.specialMeleeTotalFrames - 4);
 });
-ok('a connect late in active grants a shorter (remaining-only) window', () => {
+ok('a connect late in the swing grants a shorter (remaining-only) window', () => {
   const h = makeHero('balthazar');
-  const cfg = h.heroDef.specialMelee;
   h.specialMeleeActive = true;
   h.specialMeleePhase = 'active';
-  h.specialMeleeFrame = cfg.frames.windup + cfg.frames.active - 1; // last active frame
+  h.specialMeleeFrame = h.specialMeleeTotalFrames - 2; // near the end
   h.markSpecialConnect();
-  assert.equal(h._connectProtectFrames, 1 + cfg.frames.recovery);
+  assert.equal(h._connectProtectFrames, 2);
 });
 ok('re-hits do not extend the window (idempotent max)', () => {
   const h = makeHero('balthazar');

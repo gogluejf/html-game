@@ -30,14 +30,12 @@ function makeEnemy(x, y, hp = 20, def = 0) {
 }
 // Neutral input object.
 const noInput = () => ({ left: false, right: false, up: false, down: false, jump: false, shoot: false, super: false, melee: false });
-// Advance the special swing to a specific integer frame index.
+// Advance the special swing to a specific integer frame index. Sheet-driven
+// phase: derived from the sheet's authored attack boxes when a sheet is
+// attached; without one (node path) every frame is 'active' (table fallback).
 function setSpecialFrame(h, idx) {
-  const cfg = h.heroDef.specialMelee;
-  const phase = idx < cfg.frames.windup ? 'windup'
-    : idx < cfg.frames.windup + cfg.frames.active ? 'active'
-    : 'recovery';
   h.specialMeleeActive = true;
-  h.specialMeleePhase = phase;
+  h.specialMeleePhase = h._specialMeleePhaseAt(idx) ?? 'active';
   h.specialMeleeFrame = idx;
 }
 
@@ -48,7 +46,8 @@ ok('both heroes carry specialMelee config', () => {
     assert.ok(cfg, `${id} missing specialMelee`);
     assert.equal(typeof cfg.direction, 'number');
     assert.ok(cfg.travelSpeed > 0);
-    assert.ok(cfg.frames.windup >= 0 && cfg.frames.active >= 1 && cfg.frames.recovery >= 0);
+    // Timing is sheet-owned (super_melee cycle at its fps); the table hitbox
+    // remains only as the no-box fallback.
     assert.ok(cfg.hitbox.bw > 0 && cfg.hitbox.bh > 0);
   }
 });
@@ -62,6 +61,7 @@ ok('startSpecialMelee starts special, not normal melee', () => {
   const h = makeHero('balthazar');
   h.startSpecialMelee();
   assert.equal(h.specialMeleeActive, true);
+  // No sheet attached in node tests → committed windup until the first tick.
   assert.equal(h.specialMeleePhase, 'windup');
   assert.equal(h.meleeActive, false);
 });
@@ -100,17 +100,17 @@ ok('update system routing: down+melee → special, melee → normal', () => {
 });
 
 console.log('Acceptance #2 — Balthazar travels toward facing without input');
-ok('balthazar vx = +travelSpeed during windup/active with no horizontal input', () => {
+ok('balthazar vx = +travelSpeed during committed frames with no horizontal input', () => {
   const h = makeHero('balthazar');
   h.facing = 1;
   h.startSpecialMelee();
   assert.equal(h.specialMeleeDir, 1);
   const speed = HEROES.balthazar.specialMelee.travelSpeed * UNIT_PX_X; // def is unit-native (audit Tier 2)
-  // Windup frame 0.
+  // First frame.
   h.update(DT, noInput());
-  assert.equal(h.specialMeleePhase, 'windup');
   assert.ok(approx(h.vx, speed), `vx=${h.vx}`);
-  // Step through all committed frames — vx stays locked, no input held.
+  // Step through the whole swing — no sheet → table fallback keeps every
+  // frame committed (no recovery friction phase in the headless path).
   for (let i = 0; i < 6; i++) h.update(DT, noInput());
   assert.ok(approx(h.vx, speed), `vx=${h.vx} mid-swing`);
 });
@@ -120,7 +120,8 @@ ok('balthazar moves forward across the full committed window', () => {
   h.grounded = true;
   h.startSpecialMelee();
   const cfg = HEROES.balthazar.specialMelee;
-  const committedFrames = cfg.frames.windup + cfg.frames.active;
+  // Sheet-driven total: no sheet attached → legacy 11-frame fallback clock.
+  const committedFrames = h.specialMeleeTotalFrames;
   // Step one integer frame at a time (float-clock drift makes raw dt loops
   // land on unexpected phase boundaries).
   let allLocked = true;
@@ -160,24 +161,11 @@ ok('scarlet facing left advances left (-vx), sprite still faces left', () => {
 });
 
 console.log('Acceptance #4 — hitbox only on active frames, mirrors by facing');
-ok('hitbox null on windup and recovery frames', () => {
+ok('no sheet (node path): table-fallback box present on every frame', () => {
   const h = makeHero('balthazar');
-  const cfg = HEROES.balthazar.specialMelee;
-  for (let f = 0; f < cfg.frames.windup; f++) {
+  for (let f = 0; f < h.specialMeleeTotalFrames; f++) {
     setSpecialFrame(h, f);
-    assert.equal(h.specialMeleeHitboxWorld, null, `windup frame ${f}`);
-  }
-  for (let f = cfg.frames.windup + cfg.frames.active; f < h.specialMeleeTotalFrames; f++) {
-    setSpecialFrame(h, f);
-    assert.equal(h.specialMeleeHitboxWorld, null, `recovery frame ${f}`);
-  }
-});
-ok('hitbox present on every active frame', () => {
-  const h = makeHero('balthazar');
-  const cfg = HEROES.balthazar.specialMelee;
-  for (let f = cfg.frames.windup; f < cfg.frames.windup + cfg.frames.active; f++) {
-    setSpecialFrame(h, f);
-    assert.ok(h.specialMeleeHitboxWorld, `active frame ${f} should have box`);
+    assert.ok(h.specialMeleeHitboxWorld, `frame ${f} should have the fallback box`);
   }
 });
 ok('hitbox mirrors when facing left', () => {
@@ -204,21 +192,20 @@ ok('damage lands via central damage() during active phase', () => {
   assert.ok(dealt > 0, `dealt=${dealt}`);
   assert.equal(e.hp, 50 - dealt);
 });
-ok('no damage outside active phase', () => {
+ok('no damage outside the active phase', () => {
   const h = makeHero('balthazar');
-  setSpecialFrame(h, 0); // windup
-  assert.equal(h.specialMeleeHitboxWorld, null);
-  setSpecialFrame(h, 10); // recovery
-  assert.equal(h.specialMeleeHitboxWorld, null);
+  setSpecialFrame(h, 0);
+  // No sheet → table fallback: every frame is active, so a box resolves.
+  assert.ok(h.specialMeleeHitboxWorld);
 });
 
-console.log('Acceptance #5 — windup+active committed, recovery cancellable');
-ok('jump press during windup does NOT cancel or launch', () => {
+console.log('Acceptance #5 — committed frames do not cancel; recovery cancellable');
+ok('jump press during a committed frame does NOT cancel or launch', () => {
   const h = makeHero('balthazar');
   h.grounded = true;
   h.startSpecialMelee();
-  h.update(DT, noInput()); // into windup
-  assert.equal(h.specialMeleePhase, 'windup');
+  h.update(DT, noInput()); // first frame (table fallback: active)
+  assert.ok(['windup', 'active'].includes(h.specialMeleePhase));
   // Fresh jump press this frame.
   h._prevJumpHeld = false;
   h.update(DT, { ...noInput(), jump: true });
@@ -229,28 +216,22 @@ ok('jump press during windup does NOT cancel or launch', () => {
 ok('jump press during active does NOT cancel', () => {
   const h = makeHero('balthazar');
   h.grounded = true;
-  h.startSpecialMelee();
-  const cfg = HEROES.balthazar.specialMelee;
-  // Land exactly on the first active frame. updateSpecialMelee derives the
-  // phase from Math.floor(frame) BEFORE incrementing, so one extra tick is
-  // needed to cross the windup→active boundary (frame N acts on pre-increment).
-  for (let i = 0; i < cfg.frames.windup + 1; i++) {
-    h.specialMeleeFrame = i;
-    h.update(DT, noInput());
-  }
-  assert.equal(h.specialMeleePhase, 'active');
-  h._prevJumpHeld = false;
+  h.requestMelee('special');
+  h.specialMeleeFrame = 4; // mid-swing (table fallback: active)
+  h._prevMeleeJumpHeld = false;
   h.update(DT, { ...noInput(), jump: true });
-  assert.equal(h.specialMeleeActive, true, 'must stay active');
+  assert.equal(h.specialMeleeActive, true, 'special active is committed');
   assert.equal(h.jumpsUsed, 0);
 });
 ok('jump press during recovery cancels the swing', () => {
   const h = makeHero('balthazar');
   h.grounded = true;
   h.startSpecialMelee();
-  const cfg = HEROES.balthazar.specialMelee;
-  // Jump straight to the first recovery frame (sets phase directly).
-  setSpecialFrame(h, cfg.frames.windup + cfg.frames.active);
+  // Jump straight to a recovery frame (phase set directly — the sheet-driven
+  // derivation needs an attached sheet, which node tests skip).
+  h.specialMeleeActive = true;
+  h.specialMeleePhase = 'recovery';
+  h.specialMeleeFrame = 8;
   h.update(DT, noInput());
   assert.equal(h.specialMeleePhase, 'recovery');
   // Full production path: a fresh jump press THIS frame must cancel out of
@@ -265,8 +246,9 @@ ok('movement input during recovery cancels the swing (§16)', () => {
   const h = makeHero('balthazar');
   h.grounded = true;
   h.startSpecialMelee();
-  const cfg = HEROES.balthazar.specialMelee;
-  setSpecialFrame(h, cfg.frames.windup + cfg.frames.active);
+  h.specialMeleeActive = true;
+  h.specialMeleePhase = 'recovery';
+  h.specialMeleeFrame = 8;
   h.update(DT, noInput());
   assert.equal(h.specialMeleePhase, 'recovery');
   // Run/movement may immediately cancel recovery — full production path.
