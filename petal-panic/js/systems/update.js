@@ -36,6 +36,10 @@ import { Debug } from "../debug/debug.js";
 import { applyGodMode, setHeroRefSetter, tickDebugBarrelDrops, tickFrameTrace } from '../debug/debugHarness.js';
 import { buildWorld, instantiateZone, captureAreaMap, newGameSeed, getLastWorldSeed } from '../world/build.js';
 import { CLEAR_SEQ, clearSeq, areaEntrySeq, setMenuEntryPending, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, retryLevel, continueFromGameOver } from '../world/zoneLifecycle.js';
+import '../world/entryHooks.js'; // registers the AREA_ENTRY presentation + camera-snap transition hooks
+import { registerHeroRefSetter } from './heroRef.js';
+import './newGameHook.js'; // registers the SELECT→PLAY new-game hook
+import './menuContinueHook.js'; // registers the MENU/LEVEL_SELECT/BOSS_RUSH → AREA_ENTRY hook
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, retryLevel, continueFromGameOver };
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, roomFloorTop, BOSS_TRIGGER_X } from '../world/level.js';
 import { startGame, bindAreaContext, setRegenerateWorld, setRebuildZoneContent, showAreaEntry, applySavedState, makeHero } from '../systems/lifecycle.js';
@@ -52,6 +56,10 @@ export { stepDynamicSolid };
 import { isLethalFall, getDeathFadeAlpha, finishHeroDeath, DEATH_FADE_DURATION } from '../hero/death.js';
 export { isLethalFall, getDeathFadeAlpha, finishHeroDeath };
 import { makeCheckpoint, GameObj } from '../objects/object.js';
+import { barrelImpactSweep, fallingBarrelImpact, tickFallingBarrelFuse, STAR_BARREL_KNOCKBACK, STAR_BARREL_FUSE } from '../objects/barrelPhysics.js';
+import { loadActiveZone, rebuildZoneContent, regenerateWorld, syncRuntimeState, setCollisionWorld } from '../world/runtime.js';
+export { loadActiveZone };
+export { barrelImpactSweep, fallingBarrelImpact, tickFallingBarrelFuse };
 import { ctx } from '../world/context.js';
 import { TUNING } from '../tuning.js';
 
@@ -78,6 +86,7 @@ const LEVEL_CONFIG = getLevelConfig(LEVEL_DEF.index) ?? {};
 let world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, 1);
 
 const collisionWorld = new CollisionWorld({ cellSize: 64 });
+setCollisionWorld(collisionWorld); // runtime.js needs it before ctx wiring (boot install)
 
 // Level length: the active zone's width. The hero is clamped to the zone's
 // bounds (not a fixed corridor length). This is the zone's playable width.
@@ -140,199 +149,6 @@ const solidEntities = [];
  * @param {object[]} peers all dynamic solids INCLUDING e (self is filtered out)
  */
 
-// --- Rolling-barrel impacts (declaration of impact) ---------------------------
-// A knocked barrel is a physical object with momentum: when it is MOVING fast
-// enough and overlaps an enemy, that overlap is an IMPACT — the barrel deals
-// damage to the enemy, knocks the enemy back in the barrel's travel direction,
-// and loses part of its own speed (momentum transfer). One impact per enemy
-// per barrel until the barrel slows below the threshold or separates, so a
-// rolling barrel does not machine-gun an enemy every frame.
-const BARREL_IMPACT_MIN_SPEED = 120;   // px/s — slower than this = gentle roll, no hit
-const BARREL_IMPACT_DAMAGE = 15;       // flat impact damage (speed-scaled below)
-const BARREL_IMPACT_KNOCKBACK = { x: 260, y: -30, hitstun: 0.25 };
-const BARREL_IMPACT_MOMENTUM_LOSS = 0.45; // barrel keeps 55% of speed per impact
-
-/**
- * Impact sweep for one moving barrel against live enemies. Called from the
- * dynamic-solid step AFTER integration so positions are final for this frame.
- * @param {GameObj} b the barrel (any type — wood/coin/propane all roll)
- */
-export function barrelImpactSweep(b) {
-  if (!b.alive || b.destroyed) return;
-  const speed = Math.abs(b.vx ?? 0);
-  if (speed < BARREL_IMPACT_MIN_SPEED) { b._impactCooldown = 0; return; }
-  if (b._impactCooldown > 0) { b._impactCooldown -= 1 / 60; return; }
-
-  const bb = b.worldBox();
-  const dirX = Math.sign(b.vx) || 1;
-  for (const e of realEnemies) {
-    if (!e || e.alive === false || e.aiState === 'dead') continue;
-    const eb = e.worldBox ? e.worldBox() : { x: e.x, y: e.y, w: e.w, h: e.h };
-    if (!aabbOverlap(bb, eb)) continue;
-
-    // Damage + shove through the single choke point: applyHit() owns the
-    // eligibility decision (i-frames/invuln absorb → no damage, no shove) and
-    // applies the knockback vector after damage lands. The barrel's live speed
-    // adds a motion term (a fast barrel shoves harder).
-    const dmg = Math.round(BARREL_IMPACT_DAMAGE * (0.5 + speed / 400));
-    const kb = calculateKnockback(b, 0);
-    const res = applyHit({
-      provenance: AttackProvenance.PROJECTILE,
-      source: b,
-      target: e,
-      damage: dmg,
-      team: Team.NEUTRAL,
-      method: 'barrelImpact',
-      knockback: {
-        x: dirX * (BARREL_IMPACT_KNOCKBACK.x + (kb?.x ?? 0) * dirX),
-        y: BARREL_IMPACT_KNOCKBACK.y,
-        hitstun: BARREL_IMPACT_KNOCKBACK.hitstun,
-      },
-    });
-    if (!res.accepted || res.dealt <= 0) continue; // absorbed — no impact reaction
-    Effects.beginEnemyShake(e);
-
-    // Momentum transfer: the barrel slows down — it did NOT pass through.
-    b.vx *= (1 - BARREL_IMPACT_MOMENTUM_LOSS);
-    b._impactCooldown = 0.35; // re-arm window: no second hit on the same body
-    break; // one enemy per barrel per impact event
-  }
-}
-
-// --- Falling-barrel impacts (stomp / bonk) -----------------------------------
-// A barrel falling FAST onto the hero is a physical impact, not a pass-through:
-//   - hero's head is in the lower half of the barrel and the barrel is moving
-//     down → STOMP: the barrel takes heavy damage (often dies → its normal
-//     destruction payload), the hero bounces off the top.
-//   - any other fast overlap (barrel hits you from the side/above while you're
-//     under it) → the barrel is destroyed on impact and detonates normally;
-//     whoever (hero AND enemies) stands in the blast radius takes the blast's
-//     own damage. No special stomp rule, no flat "bonk" number — the
-//     detonation IS the damage. One rule for every way a barrel dies.
-// Below FALLING_MIN_VY the barrel is just settling — no impact (stacking and
-// gentle drops keep working). One impact per barrel per short window so a
-// resting-on-head frame doesn't machine-gun.
-const FALLING_BARREL_MIN_VY = 260;   // px/s downward before it counts as "falling"
-const FALLING_BARREL_COOLDOWN = 0.3; // re-arm window per barrel
-// Head-hit response: the barrel gets a small knockback launch (up + away from
-// the hero) and a short fuse. It stays alive and arcs under gravity; it
-// detonates when the fuse expires OR it lands on a surface — whichever first.
-// The blast fires at its CURRENT position, so the explosion travels with the
-// launched barrel (kick-a-barrel-and-it-blows-up feel).
-const STOMP_KNOCKBACK = { x: 260, y: -120, hitstun: 0, iFrames: 0 };
-// The stomp POP: applied as a SET (b.vy = STOMP_POP_VY) after the applyHit
-// shove, because the barrel arrives falling >= FALLING_BARREL_MIN_VY and an
-// additive lobe can't reverse it. -420 vs GRAVITY 1500 → ~0.28s of rise,
-// apex ~59px above the head — a clean visible hop before the arc comes down.
-const STOMP_POP_VY = -420;
-const STOMP_FUSE = 0.45;             // seconds of cooking after the head-hit
-// STAR POWER barrel pop: shove the barrel in front of the hero like an enemy
-// knockback — a horizontal push with a SMALL fixed `pop` lobe (the same shape
-// as enemy body-contact knockback: dirMode fromAttacker + modest pop). That's
-// what reads as "pushed" instead of "launched into orbit". Barrels have
-// knockbackResist 0.5, so impulses land at 2× face value.
-// ignoreResist: true on the call site → these values are FINAL px/s on every
-// target (no mass division) — the star kick hits barrels and enemies with the
-// same force by design.
-const STAR_BARREL_KNOCKBACK = { x: 840, y: -320, hitstun: 0, iFrames: 0 };
-const STAR_BARREL_FUSE = 0.6;        // long enough to SEE the arc: launch up, hang, fall, boom
-
-/**
- * Impact check for one falling barrel against the hero. Called from the
- * dynamic-solid step AFTER integration (positions final for this frame).
- *
- * Kick-and-cook model: a fast-falling barrel that overlaps the hero gets a
- * small knockback launch (up + away) and a short fuse instead of dying
- * instantly. It stays alive and arcs under gravity (stepDynamicSolid handles
- * the physics each frame); it detonates when the fuse expires OR it lands —
- * whichever comes first — via tickFallingBarrelFuse(). The blast fires at the
- * barrel's CURRENT position, so the explosion travels with the launched barrel.
- * @param {GameObj} b the barrel
- */
-export function fallingBarrelImpact(b) {
-  if (!b.alive || b.destroyed) return;
-  const vy = b.vy ?? 0;
-  if (vy < FALLING_BARREL_MIN_VY) { b._fallCd = 0; return; } // settling, not falling
-  if (b._fallCd > 0) { b._fallCd -= 1 / 60; return; }
-
-  const h = ctx.hero;
-  if (!h || !h.alive || h.dying) return;
-  const bb = b.worldBox();
-  const hb = h.worldBox ? h.worldBox() : { x: h.x, y: h.y, w: h.w, h: h.h };
-  if (!aabbOverlap(bb, hb)) return;
-  // STOMP GATE — the barrel must be driving DOWN onto the hero's HEAD from
-  // above. Two geometric tests (both required):
-  //   1. The hero's HEAD REGION (top 25% of the body) overlaps the barrel's
-  //      LOWER half — your head is under the barrel's midline, i.e. it fell
-  //      ONTO you, not past/beside you. Using a region (not just the top
-  //      edge) matters for tall heroes: with a 91px hero and a 48px barrel,
-  //      "top edge inside lower half" needs ≥33px of overlap, which a fast
-  //      barrel can skip in one frame.
-  //   2. barrel's BOTTOM edge at or below the hero's TOP edge — the barrel is
-  //      still arriving from above. If its bottom is already ABOVE your head
-  //      you're level with it in the air: a side touch, NOT a stomp. This is
-  //      the case that used to cook barrels on mid-air contact.
-  const heroTop = hb.y;
-  const headBottom = hb.y + hb.h * 0.25; // head region: top quarter of the body
-  const barrelMidY = bb.y + bb.h / 2;
-  const barrelBottom = bb.y + bb.h;
-  if (headBottom <= barrelMidY) return;    // head not under the barrel — no stomp
-  if (barrelBottom < heroTop) return;      // barrel still above your head — no stomp
-
-  // Launch the barrel off the hero: upward + horizontally away from the hero's
-  // center. Pure impulse (no damage — the stomp is a physics interaction, not
-  // a hit), so it rides the single door with damage: 0; stepDynamicSolid
-  // carries the arc.
-  const dirX = Math.sign((bb.x + bb.w / 2) - (hb.x + hb.w / 2)) || 1;
-  applyHit({
-    provenance: AttackProvenance.STOMP,
-    source: h,
-    target: b,
-    damage: 0,
-    team: Team.NEUTRAL,
-    method: 'stomp',
-    knockback: { x: STOMP_KNOCKBACK.x * dirX, y: STOMP_KNOCKBACK.y },
-  });
-  // POP: the barrel arrived falling fast (>= FALLING_BARREL_MIN_VY down) and
-  // applyKnockback only ADDS its vector — a -120 lobe against a 300+ fall
-  // leaves it still moving down (no visible bounce). A stomp must REVERSE the
-  // fall into a clean hop, so set vy to the launch value outright; the
-  // sideways shove from applyHit is kept as-is.
-  b.vy = STOMP_POP_VY;
-  // Arm the fuse. It cooks while airborne; landing or fuse-expiry detonates.
-  b._fuse = STOMP_FUSE;
-  record(h, { kind: 'enemyStomped' });
-  b._fallCd = FALLING_BARREL_COOLDOWN;
-}
-
-/**
- * Per-frame fuse tick for a cooking barrel (armed by fallingBarrelImpact).
- * Call once per live barrel in the dynamic-solid loop, AFTER stepDynamicSolid
- * so positions/velocity are final for the frame. Detonates when the fuse hits
- * zero OR the barrel has come to rest on a surface (vy ~ 0 and grounded), so a
- * launched barrel always blows up — at its current spot — rather than cooking
- * forever. No-op for barrels without an armed fuse.
- * @param {GameObj} b the barrel
- * @param {number} dt seconds
- */
-export function tickFallingBarrelFuse(b, dt) {
-  if (!b.alive || b.destroyed || b._fuse == null) return;
-  b._fuse -= dt;
-  // Landed? stepDynamicSolid zeroes vy on a surface; treat "no longer falling"
-  // as the detonation trigger so a short hop still blows where it settles.
-  // Intangible flight (star launch) NEVER lands — terrain is phased — so the
-  // fuse timer is its only clock there.
-  const landed = !b.intangible && (b.vy ?? 0) <= 1;
-  if (b._fuse <= 0 || (landed && (b.vy ?? 0) >= 0)) {
-    b._fuse = null;
-    b.clearIntangible(); // back in the collision world at detonation
-    const dealt = b.takeDamage(Number.MAX_SAFE_INTEGER, b, 'stomp');
-    if (b.destroyed && !b._destroyHandled) {
-      b.onDestroyed?.({ source: b, provenance: 'STOMP' }, { accepted: true, dealt, destroyed: true });
-    }
-  }
-}
-
 // The hero's physical entry position for the active zone. Area -1 has no entry
 // flag (it starts at the zone's start); later areas start beside their entry
 // flag (checkpoints.md §1). placeHeroAtEntry() owns placing the hero (lifecycle.md §3);
@@ -350,6 +166,7 @@ function setHeroRef(h) {
   attachHeroSprites(h, HERO_SPRITE_DIRS[h.heroDef?.id] ?? h.heroDef?.id);
   hero = h; ctx.hero = h; setMenuHero(h);
 }
+registerHeroRefSetter(setHeroRef); // newGameHook.js routes through this
 
 // thorn fire state. Cooldown is in seconds; rapid powerup halves it.
 hero.fireCooldown = 0;
@@ -484,6 +301,18 @@ const areaContext = {
 // zone, particle, and effect from the failed attempt BEFORE fresh entities
 // are installed. update.js owns the transient systems, so it owns this hook.
 areaContext.clearTransients = () => AttackLifecycle.clearTransientWorld();
+ctx.areaContext = areaContext; // runtime.js reads it during the boot install (below)
+// Wire the entity-list aliases into ctx BEFORE the boot install: runtime.js
+// (loadActiveZone) reads/writes them through ctx. The lists are the same array
+// objects, so later `ctx.x = x` re-assignments in this file stay consistent.
+ctx.solids = SOLIDS;
+ctx.solidEntities = solidEntities;
+ctx.realEnemies = realEnemies;
+ctx.barrels = barrels;
+ctx.woodBarrels = woodBarrels;
+ctx.coinBarrels = coinBarrels;
+ctx.powerups = powerups;
+ctx.checkpoints = checkpoints;
 bindAreaContext(hero, areaContext);
 
 // Install the initial zone (area 1) into the collision world so the runtime
@@ -501,165 +330,6 @@ registerCollisionHandlers(collisionWorld);
 // The boss is NOT added here — it is zone-scoped content installed by
 // loadActiveZone() when the hero enters the boss zone. Adding it at boot
 // would leave it physically present in every ordinary area.
-
-/**
- * Install the ACTIVE zone's content into the collision world (structure.md §2:
- * "a new zone replaces it"). Removes the previous zone's entities (solids,
- * enemies, barrels, powerups, checkpoints) and adds the new zone's. The boss is
- * NOT touched here — it lives in the boss zone and is managed by the boss-zone
- * flow. This is the runtime seam that makes switching zones swap ALL world
- * contents.
- *
- * @param {object} zone the zone to install (from buildLevelZones)
- * @param {object} [content] the zone's instantiated content (instantiateZone).
- *   When omitted (e.g. the boss zone, which has no composed content) only the
- *   old content is cleared and the structural platforms are installed.
- */
-export function loadActiveZone(zone, content) {
-  ctx.bombAttacks?.clear();
-  // Remove the previous zone's content from the collision world.
-  const oldCounts = { solids: solidEntities.length, enemies: realEnemies.length, barrels: [...barrels,...woodBarrels,...coinBarrels].length, powerups: powerups.length, cps: checkpoints.length };
-  const cwBefore = collisionWorld.entities.size;
-  for (const s of solidEntities) collisionWorld.remove(s);
-  for (const e of realEnemies) collisionWorld.remove(e);
-  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) collisionWorld.remove(b);
-  for (const p of powerups) collisionWorld.remove(p);
-  for (const c of checkpoints) collisionWorld.remove(c);
-  // The boss lives ONLY in the boss zone. Remove it from the collision world
-  // when leaving so it cannot physically exist in ordinary areas (same logic
-  // as any enemy — it is zone-scoped content, not a global entity).
-  if (zone.kind !== 'boss') collisionWorld.remove(boss);
-  const cwAfterRemove = collisionWorld.entities.size;
-
-  // Clear the module-level lists.
-  SOLIDS.length = 0;
-  solidEntities.length = 0;
-  realEnemies.length = 0;
-  barrels.length = 0;
-  woodBarrels.length = 0;
-  coinBarrels.length = 0;
-  powerups.length = 0;
-  checkpoints.length = 0;
-
-  // Install the new zone's content.
-  const solids = content?.solids ?? zone.platforms.map((p) => ({ ...p }));
-  console.log('[loadActiveZone] zone=' + (zone.areaIdx ?? 'boss') + ' solids count=' + solids.length + ' floor present=' + solids.some(s => s.kind === 'floor'));
-  for (const s of solids) {
-    SOLIDS.push(s);
-    solidEntities.push(new SolidBox(s));
-    collisionWorld.add(solidEntities[solidEntities.length - 1]);
-  }
-  for (const e of content?.enemies ?? []) { realEnemies.push(e); collisionWorld.add(e); }
-  for (const b of content?.barrels ?? []) { barrels.push(b); collisionWorld.add(b); }
-  for (const p of content?.powerups ?? []) { powerups.push(p); collisionWorld.add(p); }
-  for (const c of content?.checkpoints ?? []) { checkpoints.push(c); collisionWorld.add(c); }
-  // The boss is zone-scoped content: add it to the collision world ONLY when
-  // entering the boss zone. It is positioned by beginBossZoneFlow() (off-screen
-  // right, invisible) once the hero confirms the entry screen.
-  if (zone.kind === 'boss') {
-    collisionWorld.add(boss);
-    console.log(`[loadActiveZone] boss added to collision world`);
-  }
-  console.log(`[loadActiveZone] zone=${zone.areaIdx} removed ${JSON.stringify(oldCounts)} cw:${cwBefore}→${cwAfterRemove}, added new, cw final: ${collisionWorld.entities.size}`);
-  console.log(`[loadActiveZone] checkpoints: ${checkpoints.map(c => `${c.checkpointId}@(${c.x},${c.y}) layer=${c.layer} alive=${c.alive}`).join(', ')}`);
-
-  // Refresh the area context's barrel list (its identity is stable).
-  areaContext.barrels.length = 0;
-  areaContext.barrels.push(...barrels);
-  return areaContext;
-}
-
-/**
- * FRESH ZONE INSTALL — the implementation enterZone's 'rebuild' transitions
- * route through (registered via setRebuildZoneContent). Tears down every
- * transient (attack handles, projectiles, fire zones, particles, effects),
- * re-instantiates the hero's CURRENT zone from layout + population snapshot
- * (instantiateZone → brand-new entity objects), and rebinds the camera. Boss
- * zones reinstall their run-phase content and tear down any active battle
- * room (boss-arena.md §3). This is the former resetActiveZoneContent body —
- * callers no longer invoke it separately; enterZone owns the ordering
- * (run rule → life rule → rebuild → place hero).
- */
-export function rebuildZoneContent(ctxArg, h) {
-  const hero = ctx.hero ?? h;
-  // Transient teardown is invoked by enterZone BEFORE this runs (the context's
-  // clearTransients hook) — see bindAreaContext below. This stays a no-op guard
-  // for any direct call path that skipped it.
-  const activeZone = getActiveZone(hero);
-  if (activeZone.kind === 'area' && world.world.has(activeZone.areaIdx)) {
-    const fresh = instantiateZone(
-      activeZone,
-      world.terrain.get(activeZone.areaIdx),
-      world.population.get(activeZone.areaIdx),
-      levelZones,
-    );
-    loadActiveZone(activeZone, fresh);
-  } else if (activeZone.kind === 'boss') {
-    // Boss zone: re-install the run-phase content — the floor + the boss
-    // checkpoint flag at the far right (fresh, un-triggered). The battle room
-    // is torn down: machine dormant, camera re-bound to full zone width, boss
-    // pulled out of the collision world (re-added by enterBossRoom on trigger).
-    const bossCp = activeZone.entryFlag
-      ? [makeCheckpoint(activeZone.entryFlag.id, activeZone.entryFlag.x, activeZone.entryFlag.y, { isEntry: true, appearance: activeZone.entryFlag.appearance, spawnPos: activeZone.spawn })]
-      : [];
-    loadActiveZone(activeZone, { solids: activeZone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
-    if (solidEntities.length === 1 && solidEntities[0] && SOLIDS[0].w === VIEW_W) {
-      restoreBossRunFloor();
-    }
-    collisionWorld.remove(boss);
-    bossZone.reset();
-    camera.unlock();
-  }
-  camera.setZoneBounds(activeZone);
-}
-
-/**
- * Re-generate the world with FRESH random generation choices (lifecycle.md
- * §1/§6). Called ONLY by startGame() — a genuinely new game is allowed new
- * choices; death and Continue never reroll, so a run's arrangement stays fixed.
- *
- * The module-level `world` is swapped for a freshly composed one (new seed).
- * The boss is re-created (the level's boss identity is fixed). The active zone
- (area 1) is installed so the collision world is bound to the fresh world.
- * The hero is NOT swapped here — startGame() builds and inserts the fresh hero.
- *
- * @param {object} oldCtx the previous area context (its entity lists)
- * @returns {object} the new area context (bound to the new world)
- */
-function regenerateWorld(oldCtx) {
-  world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, newGameSeed());
-  // ctx.world is a stable reference read by zoneLifecycle.js (retry / death /
-  // advance reinstalls). Keep it pointed at the fresh world or later zone
-  // switches would pull content from the previous game's world.
-  ctx.world = world;
-
-  // Re-create the boss for the fresh game (it is a fresh entity per game).
-  const oldBoss = boss;
-  boss = makeElephant(-9999, ZONE_GROUND_Y); // parked off-world until the battle room
-  // The boss-zone flow machine references the boss entity; it reads boss.x/y
-  // live, so it needs no rewiring. (bossZone.boss is the same object reference
-  // the machine moves; the machine is created with the original boss, so keep
-  // it pointing at the fresh one.)
-  bossZone.boss = boss;
-  // MAJOR 8: the area context's boss reference must follow the re-created
-  // boss, so the fresh-zone install uses the FRESH boss on a
-  // life loss in the new game, not the stale entity from the old one.
-  areaContext.boss = boss;
-  if (oldBoss && collisionWorld.entities.has(oldBoss)) collisionWorld.remove(oldBoss);
-  collisionWorld.add(boss);
-
-  // Install the FIRST zone (area 1) so the collision world is bound to the
-  // fresh world. MAJOR 7: do NOT read getActiveZone(hero) here — the old
-  // hero (still the module-level reference) may be on a later area from the
-  // finished game; a new game always starts in the first zone (lifecycle.md
-  // §1). The hero is managed by startGame() (removes oldHero / adds the
-  // new hero), so we don't touch the hero here.
-  const active = levelZones[0]; // area 1, the first zone
-  loadActiveZone(active, world.world.get(active.areaIdx));
-  camera.setZoneBounds(active);
-
-  return areaContext;
-}
 
 // --- Input -------------------------------------------------------------------
 export function processInput() {
@@ -811,121 +481,6 @@ onTransition((from, to) => {
   }
 });
 
-// --- Menu Continue / Level Select / Boss Rush → AREA_ENTRY (menu-hub plan §2.3 / §3.2 / §3.3) ---
-// When the menu hub's Continue option OR the level select screen OR the boss
-// rush screen opens the shared area-entry screen for a SAVED or CHOSEN
-// level/area, install that zone's world content + spawn checkpoint through the
-// SAME path a normal mid-run area entry uses (stepClearSequence's fadeOut /
-// debugWrapToNextArea): loadActiveZone swaps ALL world contents
-// (structure.md §2) and the hero's checkpoint is set to the zone's spawn so
-// placeHeroAtEntry places them at the chosen zone's entry — not wherever the previous
-// run left them.
-// This runs on EVERY MENU→AREA_ENTRY, LEVEL_SELECT→AREA_ENTRY and
-// BOSS_RUSH→AREA_ENTRY transition; the only such sources are the Continue flow
-// and the two select-screen confirms (new games route MENU→SELECT, never
-// straight to AREA_ENTRY).
-onTransition((from, to) => {
-  if (to === S.AREA_ENTRY && (from === S.MENU || from === S.LEVEL_SELECT || from === S.BOSS_RUSH)) {
-    let h = hero;
-    // This zone was installed FROM THE MENU (reload-Continue / level select /
-    // boss rush): the entry sequence MUST start the attempt in FAILURE flavor
-    // (state-persistence.md §2.6 — snapshot rollback, full energy, weapon
-    // cleared), never as an advance. The flag is consumed by the entry
-    // sequence when the attempt starts.
-    //
-    // CRITICAL ORDERING: arm this AFTER the transition has fired, not inside
-    // the hook. showAreaEntry() calls tryTransition() and fires ALL listeners
-    // synchronously before returning — a mid-run death or clear-sequence
-    // advance reaches AREA_ENTRY via PLAY→AREA_ENTRY while THIS listener is
-    // still executing for an earlier menu entry, and would see `from` as the
-    // menu state and wrongly force the failure flavor on a genuine zone pass
-    // (§2.3 keep-everything broken: energy/weapon reset on next-area).
-    queueMicrotask(() => setMenuEntryPending(true));
-    // A Continue after a page reload must rebuild the world with the SAVED
-    // generation seed (saveMeta.seed) so the run resumes on the exact terrain
-    // + spawns it was played on. In-session continues skip this: the live
-    // world already matches. Legacy saves without a seed keep today's behavior
-    // (the module-load world). Level Select / Boss Rush are the same rule:
-    // starting a zone from the menu must not silently fall back to a stale
-    // or freshly-rolled world — if the save names a different seed, rebuild.
-    const sm = loadStore().saveMeta;
-    // Hero identity restore: if the saved run was played with a different hero
-    // than the current one (always Scarlet on fresh page load), rebuild the
-    // hero with the correct definition BEFORE restoring state onto it.
-    if (sm?.heroId && sm.heroId !== hero.heroDef?.id) {
-      const def = HEROES[sm.heroId] || HEROES.scarlet;
-      const newH = makeHero(def);
-      newH.lives = GAME_RULES.startingLives;
-      newH.continues = createContinuePool(GAME_RULES.startingContinues);
-      Object.defineProperty(newH, 'continuesUsed', {
-        get() { return GAME_RULES.startingContinues - newH.continues.remaining; },
-        set(n) { newH.continues.remaining = GAME_RULES.startingContinues - n; },
-      });
-      newH.traceStats = createTrace();
-      newH.wallet.snapshots = {};
-      // Swap: remove old hero from collision world, add new one, rebind refs.
-      collisionWorld.remove(hero);
-      collisionWorld.add(newH);
-      setHeroRef(newH);
-      bindAreaContext(newH, ctx);
-      // Re-apply saved state onto the CORRECT hero (continueFromMenu applied
-      // it to the old hero before the transition fired; we redo it here).
-      newH.currentLevel = sm.level;
-      newH.currentArea = sm.area;
-      if (sm.state && typeof sm.state === 'object') applySavedState(newH, sm.state);
-      h = newH; // rebind local ref so checkpoint/zone logic below uses the new hero
-      console.log(`[lifecycle] ${from} continue: swapped hero to ${sm.heroId}`);
-    }
-    if (sm && Number.isInteger(sm.seed) && sm.seed !== getLastWorldSeed()) {
-      world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, sm.seed);
-      // CRITICAL: ctx.world is a STABLE reference read by resetActiveZoneContent /
-      // continueFromGameOver / stepClearSequence (zoneLifecycle.js). Swapping only
-      // the local `world` leaves ctx pointing at the PREVIOUS game's world, so any
-      // later zone reinstall (retry, death-restart, advance) pulls terrain +
-      // population from the stale world — the "retry spawns me in a NEW 1-1" bug.
-      ctx.world = world;
-      console.log(`[lifecycle] ${from} continue: rebuilt world from saved seed ${sm.seed}`);
-    }
-    // Persistent-column resume (state-persistence.md §2.6): AFTER the seed
-    // rebuild and BEFORE the zone installs, restore lives + continues + the
-    // zone-snapshot chain onto the hero. The entry screen then shows the saved
-    // life count, and the entry sequence's failure-style restart rolls
-    // coins/score back to the SAVED ZONE's entry snapshot with full energy and
-    // cleared weapon — identical in-session and after a page reload. Legacy
-    // saves without a `state` block keep today's behavior.
-    if (sm?.state && typeof sm.state === 'object') applySavedState(h, sm.state);
-    // Tear down any lingering boss battle room before swapping zones (a fresh
-    // resume must not inherit COMBAT state from a finished run).
-    if (bossZone.active) { bossZone.reset(); camera.unlock(); restoreBossRunFloor(); }
-    // Attempt boundary: a menu continue / level-select / boss-rush entry starts
-    // with zero transients — no fire zones, projectiles, particles, or effects
-    // from the previous session may bleed into the resumed zone.
-    AttackLifecycle.clearTransientWorld();
-    const zone = getActiveZone(h);
-    if (zone.kind === 'area' && world.world.has(zone.areaIdx)) {
-      // world.world holds live instances, not a pristine snapshot: same-seed
-      // menu returns can otherwise revive enemies with destroyed/_deathHandled
-      // still set and barrels with _destroyHandled (suppressing their blasts).
-      // Recreate runtime state from the preserved arrangement, as retry does.
-      loadActiveZone(zone, instantiateZone(
-        zone, world.terrain.get(zone.areaIdx), world.population.get(zone.areaIdx), levelZones,
-      ));
-    } else if (zone.kind === 'boss') {
-      const bossCp = zone.entryFlag
-        ? [makeCheckpoint(zone.entryFlag.id, zone.entryFlag.x, zone.entryFlag.y, { isEntry: true, appearance: zone.entryFlag.appearance, spawnPos: zone.spawn })]
-        : [];
-      loadActiveZone(zone, { solids: zone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
-    }
-    // Spawn checkpoint is zone data (REVISION-zones-as-data §4): feet on the
-    // floor of the active room. placeHeroAtEntry() reads this to place the hero.
-    const sp = zone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
-    h.checkpoint = { x: sp.x, y: sp.y - h.h };
-    camera.setZoneBounds(zone);
-    const label = from === S.LEVEL_SELECT ? 'LEVEL_SELECT' : from === S.BOSS_RUSH ? 'BOSS_RUSH' : 'MENU';
-    console.log(`[lifecycle] ${label} continue: installed zone ${zone.areaIdx ?? 'boss'} (checkpoint @${sp.x},${sp.y})`);
-  }
-});
-
 // --- Area-entry presentation (checkpoints.md §3) ----------------------------
 // Every entry into the shared area-entry view starts its timed, non-interactive
 // presentation: fast fade-in → hold for TUNING.areaEntryHold → fast fade-out →
@@ -1064,6 +619,7 @@ ctx.getActiveZone = getActiveZone;
 ctx.getCheckpoints = getCheckpoints;
 ctx.AREA_BOSS = AREA_BOSS;
 ctx.loadActiveZone = loadActiveZone;
+syncRuntimeState(); // runtime.js mirrors ctx.world/ctx.boss for its extracted functions
 setHeroRefSetter(setHeroRef);
 
 // brief screen shake on barrel explosions (optional juice). The
