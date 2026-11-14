@@ -2,12 +2,12 @@
 // (docs/architecture/knockback.md §11). Run: node js/test/attackKnockback.test.js
 // No DOM needed: heroDefs.js / hero.js are pure modules.
 //
-// The shove is ONE vector { x, y } in px/s (+ optional hitstun/iFrames).
-// Direct-intent pattern: assert the knockback data lives on the right attack
-// objects in heroDefs, and that it rides through Hero.attackHitboxWorld() onto
-// the resolved world box (the object updateSlot copies as hb.knockback at
-// impact). Thorn/special projectiles never go through this path and carry no
-// knockback field anywhere in heroDefs.
+// Each melee-family attack carries two shove tiers:
+//   - knockbackModerate: surviving hits keep the victim in reach.
+//   - knockbackBig: killing hits and finisher frames launch them away.
+// The resolved world box exposes both tiers; processHitboxes chooses big when
+// the hit kills or the frame is marked as a finisher. Thorn/special projectile
+// definitions carry no knockback fields.
 
 import { strict as assert } from 'node:assert';
 import { Hero } from '../hero/hero.js';
@@ -22,116 +22,97 @@ function ok(name, fn) {
 const DT = 1 / 60;
 const noInput = () => ({ left: false, right: false, up: false, down: false, jump: false, shoot: false, special: false, melee: false, super: false });
 const makeHero = (id) => new Hero(HEROES[id], 0, 0);
-// Advance a special swing to its ACTIVE phase so the hitbox resolves.
 function setSpecialActive(h) {
   h.specialMeleeActive = true;
   h.specialMeleePhase = 'active';
   h.specialMeleeFrame = 4; // mid-swing (table fallback: active)
 }
-// Start a real supermove dash via the production path.
 function startDash(h, facing = 1) {
   h.facing = facing;
   h.supermoveMeter = h.SUPERMOVE_MAX;
   const inp = noInput(); inp.super = true;
   h.update(DT, inp);
 }
-// Advance a normal swing to an active frame index.
 function setSwingFrame(h, idx) { h.meleeActive = true; h.meleeFrame = idx; }
 
-console.log('heroDefs data (knockback.md §11 matrix)');
+console.log('heroDefs data (two-tier knockback matrix)');
 
-ok('balthazar sweep carries aggressive forward pushback', () => {
-  const kb = HEROES.balthazar.specialMelee.knockback;
-  assert.ok(kb, 'sweep must expose a non-null knockback vector');
-  assert.equal(kb.x, 320);
-  assert.equal(kb.y, -40);
-  assert.equal(kb.hitstun, 0.45);
-  assert.equal(kb.dirMode, 'alongVelocity'); // shove along the lunge velocity
-});
+for (const id of ['balthazar', 'scarlet']) {
+  ok(`${id} sweep carries moderate + big pushback`, () => {
+    const cfg = HEROES[id].specialMelee;
+    assert.ok(cfg.knockbackModerate && cfg.knockbackBig);
+    assert.equal(cfg.knockbackModerate.x, 400);
+    assert.equal(cfg.knockbackModerate.y, -100);
+    assert.equal(cfg.knockbackModerate.hitstun, 0.45);
+    assert.equal(cfg.knockbackModerate.dirMode, 'alongVelocity');
+    assert.equal(cfg.knockbackBig.x, 700);
+    assert.equal(cfg.knockbackBig.y, -180);
+    assert.equal(cfg.knockbackBig.hitstun, 0.45);
+    assert.equal(cfg.knockbackBig.dirMode, 'alongVelocity');
+  });
 
-ok('scarlet sweep carries the same aggressive forward pushback', () => {
-  const kb = HEROES.scarlet.specialMelee.knockback;
-  assert.ok(kb, 'sweep must expose a non-null knockback vector');
-  assert.equal(kb.x, 320);
-  assert.equal(kb.y, -40);
-  assert.equal(kb.hitstun, 0.45);
-  assert.equal(kb.dirMode, 'alongVelocity');
-});
+  ok(`${id} supermove carries strongest moderate + big launch`, () => {
+    const cfg = HEROES[id].attacks[ATTACK_SUPERMOVE];
+    assert.ok(cfg.knockbackModerate && cfg.knockbackBig);
+    assert.equal(cfg.knockbackModerate.x, 300);
+    assert.equal(cfg.knockbackModerate.y, -120);
+    assert.equal(cfg.knockbackModerate.hitstun, 0.30);
+    assert.equal(cfg.knockbackModerate.dirMode, 'fromAttacker');
+    assert.equal(cfg.knockbackBig.x, 850);
+    assert.equal(cfg.knockbackBig.y, -260);
+    assert.equal(cfg.knockbackBig.hitstun, 0.30);
+    assert.equal(cfg.knockbackBig.dirMode, 'alongVelocity');
+  });
 
-ok('supermove (both heroes) carries the strongest launch', () => {
-  for (const id of ['scarlet', 'balthazar']) {
-    const kb = HEROES[id].attacks[ATTACK_SUPERMOVE].knockback;
-    assert.ok(kb, `${id} supermove must expose a non-null knockback vector`);
-    assert.equal(kb.x, 360);
-    assert.equal(kb.y, -90);                  // biggest upward loft
-    assert.equal(kb.hitstun, 0.30);
-    assert.equal(kb.dirMode, 'alongVelocity'); // rides the dash velocity
-  }
-});
-
-ok('sweeps carry a smaller loft than the supermove', () => {
-  const sweepY = HEROES.balthazar.specialMelee.knockback.y;
-  const scarletY = HEROES.scarlet.specialMelee.knockback.y;
-  const superY = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockback.y;
-  assert.ok(sweepY < 0 && scarletY < 0, 'special melee must loft upward (negative y)');
-  assert.ok(-superY > -scarletY, `super loft (${Math.abs(superY)}) must exceed scarlet sweep loft (${Math.abs(scarletY)})`);
-  assert.ok(-superY > -sweepY, `super loft (${Math.abs(superY)}) must exceed sweep loft (${Math.abs(sweepY)})`);
-});
-
-ok('normal melee carries a SMALL burst knockback (lighter than committed attacks)', () => {
-  for (const id of ['scarlet', 'balthazar']) {
-    const entry = HEROES[id].attacks[ATTACK_MELEE];
-    const kb = entry.knockback;
-    assert.ok(kb, `${id} melee must carry a knockback vector`);
-    // Burst only: no loft (committed attacks loft, the jab does not).
-    assert.equal(kb.y, 0, `${id} melee must not loft victims off the ground`);
-    // Clearly lighter than the committed attacks.
-    const specialX = HEROES[id].specialMelee.knockback.x;
-    const superX = HEROES[id].attacks[ATTACK_SUPERMOVE].knockback.x;
-    assert.ok(kb.x < specialX, `melee x (${kb.x}) must be lighter than special (${specialX})`);
-    assert.ok(kb.x < superX, `melee x (${kb.x}) must be lighter than supermove (${superX})`);
-    for (const frame of entry.frames) {
+  ok(`${id} normal melee carries moderate + big jab shove`, () => {
+    const cfg = HEROES[id].attacks[ATTACK_MELEE];
+    assert.ok(cfg.knockbackModerate && cfg.knockbackBig);
+    assert.equal(cfg.knockbackModerate.x, 250);
+    assert.equal(cfg.knockbackModerate.y, -50);
+    assert.equal(cfg.knockbackModerate.hitstun, 0.35);
+    assert.equal(cfg.knockbackModerate.dirMode, 'fromAttacker');
+    assert.equal(cfg.knockbackBig.x, 450);
+    assert.equal(cfg.knockbackBig.y, -120);
+    assert.equal(cfg.knockbackBig.hitstun, 0.40);
+    assert.equal(cfg.knockbackBig.dirMode, 'fromAttacker');
+    for (const frame of cfg.frames) {
       if (frame) assert.equal(frame.knockback, undefined, 'knockback sits beside the frames, not inside them');
     }
-  }
-});
+  });
 
-ok('thorn / special projectile definitions carry NO knockback', () => {
-  for (const id of ['scarlet', 'balthazar']) {
+  ok(`${id} strength ordering: super > sweep > melee (big tier)`, () => {
+    const superX = HEROES[id].attacks[ATTACK_SUPERMOVE].knockbackBig.x;
+    const sweepX = HEROES[id].specialMelee.knockbackBig.x;
+    const meleeX = HEROES[id].attacks[ATTACK_MELEE].knockbackBig.x;
+    assert.ok(superX > sweepX && sweepX > meleeX);
+    const superY = HEROES[id].attacks[ATTACK_SUPERMOVE].knockbackBig.y;
+    const sweepY = HEROES[id].specialMelee.knockbackBig.y;
+    const meleeY = HEROES[id].attacks[ATTACK_MELEE].knockbackBig.y;
+    assert.ok(superY < sweepY && sweepY < meleeY);
+  });
+
+  ok(`${id} thorn / special projectile definitions carry NO knockback`, () => {
     const def = HEROES[id];
     assert.equal(def.attacks.knockback, undefined);
     assert.equal(def.specialMelee.hitbox.knockback, undefined, 'knockback sits beside the hitbox, not inside it');
+  });
+}
+
+console.log('Resolved world boxes expose both tiers');
+
+ok('sweep hitbox resolves with moderate + big vectors', () => {
+  for (const id of ['balthazar', 'scarlet']) {
+    const h = makeHero(id);
+    setSpecialActive(h);
+    const box = h.attackHitboxWorld(ATTACK_SPECIAL_MELEE);
+    assert.ok(box, 'active-phase sweep must resolve a box');
+    assert.deepEqual(box.knockbackModerate, HEROES[id].specialMelee.knockbackModerate);
+    assert.deepEqual(box.knockbackBig, HEROES[id].specialMelee.knockbackBig);
+    assert.equal(box.finisher, true);
   }
 });
 
-ok('strength ordering: super x >= sweep x (unified, both heroes tie)', () => {
-  const superX = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockback.x;
-  const scarletSweepX = HEROES.scarlet.specialMelee.knockback.x;
-  const balthazarSweepX = HEROES.balthazar.specialMelee.knockback.x;
-  assert.ok(superX >= scarletSweepX, `super (${superX}) must not be weaker than scarlet sweep (${scarletSweepX})`);
-  assert.ok(superX >= balthazarSweepX, `super (${superX}) must not be weaker than balthazar sweep (${balthazarSweepX})`);
-  assert.equal(scarletSweepX, balthazarSweepX, 'unified sweep: identical x for both heroes');
-});
-
-console.log('Resolved world box exposes knockback (hb.knockback source)');
-
-ok('sweep hitbox resolves with its knockback vector', () => {
-  const h = makeHero('balthazar');
-  setSpecialActive(h);
-  const box = h.attackHitboxWorld(ATTACK_SPECIAL_MELEE);
-  assert.ok(box, 'active-phase sweep must resolve a box');
-  assert.deepEqual(box.knockback, HEROES.balthazar.specialMelee.knockback);
-});
-
-ok('scarlet sweep hitbox resolves with its knockback vector', () => {
-  const h = makeHero('scarlet');
-  setSpecialActive(h);
-  const box = h.attackHitboxWorld(ATTACK_SPECIAL_MELEE);
-  assert.ok(box, 'active-phase sweep must resolve a box');
-  assert.deepEqual(box.knockback, HEROES.scarlet.specialMelee.knockback);
-});
-
-ok('supermove hitbox is sheet-only: null without authored sheet boxes (both heroes)', () => {
+ok('supermove hitbox is sheet-only without authored sheet boxes', () => {
   for (const id of ['scarlet', 'balthazar']) {
     const h = makeHero(id);
     startDash(h);
@@ -140,28 +121,24 @@ ok('supermove hitbox is sheet-only: null without authored sheet boxes (both hero
   }
 });
 
-ok('normal melee hitbox resolves WITH the small burst knockback (knockback.md §11)', () => {
+ok('melee hitbox resolves with moderate + big vectors', () => {
   for (const id of ['scarlet', 'balthazar']) {
     const h = makeHero(id);
     setSwingFrame(h, 3); // active frame per MELEE_HITBOX_FRAMES
     const box = h.attackHitboxWorld(ATTACK_MELEE);
     assert.ok(box, 'active-frame melee must resolve a box');
-    assert.deepEqual(box.knockback, HEROES[id].attacks[ATTACK_MELEE].knockback,
-      `${id} melee box must carry the def's burst knockback`);
+    assert.deepEqual(box.knockbackModerate, HEROES[id].attacks[ATTACK_MELEE].knockbackModerate);
+    assert.deepEqual(box.knockbackBig, HEROES[id].attacks[ATTACK_MELEE].knockbackBig);
+    assert.equal(box.finisher, true);
   }
 });
 
 console.log('Loft on hard hits (y component of the vector)');
-
-// Plain stand-in victim: only the fields applyKnockback reads/writes.
 const mkVictim = (resist = 1) => ({ vx: 0, vy: 0, knockbackResist: resist });
 
-// A ground-level supermove hit: the dash normal is horizontal (alongVelocity,
-// hero moving purely horizontally). The vector's y component supplies the loft.
-ok('a supermove hit sets victim.vy upward by the vector\'s y', () => {
-  const kb = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockback;
+ok('a supermove big hit sets victim.vy upward by the vector\'s y', () => {
+  const kb = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockbackBig;
   const v = mkVictim(1);
-  // Dash direction +x → oriented vector = { x: kb.x, y: kb.y }.
   const applied = applyKnockback(v, { x: kb.x, y: kb.y, hitstun: kb.hitstun });
   assert.equal(applied, true);
   assert.ok(v.vy < 0, `expected upward (negative) vy, got ${v.vy}`);
@@ -170,7 +147,7 @@ ok('a supermove hit sets victim.vy upward by the vector\'s y', () => {
 });
 
 ok('supermove loft scales down for heavier victims (mass resists the whole vector)', () => {
-  const kb = HEROES.balthazar.attacks[ATTACK_SUPERMOVE].knockback;
+  const kb = HEROES.balthazar.attacks[ATTACK_SUPERMOVE].knockbackBig;
   const light = mkVictim(1);
   const heavy = mkVictim(2);
   applyKnockback(light, { x: kb.x, y: kb.y });
@@ -179,8 +156,8 @@ ok('supermove loft scales down for heavier victims (mass resists the whole vecto
 });
 
 ok('sweep gives a smaller hop than the supermove (tuned, not exaggerated)', () => {
-  const sweepKb = HEROES.balthazar.specialMelee.knockback;
-  const superKb = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockback;
+  const sweepKb = HEROES.balthazar.specialMelee.knockbackBig;
+  const superKb = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockbackBig;
   const sweepVictim = mkVictim(1);
   const superVictim = mkVictim(1);
   applyKnockback(sweepVictim, { x: sweepKb.x, y: sweepKb.y });
@@ -191,12 +168,8 @@ ok('sweep gives a smaller hop than the supermove (tuned, not exaggerated)', () =
 });
 
 ok('a Thorn hit (no knockback) leaves vy unchanged', () => {
-  // Friendly Thorn carries no knockback data anywhere — the core wiring gates
-  // on presence of hb.knockback, so applyKnockback never runs for it. Prove
-  // both halves: null/undefined vectors are pure no-ops, and thorn/special
-  // attack definitions expose no knockback field at all.
   const v = mkVictim(1);
-  v.vx = 10; v.vy = -5; // pre-existing velocity must survive untouched
+  v.vx = 10; v.vy = -5;
   assert.equal(applyKnockback(v, null), false);
   assert.equal(applyKnockback(v, undefined), false);
   assert.equal(v.vy, -5, 'vy must be unchanged by a no-knockback hit');

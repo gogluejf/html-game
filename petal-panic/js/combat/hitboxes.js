@@ -34,7 +34,11 @@ function updateSlot(slot) {
     hb.damage = damageGet();
     // Knockback rides on the resolved box (heroDefs data → attackHitboxWorld).
     // Copy it onto the hitbox so processAllHitboxes reads hb.knockback at impact.
-    hb.knockback = box.knockback;
+    // Two tiers now: moderate (surviving hit) + big (kill/finisher launch).
+    // The impact site picks based on whether this hit kills or is the finisher.
+    hb.knockbackModerate = box.knockbackModerate;
+    hb.knockbackBig = box.knockbackBig ?? box.knockback;
+    hb.finisher = box.finisher;
     // Hit-stop frames ride the same way (supermove burst/finisher tiers).
     hb.hitstop = box.hitstop;
     hb.active = true;

@@ -42,33 +42,30 @@ export function resolveHeroStats(def) {
 const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }, null];
 
 /**
- * Normal-melee knockback: a readable jab shove — pushes the victim back AND
- * stuns them long enough that they CANNOT keep attacking through the hit
- * (hitstun skips ai(), so a whipping/chasing enemy is frozen for the whole
- * window). Tuned well below the committed attacks (sweep ~320-440, supermove
- * ~360-636) so the hierarchy reads: jab < sweep < supermove. No pop: the jab
- * shoves horizontally at body level. Vector = px/s along the push direction
- * (dirMode 'fromAttacker' orients it per impact in hitbox.js).
+ * Normal-melee knockback tiers. A SURVIVING hit uses `moderate` (keeps the
+ * victim in reach for follow-ups); a KILLING hit or the swing's finisher uses
+ * `big` (launches them away on death). dirMode 'fromAttacker' orients per
+ * impact in hitbox.js. Vector = px/s along the push direction.
  */
-const MELEE_KNOCKBACK = { x: 450, y: -60, hitstun: 0.35, dirMode: 'fromAttacker' };
+const MELEE_KNOCKBACK_MODERATE = { x: 250, y: -50, hitstun: 0.35, dirMode: 'fromAttacker' };
+const MELEE_KNOCKBACK_BIG = { x: 450, y: -120, hitstun: 0.40, dirMode: 'fromAttacker' };
 
 /**
- * Shared supermove knockback (knockback.md §11): the strongest shove — big
- * heft, longest stun, pushed along the supermove velocity. The damage BOX
- * itself is sheet-authored only (per-frame `attack` boxes on the supermove
- * sheet) — no hardcoded hitbox.
- * Vector = px/s: 360 along the dash + 90 upward loft (y negative = up).
- * With GRAVITY 1500 a light enemy rises ~2.7px and hangs ~0.12s: a modest
- * loft at supermove speed. The strongest of the three committed attacks.
+ * Shared supermove knockback tiers (knockback.md §11). The damage BOX is
+ * sheet-authored only (per-frame `attack` boxes on the supermove sheet).
+ *   - `big`     = the finisher / killing launch: strong shove along the dash
+ *                 + big loft. The strongest of the three committed attacks.
+ *   - `moderate`= SUPERMOVE_BURST_KNOCKBACK (below): reposition without
+ *                 clearing the next burst's box.
  */
-const SUPERMOVE_KNOCKBACK = { x: 850, y: -260, hitstun: 0.30, dirMode: 'alongVelocity' };
+const SUPERMOVE_KNOCKBACK_BIG = { x: 850, y: -260, hitstun: 0.30, dirMode: 'alongVelocity' };
 
 /**
  * Supermove BURST knockback: the moderate shove carried by every keyframe
- * contact window EXCEPT the last (see Hero._supermoveBurstKnockback). Tuned
- * to reposition without clearing the next burst's box — a victim shoved ~50px
- * stays inside the following keyframe's reach so the dash can connect again.
- * Small hop: enough air time to read as a clean "thwack", not a launch.
+ * contact window EXCEPT the last/killer (see Hero._supermoveBurstKnockback).
+ * Tuned to reposition without clearing the next burst's box — a victim shoved
+ * ~50px stays inside the following keyframe's reach so the dash can connect
+ * again. Small hop: enough air time to read as a clean "thwack", not a launch.
  */
 export const SUPERMOVE_BURST_KNOCKBACK = { x: 300, y: -120, hitstun: 0.30, dirMode: 'fromAttacker' };
 
@@ -100,8 +97,10 @@ const SWEEP = {
   hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over the body — FALLBACK for sheets without authored boxes
   // Knockback (knockback.md §11): aggressive forward pushback along the
   // lunge velocity — clears the path ahead of the advancing sweep.
-  // Vector = px/s: 320 along the lunge + 40 upward hop (y negative = up).
-  knockback: { x: 700, y: -140, hitstun: 0.45, dirMode: 'alongVelocity' },
+  // `moderate` = surviving hit (stays in reach); `big` = killing hit / finisher
+  // (launches them away). Vector = px/s along the lunge + upward hop.
+  knockbackModerate: { x: 400, y: -100, hitstun: 0.45, dirMode: 'alongVelocity' },
+  knockbackBig: { x: 700, y: -180, hitstun: 0.45, dirMode: 'alongVelocity' },
 };
 
 export const HEROES = {
@@ -122,11 +121,11 @@ export const HEROES = {
     // §15 Special melee (Down+Melee): the shared advancing leg sweep — same
     // behavior as Balthazar's (travels TOWARD facing, sprite plays her
     // `super_melee` sheet). Shallow copy: per-hero ownership, shared values.
-    specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockback: { ...SWEEP.knockback } },
+    specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockbackModerate: { ...SWEEP.knockbackModerate }, knockbackBig: { ...SWEEP.knockbackBig } },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
-      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockback: MELEE_KNOCKBACK },
-      [ATTACK_SUPERMOVE]: { knockback: SUPERMOVE_KNOCKBACK },
+      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockbackModerate: MELEE_KNOCKBACK_MODERATE, knockbackBig: MELEE_KNOCKBACK_BIG },
+      [ATTACK_SUPERMOVE]: { knockbackModerate: SUPERMOVE_BURST_KNOCKBACK, knockbackBig: SUPERMOVE_KNOCKBACK_BIG },
     },
   },
   balthazar: {
@@ -145,11 +144,11 @@ export const HEROES = {
     },
     // §15 Special melee (Down+Melee): the shared advancing leg sweep
     // (travels TOWARD facing; sprite plays the `super_melee` sheet).
-    specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockback: { ...SWEEP.knockback } },
+    specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockbackModerate: { ...SWEEP.knockbackModerate }, knockbackBig: { ...SWEEP.knockbackBig } },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
-      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockback: MELEE_KNOCKBACK },
-      [ATTACK_SUPERMOVE]: { knockback: SUPERMOVE_KNOCKBACK },
+      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockbackModerate: MELEE_KNOCKBACK_MODERATE, knockbackBig: MELEE_KNOCKBACK_BIG },
+      [ATTACK_SUPERMOVE]: { knockbackModerate: SUPERMOVE_BURST_KNOCKBACK, knockbackBig: SUPERMOVE_KNOCKBACK_BIG },
     },
   },
 };

@@ -388,6 +388,7 @@ export function registerCollisionHandlers(collisionWorld) {
     // through enemies for the full i-frame window.) The damage path below
     // stays gated on invincible as before.
     if (heroEnt.invincible) {
+      console.log(`[immunity] BLOCKED contact from ${source.type} | invulnSource=${heroEnt.invulnSource} supermoveActive=${heroEnt.supermoveActive}`); // TRACE (temporary)
       separateHeroFromBumper(heroEnt, source);
       // STAR POWER (mario star): while the star powerup is active, touching an
       // enemy/boss one-shots it with a big launch + hitstop + shake. Regular
@@ -402,6 +403,7 @@ export function registerCollisionHandlers(collisionWorld) {
     // set it, so a missed swing leaves the hero fully exposed here.
     if (heroEnt.connectProtected) return;
     if (source._contactCd > 0) return;
+    console.log(`[immunity] CONTACT DAMAGE from ${source.type} | hero.invincible=${heroEnt.invincible} invulnSource=${heroEnt.invulnSource} supermoveActive=${heroEnt.supermoveActive}`); // TRACE (temporary)
     source._contactCd = CONTACT_COOLDOWN;
     const amt = source.stats?.attack ?? 10;
     // Body-contact shove vector (§9): carried on the enemy. The x component IS

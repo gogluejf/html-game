@@ -17,10 +17,15 @@
 import { LAYER } from '../consts.js';
 import { Effects } from '../effects.js';
 import { applyHit } from './hitResolution.js';
+import { applyKnockback } from './knockback.js';
 import { Team, AttackProvenance } from './targeting.js';
 
 /** Methods whose connect deals blood (melee-family strikes). */
 const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
+
+/** Screen shake on a KILL (star treatment) and on a FINISHER-frame hit. */
+const KILL_SHAKE = 6;
+const FINISHER_SHAKE = 4;
 
 /**
  * Map a hitbox's method label to an AttackProvenance value for the unified
@@ -101,6 +106,36 @@ export function resetHitbox(hb) {
  * @param {Array<object>} targets   all live entities to check against
  * @param {function} [onHit]        callback(hb, target, dealt) for VFX/shake
  */
+/** True when the target is a barrel (destructible solid) — its kill payoff is
+ * the fuse/explosion, NOT a knockback launch. Used to exclude barrels from the
+ * kill→big-launch upgrade. */
+function isBarrelTarget(t) {
+  return t.layer === LAYER.SOLID;
+}
+
+/** Orient a raw knockback tier vector ({x,y,hitstun,dirMode}) into a concrete
+ * shove for this impact, using the SAME direction rules as the inline orient()
+ * in processHitboxes. Extracted so the kill-upgrade delta can re-orient both
+ * tiers identically. Returns null when kb is absent. */
+function _orientStored(hb, t, tb, kb) {
+  if (!kb) return null;
+  if (kb.dirMode === 'fixed') {
+    return { x: kb.x ?? 0, y: kb.y ?? 0, hitstun: kb.hitstun, iFrames: kb.iFrames };
+  } else if (kb.dirMode === 'alongVelocity') {
+    const len = Math.hypot(hb.owner?.vx || 0, hb.owner?.vy || 0) || 1;
+    const nx = (hb.owner?.vx || 0) / len;
+    // Pop stays upward regardless of travel direction (see inline orient()).
+    return { x: nx * (kb.x ?? 0), y: kb.y ?? 0, hitstun: kb.hitstun, iFrames: kb.iFrames };
+  } else {
+    const scx = hb.owner.x + (hb.owner.w || 0) / 2;
+    const scy = hb.owner.y + (hb.owner.h || 0) / 2;
+    const dx = (tb.x + tb.w / 2) - scx, dy = (tb.y + tb.h / 2) - scy;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = dx / len, ny = dy / len;
+    return { x: nx * (kb.x ?? 0), y: ny * (kb.y ?? 0), hitstun: kb.hitstun, iFrames: kb.iFrames };
+  }
+}
+
 export function processHitboxes(hitboxes, targets, onHit) {
   for (const hb of hitboxes) {
     if (!hb.active || !hb.box) continue;
@@ -130,30 +165,48 @@ export function processHitboxes(hitboxes, targets, onHit) {
       // via applyKnockback() after damage — same single choke point every
       // other path uses. Hero victims keep their own reaction path (takeHit)
       // — this only shoves enemy/boss/solid targets.
+      // Knockback is a VECTOR on the hitbox, in TWO tiers: `knockbackModerate`
+      // (surviving hit — keeps the victim in reach) and `knockbackBig` (kill /
+      // finisher launch). Direction follows dirMode: 'alongVelocity' rides the
+      // owner's live velocity; 'fixed' uses the vector as-is; otherwise it
+      // points source-center → target-center. The unified resolver applies the
+      // chosen vector via applyKnockback() after damage. Hero victims keep
+      // their own reaction path (takeHit) — this only shoves enemy/boss/solid.
       let kbVector = null;
-      if (hb.knockback && t.layer !== LAYER.HERO) {
-        const kb = hb.knockback;
-        let nx, ny;
-        if (kb.dirMode === 'fixed') {
-          // Vector already oriented by its owner (macro) — apply as-is.
-          kbVector = { x: kb.x ?? 0, y: kb.y ?? 0, hitstun: kb.hitstun, iFrames: kb.iFrames };
-        } else if (kb.dirMode === 'alongVelocity') {
-          const len = Math.hypot(hb.owner?.vx || 0, hb.owner?.vy || 0) || 1;
-          nx = (hb.owner?.vx || 0) / len;
-          ny = (hb.owner?.vy || 0) / len;
-          // A horizontal lunge has ny≈0, which would multiply the loft (y)
-          // away entirely — the pop must stay UPWARD regardless of the
-          // owner's travel direction. Only x rides the velocity direction.
-          kbVector = { x: nx * (kb.x ?? 0), y: kb.y ?? 0, hitstun: kb.hitstun, iFrames: kb.iFrames };
-        } else {
-          // 'fromAttacker' or 'radial': source center → target center.
-          const scx = hb.owner.x + (hb.owner.w || 0) / 2;
-          const scy = hb.owner.y + (hb.owner.h || 0) / 2;
-          const dx = (tb.x + tb.w / 2) - scx, dy = (tb.y + tb.h / 2) - scy;
-          const len = Math.hypot(dx, dy) || 1;
-          nx = dx / len; ny = dy / len;
-          kbVector = { x: nx * (kb.x ?? 0), y: ny * (kb.y ?? 0), hitstun: kb.hitstun, iFrames: kb.iFrames };
-        }
+      if (t.layer !== LAYER.HERO && (hb.knockbackBig || hb.knockback)) {
+        // Pick the tier: BIG when this is the finisher frame OR the hit kills
+        // (we don't know that yet pre-applyHit, so we default to the box's
+        // declared tier and UPGRADE to big post-applyHit if it was a kill).
+        // For simplicity + correctness: compute BOTH oriented vectors now,
+        // pass moderate to applyHit, and if the result destroyed the target
+        // (and target is an enemy, not a barrel) re-apply the delta to reach
+        // the big vector. Barrels get their own fuse path (no big launch).
+        const orient = (kb) => {
+          if (!kb) return null;
+          if (kb.dirMode === 'fixed') {
+            return { x: kb.x ?? 0, y: kb.y ?? 0, hitstun: kb.hitstun, iFrames: kb.iFrames };
+          } else if (kb.dirMode === 'alongVelocity') {
+            const len = Math.hypot(hb.owner?.vx || 0, hb.owner?.vy || 0) || 1;
+            const nx = (hb.owner?.vx || 0) / len;
+            // A horizontal lunge has ny≈0, which would multiply the loft (y)
+            // away entirely — the pop must stay UPWARD regardless of the
+            // owner's travel direction. Only x rides the velocity direction.
+            return { x: nx * (kb.x ?? 0), y: kb.y ?? 0, hitstun: kb.hitstun, iFrames: kb.iFrames };
+          } else {
+            // 'fromAttacker' or 'radial': source center → target center.
+            const scx = hb.owner.x + (hb.owner.w || 0) / 2;
+            const scy = hb.owner.y + (hb.owner.h || 0) / 2;
+            const dx = (tb.x + tb.w / 2) - scx, dy = (tb.y + tb.h / 2) - scy;
+            const len = Math.hypot(dx, dy) || 1;
+            const nx = dx / len, ny = dy / len;
+            return { x: nx * (kb.x ?? 0), y: ny * (kb.y ?? 0), hitstun: kb.hitstun, iFrames: kb.iFrames };
+          }
+        };
+        const bigVec = orient(hb.knockbackBig);
+        const modVec = orient(hb.knockbackModerate) ?? bigVec;
+        // Start with the box's declared tier: finisher frames use big,
+        // non-finisher bursts use moderate. A kill upgrades moderate→big below.
+        kbVector = hb.finisher ? bigVec : modVec;
       }
 
       // Route damage through the unified resolver (unified-hit-resolution §3).
@@ -176,6 +229,48 @@ export function processHitboxes(hitboxes, targets, onHit) {
         hitstop: hb.hitstop,
       });
       const dealt = res.accepted ? res.dealt : 0;
+
+
+      // KILL = STAR TREATMENT: when this hit kills an enemy (not barrel), it
+      // gets the EXACT mario-star payoff — no divergence:
+      //   - big launch at ignoreResist (weight skipped: "your kick, not physics")
+      //   - victim.intangible = true (corpse ghosts through terrain, clears field;
+      //     cleared at despawn in enemyUpdate)
+      //   - screen shake
+      // applyHit's `res.destroyed` is UNRELIABLE for enemies (takeDamage restores
+      // alive=true for the death anim), so detect the kill directly: hp<=0 or
+      // aiState flipped to 'dead'. The moderate vector was ALREADY applied by
+      // applyHit (respecting weight); we add the DELTA to land exactly on the
+      // ignoreResist big vector, then ghost + shake.
+      const justKilled = t.layer !== LAYER.HERO && !isBarrelTarget(t)
+        && ((typeof t.hp === 'number' && t.hp <= 0) || t.aiState === 'dead');
+      if (justKilled && hb.knockbackBig) {
+        const bigVec = _orientStored(hb, t, tb, hb.knockbackBig);
+        // Current velocity already includes the moderate shove (÷ resist). To
+        // reach the ignoreResist big vector, subtract what's there and add the
+        // full big value. Read pre-kill vx/vy is stale post-applyHit, so use the
+        // oriented moderate as the "already applied" amount when available.
+        const modVec = hb.knockbackModerate ? _orientStored(hb, t, tb, hb.knockbackModerate) : null;
+        const resist = t.knockbackResist ?? 1;
+        if (bigVec) {
+          const appliedX = modVec ? (modVec.x / resist) : 0;
+          const appliedY = modVec ? (modVec.y / resist) : 0;
+          applyKnockback(t, {
+            x: bigVec.x - appliedX,
+            y: bigVec.y - appliedY,
+            hitstun: bigVec.hitstun ?? 0,
+            ignoreResist: true,
+          });
+        }
+        t.intangible = true; // star-style ghost flight until despawn
+        Effects.triggerShake(KILL_SHAKE);
+      } else if (hb.finisher && dealt > 0) {
+        // FINISHER (non-kill): the big-launch frame that didn't kill — still a
+        // "big moment", so it shakes. No intangible / ignoreResist (those are
+        // kill-only, matching the star). The big vector was already applied via
+        // kbVector selection above (finisher → big).
+        Effects.triggerShake(FINISHER_SHAKE);
+      }
 
       // TRACE (temporary): what velocity does the victim actually get after a hero hit?
       if (t.layer !== LAYER.HERO) {

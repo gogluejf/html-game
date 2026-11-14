@@ -1070,7 +1070,7 @@ export class Hero extends Entity {
       if (sheetBox) {
         const wb = this.worldBox();
         const box = this._sheetBoxToWorld(sheetBox);
-        return { ...box, knockback: this._attackKnockback(attackName), _source: 'sheet' };
+        return { ...box, ...this._attackKnockback(attackName), finisher: true, _source: 'sheet' };
       }
       const frames = this.heroDef.attacks[ATTACK_MELEE].frames;
       entry = frames[Math.floor(this.meleeFrame)] ?? null;
@@ -1082,7 +1082,7 @@ export class Hero extends Entity {
       const sheetBox = this._sheetAttackBox('super_melee');
       if (sheetBox) {
         const box = this._sheetBoxToWorld(sheetBox);
-        return { ...box, knockback: this._attackKnockback(attackName), _source: 'sheet' };
+        return { ...box, ...this._attackKnockback(attackName), finisher: true, _source: 'sheet' };
       }
       entry = this.heroDef.specialMelee.hitbox;
     } else if (attackName === ATTACK_SUPERMOVE) {
@@ -1107,9 +1107,14 @@ export class Hero extends Entity {
       const frame = data?.frames[this.spriteFrameIndex % (data?.frames.length ?? 1)];
       const isKeyframe = (frame?.durUnits ?? 1) >= SUPERMOVE_HIT_DUR_UNITS;
       if (!isKeyframe) return null; // short frame: box visible in debug, no contact
-      const { knockback: kb, hitstop: burstHitstop } = this._supermoveBurstKnockback();
+      const { hitstop: burstHitstop, finisher } = this._supermoveBurstKnockback();
+      const a = this.heroDef.attacks[ATTACK_SUPERMOVE];
       const box = this._sheetBoxToWorld(sheetBox);
-      return { ...box, knockback: kb, hitstop: burstHitstop, _source: 'sheet' };
+      // Always carry BOTH tiers on the box; the impact site picks big when this
+      // is the finisher frame OR the hit kills, else moderate. (Previously kb
+      // was the pre-chosen tier, which capped non-finisher bursts at 300 even
+      // on a kill.)
+      return { ...box, knockbackModerate: a.knockbackModerate, knockbackBig: a.knockbackBig, hitstop: burstHitstop, finisher, _source: 'sheet' };
     } else {
       throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
     }
@@ -1137,7 +1142,8 @@ export class Hero extends Entity {
       y: cy + entry.oy - entry.bh / 2,
       w: entry.bw,
       h: entry.bh,
-      knockback,
+      ...knockback,
+      finisher: true,
       _source: 'table',
     };
   }
@@ -1150,13 +1156,15 @@ export class Hero extends Entity {
    */
   _attackKnockback(attackName) {
     if (attackName === ATTACK_SPECIAL_MELEE) {
-      return this.heroDef.specialMelee.knockback;
+      return { knockbackModerate: this.heroDef.specialMelee.knockbackModerate, knockbackBig: this.heroDef.specialMelee.knockbackBig };
     }
     if (attackName === ATTACK_SUPERMOVE) {
-      return this.heroDef.attacks[ATTACK_SUPERMOVE].knockback;
+      const a = this.heroDef.attacks[ATTACK_SUPERMOVE];
+      return { knockbackModerate: a.knockbackModerate, knockbackBig: a.knockbackBig };
     }
-    // Normal melee: small burst shove (MELEE_KNOCKBACK in heroDefs).
-    return this.heroDef.attacks[ATTACK_MELEE]?.knockback;
+    // Normal melee: moderate keeps them in reach; big launches on kill/finisher.
+    const a = this.heroDef.attacks[ATTACK_MELEE];
+    return { knockbackModerate: a?.knockbackModerate, knockbackBig: a?.knockbackBig };
   }
 
   /**
@@ -1174,16 +1182,15 @@ export class Hero extends Entity {
    * @returns {object} KnockbackSetting for the current keyframe
    */
   _supermoveBurstKnockback() {
-    const finisher = this.heroDef.attacks[ATTACK_SUPERMOVE].knockback;
     const data = this.spriteAnimData;
-    if (!data || this._spriteAnim !== 'supermove') return { knockback: finisher, hitstop: SUPERMOVE_FINISHER_HITSTOP };
+    if (!data || this._spriteAnim !== 'supermove') return { hitstop: SUPERMOVE_FINISHER_HITSTOP, finisher: true };
     const frames = data.frames;
     const idx = this.spriteFrameIndex % frames.length;
     // Is the CURRENT frame the last keyframe in the sheet?
     const isLastKeyframe = !frames.slice(idx + 1).some(f => (f?.durUnits ?? 1) >= SUPERMOVE_HIT_DUR_UNITS);
     return isLastKeyframe
-      ? { knockback: finisher, hitstop: SUPERMOVE_FINISHER_HITSTOP }
-      : { knockback: SUPERMOVE_BURST_KNOCKBACK, hitstop: SUPERMOVE_BURST_HITSTOP };
+      ? { hitstop: SUPERMOVE_FINISHER_HITSTOP, finisher: true }
+      : { hitstop: SUPERMOVE_BURST_HITSTOP, finisher: false };
   }
 
   /**
