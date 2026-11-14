@@ -74,16 +74,17 @@ ok('ai() does not run on the frame the timer crosses zero, resumes next', () => 
 });
 
 // --- Acceptance 2: physics still integrate during stun -----------------------
-ok('horizontal knockback velocity integrates while stunned, decaying with friction', () => {
+ok('horizontal knockback velocity integrates at full speed while airborne (no air decay)', () => {
   const e = new SpyEnemy();
   e.gravity = 0; // isolate horizontal motion
+  e.vy = -100;   // airborne — no ground settle applies in the air
   e.vx = 300;
   e.hitstunTimer = 0.1;
   const x0 = e.x;
   e.update(DT, HERO, null);
-  // Friction bleeds the shove off each frame (0.85^1 of 300) so a stun slide
-  // is short and settles instead of lingering forever.
-  const expected = 300 * 0.85 * DT;
+  // Air has no x-decay (same model as barrels): full launch speed carries
+  // through the flight; ground settle only kicks in once back on a surface.
+  const expected = 300 * DT;
   assert.ok(close(e.x - x0, expected), `expected dx=${expected}, got ${e.x - x0}`);
   assert.equal(e.aiCalls, 0, 'AI did not overwrite the knockback velocity');
 });

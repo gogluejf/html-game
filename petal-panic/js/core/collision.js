@@ -75,6 +75,12 @@ export function resolve(entity, solids, opts = {}) {
   let resolved = null;
   let blockedX = false;
 
+  // An intangible ENTITY phases through every solid (walls, floors, barrels) —
+  // star-killed corpses ride their launch clean instead of stopping at the
+  // first obstacle. Gravity + integration still run in the caller, so they
+  // still arc and fall; they just stop being blocked.
+  if (entity.intangible) return null;
+
   for (const s of solids) {
     // Universal intangibility: an intangible solid is not a collision body —
     // skip it entirely. This is the single choke point that makes any entity

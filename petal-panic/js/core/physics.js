@@ -245,8 +245,19 @@ export function stepDynamicSolid(e, dt, statics, peers) {
   e.x += (e.vx ?? 0) * dt;
   e.y += e.vy * dt;
   if (e.vx) {
-    e.vx *= Math.pow(friction, dt);
-    if (Math.abs(e.vx) < 2) e.vx = 0; // rest threshold: kill sub-pixel creep
+    // GROUND friction only: Math.pow(0.0001, dt) is a near-total kill over a
+    // flight (0.6s → 0.4% of vx left), which made launched barrels dash then
+    // drop straight down. In the air there is no surface to friction against —
+    // skip the decay while airborne; it applies once they're on a surface.
+    const feet = e.y + (e.worldBox().h);
+    let onSurface = false;
+    for (const s of statics) {
+      if (feet >= s.y - 2 && feet <= s.y + 2 && e.x + e.worldBox().w > s.x && e.x < s.x + s.w) { onSurface = true; break; }
+    }
+    if (onSurface || e.vy === 0) {
+      e.vx *= Math.pow(friction, dt);
+      if (Math.abs(e.vx) < 2) e.vx = 0; // rest threshold: kill sub-pixel creep
+    }
   }
   const others = peers.filter(p => p !== e && p.alive);
   // Universal intangibility: an intangible entity (or peer) is not a collision
@@ -258,8 +269,13 @@ export function stepDynamicSolid(e, dt, statics, peers) {
   // Wall bounce (static version of the transfer below): runs BEFORE resolve()
   // so the impact speed is read from the OVERLAPPING position; resolve()'s
   // zero-velocity rule then cancels the into-wall part of the rebound.
-  for (const s of statics) {
-    bounceOffStatic(e, s, BARREL_WALL_BOUNCE_RESTITUTION, BARREL_WALL_BOUNCE_MIN_SPEED);
+  // Intangible bodies (cooking barrel flight) skip ALL terrain interaction —
+  // pure ballistic arc, detonation owned by the fuse timer. A barrel that
+  // bounces off a nearby wall reads as "blocked", not "launched".
+  if (!e.intangible) {
+    for (const s of statics) {
+      bounceOffStatic(e, s, BARREL_WALL_BOUNCE_RESTITUTION, BARREL_WALL_BOUNCE_MIN_SPEED);
+    }
   }
   // Momentum transfer: a MOVING dynamic solid overlapping another pushes it
   // along the overlap axis instead of stopping dead. Equal-mass impulse with
@@ -280,11 +296,15 @@ export function stepDynamicSolid(e, dt, statics, peers) {
     }
   }
   resolve(e, [...statics, ...phasePeers.map(p => p.worldBox())], { prevBottom });
-  // Landing snap: zero fall velocity when resting on a surface.
-  const wb = e.worldBox();
-  for (const s of statics) {
-    if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
-    const gap = s.y - (wb.y + wb.h);
-    if (gap >= -2 && gap <= 2 && e.vy > 0) { e.vy = 0; break; }
+  // Landing snap: zero fall velocity when resting on a surface. Intangible
+  // bodies skip it too — a cooking barrel must not "land" (and detonate) by
+  // snapping to terrain mid-flight; its fuse owns the detonation timing.
+  if (!e.intangible) {
+    const wb = e.worldBox();
+    for (const s of statics) {
+      if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
+      const gap = s.y - (wb.y + wb.h);
+      if (gap >= -2 && gap <= 2 && e.vy > 0) { e.vy = 0; break; }
+    }
   }
 }

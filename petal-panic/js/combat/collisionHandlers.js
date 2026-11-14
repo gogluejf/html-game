@@ -46,7 +46,7 @@ import { hitstop as requestHitstop } from '../core/hitstop.js';
 
 /** Star-power launch (mario star): how hard a touched enemy/boss gets flung.
  *  Vector = px/s: 420 horizontal away from the hero + 260 upward loft. */
-const STAR_POWER_KNOCKBACK = Object.freeze({ x: 420, y: -260, hitstun: 0.5 });
+const STAR_POWER_KNOCKBACK = Object.freeze({ x: 900, y: -450, hitstun: 0.5 });
 /** Screen shake magnitude for a star-power kill. */
 const STAR_POWER_SHAKE = 6;
 /** Hit-stop length in fixed frames (~83ms at 60Hz — HANDOFF Part B default). */
@@ -74,18 +74,37 @@ export function starPowerKill(hero, victim) {
   // onHit/onDestroyed callbacks like every other hit. The launch — away from
   // the hero horizontally + strong upward loft — rides as context.knockback
   // and is applied by applyHit's reaction block via applyKnockback().
-  const amt = Math.max(victim.hp ?? 1, victim.stats?.stamina ?? 1);
+  // Defense-aware: takeDamage floors at (amt - defense), so a victim with
+  // defense 1 would survive a "lethal" amt of maxHp by exactly 1 — add the
+  // defense back in so the star truly one-shots.
+  const def = victim.defense ?? victim.stats?.defense ?? 0;
+  const amt = Math.max(victim.hp ?? 1, victim.stats?.stamina ?? 1) + def;
   const hcx = hero.x + hero.w / 2, vcx = victim.x + victim.w / 2;
   const dirX = Math.sign(vcx - hcx) || 1;
-  applyHit({
+  // Popcorn scatter: ±15% per-axis jitter on the star launch vector. The star
+  // is a chaos power — identical mirror-image arcs on every kick read
+  // mechanical; small per-kick variation reads explosive. Center of mass is
+  // unchanged (jitter is multiplicative around the tuned value).
+  const jx = 0.85 + Math.random() * 0.3;
+  const jy = 0.85 + Math.random() * 0.3;
+  const res = applyHit({
     provenance: AttackProvenance.CONTACT,
     source: hero,
     target: victim,
     damage: amt,
     team: Team.ALLY,
     method: 'contact',
-    knockback: { x: STAR_POWER_KNOCKBACK.x * dirX, y: STAR_POWER_KNOCKBACK.y, hitstun: STAR_POWER_KNOCKBACK.hitstun },
+    knockback: { x: STAR_POWER_KNOCKBACK.x * dirX * jx, y: STAR_POWER_KNOCKBACK.y * jy, hitstun: STAR_POWER_KNOCKBACK.hitstun, ignoreResist: true },
   });
+  // TRACE (temporary): why do star-kicked enemies sometimes survive?
+  console.log(`[star] ${victim.type} hp=${victim.hp}/${victim.maxHp} alive=${victim.alive} dead=${victim.aiState === 'dead'} | applyHit=${JSON.stringify(res)} | amt=${amt}`);
+  // Ghost flight: ONLY star kills phase through terrain for the death anim —
+  // the crazy pop is a star-power thing. Normal deaths keep plain physics
+  // (gravity, ground friction, solid collision). Flag clears at despawn in
+  // enemyUpdate's !alive branch.
+  if (victim.aiState === 'dead') {
+    victim.intangible = true;
+  }
   // Juice: freeze the whole sim for ~83ms + shake. Max-merge semantics mean
   // overlapping kills hold the larger window, never stack.
   requestHitstop(STAR_POWER_HITSTOP_FRAMES);

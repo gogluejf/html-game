@@ -38,8 +38,15 @@ function updateRealEnemy(e, dt) {
   // instead of ghosting through floors. Resolution stops only when alive
   // flips to false (death fade complete), at which point updateRealEnemy()
   // removes the entity from the collision world.
+  // Grounded stamp: resolve() returns the axis it corrected this frame; a
+  // y-correction means feet-on-surface. Enemy.update reads e._grounded to
+  // apply ground friction to knockback slides (the vy===0 probe was unreliable
+  // across the resolve/landing-snap ordering and let corpses coast forever).
   if (e.alive && e.gravity > 0) {
-    resolve(e, [...ctx.solids, ...ctx.barrelSolidBoxes]);
+    const r = resolve(e, [...ctx.solids, ...ctx.barrelSolidBoxes]);
+    e._grounded = !!(r && r.axis === 'y');
+  } else {
+    e._grounded = false;
   }
 
   // Host-step contract (explosiveMonkey et al.): some real enemies carry an
@@ -96,6 +103,8 @@ function updateRealEnemy(e, dt) {
   // spawn sparkles + coins and remove from the collision world.
   if (!e.alive && !e._deathHandled) {
     e._deathHandled = true;
+    e.intangible = false; // star-kill ghost flight ends at despawn (enemies
+    // have no timer-based intangible expiry — clear the flag explicitly).
     const cx = e.x + e.w / 2;
     const cy = e.y + e.h / 2;
     Effects.fireParticleBurst(cx, cy, 7);          // engine path — plain sparkle burst

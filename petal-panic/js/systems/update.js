@@ -231,8 +231,11 @@ const STOMP_FUSE = 0.45;             // seconds of cooking after the head-hit
 // as enemy body-contact knockback: dirMode fromAttacker + modest pop). That's
 // what reads as "pushed" instead of "launched into orbit". Barrels have
 // knockbackResist 0.5, so impulses land at 2× face value.
-const STAR_BARREL_KNOCKBACK = { x: 420, y: -160, hitstun: 0, iFrames: 0 };
-const STAR_BARREL_FUSE = 0.25;       // snappy: they pop soon after the launch
+// ignoreResist: true on the call site → these values are FINAL px/s on every
+// target (no mass division) — the star kick hits barrels and enemies with the
+// same force by design.
+const STAR_BARREL_KNOCKBACK = { x: 840, y: -320, hitstun: 0, iFrames: 0 };
+const STAR_BARREL_FUSE = 0.6;        // long enough to SEE the arc: launch up, hang, fall, boom
 
 /**
  * Impact check for one falling barrel against the hero. Called from the
@@ -317,7 +320,9 @@ export function tickFallingBarrelFuse(b, dt) {
   b._fuse -= dt;
   // Landed? stepDynamicSolid zeroes vy on a surface; treat "no longer falling"
   // as the detonation trigger so a short hop still blows where it settles.
-  const landed = (b.vy ?? 0) <= 1;
+  // Intangible flight (star launch) NEVER lands — terrain is phased — so the
+  // fuse timer is its only clock there.
+  const landed = !b.intangible && (b.vy ?? 0) <= 1;
   if (b._fuse <= 0 || (landed && (b.vy ?? 0) >= 0)) {
     b._fuse = null;
     b.clearIntangible(); // back in the collision world at detonation
@@ -1388,6 +1393,10 @@ export function update(dt) {
         // hit it), so it rides the single door with damage: 0. Push horizontally
         // in front of the hero (away from you); gravity owns the rest of the arc.
         const awayX = Math.sign((b.x + b.w / 2) - (hbx.x + hbx.w / 2)) || 1;
+        // Popcorn scatter: same ±15% per-axis jitter as the star enemy kill —
+        // every launch gets its own shape, center of mass unchanged.
+        const jx = 0.85 + Math.random() * 0.3;
+        const jy = 0.85 + Math.random() * 0.3;
         applyHit({
           provenance: AttackProvenance.CONTACT,
           source: hero,
@@ -1395,7 +1404,7 @@ export function update(dt) {
           damage: 0,
           team: Team.ALLY,
           method: 'starPower',
-          knockback: { x: STAR_BARREL_KNOCKBACK.x * awayX, y: STAR_BARREL_KNOCKBACK.y },
+          knockback: { x: STAR_BARREL_KNOCKBACK.x * awayX * jx, y: STAR_BARREL_KNOCKBACK.y * jy, ignoreResist: true },
         });
         b._fuse = STAR_BARREL_FUSE; // tickFallingBarrelFuse cooks + detonates
         b.setIntangible(STAR_BARREL_FUSE); // ghost flight for the whole cook (cleared at detonation)

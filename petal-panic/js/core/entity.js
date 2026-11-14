@@ -563,6 +563,11 @@ export class Entity {
       this.invulnSource = source;
     }
     this.invincible = true;
+    // Star power rides the 'powerup' grant ONLY. Any other source claiming the
+    // flag (respawn grace, hit i-frames, god mode) drops it — otherwise a
+    // respawn mid-star leaves starPower=true with no timer to end it, and the
+    // star never turns off.
+    if (source !== 'powerup') this.starPower = false;
   }
 
   /**

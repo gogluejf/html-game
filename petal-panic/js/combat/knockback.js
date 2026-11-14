@@ -47,7 +47,10 @@ export function applyKnockback(victim, kb) {
   if (!fx && !fy && !(kb.hitstun > 0) && !(kb.iFrames > 0)) return false;
 
   // Mass resists knockback as a divisor (§3). Default resist 1 → unchanged.
-  const resist = victim.knockbackResist ?? 1;
+  // ignoreResist (per-call): the attack owns the FINAL velocity — victim mass
+  // is skipped entirely, so the same vector lands identically on every target
+  // (star-power kick rule: YOUR kick, not physics).
+  const resist = kb.ignoreResist ? 1 : (victim.knockbackResist ?? 1);
   victim.vx = (victim.vx ?? 0) + fx / resist;
   victim.vy = (victim.vy ?? 0) + fy / resist;
 

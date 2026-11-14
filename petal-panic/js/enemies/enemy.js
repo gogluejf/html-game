@@ -22,9 +22,17 @@ import { LAYER, GRAVITY, MAX_FALL_SPEED, UNIT_PX_Y } from '../consts.js';
 import { UNIT_PX_X } from '../world/macros.js';
 import { heroDamage as damage, flashTarget } from '../combat/damage.js';
 
-/** Per-frame vx decay while a shove is the only velocity owner (stun + death).
- * 0.85 matches the hero's ground friction — a 370 px/s shove settles in ~0.2s. */
-const ENEMY_KNOCKBACK_FRICTION = 0.85;
+/** Gravity scale for FLYING enemies' corpses: alive they hover (gravity 0),
+ * but a star-killed corpse must still arc down instead of hanging frozen.
+ * Lighter than grounders (1) so the fall reads as "heavy thing dropping",
+ * not "rock". */
+const CORPSE_GRAVITY = 0.6;
+
+/** Ground settle: per-frame vx decay while ON A SURFACE and nothing else owns
+ * velocity (stunned / dead). Same model as barrels — air has NO x-decay (a
+ * launched body keeps full speed until it lands); friction only bleeds the
+ * slide off once it's back on the ground. */
+const GROUND_SETTLE_FRICTION = 0.8;
 
 export class Enemy extends Entity {
   /**
@@ -132,13 +140,22 @@ export class Enemy extends Entity {
       // Still integrate physics so a dying body that was just knocked back
       // slides/arcs off before fading, instead of teleporting to its death spot.
       // ai() is intentionally skipped (the corpse takes no action). Friction
-      // bleeds the shove off so the slide is short and settles.
-      if (this.gravity > 0) {
-        this.vy += GRAVITY * this.gravity * dt;
+      // bleeds the shove off so the slide is short and settles. Flyers
+      // (gravity 0 alive) get CORPSE_GRAVITY: without it a launched flyer has
+      // nothing to carry the arc and just hangs frozen while fading.
+      const g = this.gravity > 0 ? this.gravity : CORPSE_GRAVITY;
+      if (g > 0) {
+        this.vy += GRAVITY * g * dt;
         if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
       }
-      this.vx *= ENEMY_KNOCKBACK_FRICTION;
-      if (Math.abs(this.vx) < 1) this.vx = 0;
+      // Ghost flight (star kill): full ballistic, no decay, phases terrain.
+      // Normal death: plain physics — air keeps velocity, ground friction
+      // settles the slide once back on a surface (_grounded stamped by
+      // enemyUpdate from resolve's y-correction).
+      if (!this.intangible && this._grounded) {
+        this.vx *= GROUND_SETTLE_FRICTION;
+        if (Math.abs(this.vx) < 1) this.vx = 0;
+      }
       this.x += this.vx * dt;
       this.y += this.vy * dt;
       return;
@@ -163,13 +180,12 @@ export class Enemy extends Entity {
       this.vy += GRAVITY * this.gravity * dt;
       if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
     }
-    // Knockback decay: AI-owned states SET vx every frame (chase/roll/pacing),
-    // so only the stun window and the death pipeline carry a shove — bleed it
-    // off with friction there or the velocity lingers forever and leaks into
-    // the next action (or rides the corpse in a random direction).
+    // Ghost flight (star kill) skips all decay — pure ballistic. Normal
+    // stunned/corpse states: air keeps velocity, ground friction settles the
+    // slide once back on a surface (_grounded stamped by enemyUpdate).
     const aiOwnsVx = !this.stunned && this.aiState !== 'dead';
-    if (!aiOwnsVx) {
-      this.vx *= ENEMY_KNOCKBACK_FRICTION;
+    if (!this.intangible && this._grounded && !aiOwnsVx) {
+      this.vx *= GROUND_SETTLE_FRICTION;
       if (Math.abs(this.vx) < 1) this.vx = 0;
     }
     this.x += this.vx * dt;
