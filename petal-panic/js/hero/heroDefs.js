@@ -50,7 +50,7 @@ const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }
  * shoves horizontally at body level. Vector = px/s along the push direction
  * (dirMode 'fromAttacker' orients it per impact in hitbox.js).
  */
-const MELEE_KNOCKBACK = { x: 180, y: 0, hitstun: 0.35, dirMode: 'fromAttacker' };
+const MELEE_KNOCKBACK = { x: 450, y: -60, hitstun: 0.35, dirMode: 'fromAttacker' };
 
 /**
  * Shared supermove knockback (knockback.md §11): the strongest shove — big
@@ -61,7 +61,7 @@ const MELEE_KNOCKBACK = { x: 180, y: 0, hitstun: 0.35, dirMode: 'fromAttacker' }
  * With GRAVITY 1500 a light enemy rises ~2.7px and hangs ~0.12s: a modest
  * loft at supermove speed. The strongest of the three committed attacks.
  */
-const SUPERMOVE_KNOCKBACK = { x: 360, y: -90, hitstun: 0.30, dirMode: 'alongVelocity' };
+const SUPERMOVE_KNOCKBACK = { x: 850, y: -260, hitstun: 0.30, dirMode: 'alongVelocity' };
 
 /**
  * §15 Special melee (Down+Melee): the ADVANCING LEG SWEEP — one shared attack
@@ -81,7 +81,7 @@ const SWEEP = {
   // Knockback (knockback.md §11): aggressive forward pushback along the
   // lunge velocity — clears the path ahead of the advancing sweep.
   // Vector = px/s: 320 along the lunge + 40 upward hop (y negative = up).
-  knockback: { x: 320, y: -40, hitstun: 0.45, dirMode: 'alongVelocity' },
+  knockback: { x: 700, y: -140, hitstun: 0.45, dirMode: 'alongVelocity' },
 };
 
 export const HEROES = {

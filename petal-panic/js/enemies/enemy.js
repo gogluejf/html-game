@@ -32,7 +32,7 @@ const CORPSE_GRAVITY = 0.6;
  * velocity (stunned / dead). Same model as barrels — air has NO x-decay (a
  * launched body keeps full speed until it lands); friction only bleeds the
  * slide off once it's back on the ground. */
-const GROUND_SETTLE_FRICTION = 0.8;
+const GROUND_SETTLE_FRICTION = 0.9;
 
 export class Enemy extends Entity {
   /**

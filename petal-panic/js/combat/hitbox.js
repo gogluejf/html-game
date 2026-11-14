@@ -141,6 +141,10 @@ export function processHitboxes(hitboxes, targets, onHit) {
           const len = Math.hypot(hb.owner?.vx || 0, hb.owner?.vy || 0) || 1;
           nx = (hb.owner?.vx || 0) / len;
           ny = (hb.owner?.vy || 0) / len;
+          // A horizontal lunge has ny≈0, which would multiply the loft (y)
+          // away entirely — the pop must stay UPWARD regardless of the
+          // owner's travel direction. Only x rides the velocity direction.
+          kbVector = { x: nx * (kb.x ?? 0), y: kb.y ?? 0, hitstun: kb.hitstun, iFrames: kb.iFrames };
         } else {
           // 'fromAttacker' or 'radial': source center → target center.
           const scx = hb.owner.x + (hb.owner.w || 0) / 2;
@@ -148,8 +152,8 @@ export function processHitboxes(hitboxes, targets, onHit) {
           const dx = (tb.x + tb.w / 2) - scx, dy = (tb.y + tb.h / 2) - scy;
           const len = Math.hypot(dx, dy) || 1;
           nx = dx / len; ny = dy / len;
+          kbVector = { x: nx * (kb.x ?? 0), y: ny * (kb.y ?? 0), hitstun: kb.hitstun, iFrames: kb.iFrames };
         }
-        kbVector = { x: nx * (kb.x ?? 0), y: ny * (kb.y ?? 0), hitstun: kb.hitstun, iFrames: kb.iFrames };
       }
 
       // Route damage through the unified resolver (unified-hit-resolution §3).
@@ -169,6 +173,11 @@ export function processHitboxes(hitboxes, targets, onHit) {
         method: hb.method,
       });
       const dealt = res.accepted ? res.dealt : 0;
+
+      // TRACE (temporary): what velocity does the victim actually get after a hero hit?
+      if (t.layer !== LAYER.HERO) {
+        console.log(`[kb] ${t.type ?? t.constructor?.name} kb=${JSON.stringify(kbVector)} → vx=${(t.vx ?? 0).toFixed(0)} vy=${(t.vy ?? 0).toFixed(0)} y=${(t.y ?? 0).toFixed(0)} grounded=${!!t._grounded}`);
+      }
 
       if (dealt > 0) {
         hb.hitSet.add(t);
