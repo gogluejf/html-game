@@ -72,6 +72,13 @@ const SUPERMOVE_KNOCKBACK = { x: 850, y: -260, hitstun: 0.30, dirMode: 'alongVel
  */
 export const SUPERMOVE_BURST_KNOCKBACK = { x: 300, y: -120, hitstun: 0.30, dirMode: 'fromAttacker' };
 
+/** Hit-stop (fixed frames) per supermove contact tier — SF2-style impact
+ * freeze, applied by applyHit ONLY when the hit connects (context.hitstop).
+ * Bursts: a real pause that lets the fist pose land, without stuttering the
+ * dash. Finisher: the heavy-hit beat — world stops, then the launch flies. */
+export const SUPERMOVE_BURST_HITSTOP = 4;    // ~66ms
+export const SUPERMOVE_FINISHER_HITSTOP = 8; // ~133ms
+
 /** Sheet frames with durUnits >= this are supermove CONTACT keyframes;
  * shorter frames between them deal nothing (box visible in debug only). */
 export const SUPERMOVE_HIT_DUR_UNITS = 3;

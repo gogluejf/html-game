@@ -171,6 +171,9 @@ export function processHitboxes(hitboxes, targets, onHit) {
         team: TEAM_CONST[hb.team] ?? Team.NEUTRAL,
         knockback: kbVector,
         method: hb.method,
+        // Impact freeze (SF2-style): declared on the attack's box data, fired
+        // by applyHit only when this hit actually connects.
+        hitstop: hb.hitstop,
       });
       const dealt = res.accepted ? res.dealt : 0;
 

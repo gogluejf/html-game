@@ -7,6 +7,7 @@
 
 import { Team, TargetClass, AttackProvenance, assertProvenance, getTargetClass } from './targeting.js';
 import { applyKnockback } from './knockback.js';
+import { hitstop } from '../core/hitstop.js';
 
 /** What a given attacker team may legally strike. */
 const ELIGIBLE = {
@@ -93,6 +94,15 @@ export function applyHit(context) {
   // same launch as a survivor — uniform behavior, no special case.
   if (context.knockback) {
     applyKnockback(target, context.knockback);
+  }
+
+  // Hit-stop (data on the hit, SF2-style impact freeze): only a CONNECTED hit
+  // freezes time — every reject path above returned before reaching here.
+  // Max-merge semantics live in the hitstop module (overlapping requests
+  // never stack past the larger).
+  if (typeof context.hitstop === 'number' && context.hitstop > 0) {
+    console.log(`[hitstop] arming ${context.hitstop} frames (method=${context.method})`); // TRACE (temporary)
+    hitstop(context.hitstop);
   }
 
   const result = { accepted: true, dealt, destroyed };

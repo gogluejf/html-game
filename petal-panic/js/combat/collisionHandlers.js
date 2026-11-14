@@ -42,7 +42,6 @@ import { ctx } from '../world/context.js';
 // existing consumers.
 import { entryImpactPoint, snapToImpact } from './entryImpact.js';
 export { entryImpactPoint, snapToImpact };
-import { hitstop as requestHitstop } from '../core/hitstop.js';
 
 /** Star-power launch (mario star): how hard a touched enemy/boss gets flung.
  *  Vector = px/s: 420 horizontal away from the hero + 260 upward loft. */
@@ -95,6 +94,10 @@ export function starPowerKill(hero, victim) {
     team: Team.ALLY,
     method: 'contact',
     knockback: { x: STAR_POWER_KNOCKBACK.x * dirX * jx, y: STAR_POWER_KNOCKBACK.y * jy, hitstun: STAR_POWER_KNOCKBACK.hitstun, ignoreResist: true },
+    // Juice: freeze the whole sim for ~83ms. Rides the context so ONLY a
+    // connected kill freezes time (rejected hits return before reactions).
+    // Max-merge semantics mean overlapping kills hold the larger window.
+    hitstop: STAR_POWER_HITSTOP_FRAMES,
   });
   // Ghost flight: ONLY star kills phase through terrain for the death anim —
   // the crazy pop is a star-power thing. Normal deaths keep plain physics
@@ -103,9 +106,6 @@ export function starPowerKill(hero, victim) {
   if (victim.aiState === 'dead') {
     victim.intangible = true;
   }
-  // Juice: freeze the whole sim for ~83ms + shake. Max-merge semantics mean
-  // overlapping kills hold the larger window, never stack.
-  requestHitstop(STAR_POWER_HITSTOP_FRAMES);
   Effects.triggerShake(STAR_POWER_SHAKE);
 }
 

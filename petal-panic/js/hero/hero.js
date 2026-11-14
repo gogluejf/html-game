@@ -11,7 +11,7 @@ import { isHighGraphic } from '../core/renderMode.js';
 import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
 import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from '../objects/projectile.js';
 import { SPECIAL_TYPES } from '../objects/specialWeapons.js';
-import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats, SUPERMOVE_BURST_KNOCKBACK, SUPERMOVE_HIT_DUR_UNITS } from './heroDefs.js';
+import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats, SUPERMOVE_BURST_KNOCKBACK, SUPERMOVE_HIT_DUR_UNITS, SUPERMOVE_BURST_HITSTOP, SUPERMOVE_FINISHER_HITSTOP } from './heroDefs.js';
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { heroDamage } from '../combat/damage.js';
 import { placeSheetFrame } from '../core/spriteData.js';
@@ -1107,9 +1107,9 @@ export class Hero extends Entity {
       const frame = data?.frames[this.spriteFrameIndex % (data?.frames.length ?? 1)];
       const isKeyframe = (frame?.durUnits ?? 1) >= SUPERMOVE_HIT_DUR_UNITS;
       if (!isKeyframe) return null; // short frame: box visible in debug, no contact
-      const kb = this._supermoveBurstKnockback();
+      const { knockback: kb, hitstop: burstHitstop } = this._supermoveBurstKnockback();
       const box = this._sheetBoxToWorld(sheetBox);
-      return { ...box, knockback: kb, _source: 'sheet' };
+      return { ...box, knockback: kb, hitstop: burstHitstop, _source: 'sheet' };
     } else {
       throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
     }
@@ -1176,12 +1176,14 @@ export class Hero extends Entity {
   _supermoveBurstKnockback() {
     const finisher = this.heroDef.attacks[ATTACK_SUPERMOVE].knockback;
     const data = this.spriteAnimData;
-    if (!data || this._spriteAnim !== 'supermove') return finisher;
+    if (!data || this._spriteAnim !== 'supermove') return { knockback: finisher, hitstop: SUPERMOVE_FINISHER_HITSTOP };
     const frames = data.frames;
     const idx = this.spriteFrameIndex % frames.length;
     // Is the CURRENT frame the last keyframe in the sheet?
     const isLastKeyframe = !frames.slice(idx + 1).some(f => (f?.durUnits ?? 1) >= SUPERMOVE_HIT_DUR_UNITS);
-    return isLastKeyframe ? finisher : SUPERMOVE_BURST_KNOCKBACK;
+    return isLastKeyframe
+      ? { knockback: finisher, hitstop: SUPERMOVE_FINISHER_HITSTOP }
+      : { knockback: SUPERMOVE_BURST_KNOCKBACK, hitstop: SUPERMOVE_BURST_HITSTOP };
   }
 
   /**

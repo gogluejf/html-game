@@ -1405,10 +1405,11 @@ export function update(dt) {
           team: Team.ALLY,
           method: 'starPower',
           knockback: { x: STAR_BARREL_KNOCKBACK.x * awayX * jx, y: STAR_BARREL_KNOCKBACK.y * jy, ignoreResist: true },
+          // Juice rides the context: only a connected pop freezes time.
+          hitstop: STAR_POWER_HITSTOP_FRAMES,
         });
         b._fuse = STAR_BARREL_FUSE; // tickFallingBarrelFuse cooks + detonates
         b.setIntangible(STAR_BARREL_FUSE); // ghost flight for the whole cook (cleared at detonation)
-        requestHitstop(STAR_POWER_HITSTOP_FRAMES);
         Effects.triggerShake(STAR_POWER_SHAKE);
         break; // ONE barrel per touch frame — the rest pop as you walk into them
       }
@@ -1532,7 +1533,6 @@ import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFl
 import { updateRealEnemies } from '../enemies/enemyUpdate.js';
 import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
 import { applyObjectImpact } from '../combat/objectImpact.js';
-import { hitstop as requestHitstop } from '../core/hitstop.js';
 // Star-power barrel pop juice (same values as the enemy contact kill).
 const STAR_POWER_HITSTOP_FRAMES = 2; // ~33ms — snappy pop beat (was 5 ≈ 83ms)
 const STAR_POWER_SHAKE = 6;

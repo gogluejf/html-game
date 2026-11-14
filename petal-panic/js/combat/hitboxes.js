@@ -35,6 +35,8 @@ function updateSlot(slot) {
     // Knockback rides on the resolved box (heroDefs data → attackHitboxWorld).
     // Copy it onto the hitbox so processAllHitboxes reads hb.knockback at impact.
     hb.knockback = box.knockback;
+    // Hit-stop frames ride the same way (supermove burst/finisher tiers).
+    hb.hitstop = box.hitstop;
     hb.active = true;
     if (!resetFlag.get()) {
       resetHitbox(hb);
