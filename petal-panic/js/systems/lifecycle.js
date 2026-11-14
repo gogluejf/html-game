@@ -35,8 +35,7 @@ import { resetHitstop } from '../core/hitstop.js';
 import { tryTransition, getState, setState, S } from '../core/state.js';
 import { TUNING } from '../tuning.js';
 import { loadStore, saveStore, clearRunSave, updateProgress, markMediaUnlocked } from './progressStore.js';
-import { ctx as wctx } from '../world/context.js';
-import { createRun, serializeRun, deserializeRun } from './runState.js';
+import { ctx as wctx } from '../world/context.js';import { createRun, serializeRun, deserializeRun } from './runState.js';
 
 // --- Zone-snapshot chain (state-persistence.md §1) ---------------------------
 //
@@ -343,8 +342,20 @@ export function startGame(ctx, heroDef) {
   // Only when the caller provided the area context (update.js does); a bare
   // startGame (e.g. unit tests) leaves the existing world untouched. Death and
   // Continue never call startGame, so they never reroll.
+  let rolledNewSeed = false;
   if (regenerateWorld && ctx.areaContext) {
     regenerateWorld(ctx.areaContext);
+    rolledNewSeed = true;
+  }
+  // CRITICAL: the run's seed must name the world THIS GAME actually plays.
+  // createRun() above captured getLastWorldSeed() BEFORE regenerateWorld()
+  // rolled the fresh seed — without this sync, h.run.seed stays at the
+  // previous world's seed (boot placeholder: 1), Save & Quit persists THAT,
+  // and Continue rebuilds the wrong world ("continue lands me in a different
+  // zone" bug). Bare startGame (no reroll) keeps the captured seed: correct,
+  // because the world really wasn't changed.
+  if (rolledNewSeed) {
+    h.run.seed = getLastWorldSeed();
   }
   // Swap the hero in the collision world (only when a world is provided).
   if (ctx.world) { ctx.world.remove(ctx.oldHero); ctx.world.add(h); }
@@ -434,8 +445,7 @@ export function placeHeroAtEntry(h) {
   const zone = wctx.getActiveZone?.(h);
   const zoneMatches = zone?.spawn && zone.level === h.currentLevel &&
     (zone.areaIdx === h.currentArea || (zone.kind === 'boss' && h.currentArea >= 5));
-  const drop = (zone?.orientation === 'vertical') ? ZONE_ENTRY_DROP_PX_VERTICAL : ZONE_ENTRY_DROP_PX;
-  if (zoneMatches) {
+  const drop = (zone?.orientation === 'vertical') ? ZONE_ENTRY_DROP_PX_VERTICAL : ZONE_ENTRY_DROP_PX;  if (zoneMatches) {
     h.x = zone.spawn.x;
     h.y = zone.spawn.y - h.h - drop;
   } else if (h.checkpoint && typeof h.checkpoint === 'object') {

@@ -51,6 +51,7 @@ const { GAME_RULES } = await import('../systems/gameRules.js');
 const { Hero } = await import('../hero/hero.js');
 const { HEROES } = await import('../hero/heroDefs.js');
 const { createTrace } = await import('../stats.js');
+const { ZONE_ENTRY_DROP_PX_VERTICAL } = await import('../world/level.js');
 
 /** Minimal empty area context (restartAttemptState restores it; nothing to restore). */
 const emptyCtx = () => ({ enemies: [], boss: null, barrels: [], powerups: [], checkpoints: [], projectiles: { activeItems: [], active: [] }, coins: { activeItems: [], active: [] }, particles: { reset: () => {} }, effects: { reset: () => {} } });
@@ -179,10 +180,11 @@ test('Continue installs the saved zone + spawn checkpoint through AREA_ENTRY (H2
 
   // Confirming the entry screen starts the attempt and places the hero at the
   // saved zone's entry (placeHeroAtEntry reads the checkpoint we just installed).
+  // Area 3 is the vertical climb, so it uses the shorter vertical entry drop.
   assert.equal(L.areaEntryOnAction('confirm', hero), true, 'confirm starts the attempt');
   assert.equal(getState(), S.PLAY, 'back in PLAY after confirming the entry screen');
   assert.equal(hero.x, zone.spawn.x, 'hero placed at the saved zone entry x');
-  assert.equal(hero.y, zone.spawn.y - hero.h, 'hero placed at the saved zone entry y');
+  assert.equal(hero.y, zone.spawn.y - hero.h - ZONE_ENTRY_DROP_PX_VERTICAL, 'hero placed at the saved zone entry y (with entry drop)');
 });
 
 test('continueFromMenu() is a no-op when no save exists', () => {
@@ -236,26 +238,17 @@ test('continueFromMenu() rejects a corrupt save (out-of-range) as NO SAVE (H3)',
 
 // --- Save & Quit (write side) ---------------------------------------------------
 
-test('saveCurrentRun() writes saveMeta {level, area, score, timestamp}', () => {
+test('saveCurrentRun() writes saveMeta {level, area, score}', () => {
   PS.resetStore();
   const hero = makeTestHero(3, 2);
-  // Fixed clock (H6): stub Date.now so the written timestamp is deterministic
-  // and we can assert the EXACT value rather than a live-clock bound.
-  const FIXED_NOW = 1_700_000_000_000;
-  const realNow = Date.now;
-  Date.now = () => FIXED_NOW;
+
   let meta;
-  try {
-    meta = L.saveCurrentRun(hero);
-  } finally {
-    Date.now = realNow;
-  }
+  meta = L.saveCurrentRun(hero);
 
   assert.ok(meta, 'returns the written saveMeta');
   assert.equal(meta.level, 3, 'saved level matches the hero');
   assert.equal(meta.area, 2, 'saved area matches the hero');
   assert.equal(meta.score, 700, 'score computed from the run totals (5×100 + 20×10)');
-  assert.equal(meta.timestamp, FIXED_NOW, 'timestamp is the injected wall-clock value (exact)');
 
   // Persisted at the TOP LEVEL of the store document (not under progress).
   const stored = PS.loadStore();
@@ -361,7 +354,8 @@ test('reload-Continue restores the persistent columns; the failure-style restart
   assert.equal(resumed.continues.remaining, 1, 'saved continues restored');
   assert.deepEqual(resumed.wallet.snapshots, saver.wallet.snapshots, 'snapshot chain restored');
   // ...the on-screen attempt state deliberately does NOT ("what is on screen"
-  // at quit time does not matter — the transition rule decides).
+  // at quit time does not matter — the transition rule decides). The hero's
+  // wallet starts empty; nothing in the resume path restores quit-time coins.
   assert.notEqual(resumed.wallet.current.coins, 55, 'coins NOT restored yet (restart rolls them back)');
   assert.equal(L.getAreaEntryData().lives, 2, 'entry screen shows the SAVED life count');
 

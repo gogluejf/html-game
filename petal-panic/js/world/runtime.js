@@ -11,7 +11,7 @@ import { SolidBox } from '../core/solidBox.js';
 import { VIEW_W } from '../core/view.js';
 import { makeElephant } from '../boss/boss.js';
 import { restoreBossRunFloor } from '../boss/bossFlow.js';
-import { buildWorld, instantiateZone, newGameSeed } from './build.js';
+import { buildWorld, instantiateZone, newGameSeed, getLastWorldSeed } from './build.js';
 import { getLevelConfig } from './levelConfigs.js';
 import { LEVELS } from './level.js';
 import { ZONE_GROUND_Y } from './level.js';

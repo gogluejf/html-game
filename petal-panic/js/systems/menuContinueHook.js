@@ -77,17 +77,15 @@ onTransition((from, to) => {
       console.log(`[lifecycle] ${from} continue: swapped hero to ${sm.heroId}`);
     }
     if (sm && Number.isInteger(sm.seed) && sm.seed !== getLastWorldSeed()) {
-      world = buildWorld(LEVELS[0], getLevelConfig(LEVELS[0].index) ?? {}, sm.seed);
+      ctx.world = buildWorld(LEVELS[0], getLevelConfig(LEVELS[0].index) ?? {}, sm.seed);
       // CRITICAL: ctx.world is a STABLE reference read by resetActiveZoneContent /
       // continueFromGameOver / stepClearSequence (zoneLifecycle.js). Swapping only
       // the local `world` leaves ctx pointing at the PREVIOUS game's world, so any
       // later zone reinstall (retry, death-restart, advance) pulls terrain +
       // population from the stale world — the "retry spawns me in a NEW 1-1" bug.
-      ctx.world = world;
       syncRuntimeState();
       console.log(`[lifecycle] ${from} continue: rebuilt world from saved seed ${sm.seed}`);
-    }
-    // Persistent-column resume (state-persistence.md §2.6): AFTER the seed
+    }    // Persistent-column resume (state-persistence.md §2.6): AFTER the seed
     // rebuild and BEFORE the zone installs, restore lives + continues + the
     // zone-snapshot chain onto the hero. The entry screen then shows the saved
     // life count, and the entry sequence's failure-style restart rolls
@@ -103,13 +101,13 @@ onTransition((from, to) => {
     // from the previous session may bleed into the resumed zone.
     ctx.areaContext.clearTransients?.();
     const zone = ctx.getActiveZone(h);
-    if (zone.kind === 'area' && world.world.has(zone.areaIdx)) {
-      // world.world holds live instances, not a pristine snapshot: same-seed
+    if (zone.kind === 'area' && ctx.world.world.has(zone.areaIdx)) {
+      // ctx.world.world holds live instances, not a pristine snapshot: same-seed
       // menu returns can otherwise revive enemies with destroyed/_deathHandled
       // still set and barrels with _destroyHandled (suppressing their blasts).
       // Recreate runtime state from the preserved arrangement, as retry does.
       loadActiveZone(zone, instantiateZone(
-        zone, world.terrain.get(zone.areaIdx), world.population.get(zone.areaIdx), ctx.levelZones,
+        zone, ctx.world.terrain.get(zone.areaIdx), ctx.world.population.get(zone.areaIdx), ctx.levelZones,
       ));
     } else if (zone.kind === 'boss') {
       const bossCp = zone.entryFlag
