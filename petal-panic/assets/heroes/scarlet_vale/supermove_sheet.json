@@ -1,460 +1,460 @@
 {
- "file": "petal-panic/assets/heroes/scarlet_vale/supermove_sheet.png",
- "size": "1448x1084",
- "rows": 4,
- "cols": 4,
- "kind": "animation",
- "description": "scarlet_vale supermove",
- "entities": [
-  {
-   "name": "scarlet_vale",
-   "anim": "supermove",
-   "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
-   "frames": [
+  "file": "petal-panic/assets/heroes/scarlet_vale/supermove_sheet.png",
+  "size": "1448x1084",
+  "rows": 4,
+  "cols": 4,
+  "kind": "animation",
+  "description": "scarlet_vale supermove",
+  "entities": [
     {
-     "file": "supermove_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      362,
-      0,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      724,
-      0,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 27,
-       "y": -200,
-       "w": 65,
-       "h": 75
-      }
-     ],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1086,
-      0,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 48,
-       "y": -208,
-       "w": 65,
-       "h": 75
-      }
-     ],
-     "durUnits": 3
-    },
-    {
-     "file": "supermove_f5.png",
-     "row": 1,
-     "col": 0,
-     "bbox": [
-      0,
-      271,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 58,
-       "y": -213,
-       "w": 65,
-       "h": 75
-      }
-     ],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f6.png",
-     "row": 1,
-     "col": 1,
-     "bbox": [
-      362,
-      271,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f7.png",
-     "row": 1,
-     "col": 2,
-     "bbox": [
-      724,
-      271,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 18,
-       "y": -153,
-       "w": 65,
-       "h": 117
-      }
-     ],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f8.png",
-     "row": 1,
-     "col": 3,
-     "bbox": [
-      1086,
-      271,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 10,
-       "y": -135,
-       "w": 121,
-       "h": 111
-      }
-     ],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f9.png",
-     "row": 2,
-     "col": 0,
-     "bbox": [
-      0,
-      542,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 16,
-       "y": -189,
-       "w": 128,
-       "h": 95
-      }
-     ],
-     "durUnits": 3
-    },
-    {
-     "file": "supermove_f10.png",
-     "row": 2,
-     "col": 1,
-     "bbox": [
-      362,
-      542,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 6,
-       "y": -173,
-       "w": 81,
-       "h": 133
-      }
-     ],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f11.png",
-     "row": 2,
-     "col": 2,
-     "bbox": [
-      724,
-      542,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 12,
-       "y": -180,
-       "w": 65,
-       "h": 127
-      }
-     ],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f12.png",
-     "row": 2,
-     "col": 3,
-     "bbox": [
-      1086,
-      542,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 19,
-       "y": -196,
-       "w": 95,
-       "h": 75
-      }
-     ],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f13.png",
-     "row": 3,
-     "col": 0,
-     "bbox": [
-      0,
-      813,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 29,
-       "y": -242,
-       "w": 117,
-       "h": 116
-      }
-     ],
-     "durUnits": 3
-    },
-    {
-     "file": "supermove_f14.png",
-     "row": 3,
-     "col": 1,
-     "bbox": [
-      362,
-      813,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [
-      {
-       "label": "attack",
-       "x": 13,
-       "y": -146,
-       "w": 69,
-       "h": 127
-      }
-     ],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f15.png",
-     "row": 3,
-     "col": 2,
-     "bbox": [
-      724,
-      813,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "supermove_f16.png",
-     "row": 3,
-     "col": 3,
-     "bbox": [
-      1086,
-      813,
-      362,
-      271
-     ],
-     "offset": {
-      "x": -181,
-      "y": -271
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
+      "name": "scarlet_vale",
+      "anim": "supermove",
+      "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+      "frames": [
+        {
+          "file": "supermove_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            362,
+            0,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            724,
+            0,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 27,
+              "y": -200,
+              "w": 65,
+              "h": 75
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1086,
+            0,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 48,
+              "y": -208,
+              "w": 65,
+              "h": 208
+            }
+          ],
+          "durUnits": 3
+        },
+        {
+          "file": "supermove_f5.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            271,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 58,
+              "y": -213,
+              "w": 65,
+              "h": 75
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f6.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            362,
+            271,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f7.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            724,
+            271,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 18,
+              "y": -153,
+              "w": 65,
+              "h": 117
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f8.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1086,
+            271,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 10,
+              "y": -135,
+              "w": 121,
+              "h": 111
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f9.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            0,
+            542,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 16,
+              "y": -189,
+              "w": 128,
+              "h": 189
+            }
+          ],
+          "durUnits": 3
+        },
+        {
+          "file": "supermove_f10.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            362,
+            542,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 6,
+              "y": -173,
+              "w": 81,
+              "h": 133
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f11.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            724,
+            542,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 12,
+              "y": -180,
+              "w": 65,
+              "h": 127
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f12.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            1086,
+            542,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 19,
+              "y": -196,
+              "w": 95,
+              "h": 75
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f13.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            0,
+            813,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 29,
+              "y": -242,
+              "w": 117,
+              "h": 242
+            }
+          ],
+          "durUnits": 3
+        },
+        {
+          "file": "supermove_f14.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            362,
+            813,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [
+            {
+              "label": "attack",
+              "x": 13,
+              "y": -146,
+              "w": 69,
+              "h": 127
+            }
+          ],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f15.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            724,
+            813,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "supermove_f16.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            1086,
+            813,
+            362,
+            271
+          ],
+          "offset": {
+            "x": -181,
+            "y": -271
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "fps": 16,
+      "playback": "once",
+      "direction": "forward",
+      "collision": {
+        "x": -40,
+        "y": -231,
+        "w": 98,
+        "h": 222
+      },
+      "pivot": {
+        "x": 9,
+        "y": -120
+      },
+      "markers": []
     }
-   ],
-   "fps": 16,
-   "playback": "once",
-   "direction": "forward",
-   "collision": {
-    "x": -40,
-    "y": -231,
-    "w": 98,
-    "h": 222
-   },
-   "pivot": {
-    "x": 9,
-    "y": -120
-   },
-   "markers": []
+  ],
+  "updated": "2026-11-08T15:04:26",
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "pass": "petal-panic/assets/heroes/scarlet_vale"
   }
- ],
- "updated": "2026-11-08T15:04:26",
- "crop": {
-  "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
-  "pass": "petal-panic/assets/heroes/scarlet_vale"
- }
 }

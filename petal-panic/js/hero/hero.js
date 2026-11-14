@@ -11,7 +11,7 @@ import { isHighGraphic } from '../core/renderMode.js';
 import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
 import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from '../objects/projectile.js';
 import { SPECIAL_TYPES } from '../objects/specialWeapons.js';
-import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats } from './heroDefs.js';
+import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats, SUPERMOVE_BURST_KNOCKBACK, SUPERMOVE_HIT_DUR_UNITS } from './heroDefs.js';
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { heroDamage } from '../combat/damage.js';
 import { placeSheetFrame } from '../core/spriteData.js';
@@ -1092,10 +1092,24 @@ export class Hero extends Entity {
       // spans the WHOLE sheet playback — supermove AND the post-supermove visual tail —
       // because _sheetAttackBox already gates on _spriteAnim === 'supermove',
       // which stays set until the player reaches its terminal frame.
+      //
+      // Burst gating (durUnits): only KEYFRAMES (durUnits >= 3 — the held
+      // extended-fist / planted-foot poses) actually connect. Short frames
+      // between keyframes show their box in debug but deal nothing, so each
+      // visible "money pose" is one contact window and the hitSet (cleared
+      // per swing in hitboxes.js) re-arms when the box drops off between
+      // bursts. The LAST keyframe of the dash carries the finisher launch;
+      // earlier keyframes use the moderate burst shove that keeps the victim
+      // in reach for the next burst to re-grab.
       const sheetBox = this._sheetAttackBox('supermove');
       if (!sheetBox) return null;
+      const data = this.spriteAnimData;
+      const frame = data?.frames[this.spriteFrameIndex % (data?.frames.length ?? 1)];
+      const isKeyframe = (frame?.durUnits ?? 1) >= SUPERMOVE_HIT_DUR_UNITS;
+      if (!isKeyframe) return null; // short frame: box visible in debug, no contact
+      const kb = this._supermoveBurstKnockback();
       const box = this._sheetBoxToWorld(sheetBox);
-      return { ...box, knockback: this._attackKnockback(attackName), _source: 'sheet' };
+      return { ...box, knockback: kb, _source: 'sheet' };
     } else {
       throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
     }
@@ -1143,6 +1157,31 @@ export class Hero extends Entity {
     }
     // Normal melee: small burst shove (MELEE_KNOCKBACK in heroDefs).
     return this.heroDef.attacks[ATTACK_MELEE]?.knockback;
+  }
+
+  /**
+   * Supermove burst knockback: the dash has several KEYFRAME contact windows
+   * (sheet frames with durUnits >= SUPERMOVE_HIT_DUR_UNITS — the held money
+   * poses). Every keyframe EXCEPT the last carries the moderate burst shove
+   * (SUPERMOVE_BURST_KNOCKBACK): enough to reposition, not enough to clear
+   * the next burst's box, so a dashing hero can connect 2-3 times on one
+   * victim. The LAST keyframe of the sheet is the finisher — it returns the
+   * full launch vector (SUPERMOVE_KNOCKBACK) and sends them flying.
+   *
+   * Keyframe order = sheet frame order (the dash plays the sheet front to
+   * back), so "last" is simply the final durUnits>=N frame in the data. No
+   * timers, no state: pure sheet-data read at impact time.
+   * @returns {object} KnockbackSetting for the current keyframe
+   */
+  _supermoveBurstKnockback() {
+    const finisher = this.heroDef.attacks[ATTACK_SUPERMOVE].knockback;
+    const data = this.spriteAnimData;
+    if (!data || this._spriteAnim !== 'supermove') return finisher;
+    const frames = data.frames;
+    const idx = this.spriteFrameIndex % frames.length;
+    // Is the CURRENT frame the last keyframe in the sheet?
+    const isLastKeyframe = !frames.slice(idx + 1).some(f => (f?.durUnits ?? 1) >= SUPERMOVE_HIT_DUR_UNITS);
+    return isLastKeyframe ? finisher : SUPERMOVE_BURST_KNOCKBACK;
   }
 
   /**

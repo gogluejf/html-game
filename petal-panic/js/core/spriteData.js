@@ -142,6 +142,10 @@ function parseFrames(ent) {
       // anchor space — same transform as the frame art. Carried verbatim so
       // gameplay can resolve sheet-authored hitboxes (Hero._sheetAttackBox).
       boxes: Array.isArray(f.boxes) ? f.boxes : [],
+      // Per-frame duration multiplier (editor field). Gameplay reads it to
+      // pick CONTACT keyframes (supermove bursts: durUnits >= 3 = the held
+      // money pose that connects; short frames between them deal nothing).
+      durUnits: Number.isFinite(Number(f.durUnits)) && f.durUnits != null ? Number(f.durUnits) : 1,
     };
   });
 }

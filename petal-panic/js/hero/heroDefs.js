@@ -64,6 +64,19 @@ const MELEE_KNOCKBACK = { x: 450, y: -60, hitstun: 0.35, dirMode: 'fromAttacker'
 const SUPERMOVE_KNOCKBACK = { x: 850, y: -260, hitstun: 0.30, dirMode: 'alongVelocity' };
 
 /**
+ * Supermove BURST knockback: the moderate shove carried by every keyframe
+ * contact window EXCEPT the last (see Hero._supermoveBurstKnockback). Tuned
+ * to reposition without clearing the next burst's box — a victim shoved ~50px
+ * stays inside the following keyframe's reach so the dash can connect again.
+ * Small hop: enough air time to read as a clean "thwack", not a launch.
+ */
+export const SUPERMOVE_BURST_KNOCKBACK = { x: 300, y: -120, hitstun: 0.30, dirMode: 'fromAttacker' };
+
+/** Sheet frames with durUnits >= this are supermove CONTACT keyframes;
+ * shorter frames between them deal nothing (box visible in debug only). */
+export const SUPERMOVE_HIT_DUR_UNITS = 3;
+
+/**
  * §15 Special melee (Down+Melee): the ADVANCING LEG SWEEP — one shared attack
  * for both heroes (unified; no per-hero branches). Travels TOWARD facing; the
  * sprite plays the per-hero `super_melee` sheet while the trajectory commits.
