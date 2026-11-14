@@ -234,6 +234,10 @@ export function resetHeroTransient(h) {
   h.dying = false;
   h.deathTimer = 0;
   h.alive = true;
+  // Clear the stale destroyed latch (see Hero.respawn): a death stamps
+  // destroyed=true via applyHit, and a failure restart must clear it or the
+  // fresh attempt is an untouchable ghost.
+  h.destroyed = false;
   h.energy = h.maxEnergy;
   h.invincible = false;
   h.starPower = false;

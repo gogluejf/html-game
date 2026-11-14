@@ -267,6 +267,10 @@ async function boot() {
   }
 
   window.setGameScale = setGameScale;
+  // Debug console access: the game modules are ES modules (not global), so
+  // expose the hero getter for F12 one-liners like getHero().invincible.
+  const { getHero: _gh } = await import('./systems/update.js');
+  window.getHero = _gh;
   Object.defineProperty(window, 'TTL_SPEED', {
     get: () => CONSTS.TTL_SPEED,
     set: (v) => { CONSTS.TTL_SPEED = v; },

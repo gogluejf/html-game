@@ -1638,6 +1638,13 @@ export class Hero extends Entity {
     this.energy = this.maxEnergy;
     this.shield = 0;
     this.alive = true;
+    // Respawn also clears the stale destroyed latch: the death pipeline's
+    // applyHit() stamps target.destroyed=true when energy hits 0, and nothing
+    // else ever resets it. Without this, every subsequent hit (contact,
+    // fire/dust zones, explosions) is rejected at applyHit's first guard
+    // ("target invalid or dead") — the hero becomes a permanent ghost that
+    // nothing can touch until the object is rebuilt (debug hero-swap).
+    this.destroyed = false;
     this.dying = false;
     this.deathTimer = 0;
     // Respawn grace (immunity.md): one call owns flag + timer + source tag.
