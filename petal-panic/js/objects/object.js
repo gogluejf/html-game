@@ -220,7 +220,7 @@ export class GameObj extends Entity {
     // < 1 makes objects shove HARDER than enemies (default resist 1). Barrels
     // are light props — a sweep should launch them further than it shoves a
     // foe. Per-type override via def.knockbackResist (e.g. a heavy crate at 2).
-    this.knockbackResist = def.knockbackResist ?? 0.5;
+    this.knockbackResist = def.knockbackResist ?? 0.8;
     // Generic explosion property (explosion.js). null = no blast. The engine
     // resolves it uniformly on destruction — no per-type special cases.
     this.explosion = def.explosion ?? null;
