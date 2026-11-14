@@ -95,12 +95,15 @@ const SWEEP = {
   // an authored `attack` box (Hero._specialMeleePhaseAt); windup/recovery are
   // the unboxed frames before/after it. Tune speed by editing the sheet's fps.
   hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over the body — FALLBACK for sheets without authored boxes
-  // Knockback (knockback.md §11): aggressive forward pushback along the
-  // lunge velocity — clears the path ahead of the advancing sweep.
+  // Knockback (knockback.md §11): aggressive forward pushback in the lunge
+  // direction — clears the path ahead of the advancing sweep. `fixed` mode:
+  // x is signed at impact toward the sweep's travel direction (hero.js), so
+  // the shove always points where the sweep is going, mirrored for left-facing
+  // lunges. Vector = px/s along the lunge + upward hop.
   // `moderate` = surviving hit (stays in reach); `big` = killing hit / finisher
-  // (launches them away). Vector = px/s along the lunge + upward hop.
-  knockbackModerate: { x: 400, y: -100, hitstun: 0.45, dirMode: 'alongVelocity' },
-  knockbackBig: { x: 700, y: -180, hitstun: 0.45, dirMode: 'alongVelocity' },
+  // (launches them away).
+  knockbackModerate: { x: 325, y: -100, hitstun: 0.45, dirMode: 'fixed' },
+  knockbackBig: { x: 550, y: -180, hitstun: 0.45, dirMode: 'fixed' },
 };
 
 export const HEROES = {

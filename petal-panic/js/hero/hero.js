@@ -1156,7 +1156,12 @@ export class Hero extends Entity {
    */
   _attackKnockback(attackName) {
     if (attackName === ATTACK_SPECIAL_MELEE) {
-      return { knockbackModerate: this.heroDef.specialMelee.knockbackModerate, knockbackBig: this.heroDef.specialMelee.knockbackBig };
+      // The sweep vectors are 'fixed' (world-space). Sign x toward the lunge
+      // travel direction so a left-facing sweep shoves victims left — the data
+      // stores magnitude-only positive x.
+      const d = this.specialMeleeDir ?? this.facing;
+      const sign = (v) => (v ? { ...v, x: v.x * d } : v);
+      return { knockbackModerate: sign(this.heroDef.specialMelee.knockbackModerate), knockbackBig: sign(this.heroDef.specialMelee.knockbackBig) };
     }
     if (attackName === ATTACK_SUPERMOVE) {
       const a = this.heroDef.attacks[ATTACK_SUPERMOVE];

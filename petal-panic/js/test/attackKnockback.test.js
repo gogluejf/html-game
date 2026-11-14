@@ -41,14 +41,14 @@ for (const id of ['balthazar', 'scarlet']) {
   ok(`${id} sweep carries moderate + big pushback`, () => {
     const cfg = HEROES[id].specialMelee;
     assert.ok(cfg.knockbackModerate && cfg.knockbackBig);
-    assert.equal(cfg.knockbackModerate.x, 400);
+    assert.equal(cfg.knockbackModerate.x, 325);
     assert.equal(cfg.knockbackModerate.y, -100);
     assert.equal(cfg.knockbackModerate.hitstun, 0.45);
-    assert.equal(cfg.knockbackModerate.dirMode, 'alongVelocity');
-    assert.equal(cfg.knockbackBig.x, 700);
+    assert.equal(cfg.knockbackModerate.dirMode, 'fixed');
+    assert.equal(cfg.knockbackBig.x, 550);
     assert.equal(cfg.knockbackBig.y, -180);
     assert.equal(cfg.knockbackBig.hitstun, 0.45);
-    assert.equal(cfg.knockbackBig.dirMode, 'alongVelocity');
+    assert.equal(cfg.knockbackBig.dirMode, 'fixed');
   });
 
   ok(`${id} supermove carries strongest moderate + big launch`, () => {
