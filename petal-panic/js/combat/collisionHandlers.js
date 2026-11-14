@@ -96,8 +96,6 @@ export function starPowerKill(hero, victim) {
     method: 'contact',
     knockback: { x: STAR_POWER_KNOCKBACK.x * dirX * jx, y: STAR_POWER_KNOCKBACK.y * jy, hitstun: STAR_POWER_KNOCKBACK.hitstun, ignoreResist: true },
   });
-  // TRACE (temporary): why do star-kicked enemies sometimes survive?
-  console.log(`[star] ${victim.type} hp=${victim.hp}/${victim.maxHp} alive=${victim.alive} dead=${victim.aiState === 'dead'} | applyHit=${JSON.stringify(res)} | amt=${amt}`);
   // Ghost flight: ONLY star kills phase through terrain for the death anim —
   // the crazy pop is a star-power thing. Normal deaths keep plain physics
   // (gravity, ground friction, solid collision). Flag clears at despawn in
