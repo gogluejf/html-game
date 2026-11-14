@@ -8,6 +8,7 @@
 import { Team, TargetClass, AttackProvenance, assertProvenance, getTargetClass } from './targeting.js';
 import { applyKnockback } from './knockback.js';
 import { hitstop } from '../core/hitstop.js';
+import { LAYER } from '../consts.js';
 
 /** What a given attacker team may legally strike. */
 const ELIGIBLE = {
@@ -94,6 +95,21 @@ export function applyHit(context) {
   // same launch as a survivor — uniform behavior, no special case.
   if (context.knockback) {
     applyKnockback(target, context.knockback);
+    // Hero victims: transfer applyKnockback's plain-field results into the
+    // hero's unified timer system so hit-stun ('rec') + i-frames actually arm.
+    // Without this, explosions/projectiles shove the hero but never flip
+    // hitStunned — the crouch anim keeps playing through the fling. Mirrors
+    // the contact handler's transfer in collisionHandlers.js exactly.
+    if (target.layer === LAYER.HERO && target.timers) {
+      if (target.hitstunTimer > 0) {
+        target.timers.set('rec', Math.max(target.timers.get('rec'), target.hitstunTimer));
+        target.hitstunTimer = 0;
+      }
+      if (target.iFrameTimer > 0) {
+        target.setInvincible('hit', Math.max(target.timers.get('invincible'), target.iFrameTimer));
+        target.iFrameTimer = 0;
+      }
+    }
   }
 
   // Hit-stop (data on the hit, SF2-style impact freeze): only a CONNECTED hit

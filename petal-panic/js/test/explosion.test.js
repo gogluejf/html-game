@@ -273,14 +273,20 @@ ok('hero shoved radially through the unified choke point (no special case)', () 
   const hero = mkHero();
   // Blast at the SAME y as the hero center → normal (-1, 0) → pure horizontal
   // shove of 380 (hero resist 1). Timers come from the vector's hitstun/iFrames
-  // via applyKnockback — the hero no longer routes through takeHit profiles.
+  // via applyKnockback, then transfer into the hero's unified timer system
+  // ('rec' + invincible) so hit-stun actually arms — the crouch anim must
+  // switch to the hit pose during the fling.
   const hc = { x: hero.x + hero.w / 2, y: hero.y + hero.h / 2 };
   const exp = { cx: hc.x + 100, cy: hc.y, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   resolveExplosion(exp, [hero]);
   assert.ok(close(hero.vx, -380), `vx=${hero.vx}, expected -380`);
   assert.ok(close(hero.vy, 0), `vy=${hero.vy}, expected 0`);
-  assert.ok(close(hero.hitstunTimer, 0.30), `hitstun=${hero.hitstunTimer}`);
-  assert.ok(close(hero.iFrameTimer, 0.60), `iFrame=${hero.iFrameTimer}`);
+  // Plain fields are drained into the unified timers by the transfer.
+  assert.ok(close(hero.hitstunTimer, 0), `hitstun field drained, got ${hero.hitstunTimer}`);
+  assert.ok(close(hero.iFrameTimer, 0), `iFrame field drained, got ${hero.iFrameTimer}`);
+  // The unified timers carry the stun + protection window.
+  assert.ok(close(hero.timers.get('rec'), 0.30), `rec=${hero.timers.get('rec')}, expected 0.30`);
+  assert.ok(hero.invincible, 'hero should be in i-frames after the blast');
 });
 
 ok('an invincible hero absorbs the whole blast (damage AND shove, unified gate)', () => {
