@@ -129,12 +129,12 @@ const ENTRY_AREA = 1;
 // table; until then the existing code paths still do their own thing.
 
 export const TRANSITIONS = {
-  'new-game':     { run: 'fresh',        life: 'fresh' },
-  'advance':      { run: 'keep',         life: 'keep' },
-  'death-retry':  { run: 'rollback',     life: 'reset' },
-  'continue':     { run: 'refill-lives', life: 'reset' },
-  'level-clear':  { run: 'keep',         life: 'refill' },
-  'save-load':    { run: 'restore',      life: 'reset' },
+  'new-game':     { run: 'fresh',        life: 'fresh', zone: 'keep' },
+  'advance':      { run: 'keep',         life: 'keep',  zone: 'keep' },
+  'death-retry':  { run: 'rollback',     life: 'reset', zone: 'rebuild' },
+  'continue':     { run: 'refill-lives', life: 'reset', zone: 'rebuild' },
+  'level-clear':  { run: 'keep',         life: 'refill', zone: 'keep' },
+  'save-load':    { run: 'restore',      life: 'reset', zone: 'rebuild' },
 };
 
 /**
@@ -167,59 +167,6 @@ export function makeHero(heroDef) {
   return h;
 }
 
-// --- Entity restoration (lifecycle.md §3) ------------------------------------
-// "All enemies, barrels, and powerups return to their original positions and
-//  initial state. Destroyed objects and defeated enemies are restored."
-
-/** Restore an enemy (regular or boss) to its initial state. */
-function restoreEnemy(e) {
-  if (!e || e._initPos === undefined) return;
-  const p = e._initPos;
-  e.x = p.x; e.y = p.y; e.vx = 0; e.vy = 0;
-  e.hp = e.maxHp;
-  e.alive = true;
-  e.aiState = p.aiState;
-  e.fading = false;
-  e.hitFlash = 0;
-  e.hitstunTimer = 0;
-  e.timers.map.clear();
-  // Subclass-specific transient state.
-  if ('whipCooldown' in e) { e.whipCooldown = 0; e.whipActive = false; e.whipTimer = 0; }
-  if ('lungeCooldown' in e) { e.lungeCooldown = 0; e.lungeActive = false; e.lungeTimer = 0; e.recoverTimer = 0; }
-  if ('paceDir' in e) { e.paceDir = 1; e.projectileTimer = 0; e.meleeActive = false; e.meleeTimer = 0; e.meleeCooldown = 0; }
-  if ('fuseTimer' in e) { e.fuseTimer = 0; e.launchTimer = 0; e.explodeTimer = 0; e.exploded = false; }
-  if ('phase' in e) { e.phase = 'idle'; e.phaseTimer = 0; e._blastFired = false; e._stomped = false; }
-}
-
-/** Restore a GameObj (barrel) to its initial state. */
-function restoreBarrel(b) {
-  if (!b || b._initPos === undefined) return;
-  const p = b._initPos;
-  b.x = p.x; b.y = p.y;
-  b.hp = b.maxHp;
-  b.alive = true;
-  b.destroyed = false;
-  b.hitFlash = 0;
-  b.timers.map.clear();
-}
-
-/** Restore a Powerup to its initial state. */
-function restorePowerup(p) {
-  if (!p || p._initPos === undefined) return;
-  const q = p._initPos;
-  p.x = q.x; p.y = q.y;
-  p.collected = false;
-  p.alive = true;
-  p.timers.map.clear();
-}
-
-/** Restore a Checkpoint flag (re-arm so it can trigger again). */
-function restoreCheckpoint(c) {
-  if (!c) return;
-  c.triggered = false;
-  c.flashTimer = 0;
-}
-
 /**
  * Reset the hero's transient attempt state (death flags, energy, i-frames) to
  * a clean, playable, not-dying baseline. Full respawn i-frames + the area
@@ -245,43 +192,31 @@ export function resetHeroTransient(h) {
   h.vy = 0;
 }
 
-/**
- * Record the initial (arrangement) position + state of an entity once, so a
- * later startLife/continueRun can restore it. No-op on subsequent calls —
- * the arrangement is fixed for the whole game and must never change.
- */
-export function rememberInitial(e, extra = {}) {
-  if (e._initPos !== undefined) return;
-  e._initPos = { x: e.x, y: e.y, ...extra };
-}
 
 /**
- * Restore the whole area from its preserved arrangement: every enemy, barrel,
- * and powerup returns to its original position and initial state; destroyed
- * objects and defeated enemies are restored; checkpoints re-arm; all transient
- * projectiles, coins, and effects from the failed attempt are cleared so they
- * do not leak into the new attempt (lifecycle.md §3).
+ * FRESH ZONE INSTALL (fresh-zone-cleanup): the single owner of "make the
+ * collision world match this transition's zone". Tears down every transient
+ * (attack handles, projectiles, fire zones, particles, effects) and
+ * re-instantiates the zone from layout + population snapshot via
+ * instantiateZone — brand-new entity objects. The hero's currentArea must
+ * already be set by the caller (run rule), because the zone is resolved from
+ * it. Boss zones reinstall their run-phase content (floor + entry flag) and
+ * tear down any active battle room (boss-arena.md §3).
  *
- * This is REPLAYING the same arrangement, not rolling a new one.
- *
- * @param {object} ctx { enemies, boss, barrels, powerups, checkpoints,
- *                       projectiles, coins, particles, effects }
+ * update.js registers this implementation once at boot (it owns the world
+ * lists, collision world, camera, and boss-zone machine); bare unit tests
+ * that never register one get a no-op, so enterZone stays testable without a
+ * DOM. Replaces the old restoreArea field-reset model: liveness flags are
+ * one-directional within an object's lifetime; nothing is ever reset.
  */
-export function restoreArea(ctx) {
-  for (const e of ctx.enemies ?? []) restoreEnemy(e);
-  if (ctx.boss) restoreEnemy(ctx.boss);
-  for (const b of ctx.barrels ?? []) restoreBarrel(b);
-  for (const p of ctx.powerups ?? []) restorePowerup(p);
-  for (const c of ctx.checkpoints ?? []) restoreCheckpoint(c);
+let _rebuildZoneContent = null;
 
-  // Transient objects must not leak into the new attempt.
-  for (const p of ctx.projectiles?.activeItems ?? []) { p.alive = false; }
-  if (ctx.projectiles) ctx.projectiles.active.length = 0;
-  for (const c of ctx.coins?.activeItems ?? []) { c.alive = false; c.collected = true; }
-  if (ctx.coins) ctx.coins.active.length = 0;
-  ctx.particles?.reset?.();
-  ctx.effects?.reset?.();
-  resetHitstop(); // a stale freeze must never carry across attempts/zones
+/** Register the fresh-zone-install implementation (update.js, at boot). */
+export function setRebuildZoneContent(fn) { _rebuildZoneContent = fn; }
+
+function rebuildZoneContent(ctx, h) {
+  if (!_rebuildZoneContent) return; // bare unit-test context: no world to install
+  _rebuildZoneContent(ctx, h);
 }
 
 // --- The four lifecycle operations -------------------------------------------
@@ -348,19 +283,6 @@ export function setBossRushReturn(on) { _bossRushReturn = !!on; }
 /** Whether the post-reward flow should route back to BOSS_RUSH. */
 export function getBossRushReturn() { return _bossRushReturn; }
 
-/**
- * Clear every recorded arrangement position so the next world generation is
- * treated as a first arrival and records its own fresh positions. Called by
- * startGame when a new world is generated. No-op otherwise — the arrangement
- * is fixed for the whole game and must never change mid-game.
- * @param {object} ctx the area context whose entities are being (re)arranged
- */
-export function resetGeneration(ctx) {
-  for (const e of ctx.enemies ?? []) delete e._initPos;
-  if (ctx.boss) delete ctx.boss._initPos;
-  for (const b of ctx.barrels ?? []) delete b._initPos;
-  for (const p of ctx.powerups ?? []) delete p._initPos;
-}
 
 /**
  * §1 Game start — from zero. Establishes the selected hero, global starting
@@ -422,8 +344,7 @@ export function startGame(ctx, heroDef) {
   // startGame (e.g. unit tests) leaves the existing world untouched. Death and
   // Continue never call startGame, so they never reroll.
   if (regenerateWorld && ctx.areaContext) {
-    const nw = regenerateWorld(ctx.areaContext);
-    resetGeneration(nw);
+    regenerateWorld(ctx.areaContext);
   }
   // Swap the hero in the collision world (only when a world is provided).
   if (ctx.world) { ctx.world.remove(ctx.oldHero); ctx.world.add(h); }
@@ -544,8 +465,13 @@ export function placeHeroAtEntry(h) {
  * @param {Hero} h
  * @param {object} [ctx]
  */
-export function restartAttempt(h, ctx) {
+export function restartAttempt(h, ctx, zoneId = null) {
   const c = (ctx ?? ctxOf(h)) || buildContextFromHero(h);
+  // The wallet rollback targets the zone the attempt FAILED IN. Callers pass
+  // it explicitly (captured before any transition mutates currentArea — a
+  // continue flips to area 1 while this very call is restarting the death
+  // zone); bare callers fall back to the hero's current zone.
+  const targetZone = zoneId ?? currentZoneId(h);
   // Trace: open a fresh life bucket for each NEW attempt. The very first
   // attempt after startGame/continueRun reuses the already-present bucket
   // (index 0 / activeContinue's scope); only subsequent death-restarts push.
@@ -554,7 +480,7 @@ export function restartAttempt(h, ctx) {
   } else {
     beginLife(h);
   }
-  enterZone(h, wctx.getActiveZone?.(h), 'death-retry', c);
+  enterZone(h, wctx.getActiveZone?.(h), 'death-retry', c, targetZone);
 }
 
 /**
@@ -596,7 +522,7 @@ export function startLife(h, ctx, opts = {}) {
  * @param {string} transition one of TRANSITIONS keys
  * @param {object} [ctx] area context for entity restoration
  */
-export function enterZone(h, zone, transition, ctx) {
+export function enterZone(h, zone, transition, ctx, zoneId = null) {
   const rule = TRANSITIONS[transition];
   if (!rule) throw new Error(`enterZone: unknown transition '${transition}'`);
 
@@ -604,7 +530,11 @@ export function enterZone(h, zone, transition, ctx) {
   if (rule.run === 'fresh') {
     // New game: fresh run already created in startGame. Nothing to do here.
   } else if (rule.run === 'rollback') {
-    restoreAreaEntryStats(h);
+    // Roll back to the SNAPSHOT OF THIS ZONE — never the hero's current
+    // level/area (which a continue has already flipped to area 1 while the
+    // retry is still restarting the death zone). Callers pass the zone id
+    // explicitly; bare callers fall back to the hero's current zone.
+    restoreZoneState(h, zoneId ?? currentZoneId(h));
   } else if (rule.run === 'refill-lives') {
     h.lives = GAME_RULES.startingLives;
     restoreZoneState(h, `${h.currentLevel}:1`);
@@ -622,11 +552,24 @@ export function enterZone(h, zone, transition, ctx) {
   }
   // 'keep' / 'fresh' → do nothing (fresh life is set by the Hero constructor)
 
-  // Restore zone arrangement (entities back to initial state)
-  const c = ctx ?? ctxOf(h) ?? buildContextFromHero(h);
-  if (rule.run === 'rollback' || rule.run === 'refill-lives' || rule.run === 'restore') {
-    restoreArea(c);
+  // Transient teardown FIRST for rebuild transitions: every attack handle,
+  // projectile, fire zone, particle, and effect from the failed attempt dies
+  // BEFORE the fresh entities are installed, so nothing can bleed across the
+  // boundary. The registered implementation owns the ordering with the
+  // reinstall itself (update.js rebuildZoneContent).
+  if (rule.zone === 'rebuild') {
+    const c = ctx ?? ctxOf(h) ?? buildContextFromHero(h);
+    c.clearTransients?.();
   }
+
+  // Install FRESH zone content — the single owner of the fresh-build contract.
+  // Rebuild transitions tear down transients and re-instantiate the zone from
+  // layout + population snapshot (instantiateZone): brand-new entity objects,
+  // never a field-by-field reset of mutated ones. The hero's currentArea is
+  // already set by the run rule above, so the zone resolved here is the zone
+  // the transition names (continue → area 1, death-retry → same area).
+  const c = ctx ?? ctxOf(h) ?? buildContextFromHero(h);
+  if (rule.zone === 'rebuild') rebuildZoneContent(c, h);
 
   // THE FIVE STEPS (always identical)
   placeHeroAtEntry(h);
@@ -646,7 +589,7 @@ export function enterZone(h, zone, transition, ctx) {
  * choices.
  *
  * @param {Hero} h
- * @param {object} ctx the area context (see restoreArea)
+ * @param {object} ctx the area context
  * @returns {boolean} true if the continue was applied (a continue was spent),
  *                    false if the pool was empty (Continue cannot activate).
  */
@@ -1065,8 +1008,11 @@ export function areaEntryOnAction(action, h, ctx) {
     // otherwise re-read a stale true → advance flavor → no energy refill).
     const advance = _advanceFlag() && !_menuEntryFlag();
     if (_consumeAdvanceFlags) _consumeAdvanceFlags();
+    // Same zone-id capture as the timed path: rollback targets the zone the
+    // player is about to replay, read before any transition touches areas.
+    const zoneId = `${h.currentLevel}:${h.currentArea}`;
     if (advance) arriveAtZone(h);
-    else restartAttempt(h, ctx);
+    else restartAttempt(h, ctx, zoneId);
     if (getState() !== S.PLAY) {
       tryTransition(S.PLAY);
       if (getState() !== S.PLAY) setState(S.PLAY);

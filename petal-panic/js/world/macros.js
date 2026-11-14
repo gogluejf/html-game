@@ -1005,8 +1005,8 @@ function resolveSlotType(slot, rng) {
  * (slot fields + `type`), with no references to live entities or the RNG. It
  * is the authoritative arrangement for the whole game: the resolver runs ONCE
  * per game (from the seed), its output is stored (e.g. on the hero or zone),
- * and `restoreArea` (lifecycle.js) replays that SAME stored population after a
- * life loss. The integration with `restoreArea` happens in task 7.1 (full
+ * and the fresh-zone install (update.js rebuildZoneContent) replays that SAME stored population after a
+ * life loss.
  * runtime wiring); this task only guarantees the output is a stable snapshot
  * that can be stored and restored byte-for-byte.
  */
@@ -1061,14 +1061,14 @@ export function populateArea(rng, layout, config = {}) {
  * Produce a stable, value-only SNAPSHOT of a population for storage and
  * restoration (task 4.1 / acceptance #5, lifecycle.md §6).
  *
- * The snapshot is the arrangement `restoreArea` (lifecycle.js) replays after a
+ * The snapshot is the arrangement the fresh-zone install replays after a
  * life loss. It is a deep copy of the population's plain-object contents
  * (enemies, barrels, powerups, structures, budgets) — no references to live
  * entities, the RNG, or the layout — so it can be stored on the hero or zone
  * and restored byte-for-byte. The same snapshot always restores the same
  * arrangement (the "fixed for the game" contract).
  *
- * NOTE: the integration with `restoreArea` (storing this snapshot on the
+ * NOTE: the fresh-zone install reads this snapshot (storing it on the
  * hero/zone and replaying it on life loss) happens in task 7.1 (full runtime
  * wiring). This helper only makes the resolver's output a stable, storable
  * snapshot.

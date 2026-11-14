@@ -157,7 +157,7 @@ export const AttackLifecycle = {
    * lives. Called on every attempt boundary (death-restart, manual retry,
    * continue, zone advance): anything that is NOT authored zone content
    * (enemies/barrels/powerups/checkpoints are restored from their snapshots by
-   * restoreArea instead) dies here, so no attack, projectile, fire zone,
+   * the fresh-zone install instead) dies here, so no attack, projectile, fire zone,
    * particle, or effect can ever bleed into the next attempt. New transient
    * systems register themselves in world/context.js; they get cleaned up for
    * free.

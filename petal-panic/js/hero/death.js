@@ -6,7 +6,6 @@ import { ctx } from '../world/context.js';
 import { S, tryTransition } from '../core/state.js';
 import { TUNING } from '../tuning.js';
 import { VIEW_H } from '../core/view.js';
-import { resetActiveZoneContent } from '../world/zoneLifecycle.js';
 import { showAreaEntry } from '../systems/lifecycle.js';
 
 /**
@@ -78,16 +77,12 @@ export function finishHeroDeath() {
       hero.currentArea = ctx.AREA_BOSS;
     }
     // Ensure the active zone's content is installed in the collision world
-    // before showing the entry screen. This updates the checkpoints array
-    // to the active zone's flags so the attempt start can latch the entry flag.
-    // BLOCKER 6: re-instantiate the zone's FRESH content from the stored
-    // population snapshot (buildWorld) rather than reusing the mutated
-    // entities — restoreArea() cannot re-add defeated enemies, destroyed
-    // barrels, or collected powerups (lifecycle.md §3: "the previous
-    // attempt's kills and destroyed objects do not leave the next attempt
-    // partly cleared"). Shared with retryLevel so a retry resets the
-    // area identically to a death-restart.
-    resetActiveZoneContent();
+    // before showing the entry screen. BLOCKER 6: the fresh install happens
+    // inside restartAttempt → enterZone('death-retry') when the player
+    // confirms (rule.zone === 'rebuild' → rebuildZoneContent): brand-new
+    // entities from the stored population snapshot — the old field-reset model could not
+    // re-add defeated enemies, destroyed barrels, or collected powerups
+    // (lifecycle.md §3). Shared with retryLevel via the same enterZone rule.
     // checkpoints.md §4: after the death presentation and the fade, consume
     // one life exactly once and show the SHARED area-entry screen with the new
     // count. The whole area is restored and the attempt starts beside the

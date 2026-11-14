@@ -89,12 +89,20 @@ function makeAreaContext(hero) {
     timers: { map: new Map() },
   };
   const checkpoint = { triggered: true, flashTimer: 0.5 };
+  // Fresh-build contract (fresh-zone-cleanup): enterZone's 'rebuild' transitions
+  // install brand-new zone entities from the layout snapshot. The stub world
+  // replays the ORIGINAL arrangement as fresh objects — the test's _enemy/
+  // _barrel/_powerup refs point at those fresh instances after any transition.
+  const freshEnemy = { ...enemy, x: enemy._initPos.x, y: enemy._initPos.y, hp: enemy.maxHp, aiState: 'idle', alive: true, timers: { map: new Map() } };
+  const freshBarrel = { ...barrel, x: barrel._initPos.x, y: barrel._initPos.y, hp: barrel.maxHp, alive: true, destroyed: false, timers: { map: new Map() } };
+  const freshPowerup = { ...powerup, x: powerup._initPos.x, y: powerup._initPos.y, collected: false, alive: true, timers: { map: new Map() } };
+  const freshCheckpoint = { triggered: false, flashTimer: 0 };
   const projectiles = { activeItems: [{ alive: true }], active: [{ alive: true }] };
   const coins = { activeItems: [{ alive: true, collected: false }], active: [{ alive: true, collected: false }] };
   const particles = { reset: () => {} };
   const effects = { reset: () => {} };
 
-  return {
+  const areaCtx = {
     enemies: [enemy],
     boss: null,
     barrels: [barrel],
@@ -109,6 +117,26 @@ function makeAreaContext(hero) {
     _powerup: powerup,
     _checkpoint: checkpoint,
   };
+
+  // The stub world: a rebuild replaces the context's entity lists with FRESH
+  // objects carrying the original arrangement and clears transients.
+  L.setRebuildZoneContent((c) => {
+    c.enemies = [freshEnemy];
+    c.barrels = [freshBarrel];
+    c.powerups = [freshPowerup];
+    c.checkpoints = [freshCheckpoint];
+    for (const p of c.projectiles?.activeItems ?? []) p.alive = false;
+    if (c.projectiles) c.projectiles.active.length = 0;
+    for (const c2 of c.coins?.activeItems ?? []) { c2.alive = false; c2.collected = true; }
+    if (c.coins) c.coins.active.length = 0;
+    c.particles?.reset?.();
+    c.effects?.reset?.();
+    c._enemy = freshEnemy;
+    c._barrel = freshBarrel;
+    c._powerup = freshPowerup;
+    c._checkpoint = freshCheckpoint;
+  });
+  return areaCtx;
 }
 
 // --- Tests -------------------------------------------------------------------
@@ -282,34 +310,10 @@ test('death in an area restarts that same area (same arrangement)', () => {
   assert.equal(h.lives, 2, 'lives decremented by caller, not by restartAttempt');
 });
 
-test('restoreArea: clears transient projectiles and coins', () => {
-  const h = makeTestHero();
-  const ctx = makeAreaContext(h);
-
-  // Add "live" projectiles and coins.
-  ctx.projectiles.activeItems.push({ alive: true });
-  ctx.projectiles.active.push({ alive: true });
-  ctx.coins.activeItems.push({ alive: true, collected: false });
-  ctx.coins.active.push({ alive: true, collected: false });
-
-  L.restoreArea(ctx);
-
-  assert.equal(ctx.projectiles.active.length, 0, 'all projectiles cleared');
-  assert.equal(ctx.coins.active.length, 0, 'all coins cleared');
-});
-
-test('rememberInitial: idempotent — records position once', () => {
-  const e = { x: 100, y: 200, _initPos: undefined };
-  L.rememberInitial(e, { aiState: 'idle' });
-  assert.equal(e._initPos.x, 100);
-  assert.equal(e._initPos.y, 200);
-  assert.equal(e._initPos.aiState, 'idle');
-
-  // Move the entity — re-recording must NOT overwrite.
-  e.x = 500;
-  L.rememberInitial(e, { aiState: 'idle' });
-  assert.equal(e._initPos.x, 100, 'initial position preserved (not re-recorded)');
-});
+// Fresh-build contract (fresh-zone-cleanup): the old restoreArea/rememberInitial
+// field-reset API is deleted — transitions install FRESH entities instead of
+// resetting mutated ones. The makeAreaContext stub world above replays that
+// contract, and every transition test asserts against the fresh instances.
 
 test('startGame: establishes fresh generation choices (rerolls when a regenerate callback is registered)', () => {
   // The real regenerate callback is registered by update.js at boot. We verify

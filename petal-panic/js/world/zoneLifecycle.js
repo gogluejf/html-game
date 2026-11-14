@@ -437,8 +437,12 @@ export function stepAreaEntrySequence(dt) {
       const advance = areaEntrySeq.advance && !_menuEntryPending;
       areaEntrySeq.advance = false; // consume: never re-read by a later entry
       _menuEntryPending = false;
+      // Capture the zone being entered BEFORE the transition mutates
+      // currentArea (continue flips to area 1): the failure-flavor wallet
+      // rollback must target the saved zone, not the post-transition one.
+      const zoneId = `${hero.currentLevel}:${hero.currentArea}`;
       if (advance) arriveAtZone(hero);
-      else restartAttempt(hero, ctx.areaContext);
+      else restartAttempt(hero, ctx.areaContext, zoneId);
       if (getState() !== S.PLAY) {
         if (!tryTransition(S.PLAY)) setState(S.PLAY);
       }
@@ -475,71 +479,10 @@ export function heroEntryPosition(hero, zone) {
 }
 
 // --- Retry / Continue from game over -------------------------------------------
-/**
- * Rebuild the active zone's FRESH content from the stored population snapshot
- * and install it into the collision world, so the next attempt starts from a
- * clean arrangement (defeated enemies, destroyed barrels, and collected
- * powerups are all restored). This is the BLOCKER 6 reset: restoreArea() alone
- * cannot re-add defeated entities, so we re-instantiate the whole zone from its
- * immutable snapshot instead. Shared by the death-restart path
- * (finishHeroDeath) and the pause/OVER retry path (retryLevel) so both
- * reset the area identically. No-op for non-area zones (the boss zone keeps its
- * own flow) or when no content is stored for the zone.
- */
-export function resetActiveZoneContent() {
-  const hero = ctx.hero;
-  // Transient teardown FIRST: every attack handle, projectile, fire zone,
-  // particle, and effect dies before the zone content is re-instantiated, so
-  // nothing from the failed attempt (molotov fire, barrel payloads, enemy
-  // attacks...) can bleed into the fresh one. Single owner: clearTransientWorld
-  // (combat/attack/lifecycle.js) — new transient systems register there once.
-  AttackLifecycle.clearTransientWorld();
-  const activeZone = ctx.getActiveZone(hero);
-  if (activeZone.kind === 'area' && ctx.world.world.has(activeZone.areaIdx)) {
-    const fresh = instantiateZone(
-      activeZone,
-      ctx.world.terrain.get(activeZone.areaIdx),
-      ctx.world.population.get(activeZone.areaIdx),
-      ctx.levelZones,
-    );
-    ctx.loadActiveZone(activeZone, fresh);
-  } else if (activeZone.kind === 'boss') {
-    // Boss zone: re-install the run-phase content — the floor + the boss
-    // checkpoint flag at the far right (fresh, un-triggered). The battle room
-    // is torn down: the machine goes dormant, the camera is re-bound to the
-    // full zone width, and the boss is pulled out of the collision world
-    // (re-added by enterBossRoom on the next trigger). Death in the room
-    // restarts the WHOLE area (boss-arena.md §3).
-    const bossCp = activeZone.entryFlag
-      ? [makeCheckpoint(activeZone.entryFlag.id, activeZone.entryFlag.x, activeZone.entryFlag.y, { isEntry: true, appearance: activeZone.entryFlag.appearance, spawnPos: activeZone.spawn })]
-      : [];
-    ctx.loadActiveZone(activeZone, { solids: activeZone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
-    // If a battle room was up, its 960px floor replaced the run floor —
-    // restore the full zone floor so the re-walk has ground under it.
-    if (ctx.solids.length === 1 && ctx.solidEntities[0] && ctx.solids[0].w === VIEW_W) {
-      restoreBossRunFloor();
-    }
-    ctx.collisionWorld.remove(ctx.boss);
-    ctx.bossZone.reset();
-    ctx.camera.unlock();
-    ctx.camera.setZoneBounds(activeZone);
-    const sp = activeZone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
-  }
-}
+// Fresh zone install (teardown + instantiateZone reinstall) now lives in
+// update.js as rebuildZoneContent, owned by enterZone's 'rebuild' transitions
+// (fresh-zone-cleanup). The old resetActiveZoneContent is deleted.
 
-/**
- * Manual retry (state-persistence.md §2.1). Costs exactly
- * 1 life and applies the SAME resets as a death-restart: zone-snapshot rollback
- * for coins+score, full energy, weapon/specials/shield/super cleared, world
- * unchanged. Rejected when no usable lives remain (no free restarts).
- *
- * Serves BOTH manual-retry callers: the pause menu's Retry option and the
- * Game Over (S.OVER) screen input — both route through update.js's
- * dispatchScreenInput `retry` action.
- *
- * Returns true when the retry was applied (life consumed + entry screen shown),
- * false when rejected (0 lives — caller should route to Game Over instead).
- */
 export function retryLevel() {
   const hero = ctx.hero;
   // Retry costs exactly 1 life (identical to dying). It must be REJECTED when
@@ -552,21 +495,13 @@ export function retryLevel() {
   if (hero.lives < 2) return false;
   // Cost: exactly 1 life (identical to dying).
   hero.lives -= 1;
-  // Reset the active zone to a fresh arrangement (enemies, barrels, powerups,
-  // coins all restored exactly like a death-restart). The timed entry sequence
-  // then fades in, holds, and auto-starts play via restartAttempt (which also
-  // restores the preserved arrangement + hero placement + wallet rollback +
-  // inventory reset — identical to the death path).
-  resetActiveZoneContent();
-  // BUG FIX (stale-zone retry): after a death the hero's checkpoint / camera
-  // can still reference the PREVIOUS zone (e.g. the area you were standing in
-  // before the clear-sequence advance installed the next one). retryLevel
-  // reinstalls the ACTIVE zone's content above, but restartAttempt later places
-  // the hero at h.checkpoint — so force-correct the checkpoint from the
-  // authoritative zone data (static, never stale) and re-clamp the camera.
-  // Same pattern as continueFromGameOver's vertical-zone-corruption fix.
+  // Fresh zone install happens inside restartAttempt → enterZone('death-retry')
+  // when the player confirms the entry screen (rule.zone === 'rebuild' routes
+  // through rebuildZoneContent in update.js) — no separate reinstall here.
+  // BUG FIX (stale-zone retry): after a death the camera can still reference
+  // the PREVIOUS zone; re-clamp it from the authoritative zone data (static,
+  // never stale) so the entry presentation frames the right area.
   const zone = ctx.getActiveZone(hero);
-  const sp = zone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
   ctx.camera.setZoneBounds(zone);
   showAreaEntry(hero, ctx.areaContext);
   console.log(`[lifecycle] PAUSE → AREA_ENTRY (manual retry, lives: ${hero.lives})`);
@@ -583,35 +518,18 @@ export function retryLevel() {
  */
 export function continueFromGameOver() {
   const hero = ctx.hero;
-  // Transient teardown (same contract as resetActiveZoneContent): a continue
-  // is an attempt boundary — no fire zones / projectiles / effects survive it.
+  // Transient teardown (same contract as rebuildZoneContent): a continue is an
+  // attempt boundary — no fire zones / projectiles / effects survive it. The
+  // fresh zone install itself happens inside continueRun → enterZone('continue')
+  // (rule.zone === 'rebuild'): currentArea is flipped to 1 FIRST by the run
+  // rule, so the zone resolved at install time is area 1 — this is what keeps
+  // a vertical first-area from stranding the hero mid-climb (the old bug: the
+  // collision world kept the death zone's terrain while the entry screen named
+  // area 1).
   AttackLifecycle.clearTransientWorld();
-  // Continue rolls the wallet back to zone 1-1's entry snapshot (lifecycle.js
-  // §4 / state-persistence.md §2.2). The respawned zone is area 1 of the
-  // CURRENT level — and it must be INSTALLED into the collision world, exactly
-  // like debugWrapToNextArea / stepClearSequence do for a genuine advance.
-  //
-  // BUG FIX (vertical-zone corruption): the old code called
-  // resetActiveZoneContent(), which only re-instantiates the zone the hero is
-  // CURRENTLY standing in (e.g. 1-3). continueRun then flips currentArea to 1
-  // and shows a "1-1" entry screen, but the collision world still held 1-3's
-  // vertical terrain and the checkpoint was the hardcoded horizontal floor —
-  // so the hero spawned mid-air in a 2688px lethal-bottom climb and died
-  // instantly. Install area 1's real content + spawn here so the world matches
-  // the zone the entry screen names.
-  const z1 = ctx.getActiveZone({ ...hero, currentArea: 1 });
-  if (z1.kind === 'area' && ctx.world.world.has(z1.areaIdx)) {
-    ctx.loadActiveZone(z1, ctx.world.world.get(z1.areaIdx));
-  } else if (z1.kind === 'boss') {
-    const bossCp = z1.entryFlag
-      ? [makeCheckpoint(z1.entryFlag.id, z1.entryFlag.x, z1.entryFlag.y, { isEntry: true, appearance: z1.entryFlag.appearance, spawnPos: z1.spawn })]
-      : [];
-    ctx.loadActiveZone(z1, { solids: z1.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
-  }
   // Respawn position is ZONE DATA (REVISION-zones-as-data §4): area 1's spawn
-  // (feet on its floor), NOT the hardcoded horizontal floor — this is what
-  // keeps a vertical first-area from stranding the hero mid-climb.
-  const sp = z1.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+  // (feet on its floor), NOT the hardcoded horizontal floor.
+  const z1 = ctx.getActiveZone({ ...hero, currentArea: 1 });
   ctx.camera.setZoneBounds(z1);
   const applied = continueRun(hero, ctx.areaContext);
   if (applied) console.log('[lifecycle] continue applied');

@@ -68,9 +68,10 @@ ok('every hero carries an attacks table with all three entries', () => {
     assert.ok(atk[ATTACK_MELEE].frames.length >= 5, `${id} melee frames must span the 5-frame swing`);
     assert.ok(atk[ATTACK_SPECIAL_MELEE] ?? HEROES[id].specialMelee.hitbox, `${id} missing special melee hitbox data`);
     // Supermove: NO hardcoded box — the damage window is sheet-authored only
-    // (per-frame `attack` boxes). The table keeps knockback data.
+    // (per-frame `attack` boxes). The table keeps knockback data as two tiers
+    // (moderate burst shove / big finisher launch) since the two-tier rework.
     assert.equal(atk[ATTACK_SUPERMOVE].box, undefined, `${id} supermove must not carry a hardcoded box`);
-    assert.ok(atk[ATTACK_SUPERMOVE].knockback, `${id} missing supermove knockback data`);
+    assert.ok(atk[ATTACK_SUPERMOVE].knockbackModerate && atk[ATTACK_SUPERMOVE].knockbackBig, `${id} missing supermove knockback data`);
   }
 });
 ok('per-hero special melee differences come from DATA, not code branches', () => {

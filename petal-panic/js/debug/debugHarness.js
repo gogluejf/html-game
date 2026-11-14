@@ -24,7 +24,6 @@ import { UNIT_PX_X, UNIT_PX_Y, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
 import { clearSeq } from '../world/zoneLifecycle.js';
 import { Effects } from '../effects.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from './debug.js';
-import { rememberInitial } from '../systems/lifecycle.js';
 // TEMP (special-weapons testing): flood special drops for slot-model QA.
 import { makePowerup } from '../objects/powerup.js';
 import { Theater } from './effect-theater.js';
@@ -212,7 +211,6 @@ export function tickDebugBarrelDrops(dt) {
       b.vy = d.vy ?? 0; // pre-seeded so staggered spawns land together
       ctx.barrels.push(b);
       ctx.collisionWorld.add(b);
-      rememberInitial(b); // death-restart restores it to its spawn spot
       Debug.logEvent(`DEBUG: dropped ${d.type} barrel @(${Math.round(d.x)},${Math.round(d.y)})`);
     }
   }

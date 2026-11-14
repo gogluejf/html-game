@@ -35,10 +35,10 @@ import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
 import { applyGodMode, setHeroRefSetter, tickDebugBarrelDrops, tickFrameTrace } from '../debug/debugHarness.js';
 import { buildWorld, instantiateZone, captureAreaMap, newGameSeed, getLastWorldSeed } from '../world/build.js';
-import { CLEAR_SEQ, clearSeq, areaEntrySeq, setMenuEntryPending, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryLevel, continueFromGameOver } from '../world/zoneLifecycle.js';
-export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryLevel, continueFromGameOver };
+import { CLEAR_SEQ, clearSeq, areaEntrySeq, setMenuEntryPending, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, retryLevel, continueFromGameOver } from '../world/zoneLifecycle.js';
+export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, retryLevel, continueFromGameOver };
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, roomFloorTop, BOSS_TRIGGER_X } from '../world/level.js';
-import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, applySavedState, makeHero } from '../systems/lifecycle.js';
+import { startGame, bindAreaContext, setRegenerateWorld, setRebuildZoneContent, showAreaEntry, applySavedState, makeHero } from '../systems/lifecycle.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
 import { loadStore } from '../systems/progressStore.js';
 import { Theater } from '../debug/effect-theater.js';
@@ -380,6 +380,11 @@ hero.zones = levelZones;
 // The boot game used the world baked at module load; only a new game after the
 // first rerolls. Death and Continue never call startGame, so they never reroll.
 setRegenerateWorld(regenerateWorld);
+// Fresh-zone install (fresh-zone-cleanup): enterZone's 'rebuild' transitions
+// route through this — the same teardown + instantiateZone reinstall that
+// resetActiveZoneContent performed when callers did it separately. Defined
+// after loadActiveZone below (function declaration, hoisted).
+setRebuildZoneContent(rebuildZoneContent);
 // Hero uses no anim (solid debugColor rect). Real sprites later.
 hero.anim = null;
 
@@ -460,7 +465,7 @@ export const checkpoints = [];
 
 // --- Active-zone installation (task 7.1) -------------------------------------
 // The area lifecycle context references the ACTIVE zone's entity lists. It is
-// REBUILT on every zone switch so restoreArea()/resetGeneration() (lifecycle.js)
+// REBUILT on every zone switch (fresh-zone-cleanup: content is always installed fresh)
 // operate on the current zone's content. The context object's identity is stable
 // (bound to the hero once) but its `barrels` array is refreshed in place.
 const areaContext = {
@@ -474,6 +479,11 @@ const areaContext = {
   particles,
   effects: Effects,
 };
+// Transient teardown hook for enterZone's rebuild transitions (fresh-zone-
+// cleanup): clearTransientWorld kills every attack handle, projectile, fire
+// zone, particle, and effect from the failed attempt BEFORE fresh entities
+// are installed. update.js owns the transient systems, so it owns this hook.
+areaContext.clearTransients = () => AttackLifecycle.clearTransientWorld();
 bindAreaContext(hero, areaContext);
 
 // Install the initial zone (area 1) into the collision world so the runtime
@@ -553,15 +563,54 @@ export function loadActiveZone(zone, content) {
   console.log(`[loadActiveZone] zone=${zone.areaIdx} removed ${JSON.stringify(oldCounts)} cw:${cwBefore}→${cwAfterRemove}, added new, cw final: ${collisionWorld.entities.size}`);
   console.log(`[loadActiveZone] checkpoints: ${checkpoints.map(c => `${c.checkpointId}@(${c.x},${c.y}) layer=${c.layer} alive=${c.alive}`).join(', ')}`);
 
-  // Refresh the area context's barrel list (its identity is stable) and re-record
-  // the arrangement ONCE (rememberInitial is idempotent; resetGeneration clears
-  // it on a new game so the fresh world records its own positions).
+  // Refresh the area context's barrel list (its identity is stable).
   areaContext.barrels.length = 0;
   areaContext.barrels.push(...barrels);
-  for (const e of realEnemies) rememberInitial(e, { aiState: e.aiState });
-  for (const b of barrels) rememberInitial(b);
-  for (const p of powerups) rememberInitial(p);
   return areaContext;
+}
+
+/**
+ * FRESH ZONE INSTALL — the implementation enterZone's 'rebuild' transitions
+ * route through (registered via setRebuildZoneContent). Tears down every
+ * transient (attack handles, projectiles, fire zones, particles, effects),
+ * re-instantiates the hero's CURRENT zone from layout + population snapshot
+ * (instantiateZone → brand-new entity objects), and rebinds the camera. Boss
+ * zones reinstall their run-phase content and tear down any active battle
+ * room (boss-arena.md §3). This is the former resetActiveZoneContent body —
+ * callers no longer invoke it separately; enterZone owns the ordering
+ * (run rule → life rule → rebuild → place hero).
+ */
+export function rebuildZoneContent(ctxArg, h) {
+  const hero = ctx.hero ?? h;
+  // Transient teardown is invoked by enterZone BEFORE this runs (the context's
+  // clearTransients hook) — see bindAreaContext below. This stays a no-op guard
+  // for any direct call path that skipped it.
+  const activeZone = getActiveZone(hero);
+  if (activeZone.kind === 'area' && world.world.has(activeZone.areaIdx)) {
+    const fresh = instantiateZone(
+      activeZone,
+      world.terrain.get(activeZone.areaIdx),
+      world.population.get(activeZone.areaIdx),
+      levelZones,
+    );
+    loadActiveZone(activeZone, fresh);
+  } else if (activeZone.kind === 'boss') {
+    // Boss zone: re-install the run-phase content — the floor + the boss
+    // checkpoint flag at the far right (fresh, un-triggered). The battle room
+    // is torn down: machine dormant, camera re-bound to full zone width, boss
+    // pulled out of the collision world (re-added by enterBossRoom on trigger).
+    const bossCp = activeZone.entryFlag
+      ? [makeCheckpoint(activeZone.entryFlag.id, activeZone.entryFlag.x, activeZone.entryFlag.y, { isEntry: true, appearance: activeZone.entryFlag.appearance, spawnPos: activeZone.spawn })]
+      : [];
+    loadActiveZone(activeZone, { solids: activeZone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
+    if (solidEntities.length === 1 && solidEntities[0] && SOLIDS[0].w === VIEW_W) {
+      restoreBossRunFloor();
+    }
+    collisionWorld.remove(boss);
+    bossZone.reset();
+    camera.unlock();
+  }
+  camera.setZoneBounds(activeZone);
 }
 
 /**
@@ -587,14 +636,13 @@ function regenerateWorld(oldCtx) {
   // Re-create the boss for the fresh game (it is a fresh entity per game).
   const oldBoss = boss;
   boss = makeElephant(-9999, ZONE_GROUND_Y); // parked off-world until the battle room
-  rememberInitial(boss, { aiState: boss.aiState });
   // The boss-zone flow machine references the boss entity; it reads boss.x/y
   // live, so it needs no rewiring. (bossZone.boss is the same object reference
   // the machine moves; the machine is created with the original boss, so keep
   // it pointing at the fresh one.)
   bossZone.boss = boss;
   // MAJOR 8: the area context's boss reference must follow the re-created
-  // boss, so restoreArea() (lifecycle.js) restores the FRESH boss on a
+  // boss, so the fresh-zone install uses the FRESH boss on a
   // life loss in the new game, not the stale entity from the old one.
   areaContext.boss = boss;
   if (oldBoss && collisionWorld.entities.has(oldBoss)) collisionWorld.remove(oldBoss);
