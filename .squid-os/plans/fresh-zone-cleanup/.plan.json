@@ -1,0 +1,189 @@
+{
+  "plan_name": "fresh-zone-cleanup",
+  "title": "Fresh-Zone Cleanup \u2014 delete dead entity-recycling layer",
+  "why": "Every zone transition (new game, death-retry, advance, continue, post-reboot load) already rebuilds zone content fresh via instantiateZone from layout+seed. The restoreArea/rememberInitial/_initPos recycling machinery underneath is a production no-op that misleads debugging (it cost a full investigation during the ghost-hero bug) and adds ~150 lines of reset code for a bug class that fresh-build eliminates.",
+  "outcomes": "restoreArea + 4 restore fns + rememberInitial + _initPos writes deleted; enterZone becomes the single owner of fresh zone install; preserved state (energy/coins/lives/run) provably untouched; test suite green with zero behavior change",
+  "milestones": [
+    {
+      "number": "1",
+      "name": "Evidence",
+      "pattern": [
+        "Characterization test"
+      ],
+      "objective": "Prove restoreArea is a production no-op before deleting anything.",
+      "success": "Logged evidence shows restore fns never fire in any real transition; baseline test suite green.",
+      "diagram": "flowchart LR\n    A[Playtest death-retry advance continue reboot-load] --> B[restore fns log calls]\n    B --> C{Any call with live _initPos?}\n    C -->|no| D[Confirmed dead - proceed]\n    C -->|yes| E[Stop - investigate caller]",
+      "tasks": [
+        {
+          "number": "1.1",
+          "name": "Instrument restore fns + baseline suite",
+          "type": "test",
+          "what": "Add a one-line console.warn at the top of restoreEnemy/restoreBarrel/restorePowerup/restoreCheckpoint in lifecycle.js that fires only when _initPos is present (i.e. a real restore would happen). Run full test suite as baseline.",
+          "why": "Deletion must be evidence-backed: if any production path actually restores, we stop and investigate instead of deleting live code.",
+          "files": [
+            "~ petal-panic/js/systems/lifecycle.js"
+          ],
+          "snippet": [
+            "// temporary instrumentation (deleted in M2)\nfunction restoreBarrel(b) {\n  if (!b || b._initPos === undefined) return;\n  console.warn('[evidence] restoreBarrel fired', b.type, b.x); // <- only on REAL restore\n  ..."
+          ],
+          "acceptance": [
+            "Baseline: node --test over js/test/*.test.js all green, count recorded",
+            "Instrumentation compiles clean, no test behavior change"
+          ],
+          "verify": [
+            "cd petal-panic && for f in js/test/*.test.js; do node --test $f >/dev/null || echo FAIL $f; done"
+          ]
+        },
+        {
+          "number": "1.2",
+          "name": "Playtest evidence pass",
+          "type": "chore",
+          "what": "In the browser: new game, die once (retry), advance an area, save-quit, reload page and Continue. Watch console for [evidence] lines.",
+          "why": "Tests exercise restoreArea directly with hand-built _initPos; only a real playthrough proves no production transition reaches it with live snapshots.",
+          "files": [
+            ""
+          ],
+          "snippet": [],
+          "acceptance": [
+            "Zero [evidence] lines across death-retry, advance, in-session continue, post-reboot continue",
+            "Game plays normally through all four transitions (sanity: fresh-build paths unaffected)"
+          ],
+          "verify": [
+            "manual - browser console inspection"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "2",
+      "name": "Consolidate zone install",
+      "pattern": [
+        "Single owner (Strangler)"
+      ],
+      "objective": "Make enterZone the one place that installs fresh zone content, in the pinned order: transients cleared -> fresh zone installed -> run/life rules -> hero placed.",
+      "success": "Death/retry/continue no longer call resetActiveZoneContent separately; enterZone does it via the transition rule; behavior identical.",
+      "diagram": "flowchart TD\n    A[transition name] --> B[enterZone]\n    B --> C[run rule: fresh rollback refill restore keep]\n    B --> D[life rule: reset refill keep fresh]\n    B --> E{rule rebuilds zone?}\n    E -->|death-retry continue save-load| F[clearTransientWorld + instantiateZone fresh]\n    E -->|advance new-game| G[zone already fresh-installed by caller]\n    F --> H[placeHeroAtEntry + resetHitstop + showAreaEntry]",
+      "tasks": [
+        {
+          "number": "2.1",
+          "name": "enterZone owns fresh zone install",
+          "type": "refactor",
+          "what": "Move the resetActiveZoneContent logic (transient teardown + instantiateZone reinstall, incl. boss-zone branch) into enterZone, gated by a new rule field (e.g. zone: 'rebuild') on death-retry/continue/save-load transitions. Callers (finishHeroDeath path, retryLevel, continueFromGameOver) drop their separate resetActiveZoneContent calls.",
+          "why": "Two owners of 'install zone content' is how the dead layer survived; one owner keyed by transition rule makes the fresh-build contract explicit and testable.",
+          "files": [
+            "~ petal-panic/js/systems/lifecycle.js",
+            "~ petal-panic/js/world/zoneLifecycle.js"
+          ],
+          "snippet": [
+            "// TRANSITIONS gains a zone dimension\n'death-retry': { run: 'rollback', life: 'reset', zone: 'rebuild' },\n'continue':    { run: 'refill-lives', life: 'reset', zone: 'rebuild' },\n'save-load':   { run: 'restore',    life: 'reset', zone: 'rebuild' },\n// advance/new-game: zone: 'keep' (caller already installed fresh content)\n\nexport function enterZone(h, zone, transition, ctx) {\n  const rule = TRANSITIONS[transition];\n  applyRunRule(rule, h);        // existing wallet/lives rollback\n  applyLifeRule(rule, h);       // existing transient resets\n  if (rule.zone === 'rebuild') rebuildZoneContent(ctx); // moved from resetActiveZoneContent\n  placeHeroAtEntry(h);          // pinned order - never reorder\n  resetHitstop();\n  showAreaEntry(h, ctx);\n}"
+          ],
+          "acceptance": [
+            "Death -> retry: zone entities are fresh objects (new references), hero placed at entry, lives decremented once",
+            "Continue (in-session): same rebuild, lives refilled, area back to level's area 1",
+            "Advance: behavior unchanged (no double-install)",
+            "Pinned order preserved: transients cleared before install, install before hero placement"
+          ],
+          "verify": [
+            "cd petal-panic && node --test js/test/levelFlow.test.js js/test/menuRunFlow.test.js js/test/lifecycle.test.js"
+          ]
+        },
+        {
+          "number": "2.2",
+          "name": "Regression: preserved state across transitions",
+          "type": "test",
+          "what": "Add a test asserting the hero/run objects SURVIVE death-retry and continue by reference (same instance), while zone entities are replaced (different references), and energy/coins/lives follow the per-transition rules.",
+          "why": "This is the user's core concern - the cleanup must provably not touch preserved state; pin it as a regression net before deletion.",
+          "files": [
+            "+ petal-panic/js/test/freshZone.test.js"
+          ],
+          "snippet": [
+            "// same hero + run survive, zone content is swapped\nconst heroBefore = h;\nenterZone(h, zone, 'death-retry', ctx);\nassert.equal(heroBefore, h, 'hero instance survives');\nassert.notEqual(enemiesBefore[0], ctx.enemies[0], 'enemies rebuilt fresh');\nassert.equal(h.lives, livesBefore - 1); // per-rule, not per-object"
+          ],
+          "acceptance": [
+            "Hero and run object identity stable across death-retry/continue",
+            "Zone entity references differ after rebuild transitions",
+            "Wallet rollback / life refill values match TRANSITIONS rules"
+          ],
+          "verify": [
+            "cd petal-panic && node --test js/test/freshZone.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "3",
+      "name": "Delete dead layer",
+      "pattern": [
+        "Strangler (cut over)"
+      ],
+      "objective": "Remove the recycling machinery now that enterZone is the single owner and evidence confirms it was a no-op.",
+      "success": "restoreArea + restore fns + rememberInitial + _initPos gone from production code; suite green; playtest clean.",
+      "diagram": "flowchart LR\n    A[rm restoreArea + 4 restore fns] --> B[rm rememberInitial + _initPos writes]\n    B --> C[rm instrumentation from M1]\n    C --> D[rewrite tests to enterZone contract]\n    D --> E[full suite + playtest]",
+      "tasks": [
+        {
+          "number": "3.1",
+          "name": "Delete restore machinery + _initPos",
+          "type": "refactor",
+          "what": "Remove from lifecycle.js: restoreArea, restoreEnemy, restoreBarrel, restorePowerup, restoreCheckpoint, rememberInitial, resetGeneration's entity loops, and the enterZone restoreArea call site. Remove rememberInitial calls in update.js (zone install + boss) and debugHarness.js; remove M1 instrumentation.",
+          "why": "The layer is proven dead and its presence misleads future debugging (it cost the ghost-hero investigation real time).",
+          "files": [
+            "~ petal-panic/js/systems/lifecycle.js",
+            "~ petal-panic/js/systems/update.js",
+            "~ petal-panic/js/debug/debugHarness.js"
+          ],
+          "snippet": [
+            "// gone: restoreArea(ctx), restoreEnemy(e), restoreBarrel(b),\\n//        restorePowerup(p), restoreCheckpoint(c), rememberInitial(e)\\n// kept:  alive/destroyed liveness flags - they still govern death\\n//        WITHIN an attempt; only the reset direction is deleted"
+          ],
+          "acceptance": [
+            "grep for restoreArea|rememberInitial|_initPos in js/ (non-test) returns zero hits",
+            "No production behavior change: full suite green except tests rewritten in 3.2"
+          ],
+          "verify": [
+            "cd petal-panic && grep -rn 'restoreArea\\|rememberInitial\\|_initPos' js --include=*.js | grep -v test"
+          ]
+        },
+        {
+          "number": "3.2",
+          "name": "Rewrite restore-era tests to fresh-build contract",
+          "type": "test",
+          "what": "Update the ~6 test files referencing restoreArea/rememberInitial (lifecycle, levelFlow, menuRunFlow, screens, populate, reward) to assert the fresh-build contract instead: transitions produce fresh entity references from layout+seed, deterministic per seed.",
+          "why": "Tests currently pin the dead API; they must pin the real contract or the suite breaks and future regressions hide behind stale assertions.",
+          "files": [
+            "~ petal-panic/js/test/lifecycle.test.js",
+            "~ petal-panic/js/test/levelFlow.test.js",
+            "~ petal-panic/js/test/menuRunFlow.test.js",
+            "~ petal-panic/js/test/screens.test.js",
+            "~ petal-panic/js/test/populate.test.js",
+            "~ petal-panic/js/test/reward.test.js"
+          ],
+          "snippet": [],
+          "acceptance": [
+            "Full node --test suite green across all 133 test files",
+            "No test references restoreArea/rememberInitial/_initPos"
+          ],
+          "verify": [
+            "cd petal-panic && for f in js/test/*.test.js; do node --test $f >/dev/null || echo FAIL $f; done"
+          ]
+        },
+        {
+          "number": "3.3",
+          "name": "Update lifecycle docs + final playtest",
+          "type": "doc",
+          "what": "Rewrite the restore sections of docs/levels/lifecycle.md \u00a73 (and any state-persistence.md references) to state the fresh-build contract: every zone entry installs content via instantiateZone from layout+seed; liveness flags are one-directional. Final browser playtest: new game, death-retry, advance, save-quit, reboot continue.",
+          "why": "The docs currently describe the deleted recycling model; stale docs are how dead code gets resurrected.",
+          "files": [
+            "~ petal-panic/docs/levels/lifecycle.md"
+          ],
+          "snippet": [],
+          "acceptance": [
+            "Docs describe fresh-build as the only zone-entry mechanism",
+            "Final playtest clean through all five transitions, no console errors"
+          ],
+          "verify": [
+            "manual - browser playtest + doc review"
+          ]
+        }
+      ]
+    }
+  ]
+}
