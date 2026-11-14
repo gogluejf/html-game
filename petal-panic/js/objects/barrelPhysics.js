@@ -73,15 +73,18 @@ export function barrelImpactSweep(b) {
 }
 
 // --- Falling-barrel impacts (stomp / bonk) -----------------------------------
-// A barrel falling FAST onto the hero is a physical impact, not a pass-through:
-//   - hero's head is in the lower half of the barrel and the barrel is moving
-//     down → STOMP: the barrel takes heavy damage (often dies → its normal
-//     destruction payload), the hero bounces off the top.
+// A barrel falling FAST onto a head is a physical impact, not a pass-through.
+// The stomp gate + kick-and-cook response apply to BOTH the hero and enemies:
+//   - target's head is in the lower half of the barrel and the barrel is moving
+//     down → STOMP: the barrel gets knocked up + away and a short fuse arms.
+//     It stays alive and arcs under gravity; it detonates when the fuse expires
+//     OR it lands on a surface — whichever first. The blast fires at its CURRENT
+//     position, so the explosion travels with the launched barrel.
 //   - any other fast overlap (barrel hits you from the side/above while you're
 //     under it) → the barrel is destroyed on impact and detonates normally;
-//     whoever (hero AND enemies) stands in the blast radius takes the blast's
-//     own damage. No special stomp rule, no flat "bonk" number — the
-//     detonation IS the damage. One rule for every way a barrel dies.
+//     whoever stands in the blast radius takes the blast's own damage. No
+//     special stomp rule, no flat "bonk" number — the detonation IS the damage.
+//     One rule for every way a barrel dies.
 // Below FALLING_MIN_VY the barrel is just settling — no impact (stacking and
 // gentle drops keep working). One impact per barrel per short window so a
 // resting-on-head frame doesn't machine-gun.
@@ -111,10 +114,12 @@ export const STAR_BARREL_KNOCKBACK = { x: 840, y: -320, hitstun: 0, iFrames: 0 }
 export const STAR_BARREL_FUSE = 0.6; // long enough to SEE the arc: launch up, hang, fall, boom
 
 /**
- * Impact check for one falling barrel against the hero. Called from the
- * dynamic-solid step AFTER integration (positions final for this frame).
+ * Impact check for one falling barrel against the hero AND live enemies.
+ * Called from the dynamic-solid step AFTER integration (positions final for
+ * this frame). First valid head-stomp target wins; the barrel gets ONE launch
+ * per impact window regardless of how many heads it overlaps.
  *
- * Kick-and-cook model: a fast-falling barrel that overlaps the hero gets a
+ * Kick-and-cook model: a fast-falling barrel that overlaps a head gets a
  * small knockback launch (up + away) and a short fuse instead of dying
  * instantly. It stays alive and arcs under gravity (stepDynamicSolid handles
  * the physics each frame); it detonates when the fuse expires OR it lands —
@@ -128,38 +133,52 @@ export function fallingBarrelImpact(b) {
   if (vy < FALLING_BARREL_MIN_VY) { b._fallCd = 0; return; } // settling, not falling
   if (b._fallCd > 0) { b._fallCd -= 1 / 60; return; }
 
-  const h = ctx.hero;
-  if (!h || !h.alive || h.dying) return;
   const bb = b.worldBox();
-  const hb = h.worldBox ? h.worldBox() : { x: h.x, y: h.y, w: h.w, h: h.h };
-  if (!aabbOverlap(bb, hb)) return;
-  // STOMP GATE — the barrel must be driving DOWN onto the hero's HEAD from
-  // above. Two geometric tests (both required):
-  //   1. The hero's HEAD REGION (top 25% of the body) overlaps the barrel's
-  //      LOWER half — your head is under the barrel's midline, i.e. it fell
-  //      ONTO you, not past/beside you. Using a region (not just the top
-  //      edge) matters for tall heroes: with a 91px hero and a 48px barrel,
-  //      "top edge inside lower half" needs ≥33px of overlap, which a fast
-  //      barrel can skip in one frame.
-  //   2. barrel's BOTTOM edge at or below the hero's TOP edge — the barrel is
-  //      still arriving from above. If its bottom is already ABOVE your head
-  //      you're level with it in the air: a side touch, NOT a stomp. This is
-  //      the case that used to cook barrels on mid-air contact.
-  const heroTop = hb.y;
-  const headBottom = hb.y + hb.h * 0.25; // head region: top quarter of the body
-  const barrelMidY = bb.y + bb.h / 2;
-  const barrelBottom = bb.y + bb.h;
-  if (headBottom <= barrelMidY) return;    // head not under the barrel — no stomp
-  if (barrelBottom < heroTop) return;      // barrel still above your head — no stomp
+  // Candidate targets: the hero first (player stomp is the primary interaction),
+  // then live enemies. Dead/dying bodies are skipped — no stomping corpses.
+  const candidates = [];
+  const h = ctx.hero;
+  if (h && h.alive && !h.dying) candidates.push(h);
+  for (const e of ctx.realEnemies ?? []) {
+    if (e && e.alive !== false && e.aiState !== 'dead') candidates.push(e);
+  }
 
-  // Launch the barrel off the hero: upward + horizontally away from the hero's
-  // center. Pure impulse (no damage — the stomp is a physics interaction, not
-  // a hit), so it rides the single door with damage: 0; stepDynamicSolid
-  // carries the arc.
-  const dirX = Math.sign((bb.x + bb.w / 2) - (hb.x + hb.w / 2)) || 1;
+  let target = null;
+  let tb = null;
+  for (const c of candidates) {
+    const box = c.worldBox ? c.worldBox() : { x: c.x, y: c.y, w: c.w, h: c.h };
+    if (!aabbOverlap(bb, box)) continue;
+    // STOMP GATE — the barrel must be driving DOWN onto the target's HEAD from
+    // above. Two geometric tests (both required):
+    //   1. The target's HEAD REGION (top 25% of the body) overlaps the barrel's
+    //      LOWER half — the head is under the barrel's midline, i.e. it fell
+    //      ONTO them, not past/beside them. Using a region (not just the top
+    //      edge) matters for tall heroes: with a 91px hero and a 48px barrel,
+    //      "top edge inside lower half" needs ≥33px of overlap, which a fast
+    //      barrel can skip in one frame.
+    //   2. barrel's BOTTOM edge at or below the target's TOP edge — the barrel
+    //      is still arriving from above. If its bottom is already ABOVE their
+    //      head they're level with it in the air: a side touch, NOT a stomp.
+    //      This is the case that used to cook barrels on mid-air contact.
+    const headBottom = box.y + box.h * 0.25; // head region: top quarter of body
+    const barrelMidY = bb.y + bb.h / 2;
+    const barrelBottom = bb.y + bb.h;
+    if (headBottom <= barrelMidY) continue;   // head not under the barrel
+    if (barrelBottom < box.y) continue;       // barrel still above the head
+    target = c;
+    tb = box;
+    break;
+  }
+  if (!target) return;
+
+  // Launch the barrel off the head: upward + horizontally away from the
+  // target's center. Pure impulse (no damage — the stomp is a physics
+  // interaction, not a hit), so it rides the single door with damage: 0;
+  // stepDynamicSolid carries the arc.
+  const dirX = Math.sign((bb.x + bb.w / 2) - (tb.x + tb.w / 2)) || 1;
   applyHit({
     provenance: AttackProvenance.STOMP,
-    source: h,
+    source: target,
     target: b,
     damage: 0,
     team: Team.NEUTRAL,
@@ -174,7 +193,7 @@ export function fallingBarrelImpact(b) {
   b.vy = STOMP_POP_VY;
   // Arm the fuse. It cooks while airborne; landing or fuse-expiry detonates.
   b._fuse = STOMP_FUSE;
-  record(h, { kind: 'enemyStomped' });
+  if (ctx.hero) record(ctx.hero, { kind: 'enemyStomped' });
   b._fallCd = FALLING_BARREL_COOLDOWN;
 }
 

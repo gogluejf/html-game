@@ -1,7 +1,7 @@
-// Falling-barrel-on-hero impact tests (kick-and-cook model): a fast-falling
-// barrel that overlaps the hero gets a small knockback launch + a short fuse.
-// It stays alive and arcs; it detonates when the fuse expires OR it lands, at
-// its current position. Run: node js/test/fallingBarrelStomp.test.js
+// Falling-barrel-on-head impact tests (kick-and-cook model): a fast-falling
+// barrel that overlaps the hero's OR an enemy's head gets a small knockback
+// launch + a short fuse. It stays alive and arcs; it detonates when the fuse
+// expires OR it lands, at its current position. Run: node js/test/fallingBarrelStomp.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -133,4 +133,56 @@ test('dead/destroyed barrel is skipped', () => {
   b.alive = false;
   U.fallingBarrelImpact(b);
   assert.equal(b._fuse, undefined, 'already-dead barrel untouched');
+});
+
+// --- Enemy-head stomps -------------------------------------------------------
+
+function makeEnemy(x, y, aiState = 'idle') {
+  return {
+    alive: true, aiState, x, y, w: 32, h: 48, vx: 0, vy: 0, // typical enemy box
+    worldBox() { return { x: this.x, y: this.y, w: this.w, h: this.h }; },
+  };
+}
+
+test('barrel falling onto an ENEMY head arms the fuse (no hero involved)', () => {
+  ctx.hero = null; // no hero at all — enemy stomp must still work
+  ctx.realEnemies = [makeEnemy(100, 100)]; // head region 100..112
+  const b = makeFallingBarrel(100, 80, 500); // barrel y=80..128, midline=104
+  resetEffects();
+  U.fallingBarrelImpact(b);
+  assert.ok(b._fuse != null && b._fuse > 0, 'enemy head stomp arms the fuse');
+  assert.equal(b.destroyed, false, 'barrel survives (cooking)');
+});
+
+test('hero takes priority when both hero and enemy heads are under the barrel', () => {
+  const hero = makeHero(100, 100);
+  ctx.hero = hero;
+  ctx.realEnemies = [makeEnemy(100, 100)];
+  const b = makeFallingBarrel(100, 80, 500);
+  resetEffects();
+  U.fallingBarrelImpact(b);
+  assert.ok(b._fuse != null && b._fuse > 0, 'stomp registered');
+  // One launch per impact window: a second call in the same frame is skipped.
+  const fuseBefore = b._fuse;
+  U.fallingBarrelImpact(b);
+  assert.equal(b._fuse, fuseBefore, 'no double-launch within the cooldown window');
+});
+
+test('dead enemy head does NOT arm a fuse', () => {
+  ctx.hero = null;
+  ctx.realEnemies = [makeEnemy(100, 100, 'dead')];
+  const b = makeFallingBarrel(100, 80, 500);
+  resetEffects();
+  U.fallingBarrelImpact(b);
+  assert.equal(b._fuse, undefined, 'corpse contact must NOT cook the barrel');
+});
+
+test('barrel level with an enemy TORSO in the air does NOT arm a fuse', () => {
+  ctx.hero = null;
+  ctx.realEnemies = [makeEnemy(100, 100)]; // head region 100..112
+  // Barrel y=125..173: below the head region, overlapping the torso.
+  const b = makeFallingBarrel(100, 125, 500);
+  resetEffects();
+  U.fallingBarrelImpact(b);
+  assert.equal(b._fuse, undefined, 'torso-level enemy contact must NOT cook the barrel');
 });
