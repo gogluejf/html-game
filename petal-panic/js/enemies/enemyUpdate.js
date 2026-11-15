@@ -87,8 +87,17 @@ function updateRealEnemy(e, dt) {
   // monkey can be configured as a shockwave mine); default 'explosion'.
   if (e.explosion && e.exploded && !e._explodeHandled) {
     e._explodeHandled = true;
-    const cx = e.x + e.w / 2;
-    const cy = e.y + e.h / 2;
+    // LATCH the blast position HERE, at the moment the engine fires — the
+    // first instant after `exploded` latched. A corpse integrates gravity
+    // every frame, so reading the box any later drifts the center (below the
+    // floor for ground enemies). Every source gets this for free: barrels,
+    // Jack-O'-Lantern, monkeys — no per-type latching needed.
+    if (e.explosion.cx == null) {
+      e.explosion.cx = e.x + e.w / 2;
+      e.explosion.cy = e.y + e.h / 2;
+    }
+    const cx = e.explosion.cx;
+    const cy = e.explosion.cy;
     invoke(e.explosion.payloadType ?? 'explosion', {
       x: cx, y: cy,
       radius: e.explosion.radius,

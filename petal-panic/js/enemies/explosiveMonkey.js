@@ -176,7 +176,8 @@ export class ExplosiveMonkey extends Enemy {
   detonate() {
     if (this._detonated || this.aiState === 'dead') return;
     this._detonated = true;
-    this.exploded = true;      // engine fires the blast next update pass
+    this.exploded = true;      // engine fires the blast next update pass and
+                               // latches the position there (enemyUpdate.js)
     // The body is gone the instant the blast starts; the short death duration
     // only keeps the entity in the normal removal pipeline for one beat.
     this._goneAtBlast = true;
