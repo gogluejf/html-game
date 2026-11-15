@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/heroes/bruno/hit_sheet.png",
+ "size": "2286x558",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "bruno hit",
+ "entities": [
+  {
+   "name": "bruno",
+   "anim": "hit",
+   "frames_dir": "petal-panic/assets/heroes/bruno",
+   "frames": [
+    {
+     "file": "hit_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      13,
+      464,
+      339,
+      558
+     ]
+    },
+    {
+     "file": "hit_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      366,
+      456,
+      322,
+      550
+     ]
+    },
+    {
+     "file": "hit_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      706,
+      440,
+      348,
+      535
+     ]
+    },
+    {
+     "file": "hit_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1050,
+      474,
+      381,
+      547
+     ]
+    },
+    {
+     "file": "hit_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1450,
+      432,
+      361,
+      527
+     ]
+    },
+    {
+     "file": "hit_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1814,
+      395,
+      345,
+      489
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-15"
+}

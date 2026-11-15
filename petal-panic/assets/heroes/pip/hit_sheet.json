@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/heroes/pip/hit_sheet.png",
+ "size": "2160x472",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "pip hit",
+ "entities": [
+  {
+   "name": "pip",
+   "anim": "hit",
+   "frames_dir": "petal-panic/assets/heroes/pip",
+   "frames": [
+    {
+     "file": "hit_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      18,
+      205,
+      299,
+      447
+     ]
+    },
+    {
+     "file": "hit_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      365,
+      195,
+      322,
+      456
+     ]
+    },
+    {
+     "file": "hit_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      710,
+      176,
+      336,
+      472
+     ]
+    },
+    {
+     "file": "hit_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1066,
+      138,
+      360,
+      458
+     ]
+    },
+    {
+     "file": "hit_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1453,
+      185,
+      323,
+      462
+     ]
+    },
+    {
+     "file": "hit_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1812,
+      233,
+      321,
+      418
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-15"
+}

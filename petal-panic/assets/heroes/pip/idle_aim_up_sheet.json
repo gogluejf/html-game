@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/heroes/pip/idle_aim_up_sheet.png",
+ "size": "888x1820",
+ "rows": 2,
+ "cols": 4,
+ "kind": "animation",
+ "description": "pip idle_aim_up",
+ "entities": [
+  {
+   "name": "pip",
+   "anim": "idle_aim_up",
+   "frames_dir": "petal-panic/assets/heroes/pip",
+   "frames": [
+    {
+     "file": "idle_aim_up_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      -455,
+      444,
+      455
+     ]
+    },
+    {
+     "file": "idle_aim_up_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      0,
+      -455,
+      444,
+      455
+     ]
+    },
+    {
+     "file": "idle_aim_up_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      0,
+      -455,
+      444,
+      455
+     ]
+    },
+    {
+     "file": "idle_aim_up_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      0,
+      -455,
+      444,
+      455
+     ]
+    },
+    {
+     "file": "idle_aim_up_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      -455,
+      444,
+      455
+     ]
+    },
+    {
+     "file": "idle_aim_up_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      0,
+      -455,
+      444,
+      455
+     ]
+    },
+    {
+     "file": "idle_aim_up_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      0,
+      -455,
+      444,
+      455
+     ]
+    },
+    {
+     "file": "idle_aim_up_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      0,
+      -455,
+      444,
+      455
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-14"
+}

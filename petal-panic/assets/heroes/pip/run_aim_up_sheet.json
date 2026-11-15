@@ -1,0 +1,194 @@
+{
+ "file": "petal-panic/assets/heroes/pip/run_aim_up_sheet.png",
+ "size": "1536x1064",
+ "rows": 4,
+ "cols": 4,
+ "kind": "animation",
+ "description": "pip run_aim_up",
+ "entities": [
+  {
+   "name": "pip",
+   "anim": "run_aim_up",
+   "frames_dir": "petal-panic/assets/heroes/pip",
+   "frames": [
+    {
+     "file": "run_aim_up_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f5.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f6.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f7.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f8.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f9.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f10.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f11.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f12.png",
+     "row": 2,
+     "col": 3,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f13.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f14.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f15.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    },
+    {
+     "file": "run_aim_up_f16.png",
+     "row": 3,
+     "col": 3,
+     "bbox": [
+      0,
+      -266,
+      384,
+      266
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-11-14"
+}
