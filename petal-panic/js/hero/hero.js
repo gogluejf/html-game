@@ -589,11 +589,15 @@ export class Hero extends Entity {
       // sets vx = dir * travelSpeed after this block, so we must not write it
       // here. Gravity still applies; jump-cancel is blocked (committed).
     } else if (stunned) {
-      // No control during recovery: bleed the knockback off with friction so it
-      // travels a short distance then settles, rather than stopping dead or
-      // being instantly overridden by held input.
-      this.vx *= GROUND_FRICTION;
-      if (Math.abs(this.vx) < 1) this.vx = 0;
+      // No control during recovery. AIR = NO X-FRICTION (matches enemy.js):
+      // a launched body keeps full knockback speed through the whole arc;
+      // friction only bleeds the slide once back on a surface. Applying
+      // ground friction mid-air halved every horizontal blast (double brake:
+      // air + landing), so stomps/knocks read at half their real force.
+      if (this.grounded) {
+        this.vx *= GROUND_FRICTION;
+        if (Math.abs(this.vx) < 1) this.vx = 0;
+      }
     } else if (input.lockMove && !stunned) {
       // Aiming in place stops locomotion, not gravity or damage knockback.
       // While hit-stunned we must NOT zero vx — that would erase the knockback

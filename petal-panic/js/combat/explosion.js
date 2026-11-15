@@ -40,7 +40,7 @@ export const TEAMS = Object.freeze(['ally', 'foe', 'neutral']);
 // Do NOT add a y bias here: oriented per-component (normal.y × KB.y) it pushes
 // far-side victims INWARD toward the center (sign flip), not outward.
 export const DEFAULT_EXPLOSION_KNOCKBACK = Object.freeze({
-  impulse: { x: 900, y: 0 }, hitstun: 0.50, iFrames: 0.60, dirMode: 'radial',
+  impulse: { x: 450, y: 0 }, hitstun: 0.50, iFrames: 0.60, dirMode: 'radial',
   ignoreVictimResistance: true,
 });
 
@@ -184,7 +184,15 @@ export function resolveExplosion(explosion, targets) {
     // The entity's accel/lerp in update() handles deceleration naturally.
     const mag = knockback?.impulse?.x ?? 0;
     const kx = normal.x * mag, ky = normal.y * mag;
-    Debug.logEvent(`[blast] ${_srcName(source)} → ${_tgtName(t)} | blastC=(${cx.toFixed(0)},${cy.toFixed(0)}) tgtC=(${tc.cx.toFixed(0)},${tc.cy.toFixed(0)}) dir=(${normal.x.toFixed(2)},${normal.y.toFixed(2)}) kb=(${kx.toFixed(0)},${ky.toFixed(0)})`);
+    // CONSOLE TRACE (temporary feel-debugging): launch state per victim —
+    // start position, both centers, direction, final velocity + its length.
+    // Proves every victim gets |v| = mag along the center-to-center line.
+    console.log(`[blast] ${_srcName(source)} → ${_tgtName(t)}` +
+      ` | START pos=(${t.x.toFixed(0)},${t.y.toFixed(0)})` +
+      ` | blastC=(${cx.toFixed(0)},${cy.toFixed(0)}) tgtC=(${tc.cx.toFixed(0)},${tc.cy.toFixed(0)}) R=${radius}` +
+      ` | dir=(${normal.x.toFixed(2)},${normal.y.toFixed(2)})` +
+      ` | v0=(${kx.toFixed(0)},${ky.toFixed(0)}) |v0|=${Math.hypot(kx, ky).toFixed(0)}` +
+      ` | ignoreResist=${knockback?.ignoreVictimResistance ?? false}`);
     const res = applyHit({
       provenance: AttackProvenance.EXPLOSION,
       source,
@@ -196,8 +204,47 @@ export function resolveExplosion(explosion, targets) {
     const dealt = res.dealt;
     if (dealt <= 0) continue;
 
+    // FLIGHT TRACE (temporary feel-debugging): simulate the victim's arc
+    // frame-by-frame (gravity + ground friction, same model as enemy.js) and
+    // log the path. Shows exactly how long they hang in the air vs skid on
+    // the ground — the real reason a vertical launch reads "bigger" than a
+    // horizontal one at identical |v|.
+    _traceFlight(t, kx, ky, `${_tgtName(t)}`);
+
     hit.push(t);
   }
 
   return { center: { cx, cy }, radius, hit };
+}
+
+/** Simulate + log a victim's post-blast flight: every 3rd frame (20Hz) until
+ * it stops or 3s elapse. Mirrors enemy.js physics: GRAVITY 1500, no air x-decay,
+ * GROUND_SETTLE_FRICTION 0.9/frame while grounded. Ground plane = the victim's
+ * starting feet height (blast can happen above a platform). */
+function _traceFlight(t, vx0, vy0, label) {
+  const GRAVITY = 1500, FRICTION = 0.9, DT = 1 / 60;
+  const groundY = t.y + t.h; // feet at launch = local floor
+  let x = t.x, y = t.y, vx = vx0, vy = vy0;
+  let apex = 0, landedAt = null, frame = 0;
+  const rows = [`[flight:${label}] t=0.00s pos=(${x.toFixed(0)},${y.toFixed(0)}) v=(${vx.toFixed(0)},${vy.toFixed(0)}) h=0px (LAUNCH)`];
+  while (frame < 180) { // 3s max
+    vy += GRAVITY * DT;
+    x += vx * DT; y += vy * DT;
+    const onGround = y + t.h >= groundY;
+    if (onGround) {
+      if (landedAt == null) landedAt = frame * DT;
+      y = groundY - t.h; vy = 0; vx *= FRICTION;
+      if (Math.abs(vx) < 1) vx = 0;
+    }
+    apex = Math.max(apex, groundY - (y + t.h));
+    frame++;
+    if (frame % 3 === 0) {
+      rows.push(`[flight:${label}] t=${(frame * DT).toFixed(2)}s pos=(${x.toFixed(0)},${y.toFixed(0)}) v=(${vx.toFixed(0)},${vy.toFixed(0)}) h=${Math.max(0, groundY - (y + t.h)).toFixed(0)}px${onGround ? ' [GROUND]' : ''}`);
+    }
+    if (onGround && vx === 0) {
+      rows.push(`[flight:${label}] ⛔ STOP t=${(frame * DT).toFixed(2)}s pos=(${x.toFixed(0)},${y.toFixed(0)}) travelX=${(x - t.x).toFixed(0)}px apex=${apex.toFixed(0)}px airtime=${(landedAt ?? 0).toFixed(2)}s`);
+      break;
+    }
+  }
+  console.log(rows.join('\n'));
 }
