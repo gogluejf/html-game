@@ -83,6 +83,26 @@ export function spriteBurst(params = {}) {
   return {
     update(dt) { t += dt; if (t >= duration - 1e-9) this.complete(); },
     render(ctx) {
+      // Debug box: computed from the SAME math as the image path (not inside
+      // it) so it exists in EVERY graphic mode — primitive fallback frames
+      // included. Previously it was only stamped when the high-graphic image
+      // actually drew, so primitive+collision never showed burst boxes.
+      if (Debug.enabled && hasSheet) {
+        const idx = Math.min(frames.length - 1, Math.floor(t * (anim.fps ?? 14)));
+        const cb = anim.collisionBox;
+        const fr = frames[idx];
+        let bx = x - cb.w * scale / 2, by = y - cb.h * scale / 2; // centered default
+        if (anchor !== 'center') {
+          const ax = cb.x + cb.w / 2;
+          const ay = anchor === 'top-center' ? cb.y : (cb.y + cb.h);
+          const ox = fr.offset?.x ?? 0, oy = fr.offset?.y ?? 0;
+          bx = x - (ax - ox) * scale - cb.x * scale;
+          by = y - (ay - oy) * scale - cb.y * scale;
+        }
+        this._debugBox = { x: bx, y: by, w: cb.w * scale, h: cb.h * scale };
+      } else {
+        this._debugBox = null;
+      }
       // High-graphic: draw the current sheet frame. Missing/unloaded frames
       // fall through to the procedural fallback so pre-boot still shows it.
       if (isHighGraphic() && frames) {
@@ -119,22 +139,8 @@ export function spriteBurst(params = {}) {
               }
             }
             ctx.drawImage(img, dx, dy, w, h);
-            // Debug: expose the sheet's collision box in world space so the
-            // F3 collision layer (drawDebugOverlay) can draw it as a gray box
-            // alongside entity boxes. Computed here — only render() knows the
-            // per-frame offset transform — and consumed by the overlay pass.
-            if (Debug.enabled && (Debug.viewMode === 0 || Debug.viewMode === 2 || Debug.viewMode === 3)) {
-              const cb = anim.collisionBox;
-              const ox = frames[idx].offset?.x ?? 0, oy = frames[idx].offset?.y ?? 0;
-              this._debugBox = {
-                x: dx + (cb.x - ox) * scale,
-                y: dy + (cb.y - oy) * scale,
-                w: cb.w * scale,
-                h: cb.h * scale,
-              };
-            } else {
-              this._debugBox = null;
-            }
+            // (Debug box is stamped at the top of render() — same math, all
+            // graphic modes; see _debugBox there.)
             ctx.restore();
           }
           return;
