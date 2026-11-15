@@ -1,0 +1,382 @@
+{
+  "plan_name": "movement-goal-refactor",
+  "title": "Goal-Based Movement System",
+  "why": "Replace all scattered velocity math (friction, snaps, impulses, special cases) with a single goal-based lerp update loop. Every entity controls movement by setting vxGoal/vyGoal or direct velocity impulses. One update function does the math. Inversion of control: systems declare intent, engine executes motion.",
+  "outcomes": "Single movement API for all entities (hero, enemies, projectiles, barrels, particles). No more vx*=0.85, no more 10 special cases. Knockback/jump/explosion/homing all route through the same goal+lerp pattern. Feel identical to current tuning.",
+  "milestones": [
+    {
+      "number": "1",
+      "name": "Core Movement API",
+      "pattern": [
+        "Single Responsibility, Inversion of Control"
+      ],
+      "objective": "Create the goal-based lerp update function and entity properties (vxGoal, vyGoal, accel, gravAccel) that ALL entities use. This is the one place velocity math happens.",
+      "success": "A single updateVelocity(entity, dt) function exists. It lerps vx toward vxGoal and vy toward vyGoal at the entity's accel rate. No other file does velocity decay/approach math.",
+      "diagram": "graph TD\n    A[Entity] --> B[vx, vy current]\n    A --> C[vxGoal, vyGoal target]\n    A --> D[accel, gravAccel rates]\n    B --> E[updateVelocity]\n    C --> E\n    D --> E\n    E --> F[vx += vxGoal - vx * accel * dt]\n    E --> G[vy += vyGoal - vy * gravAccel * dt]\n    F --> H[x += vx * dt]\n    G --> I[y += vy * dt]",
+      "tasks": [
+        {
+          "number": "1.1",
+          "name": "Goal-based velocity update function",
+          "type": "feature",
+          "what": "Create updateVelocity(entity, dt) in a new core/movement.js module. Lerps vx toward vxGoal and vy toward vyGoal using exponential approach (vx += (vxGoal - vx) * accel * dt). Integrates position (x += vx * dt). Reads entity properties: vxGoal, vyGoal, accel, gravAccel.",
+          "why": "This is the single choke point for all velocity math. Replaces friction constants, air ramps, ground snaps, and every other scattered vx mutation.",
+          "files": [
+            "+ petal-panic/js/core/movement.js"
+          ],
+          "snippet": [
+            "// core/movement.js \u2014 single velocity update for all entities\n// Exponential lerp: fast approach, slow settle (matches current friction feel)\nexport function updateVelocity(e, dt) {\n  // Horizontal: lerp vx toward vxGoal at e.accel rate\n  e.vx += ((e.vxGoal ?? 0) - e.vx) * (e.accel ?? 10) * dt;\n  // Snap to zero when close enough (avoid float dust)\n  if (Math.abs(e.vx) < 1 && (e.vxGoal ?? 0) === 0) e.vx = 0;\n\n  // Vertical: lerp vy toward vyGoal (gravity goal) at e.gravAccel rate\n  e.vy += ((e.vyGoal ?? 0) - e.vy) * (e.gravAccel ?? 8) * dt;\n\n  // Integrate position\n  e.x += e.vx * dt;\n  e.y += e.vy * dt;\n}\n\n// Impulse: set velocity directly (knockback, jump, explosion)\n// The goal system will naturally decay it toward the next frame's goal.\nexport function applyImpulse(e, ivx, ivy) {\n  e.vx += ivx;\n  e.vy += ivy;\n}"
+          ],
+          "acceptance": [
+            "updateVelocity lerps vx toward vxGoal exponentially",
+            "updateVelocity lerps vy toward vyGoal exponentially",
+            "Position integrates from velocity each call",
+            "applyImpulse adds to current velocity (goal unchanged)",
+            "Entity with vx=800, vxGoal=0, accel=10 decays smoothly to 0 over ~0.5s"
+          ],
+          "verify": [
+            "node --experimental-vm-modules petal-panic/js/test/movement.test.js"
+          ]
+        },
+        {
+          "number": "1.2",
+          "name": "Entity movement properties",
+          "type": "feature",
+          "what": "Add vxGoal, vyGoal, accel, gravAccel properties to the base Entity class (core/entity.js). Defaults: vxGoal=0, vyGoal=0, accel=10, gravAccel=8. Hero gets tuned values matching current feel. Enemies/projectiles/barrels get their own tuning.",
+          "why": "Every entity needs the goal+accel data. Centralizing on Entity means every object in the game automatically gets the movement system.",
+          "files": [
+            "~ petal-panic/js/core/entity.js"
+          ],
+          "snippet": [
+            "// In Entity.initialize() or constructor:\nthis.vxGoal = 0;       // target horizontal speed (px/s)\nthis.vyGoal = 0;       // target vertical speed (gravity goal, e.g. +800 terminal)\nthis.accel = 10;       // horizontal lerp rate (higher = snappier)\nthis.gravAccel = 8;    // vertical lerp rate (higher = heavier fall)\n// Existing vx, vy stay as-is (current speed)"
+          ],
+          "acceptance": [
+            "All entities have vxGoal, vyGoal, accel, gravAccel by default",
+            "Hero has tuned accel matching current ground friction feel",
+            "No existing entity breaks from new properties (defaults are safe)"
+          ],
+          "verify": [
+            "node --experimental-vm-modules petal-panic/js/test/movement.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "2",
+      "name": "Hero Movement Migration",
+      "pattern": [
+        "Strangler Fig (replace one system at a time)"
+      ],
+      "objective": "Migrate the hero's movement from scattered friction/snaps/ramps to the goal-based system. Input sets vxGoal, jump sets vy impulse, gravity is vyGoal. Feel must be identical to current.",
+      "success": "Hero movement uses ONLY updateVelocity + input setting vxGoal + jump applying impulse. No more GROUND_FRICTION, no more AIR_ACCEL ramp, no more air reversal special case. Playtest feels the same.",
+      "diagram": "graph TD\n    A[Input: left/right] --> B[vxGoal = -runSpeed / +runSpeed / 0]\n    C[Jump press] --> D[applyImpulse: vy = -jumpSpeed]\n    E[Gravity] --> F[vyGoal = +terminalVelocity]\n    B --> G[updateVelocity]\n    D --> G\n    F --> G\n    G --> H[x,y updated]",
+      "tasks": [
+        {
+          "number": "2.1",
+          "name": "Replace hero ground/air movement with goal system",
+          "type": "refactor",
+          "what": "In hero.js update(): replace the entire vx block (lines ~590-680: stunned friction, lockMove zero, ground snap, air reversal, air ramp, no-input friction) with: read input \u2192 set vxGoal. Call updateVelocity(). Remove GROUND_FRICTION, AIR_ACCEL, SLIDE_DECEL constants and all branches.",
+          "why": "This is the biggest win. 10 special cases become 1 line (set vxGoal from input) + 1 call (updateVelocity). Crouch/slide becomes a vxGoal modifier, not a separate friction branch.",
+          "files": [
+            "~ petal-panic/js/hero/hero.js"
+          ],
+          "snippet": [
+            "// In hero.update(), replace the entire horizontal movement block with:\n\n// --- Horizontal goal (replaces all friction/snap/reversal/ramp branches) ---\nif (this.supermoveActive || this.specialMeleeActive) {\n  // Committed moves own vx directly (bypass goal)\n  // ... existing supermove/specialMelee vx code stays as direct write\n} else if (this.hitStunned) {\n  this.vxGoal = 0; // stunned: aim for stop, lerp decays naturally\n} else if (input.lockMove) {\n  this.vxGoal = 0; // aiming in place\n} else {\n  const moveDir = (input.right ? 1 : 0) - (input.left ? 1 : 0);\n  this.vxGoal = moveDir * this.stats.speed * UNIT_PX_X;\n  // Crouch: reduce goal (slide feel comes from lower accel, not separate friction)\n  if (this.crouching) this.vxGoal *= 0.3;\n}\n\n// --- Vertical goal (gravity) ---\nthis.vyGoal = GRAVITY_TERMINAL; // e.g. +800 (Y-down positive)\n\n// --- Single velocity update ---\nupdateVelocity(this, dt);"
+          ],
+          "acceptance": [
+            "Hero runs at full speed when input held (same as now)",
+            "Hero stops smoothly on release (lerp decay, same feel as friction)",
+            "Air control: lower accel in air gives floaty glide (tune to match current)",
+            "Crouch slide: reduced vxGoal + normal accel = skid feel",
+            "Hitstun: vxGoal=0, lerp decays knockback naturally",
+            "No more GROUND_FRICTION / AIR_ACCEL / SLIDE_DECEL constants in hero.js"
+          ],
+          "verify": [
+            "Manual playtest: run, stop, jump, air-control, crouch-slide, get hit"
+          ]
+        },
+        {
+          "number": "2.2",
+          "name": "Replace hero gravity + jump with goal system",
+          "type": "refactor",
+          "what": "Replace vy += GRAVITY * dt + MAX_FALL_SPEED clamp with vyGoal = +terminal. Jump becomes applyImpulse(this, 0, -jumpSpeed). Remove the gravity integration block and the MAX_FALL clamp from hero.update().",
+          "why": "Gravity as a goal means terminal velocity is built-in (lerp can't overshoot). No clamp needed. Jump is an impulse that the goal system naturally decays.",
+          "files": [
+            "~ petal-panic/js/hero/hero.js"
+          ],
+          "snippet": [
+            "// Replace:\n//   this.vy += GRAVITY * dt;\n//   if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;\n//   this.y += this.vy * dt;\n// With:\n//   this.vyGoal = TERMINAL_VELOCITY; // +800 (set once or per-surface)\n//   // updateVelocity handles the lerp + integration\n\n// Jump (replaces this.vy = -this.stats.jump):\napplyImpulse(this, 0, -this.stats.jump * UNIT_PX_Y);\nthis.jumpsUsed++;"
+          ],
+          "acceptance": [
+            "Hero falls at terminal velocity (never exceeds vyGoal)",
+            "Jump launches hero upward (impulse), then gravity goal pulls back down",
+            "Arc shape matches current jump feel (tune gravAccel to match)",
+            "Double jump works (second impulse while vyGoal still pulling down)",
+            "No more MAX_FALL_SPEED clamp in hero.js"
+          ],
+          "verify": [
+            "Manual playtest: jump arc, double jump, fall speed"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "3",
+      "name": "Knockback + Explosion Migration",
+      "pattern": [
+        "Single Choke Point"
+      ],
+      "objective": "All knockback (contact, explosion, projectile hit, stomp) becomes applyImpulse(). The goal system (vxGoal=0 during hitstun) handles the decay. No more manual friction during stun.",
+      "success": "Every damaging hit calls applyImpulse(target, kx, ky). Hitstun sets vxGoal=0. The lerp decays the impulse naturally. No special 'stunned friction' branch exists.",
+      "diagram": "graph TD\n    A[Hit detected] --> B[applyImpulse: vx += kx, vy += ky]\n    B --> C[Set hitstun timer]\n    C --> D[vxGoal = 0 during stun]\n    D --> E[updateVelocity lerps vx toward 0]\n    E --> F[Natural decay arc]",
+      "tasks": [
+        {
+          "number": "3.1",
+          "name": "Route all knockback through applyImpulse",
+          "type": "refactor",
+          "what": "In hitResolution.js: replace applyKnockback(target, kb) with applyImpulse(target, kb.x, kb.y). Remove the 'stunned friction' branch from hero.js (vxGoal=0 during hitstun handles decay). Explosion/contact/projectile knockback all just call applyImpulse.",
+          "why": "Knockback becomes a pure impulse. The goal system decays it. No more 'while stunned, multiply vx by 0.85' special case. One mechanism for all velocity decay.",
+          "files": [
+            "~ petal-panic/js/combat/hitResolution.js",
+            "~ petal-panic/js/hero/hero.js"
+          ],
+          "snippet": [
+            "// In hitResolution.js, replace:\n//   applyKnockback(target, context.knockback);\n// With:\napplyImpulse(target, context.knockback.x, context.knockback.y);\n// Hitstun timer still set (for input lock + anim), but NO velocity math here.\n\n// In hero.js update(), during hitstun:\n//   this.vxGoal = 0;  // lerp handles the decay, no friction branch needed"
+          ],
+          "acceptance": [
+            "Explosion knockback launches hero with full impulse (no friction eating frame 1)",
+            "Contact knockback shoves hero, lerp decays it smoothly",
+            "No 'stunned' friction branch in hero.js",
+            "applyKnockback function removed or deprecated"
+          ],
+          "verify": [
+            "Manual playtest: get hit by enemy, explosion, projectile \u2014 feel the launch + settle"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "4",
+      "name": "Projectiles + Objects Migration",
+      "pattern": [
+        "Uniform Entity Update"
+      ],
+      "objective": "All projectiles (thorns, bombs, homing missiles), barrels, and particles use updateVelocity. Launch = set vx/vy + vxGoal/vyGoal. Homing = update vxGoal per frame via normalized aim vector. No more manual vx/vy integration in projectile.update().",
+      "success": "Projectile entities call updateVelocity() in their update loop. Homing steers by setting vxGoal to normalized direction \u00d7 speed. Barrels get launched via applyImpulse and settle via goal lerp. No entity does its own x += vx * dt outside updateVelocity.",
+      "diagram": "graph TD\n    A[Projectile spawn] --> B[vx = dir * speed, vxGoal = dir * speed]\n    B --> C[updateVelocity each frame]\n    D[Homing: per-frame steer] --> E[vxGoal = normalize target - pos * speed]\n    E --> C\n    F[Impact / TTL] --> G[vxGoal = 0, vyGoal = terminal]\n    G --> C\n    C --> H[Natural decel after impact]",
+      "tasks": [
+        {
+          "number": "4.1",
+          "name": "Migrate projectile movement to goal system",
+          "type": "refactor",
+          "what": "In Projectile.update(): replace manual vx/vy integration + gravity with updateVelocity(). On spawn: set vx/vy AND vxGoal/vyGoal to launch direction \u00d7 speed. Homing: per-frame set vxGoal = normalize(target - pos) * speed. On impact/TTL: vxGoal=0, vyGoal=terminal (natural decel).",
+          "why": "Projectiles stop doing their own math. They declare a goal, the engine moves them. Homing becomes trivial: just update the goal vector each frame.",
+          "files": [
+            "~ petal-panic/js/objects/projectile.js"
+          ],
+          "snippet": [
+            "// In Projectile.initialize() or spawn:\nent.vx = cos * speed;\nent.vy = sin * speed;\nent.vxGoal = cos * speed;  // maintain launch speed\nent.vyGoal = sin * speed;\n\n// In Projectile.update(dt), replace manual integration:\n//   this.vy += this.gravityValue * dt;\n//   this.x += this.vx * dt;\n//   this.y += this.vy * dt;\n// With:\nif (this._homingTarget && this._homingTarget.alive) {\n  // Steer: update goal toward target (normalized aim \u00d7 speed)\n  const dx = target.cx - this.cx;\n  const dy = target.cy - this.cy;\n  const len = Math.hypot(dx, dy) || 1;\n  this.vxGoal = (dx / len) * this.speed;\n  this.vyGoal = (dy / len) * this.speed;\n}\nupdateVelocity(this, dt);\n\n// On impact / TTL expiry:\nthis.vxGoal = 0;\nthis.vyGoal = TERMINAL_VELOCITY; // fall naturally"
+          ],
+          "acceptance": [
+            "Thorns fly straight at constant speed (vxGoal = launch speed)",
+            "Bombs arc (vyGoal transitions to terminal after launch)",
+            "Homing missiles steer smoothly toward target (per-frame goal update)",
+            "No more manual x += vx * dt in Projectile.update()",
+            "Projectile decelerates naturally after impact (goal = 0)"
+          ],
+          "verify": [
+            "Manual playtest: shoot thorns, throw bomb, fire homing missile"
+          ]
+        },
+        {
+          "number": "4.2",
+          "name": "Migrate barrels + objects to goal system",
+          "type": "refactor",
+          "what": "Barrels (GameObj) use updateVelocity for their launched state. When knocked back: applyImpulse sets velocity, vxGoal/vyGoal = 0 (settle naturally). Rolling/falling barrels: vyGoal = terminal. Remove manual barrel physics integration.",
+          "why": "Barrels that get blown up by other barrels should arc and settle using the same goal system. No custom barrel friction or gravity code.",
+          "files": [
+            "~ petal-panic/js/objects/barrelPhysics.js"
+          ],
+          "snippet": [
+            "// In barrel physics step, replace manual integration with:\n// Falling / rolling:\nbarrel.vyGoal = TERMINAL_VELOCITY;\nbarrel.vxGoal = 0; // settle horizontally\nupdateVelocity(barrel, dt);\n\n// When launched by explosion (applyImpulse already set vx/vy):\n// Goal is already 0, lerp decays the launch naturally.\n// No separate 'barrel friction' constant needed."
+          ],
+          "acceptance": [
+            "Launched barrels arc up and settle (goal lerp handles it)",
+            "Falling barrels fall at terminal velocity",
+            "No more custom barrel velocity decay in barrelPhysics.js"
+          ],
+          "verify": [
+            "Manual playtest: stomp barrel, explode barrel next to barrel"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "5",
+      "name": "Cleanup + Tuning",
+      "pattern": [
+        "Strangler Fig (final cutover)"
+      ],
+      "objective": "Remove all dead code: GROUND_FRICTION, AIR_ACCEL, SLIDE_DECEL, MAX_FALL_SPEED, applyKnockback, old friction branches. Tune accel/gravAccel per entity type until feel matches current. Run full test suite.",
+      "success": "Zero velocity-math constants outside core/movement.js. All tests pass. Playtest confirms identical feel. No entity does its own x += vx * dt.",
+      "diagram": "graph LR\n    A[Find all vx/vy mutations] --> B{Is it updateVelocity or applyImpulse?}\n    B -->|yes| C[Keep]\n    B -->|no| D[Remove / migrate]",
+      "tasks": [
+        {
+          "number": "5.1",
+          "name": "Remove dead velocity code + tune feel",
+          "type": "chore",
+          "what": "Delete GROUND_FRICTION, AIR_ACCEL, SLIDE_DECEL, MAX_FALL_SPEED constants. Remove applyKnockback from knockback.js (replaced by applyImpulse). Remove all 'stunned friction' and 'no-input friction' branches. Tune hero.accel, hero.gravAccel, projectile accel values until playtest matches current feel.",
+          "why": "Final cutover. No more dual systems. One way to move things. Dead code removed so nobody accidentally uses the old path.",
+          "files": [
+            "~ petal-panic/js/hero/hero.js",
+            "~ petal-panic/js/combat/knockback.js",
+            "~ petal-panic/js/consts.js"
+          ],
+          "snippet": [
+            "// Remove from consts.js:\n// export const GRAVITY = 1500;         \u2192 replaced by vyGoal per entity\n// export const MAX_FALL_SPEED = 800;   \u2192 built into lerp (can't overshoot goal)\n\n// Remove from hero.js:\n// const GROUND_FRICTION = 0.85;\n// const AIR_ACCEL = ...;\n// const SLIDE_DECEL = ...;\n// All 'stunned' / 'no-input' friction branches\n\n// Remove from knockback.js:\n// export function applyKnockback(victim, kb) { ... }  \u2192 use applyImpulse instead\n\n// Tuning (per entity type):\n// Hero:      accel = 12, gravAccel = 8   (snappy ground, floaty air via lower airAccel)\n// Enemy:     accel = 8,  gravAccel = 6\n// Projectile: accel = 20, gravAccel = 10 (fast response for homing)\n// Barrel:    accel = 6,  gravAccel = 5   (heavy, slow to settle)"
+          ],
+          "acceptance": [
+            "No velocity decay/approach math exists outside core/movement.js",
+            "All existing tests pass",
+            "Playtest: run/jump/fall/get-hit/shoot feels identical to pre-refactor",
+            "grep for 'vx *=' in js/ returns zero hits (no manual friction)"
+          ],
+          "verify": [
+            "cd petal-panic && node --experimental-vm-modules js/test/explosion.test.js",
+            "cd petal-panic && node --experimental-vm-modules js/test/knockbackRegression.test.js",
+            "grep -rn 'vx \\*=' js/ --include=*.js | grep -v test | wc -l"
+          ]
+        },
+        {
+          "number": "5.2",
+          "name": "Migrate enemy movement to goal system",
+          "type": "refactor",
+          "what": "In Enemy.update() / enemyUpdate.js: replace manual vx/vy integration with updateVelocity(). Enemy AI sets vxGoal (walk toward target = dir * speed, idle = 0). Gravity = vyGoal = terminal. Jumping enemies apply impulse. Stunned enemies get vxGoal=0.",
+          "why": "Enemies currently do their own x += vx * dt and gravity. They should just set a goal (walk direction \u00d7 speed) and let the engine move them. Same system as hero, different accel tuning.",
+          "files": [
+            "~ petal-panic/js/enemies/enemy.js",
+            "~ petal-panic/js/enemies/enemyUpdate.js"
+          ],
+          "snippet": [
+            "// In Enemy AI (per-type ai method):\n// Walk toward target:\nthis.vxGoal = Math.sign(dx) * this.stats.speed * UNIT_PX_X;\n// Idle / stunned:\nthis.vxGoal = 0;\n\n// In Enemy base update(), replace manual integration:\n//   this.vy += GRAVITY * dt;\n//   this.x += this.vx * dt;\n//   this.y += this.vy * dt;\n// With:\nthis.vyGoal = TERMINAL_VELOCITY;\nupdateVelocity(this, dt);\n\n// Enemy jump (if any type jumps):\napplyImpulse(this, 0, -jumpSpeed);"
+          ],
+          "acceptance": [
+            "Enemies walk toward target at their speed (vxGoal = dir * speed)",
+            "Enemies fall under gravity (vyGoal = terminal)",
+            "Stunned enemies stop (vxGoal = 0, lerp decays)",
+            "No manual x += vx * dt in enemy update"
+          ],
+          "verify": [
+            "Manual playtest: enemies walk, chase, get hit, fall off platforms"
+          ]
+        },
+        {
+          "number": "5.3",
+          "name": "Migrate coins + particles to goal system",
+          "type": "refactor",
+          "what": "Coin and particle entities use updateVelocity. Coin spawn: applyImpulse with scatter velocity, vxGoal=0, vyGoal=terminal (arc up then fall). Particles: applyImpulse with burst velocity, vxGoal=0, vyGoal=terminal or 0 (float). Remove manual integration from coin/particle update loops.",
+          "why": "Coins that pop out of barrels/enemies should arc and settle using the same goal system. No custom coin friction or gravity code. Particles fade out via lerp to zero velocity.",
+          "files": [
+            "~ petal-panic/js/objects/coin.js",
+            "~ petal-panic/js/effects/particles.js"
+          ],
+          "snippet": [
+            "// Coin spawn (barrel break, enemy death):\ncoin.vx = randomAngle.x * speed;\ncoin.vy = randomAngle.y * speed - popUp; // launch up\ncoin.vxGoal = 0;   // no sustained horizontal motion\ncoin.vyGoal = TERMINAL_VELOCITY; // fall under gravity\n// updateVelocity handles the arc\n\n// Particle burst:\nparticle.vx = dir.x * speed;\nparticle.vy = dir.y * speed;\nparticle.vxGoal = 0;  // decelerate to stop\nparticle.vyGoal = 0;  // float in place (or small terminal for dust)\n// Lerp naturally slows them to a halt"
+          ],
+          "acceptance": [
+            "Coins arc up from barrel/enemy and fall to ground (goal lerp)",
+            "Coins bounce off floor (existing collision, velocity flip)",
+            "Particles burst outward and slow to stop (lerp to zero)",
+            "No manual x += vx * dt in coin or particle update"
+          ],
+          "verify": [
+            "Manual playtest: break barrel (coins pop), kill enemy (coins + sparkles)"
+          ]
+        },
+        {
+          "number": "5.4",
+          "name": "Port collision + wall bounce + drop-through to goal system",
+          "type": "refactor",
+          "what": "In core/collision.js resolve(): when a wall hit occurs, flip vx AND vxGoal, multiply both by bounceDamping. When landing on ground (vy snap), set vy=0 and vyGoal=terminal (gravity takes over). Drop-through: set vy directly (impulse down), gravity goal handles the rest. Must feel EXACTLY like current resolve() behavior.",
+          "why": "Collision is where velocity gets zeroed/flipped today. In the goal system, we flip both goal and speed (like enjfine BOUNCE). Landing zeros vy but gravity goal immediately starts pulling again. No behavior change \u2014 same snaps, same bounces, just expressed as goal+speed writes.",
+          "files": [
+            "~ petal-panic/js/core/collision.js"
+          ],
+          "snippet": [
+            "// In resolve(), wall hit (x-axis push-out):\n// Current: if (entity.vx > 0) entity.vx = 0;\n// New: flip both, apply damping\nconst bounce = entity.bounceDamping ?? 0; // 0 = stop, 0.7 = bouncy\nentity.vx = -entity.vx * bounce;\nentity.vxGoal = -entity.vxGoal * bounce;\n\n// In resolve(), landing snap (y-axis):\n// Current: entity.vy = 0;\n// New: zero current, gravity goal pulls again next frame\nentity.vy = 0;\n// vyGoal stays at TERMINAL_VELOCITY (set by update loop)\n\n// Drop-through (hero drops through one-way platform):\n// Current: hero.vy = dropSpeed (direct)\n// New: same \u2014 direct impulse, gravity goal takes over\napplyImpulse(hero, 0, DROP_SPEED);"
+          ],
+          "acceptance": [
+            "Wall bounce feels identical (flip + damp both vx and vxGoal)",
+            "Landing on ground stops fall (vy=0), gravity resumes next frame",
+            "Drop-through: hero falls through platform at same speed as now",
+            "No tunneling or double-snap regressions"
+          ],
+          "verify": [
+            "Manual playtest: run into walls, jump and land, drop through platforms"
+          ]
+        },
+        {
+          "number": "5.5",
+          "name": "Port boss + supermove committed trajectories to goal system",
+          "type": "refactor",
+          "what": "Boss charges and hero supermove use DIRECT vx/vy writes (committed trajectory, no lerp). These bypass the goal system intentionally \u2014 set vx AND vxGoal to the same value so lerp is a no-op (already at goal). When the committed move ends, vxGoal drops to 0 and lerp decays. Same feel as current: instant full speed during charge, smooth stop after.",
+          "why": "Committed moves (supermove burst, boss charge) need instant full speed \u2014 no ramp-up. Setting vx = vxGoal = targetSpeed means the lerp does nothing (already there). When it ends, vxGoal = 0 and you get the natural decel. No special 'override' mode needed.",
+          "files": [
+            "~ petal-panic/js/hero/hero.js",
+            "~ petal-panic/js/boss/boss.js"
+          ],
+          "snippet": [
+            "// Supermove burst (committed trajectory):\n// Current: this.vx = dir * SUPERMOVE_SPEED;\n// New: set BOTH \u2014 lerp is a no-op while they match\nthis.vx = dir * SUPERMOVE_SPEED;\nthis.vxGoal = dir * SUPERMOVE_SPEED; // already at goal, no lerp\n\n// Supermove end:\nthis.vxGoal = 0; // lerp decays from SUPERMOVE_SPEED to 0 naturally\n\n// Boss charge (same pattern):\nboss.vx = chargeDir * chargeSpeed;\nboss.vxGoal = chargeDir * chargeSpeed; // committed\n\n// Boss charge end / hit wall:\nboss.vxGoal = 0; // settle"
+          ],
+          "acceptance": [
+            "Supermove burst: instant full speed (no ramp), same as now",
+            "Supermove end: smooth decel via lerp (replaces current friction branch)",
+            "Boss charge: instant full speed during charge",
+            "Boss charge end: smooth stop",
+            "No 'bypass goal system' flag needed \u2014 just set both equal"
+          ],
+          "verify": [
+            "Manual playtest: supermove dash, boss charge attack"
+          ]
+        },
+        {
+          "number": "5.6",
+          "name": "Port camera follow to goal system",
+          "type": "refactor",
+          "what": "Camera follows hero using the same lerp pattern: cameraXGoal = hero.x + offset, camera lerps toward goal at camera.accel rate. Replaces any current manual camera smoothing/lerp code.",
+          "why": "Camera is just another entity with a position and a goal. Same math, no special case. If current camera uses a different smoothing (e.g. fixed lerp factor), match it with the right accel number.",
+          "files": [
+            "~ petal-panic/js/core/camera.js"
+          ],
+          "snippet": [
+            "// In camera update:\n// Current: this.x += (targetX - this.x) * SMOOTH_FACTOR;\n// New: same math expressed as goal system\nthis.xGoal = hero.x + OFFSET;\nthis.x += (this.xGoal - this.x) * this.accel * dt;\n// (This IS the lerp \u2014 camera just doesn't integrate y from velocity,\n//  it directly approaches the goal position. Special case: position-goal\n//  instead of velocity-goal. Still one pattern.)"
+          ],
+          "acceptance": [
+            "Camera follows hero with same smoothness as current",
+            "No jitter or lag regression"
+          ],
+          "verify": [
+            "Manual playtest: run around, jump, watch camera follow"
+          ]
+        },
+        {
+          "number": "5.7",
+          "name": "Migration rules (read first)",
+          "type": "doc",
+          "what": "Add a RULES section at the top of the plan markdown: (1) Hard cutover \u2014 old code is DELETED in the same commit that replaces it. No shims, no fallback flags, no deprecated wrappers. (2) Tests are REWRITTEN per milestone to pin new behavior. Old tests that assert friction math are deleted, not made to pass. (3) Two systems coexist ONLY during migration (hero on goals, enemies on old math). This is temporary. Final state = one system. (4) Feel must be identical. If a playtest feels different, tune the accel number \u2014 do NOT add special-case code to fix it. (5) No new game behavior. Port only.",
+          "why": "Prevents accumulation of shitty legacy code. Prevents testing spiral. Makes clear this is a port, not a redesign.",
+          "files": [
+            "~ .squid-os/plans/movement-goal-refactor/movement-goal-refactor.md"
+          ],
+          "snippet": [],
+          "acceptance": [
+            "Rules section exists at top of plan",
+            "Every task snippet shows deletion of old code, not addition alongside it"
+          ],
+          "verify": [
+            "grep -c 'DELETED\\|remove\\|delete' movement-goal-refactor.md"
+          ]
+        }
+      ]
+    }
+  ]
+}
