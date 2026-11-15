@@ -89,11 +89,11 @@ export const KNOCKBACK_PROFILES = {
   projectile:  { strength: 220, recovery: 0.25, iFrames: 0.30 }, // ordinary foe shot
   heavyProj:   { strength: 300, recovery: 0.30, iFrames: 0.40 }, // heavy foe shot
   explosion:   { strength: 380, recovery: 0.30, iFrames: 0.60 }, // barrel/bomb AoE
-  // Persistent zones (fire/toxic): brief flinch, NO input lock, NO i-frames.
-  // Full control while standing in the hazard — damage ticks, visual flash,
-  // but you can still run out.
-  fire:        { strength: 0,   recovery: 0,    iFrames: 0 },
-  poison:      { strength: 0,   recovery: 0,    iFrames: 0 },
+  // Persistent zones (fire/toxic): shorter stun + shorter i-frames than
+  // discrete hits. You flinch, you blink, but you can still steer out.
+  // Tick rate is 5Hz (0.2s); iFrames 0.25 means every other tick lands.
+  fire:        { strength: 0,   recovery: 0.10, iFrames: 0.25 },
+  poison:      { strength: 0,   recovery: 0.10, iFrames: 0.25 },
 };
 
 /** Fallback profile for unknown sources (keeps takeHit total; no magic numbers). */
@@ -445,17 +445,10 @@ export class Hero extends Entity {
     }
     // Hit-stun (§24/§26): input locked, physics keep running; knockback decays
     // under friction during the window and control resumes cleanly after.
-    // Zero-recovery profiles (fire/poison zones) skip the stun entirely —
-    // full control while standing in the hazard.
-    if (profile.recovery > 0) {
-      this.timers.set('rec', profile.recovery);
-    }
+    this.timers.set('rec', profile.recovery);
     // Damage-immune for the i-frame duration (§27 / immunity.md): one call owns
     // flag + timer + source tag. Source 'hit' → transparent blink look.
-    // Zero i-frames (persistent zones) skip invincibility — every tick lands.
-    if (profile.iFrames > 0) {
-      this.setInvincible('hit', Math.max(this.timers.get('invincible'), profile.iFrames));
-    }
+    this.setInvincible('hit', Math.max(this.timers.get('invincible'), profile.iFrames));
     // Stamp the hit time so the HUD can play the 'hit' expression briefly.
     this.lastHitAt = performance.now();
     return true;
