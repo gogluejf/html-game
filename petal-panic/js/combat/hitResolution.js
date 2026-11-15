@@ -117,7 +117,6 @@ export function applyHit(context) {
   // Max-merge semantics live in the hitstop module (overlapping requests
   // never stack past the larger).
   if (typeof context.hitstop === 'number' && context.hitstop > 0) {
-    console.log(`[hitstop] arming ${context.hitstop} frames (method=${context.method})`); // TRACE (temporary)
     hitstop(context.hitstop);
   }
 

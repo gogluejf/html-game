@@ -271,9 +271,6 @@ export class GameObj extends Entity {
     assertDamageAmount(dmg, _source, this, _method);
     if (!this.alive || this.destroyed) return 0;
     const applied = Math.min(this.hp, dmg);
-    // TEMP TRACE (barrel multi-hit investigation): log every hit with a
-    // per-barrel counter so "dies in 3 swings" can be verified live.
-    console.log(`[barrel-dmg] ${this.type} hp ${this.hp}→${Math.max(0, this.hp - dmg)} (-${dmg} via ${_method}) swing#${_source?._swingId ?? '?'} t=${performance.now().toFixed(1)}`);
     this.hp -= dmg;
     if (applied > 0) flashTarget(this);
     if (this.hp <= 0) {

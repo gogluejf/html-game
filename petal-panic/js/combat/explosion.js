@@ -183,9 +183,6 @@ export function resolveExplosion(explosion, targets) {
     const normal = radialNormal({ cx, cy }, tc);
     // knockback may be null/absent (damage-only blast) — treat as zero vector.
     const kx = normal.x * (knockback?.x ?? 0), ky = normal.y * (knockback?.x ?? 0);
-    // Console log (ungated): blast center, victim center, radial-normal
-    // direction — for live kick/knockback tuning.
-    console.log(`[blast] ${_srcName(source)} → ${_tgtName(t)} | center=(${cx.toFixed(0)},${cy.toFixed(0)}) tgtC=(${tc.cx.toFixed(0)},${tc.cy.toFixed(0)}) dir=(${normal.x.toFixed(2)},${normal.y.toFixed(2)}) kb=(${kx.toFixed(0)},${ky.toFixed(0)})`);
     Debug.logEvent(`[blast] ${_srcName(source)} → ${_tgtName(t)} | blastC=(${cx.toFixed(0)},${cy.toFixed(0)}) tgtC=(${tc.cx.toFixed(0)},${tc.cy.toFixed(0)}) dir=(${normal.x.toFixed(2)},${normal.y.toFixed(2)}) kb=(${kx.toFixed(0)},${ky.toFixed(0)})`);
     const res = applyHit({
       provenance: AttackProvenance.EXPLOSION,
