@@ -89,11 +89,8 @@ export const KNOCKBACK_PROFILES = {
   projectile:  { strength: 220, recovery: 0.25, iFrames: 0.30 }, // ordinary foe shot
   heavyProj:   { strength: 300, recovery: 0.30, iFrames: 0.40 }, // heavy foe shot
   explosion:   { strength: 380, recovery: 0.30, iFrames: 0.60 }, // barrel/bomb AoE
-  // Persistent zones (fire/toxic): shorter stun + shorter i-frames than
-  // discrete hits. You flinch, you blink, but you can still steer out.
-  // Tick rate is 5Hz (0.2s); iFrames 0.25 means every other tick lands.
-  fire:        { strength: 0,   recovery: 0.25, iFrames: 0.30 },
-  poison:      { strength: 0,   recovery: 0.25, iFrames: 0.30 },
+  fire:        { strength: 0,   recovery: 0.25, iFrames: 0.30 }, // persistent zone tick
+  poison:      { strength: 0,   recovery: 0.25, iFrames: 0.30 }, // persistent zone tick
 };
 
 /** Fallback profile for unknown sources (keeps takeHit total; no magic numbers). */

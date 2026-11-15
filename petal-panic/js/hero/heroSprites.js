@@ -188,11 +188,6 @@ export function updateHeroLocomotionAnim(hero, input, dt = 0) {
     delete hero._idlePatternClock;
     return;
   }
-  if (hero._spriteAnim === 'supermove') {
-    // Freeze tail just ended (or no player to track): the supermove anim is
-    // fully off screen. Clear the pose so the generic switch reclaims it.
-    hero._spriteAnim = null;
-  }
 
   // Attack anims own their window: while a swing runs, the sheet (melee /
   // super_melee) plays from f1 at its authored fps. When the swing ends, the

@@ -145,14 +145,6 @@ export function processAllHitboxes() {
     // `targets` above when combat has not started, so this never fires for the
     // boss pre-COMBAT. Kept for clarity / future refactor safety.
     if (target === ctx.boss && !ctx.bossZone.bossCanTakeDamage()) return;
-    // LUNGE CRASH: an enemy lunge that CONNECTS on the hero ends immediately —
-    // the dash crashes into them instead of plowing through their whole body
-    // (and re-hitting on the way out). The enemy drops to its recover state
-    // (vx=0 + wind-down), exactly like a natural lunge expiry. Only hero
-    // connects count: lunging past barrels/objects keeps full momentum.
-    if (dealt > 0 && target === h && hb.owner?.lungeActive) {
-      hb.owner.lungeTimer = 0; // ai() transitions lunge → recover next tick
-    }
     // Self-protection on connect (knockback.md ): the FIRST clean
     // hit of a special melee swing OR a normal melee jab arms the hero's
     // protection window for the rest of that swing. The callback only fires

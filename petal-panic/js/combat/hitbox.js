@@ -281,6 +281,11 @@ export function processHitboxes(hitboxes, targets, onHit) {
       // Non-fatal finisher frames (supermove ender) shake at the connect tier
       // (4) — same as any other landed hit; only kills escalate to 6.
 
+      // TRACE (temporary): what velocity does the victim actually get after a hero hit?
+      if (t.layer !== LAYER.HERO) {
+        console.log(`[kb] ${t.type ?? t.constructor?.name} kb=${JSON.stringify(kbVector)} → vx=${(t.vx ?? 0).toFixed(0)} vy=${(t.vy ?? 0).toFixed(0)} y=${(t.y ?? 0).toFixed(0)} grounded=${!!t._grounded}`);
+      }
+
       if (dealt > 0) {
         dedupeSet.add(t);
         // Hero hit reaction — only flinch/stun if actual energy was lost
