@@ -462,25 +462,6 @@ export function render(ctx, alpha = 1) {
   // overlays keep their post-restore pass below (Effects.drawOverlay).
   drawEffects(ctx, undefined, { space: 'world' });
 
-  // Effect collision boxes (sprite-burst sheets): GRAY so they read as
-  // non-physical VFX anchors, distinct from the entity layer colors. Drawn
-  // HERE — after drawEffects() stamped this frame's _debugBox — not in
-  // drawDebugOverlay (which runs earlier and would show last frame's box).
-  if (Debug.enabled && Debug.viewMode !== 1 && Debug.viewMode !== 4) {
-    ctx.save();
-    ctx.globalAlpha = 0.6;
-    ctx.lineWidth = 2;
-    for (const inst of activeInstances()) {
-      const b = inst.body?._debugBox;
-      if (!b) continue;
-      ctx.fillStyle = '#9e9e9e';
-      ctx.fillRect(b.x, b.y, b.w, b.h);
-      ctx.strokeStyle = '#9e9e9e';
-      ctx.strokeRect(b.x, b.y, b.w, b.h);
-    }
-    ctx.restore();
-  }
-
   ctx.restore();
 
   // Boss zone intro presentation (boss-arena.md §2): the full-screen intro
@@ -729,8 +710,18 @@ function drawDebugOverlay(ctx, alpha = 1) {
 
   }
 
-  // (Effect collision boxes are drawn in the post-drawEffects pass below —
-  // they must come AFTER spriteBurst.render() stamps this frame's _debugBox.)
+  // Effect collision boxes (sprite-burst sheets): GRAY so they read as
+  // non-physical VFX anchors, distinct from the entity layer colors above.
+  // The box rect is computed by spriteBurst.render() (only it knows the
+  // per-frame offset transform) and exposed on the instance as _debugBox.
+  for (const inst of activeInstances()) {
+    const b = inst.body?._debugBox;
+    if (!b) continue;
+    ctx.fillStyle = '#9e9e9e';
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.strokeStyle = '#9e9e9e';
+    ctx.strokeRect(b.x, b.y, b.w, b.h);
+  }
 
   ctx.restore();
 
