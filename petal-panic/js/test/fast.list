@@ -1,0 +1,18 @@
+# test:fast — suites for the CURRENT feature area. Edit this list freely.
+# One pattern per line (matched against petal-panic/js/test/*.test.js).
+# '#' comments and blank lines ignored. Keep it < ~5s of runtime.
+#
+# 2026-11-14: combat / hero / barrel work
+attackHitbox
+attackKnockback
+melee
+specialMelee
+sheetHitbox
+knockbackRegression
+heroHit
+hitResolution
+barrel.solid
+barrel.momentum
+barrel.stack
+explosion
+bombGameplay

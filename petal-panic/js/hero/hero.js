@@ -84,8 +84,8 @@ const AIR_REVERSAL_MIN_SPEED = 0.56; // X-units/s (~40 px/s) — below this coun
 // equal damage with very different knockback, so callers pass the source key and
 // never inline these numbers.
 export const KNOCKBACK_PROFILES = {
-  contact:     { strength: 260, recovery: 0.25, iFrames: 0.60 }, // enemy body
-  bossContact: { strength: 340, recovery: 0.30, iFrames: 0.70 }, // boss body
+  contact:     { strength: 260, recovery: 0.25, iFrames: 0.30 }, // enemy body
+  bossContact: { strength: 340, recovery: 0.30, iFrames: 0.35 }, // boss body
   projectile:  { strength: 220, recovery: 0.25, iFrames: 0.30 }, // ordinary foe shot
   heavyProj:   { strength: 300, recovery: 0.30, iFrames: 0.40 }, // heavy foe shot
   explosion:   { strength: 380, recovery: 0.30, iFrames: 0.60 }, // barrel/bomb AoE

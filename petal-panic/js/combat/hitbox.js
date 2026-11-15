@@ -27,6 +27,10 @@ const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
  * is the biggest kick. The camera-shake merge rule is max-kick, so a 6 fired
  * on the same frame as the 4 always wins — no double-shake bookkeeping needed. */
 const CONNECT_SHAKE = 4;
+/** Subtle twitch reserved for NORMAL melee connects (the jab is spammy — a
+ * full connect kick would read as noise). Special melee + supermove keep the
+ * standard CONNECT_SHAKE; kills merge up to KILL_SHAKE regardless. */
+const MELEE_CONNECT_SHAKE = 2;
 const KILL_SHAKE = 6;
 
 /**
@@ -298,9 +302,9 @@ export function processHitboxes(hitboxes, targets, onHit) {
         // placeholders (hitFlashOwnership contract), so the shake (which
         // bumps hitFlash) runs only for pipeline targets.
         if (t.layer !== LAYER.HERO && pipeline) {
-          // Every connect gets a 4px kick; kills merge up to 6 via the
-          // max-kick rule.
-          Effects.triggerShake(CONNECT_SHAKE);
+          // Normal melee gets the subtle 2px twitch; every other connect gets
+          // the standard 4px kick; kills merge up to 6 via the max-kick rule.
+          Effects.triggerShake(hb.method === 'melee' ? MELEE_CONNECT_SHAKE : CONNECT_SHAKE);
           if (BLOOD_METHODS.has(hb.method)) {
             const tb = t.worldBox ? t.worldBox() : t;
             Effects.spawnHitSparkles(tb.x + tb.w / 2, tb.y + tb.h / 2);

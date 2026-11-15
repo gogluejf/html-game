@@ -149,6 +149,20 @@ export function separateHeroFromBumper(hero, body) {
     const hcy = hb.y + hb.h / 2, bcy = bb.y + bb.h / 2;
     // Hero ABOVE the bumper center → rest on top (push up, kill fall speed).
     if (hcy < bcy) {
+      // INVINCIBLE EXCEPTION: never park the ghost on a head. Resting on top
+      // during i-frames reads as "stuck to them / carrying me" and sets up
+      // the re-hit the moment immunity ends. Instead roll OFF sideways —
+      // the bump gives the hero the chance to go away (hit → bounce → rolled
+      // off → free to run), so the fall-back never lands back on the head.
+      if (hero.invincible) {
+        const hcx = hb.x + hb.w / 2, bcx = bb.x + bb.w / 2;
+        const dir = hcx >= bcx ? 1 : -1;
+        hero.x += dir * Math.max(penX, 4);
+        // Keep the fall going (do NOT zero vy): the hero is phasing past,
+        // not landing. A small sideways nudge sells the "rolled off" read.
+        hero.vx = dir * Math.max(Math.abs(hero.vx), 120);
+        return;
+      }
       hero.y -= penY;
       if (hero.vy > 0) hero.vy = 0;
     } else {
