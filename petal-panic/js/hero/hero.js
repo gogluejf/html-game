@@ -504,6 +504,14 @@ export class Hero extends Entity {
   update(dt, input, _world) {
     const speed = this.stats.speed;
 
+    // Head-bounce ejection window (collisionHandlers.js): decays each frame so
+    // the bumper keeps pushing the hero up-and-out for the full arc instead of
+    // re-parking them on the enemy's head mid-i-frames.
+    if ((this._headBounceT ?? 0) > 0) {
+      this._headBounceT -= dt;
+      if (this._headBounceT < 0) this._headBounceT = 0;
+    }
+
     // --- Crouch / stand (runs BEFORE movement so the exit is atomic) --------
     // §11: state, movement restrictions, hitbox and animation must transition
     // together. The exit MUST be resolved before horizontal input is evaluated:

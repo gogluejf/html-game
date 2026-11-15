@@ -125,6 +125,20 @@ export function separateHeroFromBumper(hero, body) {
   const penX = Math.min(hb.x + hb.w - bb.x, bb.x + bb.w - hb.x);
   const penY = Math.min(hb.y + hb.h - bb.y, bb.y + bb.h - hb.y);
   if (penX <= 0 || penY <= 0) return; // not overlapping
+  // HEAD-BOUNCE WINDOW: right after a head-landing hit the hero is being
+  // ejected up-and-out. Parking them back on top of the body every frame
+  // (the normal i-frame bumper behavior) would re-ground them on the head
+  // and cancel the arc — "kick up, fall back, stuck". While the window is
+  // active, push along BOTH axes away from the body center so the hero keeps
+  // clearing the head instead of resting on it.
+  if ((hero._headBounceT ?? 0) > 0) {
+    const hcx = hb.x + hb.w / 2, bcx = bb.x + bb.w / 2;
+    const hcy = hb.y + hb.h / 2, bcy = bb.y + bb.h / 2;
+    if (hcx >= bcx) hero.x += penX; else hero.x -= penX;
+    if (hcy < bcy) { hero.y -= penY; if (hero.vy > 0) hero.vy = 0; }
+    else { hero.y += penY; }
+    return;
+  }
   // Push along the axis of least penetration; ties break HORIZONTAL so a
   // side-by-side touch never launches the hero vertically off the floor.
   if (penX < penY || (penX === penY && penX > 0)) {
@@ -388,7 +402,6 @@ export function registerCollisionHandlers(collisionWorld) {
     // through enemies for the full i-frame window.) The damage path below
     // stays gated on invincible as before.
     if (heroEnt.invincible) {
-      console.log(`[immunity] BLOCKED contact from ${source.type} | invulnSource=${heroEnt.invulnSource} supermoveActive=${heroEnt.supermoveActive}`); // TRACE (temporary)
       separateHeroFromBumper(heroEnt, source);
       // STAR POWER (mario star): while the star powerup is active, touching an
       // enemy/boss one-shots it with a big launch + hitstop + shake. Regular
@@ -445,7 +458,31 @@ export function registerCollisionHandlers(collisionWorld) {
       // the attacker's box for the whole stun. Push the boxes apart NOW so the
       // i-frame blink plays NEXT TO the enemy, never inside it.
       separateHeroFromBumper(heroEnt, source);
-      // Route applyKnockback's plain-field results into the hero's unified timer
+      // HEAD-LANDING BOUNCE: when the hit connects from ABOVE (hero falling,
+      // feet in the enemy's upper half), the horizontal shove is useless —
+      // the bumper separation parks the hero ON TOP of the body, grounded,
+      // and friction eats the sideways impulse. Worse, during the post-hit
+      // i-frames the bumper re-parks the hero on the head EVERY frame, so a
+      // one-frame launch just reads as "kick up, fall back, stuck". Instead:
+      // stamp a short head-bounce window. While it's active the bumper pushes
+      // the hero UP AND OUT (diagonal) instead of parking them on top, so the
+      // hero arcs away cleanly and cannot re-ground on the head. Side hits
+      // never set it — they keep the normal park-next-to behavior.
+      const hb2 = heroEnt.worldBox ? heroEnt.worldBox() : { x: heroEnt.x, y: heroEnt.y, w: heroEnt.w, h: heroEnt.h };
+      const sb2 = source.worldBox ? source.worldBox() : { x: source.x, y: source.y, w: source.w, h: source.h };
+      const feetInHead = hb2.y + hb2.h <= sb2.y + sb2.h * 0.5;
+      if (feetInHead && (heroEnt.vy ?? 0) >= 0) {
+        heroEnt._headBounceT = 0.35; // seconds of up-and-out ejection
+        heroEnt.vy = -420;           // initial pop (apex ~59px at GRAVITY 1500)
+        heroEnt.vx = (heroEnt.vx || 0) + (Math.sign(hb2.x + hb2.w / 2 - (sb2.x + sb2.w / 2)) || 1) * 160;
+        heroEnt.y = sb2.y - hb2.h;   // fully clear the body so the arc starts clean
+        // The arc takes ~0.56s round-trip (0.28 up + 0.28 down at GRAVITY 1500).
+        // The contact's own iFrames (0.60 regular / 0.70 boss) expire right as
+        // the hero lands BACK on the head → immediate second hit → bounce
+        // re-arms → "kick up, fall back, get hit again" loop. Extend the
+        // window past the full arc so the fall-back lands inside immunity.
+        heroEnt.setInvincible('hit', Math.max(heroEnt.timers.get('invincible') ?? 0, 0.9));
+      }
       // system so the existing invincible flag + render blink keep working.
       if (heroEnt.hitstunTimer > 0) {
         heroEnt.timers.set('rec', Math.max(heroEnt.timers.get('rec'), heroEnt.hitstunTimer));
