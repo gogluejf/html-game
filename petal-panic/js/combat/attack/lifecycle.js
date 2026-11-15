@@ -175,21 +175,25 @@ export const AttackLifecycle = {
     wctx.particles?.reset?.();
     wctx.effects?.reset?.();
     if (wctx.floatTexts) for (const t of wctx.floatTexts) t.alive = false;
-    // Nuke the ENTIRE collision world — every entity, no exceptions.
-    // The fresh zone install (loadActiveZone) re-adds everything that should
-    // exist. This is the nuclear button: nothing from the previous attempt
-    // can survive, regardless of what state it was in.
-    if (wctx.collisionWorld) wctx.collisionWorld.clear();
-    // Mark enemies dead + clear combat state so they can't be re-added
-    // by a stale reference or re-enter the damage pipeline.
+    // Nuke every enemy from the collision world + clear combat state.
+    // Corpses mid-death-fade, thrown enemies, stale hitboxes — all die here.
+    // The fresh zone install (loadActiveZone) re-populates with brand-new
+    // entity objects afterwards. We do NOT clear the entire collision world
+    // (that would nuke the hero + solids that loadActiveZone expects to swap
+    // in place); we only remove what the zone install will replace anyway.
+    const cw = wctx.collisionWorld;
     for (const e of wctx.realEnemies ?? []) {
       e.alive = false;
       e.intangible = false;
       e._hitbox = null;
       e._atkHitDone = false;
+      if (cw) cw.remove(e);
     }
     if (wctx.realEnemies) wctx.realEnemies.length = 0;
-    if (wctx.boss) wctx.boss.alive = false;
+    // Boss: remove from collision world (re-added by loadActiveZone on boss
+    // zone entry). Do NOT set alive=false — the boss entity is long-lived and
+    // its combat state is managed by resetBossCombatState on re-entry.
+    if (wctx.boss && cw) cw.remove(wctx.boss);
   },
 };
 
