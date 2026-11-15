@@ -80,8 +80,33 @@ export function spriteBurst(params = {}) {
   // centered on (x,y) either way — the box only sizes the art.
   const scale = hasSheet ? size / anim.collisionBox.h : 1;
   let t = 0;
-  return {
-    update(dt) { t += dt; if (t >= duration - 1e-9) this.complete(); },
+  // Debug collision box as STATE (entity worldBox() pattern): computed from
+  // pure math each update() — no image, no ctx — so it exists in EVERY view
+  // mode (full / primitive / collision-only). The placement mirrors the
+  // image path exactly: the frame is drawn at dx = x - (ax - ox)*s, so a
+  // sheet-space point P renders at dx + (P.x - ox)*s; the box top-left
+  // (cb.x, cb.y) therefore lands at x - (ax - cb.x)*s (the frame offset
+  // cancels). 'bottom-center' → box bottom sits ON y (feet planted);
+  // 'top-center' → box top sits on y; 'center' → box centered on (x,y).
+  const stampDebugBox = () => {
+    if (!Debug.enabled || !hasSheet) { _inst._debugBox = null; return; }
+    const cb = anim.collisionBox;
+    const idx = Math.min(frames.length - 1, Math.floor(t * (anim.fps ?? 14)));
+    const fr = frames[idx];
+    let bx, by;
+    if (anchor === 'center' || !fr?.offset) {
+      bx = x - cb.w * scale / 2;
+      by = y - cb.h * scale / 2;
+    } else {
+      const ax = cb.x + cb.w / 2;
+      const ay = anchor === 'top-center' ? cb.y : (cb.y + cb.h);
+      bx = x - (ax - cb.x) * scale;
+      by = y - (ay - cb.y) * scale;
+    }
+    _inst._debugBox = { x: bx, y: by, w: cb.w * scale, h: cb.h * scale };
+  };
+  const _inst = {
+    update(dt) { t += dt; if (t >= duration - 1e-9) this.complete(); stampDebugBox(); },
     render(ctx) {
       // High-graphic: draw the current sheet frame. Missing/unloaded frames
       // fall through to the procedural fallback so pre-boot still shows it.
@@ -119,22 +144,7 @@ export function spriteBurst(params = {}) {
               }
             }
             ctx.drawImage(img, dx, dy, w, h);
-            // Debug: expose the sheet's collision box in world space so the
-            // F3 collision layer (drawDebugOverlay) can draw it as a gray box
-            // alongside entity boxes. Computed here — only render() knows the
-            // per-frame offset transform — and consumed by the overlay pass.
-            if (Debug.enabled && (Debug.viewMode === 0 || Debug.viewMode === 2 || Debug.viewMode === 3)) {
-              const cb = anim.collisionBox;
-              const ox = frames[idx].offset?.x ?? 0, oy = frames[idx].offset?.y ?? 0;
-              this._debugBox = {
-                x: dx + (cb.x - ox) * scale,
-                y: dy + (cb.y - oy) * scale,
-                w: cb.w * scale,
-                h: cb.h * scale,
-              };
-            } else {
-              this._debugBox = null;
-            }
+            // (Debug box is stamped in update() — pure math, all view modes.)
             ctx.restore();
           }
           return;
@@ -148,4 +158,5 @@ export function spriteBurst(params = {}) {
     done: false,
     complete() { this.done = true; },
   };
+  return _inst;
 }
