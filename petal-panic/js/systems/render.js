@@ -726,8 +726,6 @@ function drawDebugOverlay(ctx, alpha = 1) {
   ctx.restore();
 
   // draw the melee hitbox in YELLOW when active (debug only).
-  // Sheet-sourced boxes get a small 'sheet' tag; table fallbacks 'table' —
-  // so during the sheet-hitbox rollout you can see which frames are live.
   const hero = getHero();
   const _drawAtkBox = (b, label) => {
     if (!b) return;

@@ -112,7 +112,7 @@ export const IDLE_CYCLE_COUNT = 3;
 export const IDLE_SPECIAL_CYCLE_COUNT = 1;
 
 /** heroDef.id → assets/heroes/ folder name (single source of truth). */
-export const HERO_SPRITE_DIRS = { scarlet: 'scarlet_vale', balthazar: 'balthazar', bruno: 'bruno', ringo: 'ringo' };
+export const HERO_SPRITE_DIRS = { scarlet: 'scarlet_vale', balthazar: 'balthazar' };
 
 // Aim → sheet suffix table. The 8-way index (DIR_ANGLES order in core/vec.js):
 //   0 right, 1 up-right, 2 up, 3 up-left, 4 left, 5 down-left, 6 down, 7 down-right.

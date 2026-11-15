@@ -6,17 +6,14 @@
 // converted to px ONCE at Hero construction via UNIT_PX_* — changing the unit
 // size rescales movement/jump with no other edits.
 //
-// `attacks` is the declarative per-frame attack-hitbox table (design §30):
-// geometry varies by hero, attack, animation frame and facing. It is DATA only
-// — all resolution/mirroring logic lives in Hero.attackHitboxWorld().
-//   melee.frames      — one entry per swing frame index (aligned with the
-//                       shared MELEE_TOTAL_FRAMES clock); null = no box that
-//                       frame, an {ox,oy,bw,bh} object = active box offset
-//                       from body center (ox positive = in front of facing).
-//   specialMelee.hitbox — single box exposed during every ACTIVE phase frame
-//                       (per-hero differences live here, not in code branches).
-//   supermove.box     — box exposed for the whole supermove; bh: 'body' derives the
-//                       full body height at runtime (heroes differ in h).
+// `attacks` is the declarative per-attack knockback table (design §30):
+// damage BOXES are sheet-authored only (per-frame `attack` boxes on each
+// hero's melee / super_melee / supermove sheets — see
+// Hero.attackHitboxWorld()); this table carries the two-tier knockback
+// vectors each attack applies at impact.
+//   specialMelee.hitbox — legacy fallback geometry; unused by the resolver
+//                       (sheet boxes win) but kept as the tuning surface for
+//                       heroes whose super_melee sheet lacks authored boxes.
 //
 // Knockback (docs/architecture/knockback.md §11): committed attacks carry a
 // `knockback` setting on their hitbox data; the core wiring reads it off the
@@ -37,9 +34,6 @@ export const ATTACK_SUPERMOVE = 'supermove';
 export function resolveHeroStats(def) {
   return { ...def.stats, speed: def.stats.speed * UNIT_PX_X, jump: def.stats.jump * UNIT_PX_Y };
 }
-
-/** Shared normal-melee frame table (both heroes swing identically today). */
-const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }, null];
 
 /**
  * Normal-melee knockback tiers. A SURVIVING hit uses `moderate` (keeps the
@@ -127,7 +121,7 @@ export const HEROES = {
     specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockbackModerate: { ...SWEEP.knockbackModerate }, knockbackBig: { ...SWEEP.knockbackBig } },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
-      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockbackModerate: MELEE_KNOCKBACK_MODERATE, knockbackBig: MELEE_KNOCKBACK_BIG },
+      [ATTACK_MELEE]: { knockbackModerate: MELEE_KNOCKBACK_MODERATE, knockbackBig: MELEE_KNOCKBACK_BIG },
       [ATTACK_SUPERMOVE]: { knockbackModerate: SUPERMOVE_BURST_KNOCKBACK, knockbackBig: SUPERMOVE_KNOCKBACK_BIG },
     },
   },
@@ -150,7 +144,7 @@ export const HEROES = {
     specialMelee: { ...SWEEP, hitbox: { ...SWEEP.hitbox }, knockbackModerate: { ...SWEEP.knockbackModerate }, knockbackBig: { ...SWEEP.knockbackBig } },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
-      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES, knockbackModerate: MELEE_KNOCKBACK_MODERATE, knockbackBig: MELEE_KNOCKBACK_BIG },
+      [ATTACK_MELEE]: { knockbackModerate: MELEE_KNOCKBACK_MODERATE, knockbackBig: MELEE_KNOCKBACK_BIG },
       [ATTACK_SUPERMOVE]: { knockbackModerate: SUPERMOVE_BURST_KNOCKBACK, knockbackBig: SUPERMOVE_KNOCKBACK_BIG },
     },
   },

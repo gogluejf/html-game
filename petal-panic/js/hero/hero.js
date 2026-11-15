@@ -210,6 +210,13 @@ export class Hero extends Entity {
     this.meleeCooldown = 0;          // seconds until the next swing may start
     this.meleeActive = false;        // true while a swing is in progress
     this.meleeFrame = 0;             // float frame position within the swing
+    // Swing-level connect memory (one hit per target per SWING). The box can
+    // blink off mid-swing on unboxed sheet frames; the slot lifecycle treats
+    // each re-appearing box as a fresh instance, so the already-hit set must
+    // outlive the box. Cleared when the swing ends (endNormalMelee /
+    // endSpecialMelee), NOT when the box drops.
+    this._meleeHitTargets = new Set();
+    this._specialHitTargets = new Set();
     this.MELEE_TOTAL_FRAMES = 5;     // windup(0-2) + active(3) + recovery(4)
     this.MELEE_ACTIVE_FRAME = 3;     // 0-indexed peak frame (the hitbox window)
     // Sheet-driven duration (§30 v2): the swing lasts one full cycle of the
@@ -217,12 +224,6 @@ export class Hero extends Entity {
     // up the sheet once sprites attach). Per-hero override via
     // heroDef.meleeTiming.duration (optional tuning).
     this.MELEE_FRAME_FRACTIONS = this.heroDef.meleeTiming?.frameFractions ?? [0, 0.4, 0.8];
-    // §30: melee hitbox geometry is DATA — one entry per swing frame index in
-    // the hero's attacks table (heroDefs.js). null entries expose no box; the
-    // single attackHitboxWorld() resolver turns the active entry into a
-    // mirrored world-space AABB. Kept as an instance property so existing
-    // consumers/tests read the same object shape ({ox,oy,bw,bh}).
-    this.meleeHitbox = this.heroDef.attacks[ATTACK_MELEE].frames[this.MELEE_ACTIVE_FRAME];
 
     // --- Shared melee input buffer (design §17-§18) --------------------------
     // Normal and special melee share ONE pending slot of capacity 1:
@@ -880,6 +881,10 @@ export class Hero extends Entity {
     // refuses while a normal swing is up; this is the symmetric guard so a
     // plain Melee press can't start a normal swing under an active special one.
     if (this.meleeCooldown > 0 || this.meleeActive || this.specialMeleeActive) return;
+    // TEMP TRACE (barrel multi-hit investigation): log every swing START so
+    // damage lines can be matched to swings.
+    this._swingId = (this._swingId ?? 0) + 1;
+    console.log(`[swing] melee #${this._swingId} start t=${performance.now().toFixed(1)} airborne=${!this.grounded}`);
     this.meleeFrame = 0;
     this.meleeActive = true;
     // Airborne at swing START → play the `air_melee` sheet for the whole swing
@@ -986,6 +991,7 @@ export class Hero extends Entity {
       this.meleeActive = false;
       this.meleeFrame = 0;
       this._meleeAirborne = false;
+      this._meleeHitTargets.clear(); // swing over — next swing re-arms freely
       // Clamp to exactly 0: the decrement above can leave a tiny positive float
       // (~1e-16) when the last tick overshoots the boundary. tryMelee()'s guard
       // (`meleeCooldown > 0`) would then reject a buffered 'normal' attack that
@@ -1026,6 +1032,7 @@ export class Hero extends Entity {
     this.meleeFrame = 0;
     this._meleeAirborne = false;
     this.meleeCooldown = 0;
+    this._meleeHitTargets.clear(); // swing over — next swing re-arms freely
     this._flushPendingCrouch();
   }
 
@@ -1048,60 +1055,56 @@ export class Hero extends Entity {
    * Single attack-hitbox resolver (design §30). All three hero attacks —
    * normal melee, special melee and supermove — resolve their damage box
    * through this one method: it reads the current phase/frame from the shared
-   * phase machines, looks up the per-hero data table in heroDefs.js, and
-   * returns a FACING-MIRRORED world-space AABB (or null when no damage should
-   * be dealt this frame). No per-attack rect math lives outside this method.
+   * phase machines and returns a FACING-MIRRORED world-space AABB (or null
+   * when no damage should be dealt this frame). No per-attack rect math lives
+   * outside this method.
    *
-   * Data shapes (heroDefs.js `attacks`):
-   *   melee        { frames: [null | {ox,oy,bw,bh}, ...] } — indexed by the
-   *                  swing's integer frame; only configured active frames
-   *                  produce a box.
-   *   specialMelee { hitbox: {ox,oy,bw,bh} } — exposed on every ACTIVE-phase
-   *                  frame (per-hero differences come from the data).
-   *   supermove    { box: {ox,oy,bw,bh|'body'} } — exposed for the whole supermove;
-   *                  'body' resolves to the hero's full body height.
+   * The damage window is SHEET-AUTHORED ONLY for every attack: the per-frame
+   * `attack` boxes on the active sheet ARE the hitbox. A frame without an
+   * authored box deals no damage — there is no hand-tuned table fallback.
    *
-   * Mirroring: ox is an offset in the FACING direction; facing left flips the
-   * box so its right edge lands at center - ox (the sprite mirrors identically,
+   * Mirroring: the anchor-space box is mirrored around the body-center anchor
+   * by _sheetBoxToWorld() when facing left (the sprite mirrors identically,
    * so visual and gameplay impact coincide).
    * @param {'melee'|'specialMelee'|'supermove'} attackName
    * @returns {{x:number,y:number,w:number,h:number}|null}
    */
   attackHitboxWorld(attackName) {
-    let entry = null; // resolved {ox,oy,bw,bh} or null (no box this frame)
     if (attackName === ATTACK_MELEE) {
       if (!this.meleeActive) return null;
-      // Sheet-authored box first (per-frame, from the active melee/air_melee
-      // sheet); hand-tuned table is the fallback when the sheet has no box on
-      // this frame or no sheet data is attached.
+      // Sheet-authored box ONLY: the per-frame `attack` boxes on the active
+      // melee/air_melee sheet ARE the damage window. No table fallback — a
+      // frame without an authored box deals no damage (same contract as
+      // supermove). A hero whose sheet lacks boxes simply cannot jab.
       const sheetBox = this._sheetAttackBox(this._meleeAirborne ? 'air_melee' : 'melee');
-      if (sheetBox) {
-        const wb = this.worldBox();
-        const box = this._sheetBoxToWorld(sheetBox);
-        // finisher: false — the finisher tier (big launch + screen shake) is
-        // reserved for KILLS (hitbox.js upgrades moderate→big + KILL_SHAKE when
-        // the victim dies) and the supermove's last burst. Stamping finisher:true
-        // on every sheet frame made ALL melee connects use the kill-tier launch
-        // + shake, reading as "every hit is a finisher."
-        return { ...box, ...this._attackKnockback(attackName), finisher: false, _source: 'sheet' };
-      }
-      const frames = this.heroDef.attacks[ATTACK_MELEE].frames;
-      entry = frames[Math.floor(this.meleeFrame)] ?? null;
+      if (!sheetBox) return null;
+      const wb = this.worldBox();
+      const box = this._sheetBoxToWorld(sheetBox);
+      // finisher: false — the finisher tier (big launch + screen shake) is
+      // reserved for KILLS (hitbox.js upgrades moderate→big + KILL_SHAKE when
+      // the victim dies) and the supermove's last burst. Stamping finisher:true
+      // on every sheet frame made ALL melee connects use the kill-tier launch
+      // + shake, reading as "every hit is a finisher."
+      // dedupeScope: 'swing' — ONE connect per target per SWING. The box can
+      // blink off mid-swing (unboxed sheet frames); the slot lifecycle treats
+      // each re-appearing box as a fresh instance, so swing-level memory
+      // (Hero._meleeHitTargets) owns the already-hit set across gaps.
+      return { ...box, ...this._attackKnockback(attackName), finisher: false, dedupeScope: 'swing', _source: 'sheet' };
     } else if (attackName === ATTACK_SPECIAL_MELEE) {
       if (!this.specialMeleeActive || this.specialMeleePhase !== 'active') return null;
-      // Sheet-authored box first (super_melee sheet plays during the swing —
-      // its per-frame boxes ARE the active window); the single heroDef table
-      // entry is the fallback for heroes/sheets without authored boxes.
+      // Sheet-authored box ONLY (super_melee sheet plays during the swing —
+      // its per-frame boxes ARE the active window). No table fallback: a
+      // frame without an authored box deals no damage.
       const sheetBox = this._sheetAttackBox('super_melee');
-      if (sheetBox) {
-        const box = this._sheetBoxToWorld(sheetBox);
-        // finisher: false — same rule as melee: the finisher tier is for KILLS
-        // (hitbox.js kill check upgrades to big + KILL_SHAKE) and the supermove
-        // ender. Every-frame finisher made each super-melee connect shake +
-        // launch at kill strength.
-        return { ...box, ...this._attackKnockback(attackName), finisher: false, _source: 'sheet' };
-      }
-      entry = this.heroDef.specialMelee.hitbox;
+      if (!sheetBox) return null;
+      const box = this._sheetBoxToWorld(sheetBox);
+      // finisher: false — same rule as melee: the finisher tier is for KILLS
+      // (hitbox.js kill check upgrades to big + KILL_SHAKE) and the supermove
+      // ender. Every-frame finisher made each super-melee connect shake +
+      // launch at kill strength.
+      // dedupeScope: 'swing' — one connect per target per sweep, same reason
+      // as melee (box gaps within the swing must not re-arm the hitSet).
+      return { ...box, ...this._attackKnockback(attackName), finisher: false, dedupeScope: 'swing', _source: 'sheet' };
     } else if (attackName === ATTACK_SUPERMOVE) {
       // Sheet-authored box ONLY (melee active-frame pattern): the per-frame
       // `attack` boxes on the supermove sheet ARE the damage window. No table
@@ -1135,34 +1138,6 @@ export class Hero extends Entity {
     } else {
       throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
     }
-    if (!entry) return null;
-    // Knockback (knockback.md §11): committed attacks carry a knockback setting
-    // on their hitbox data. Attach it to the resolved world box so the core
-    // wiring reads it at impact as hb.knockback (updateSlot copies it off
-    // boxGet()). Attacks without a knockback field (normal melee) resolve with
-    // knockback undefined — presence of the data is the only gate.
-    const knockback = this._attackKnockback(attackName);
-    // Anchor to the ACTIVE collision box (worldBox), not the standing body.
-    // Crouching shrinks/lowers the box; anchoring to the standing center made
-    // every hitbox drift down relative to the real collision box. The active
-    // box's center is the stable reference that tracks the hero's true body.
-    const wb = this.worldBox();
-    const cx = wb.x + wb.w / 2;
-    const cy = wb.y + wb.h / 2;
-    const dir = this.facing;
-    // oy offsets the box VERTICALLY from the body center. The box is CENTERED
-    // on (cy + oy): a 40px-tall box with oy:0 spans cy-20..cy+20, aligned with
-    // the body. (Previously y was the box TOP at cy+oy, which pushed every
-    // box down by half its height.)
-    return {
-      x: cx + dir * entry.ox - (dir < 0 ? entry.bw : 0),
-      y: cy + entry.oy - entry.bh / 2,
-      w: entry.bw,
-      h: entry.bh,
-      ...knockback,
-      finisher: false, // kill check in hitbox.js upgrades to big + KILL_SHAKE
-      _source: 'table',
-    };
   }
 
   /**
@@ -1272,6 +1247,14 @@ export class Hero extends Entity {
    */
   get meleeHitboxWorld() { return this.attackHitboxWorld(ATTACK_MELEE); }
 
+  /** Active swing's dedupe set — melee or special depending on which swing
+   *  is live. Read by processHitboxes via hb.owner._swingDedupeSet for boxes
+   *  declaring dedupeScope 'swing' (one connect per target per SWING, even
+   *  when the sheet box blinks off mid-swing on unboxed frames). */
+  get _swingDedupeSet() {
+    return this.specialMeleeActive ? this._specialHitTargets : this._meleeHitTargets;
+  }
+
   /**
    * Start a special melee swing (design §15). Edge-triggered by the update
    * system on Down+Melee. The trajectory is self-supplied and COMMITTED once
@@ -1282,6 +1265,9 @@ export class Hero extends Entity {
    */
   startSpecialMelee() {
     if (this.specialMeleeActive || this.meleeActive) return;
+    // TEMP TRACE (barrel multi-hit investigation): log every sweep START.
+    this._swingId = (this._swingId ?? 0) + 1;
+    console.log(`[swing] superMelee #${this._swingId} start t=${performance.now().toFixed(1)}`);
     const cfg = this.heroDef.specialMelee;
     // The super_melee sweep is a full-height standing move — stand up first
     // so the art isn't clipped at crouch height.
@@ -1504,6 +1490,7 @@ export class Hero extends Entity {
     this.specialMeleeFrame = 0;
     // A cancelled swing ends its self-protection immediately (    // "protection clears when the swing ends or is cancelled").
     this._connectProtectFrames = 0;
+    this._specialHitTargets.clear(); // sweep over — next sweep re-arms freely
     this._flushPendingCrouch();
   }
 
@@ -1677,6 +1664,10 @@ export class Hero extends Entity {
     this.specialMeleeActive = false;
     this.specialMeleePhase = null;
     this.specialMeleeFrame = 0;
+    // Swing memory: death/respawn ends any in-flight swing — clear both so the
+    // first attack after respawn can connect (stale memory would whiff it).
+    this._meleeHitTargets.clear();
+    this._specialHitTargets.clear();
     this._connectProtectFrames = 0;
     this.supermoveActive = false;
     this.supermovePhase = null;

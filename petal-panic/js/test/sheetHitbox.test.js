@@ -17,19 +17,16 @@ function ok(name, fn) { try { fn(); passed++; console.log(`  ✓ ${name}`); } ca
 
 console.log('Sheet attack boxes (Scarlet)');
 
-ok('no sheet attached → _sheetAttackBox returns null (table fallback path)', () => {
+ok('no sheet attached → _sheetAttackBox returns null (sheet-only contract)', () => {
   const h = new Hero(HEROES.scarlet, 0, 0);
   assert.equal(h._sheetAttackBox('melee'), null);
 });
 
-ok('attackHitboxWorld falls back to table when no sheet (melee active frame)', () => {
+ok('attackHitboxWorld is sheet-only: no sheet → no box (melee active frame)', () => {
   const h = new Hero(HEROES.scarlet, 0, 0);
   h.meleeActive = true;
   h.meleeFrame = 3; // active frame per MELEE_ACTIVE_FRAME
-  const box = h.attackHitboxWorld('melee');
-  assert.ok(box, 'table box resolves');
-  assert.equal(box._source, 'table');
-  assert.ok(box.w > 0 && box.h > 0);
+  assert.equal(h.attackHitboxWorld('melee'), null, 'no table fallback — sheet boxes only');
 });
 
 console.log(`\n${passed} passed`);

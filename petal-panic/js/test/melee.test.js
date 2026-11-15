@@ -48,7 +48,6 @@ ok('swing constants per spec (sheet-driven duration)', () => {
   // sheet the getter returns the live cycleDuration instead.
   assert.ok(approx(h.MELEE_DURATION, 0.4));
   assert.ok(approx(h.MELEE_FRAME_DURATION, 0.4 / h.MELEE_TOTAL_FRAMES));
-  assert.deepEqual(h.meleeHitbox, { ox: 20, oy: 0, bw: 40, bh: 40 });
 });
 
 console.log('tryMelee / cooldown');
@@ -73,40 +72,13 @@ ok('cooldown decrements over time via updateMelee', () => {
   assert.ok(h.meleeCooldown < h.MELEE_DURATION && h.meleeCooldown > 0);
 });
 
-console.log('active-frame window (acceptance #1)');
-ok('hitbox is null on windup frames 0-2', () => {
+console.log('active-frame window (sheet-only contract)');
+ok('hitbox is null on every swing frame without an authored sheet box', () => {
   const h = makeHero();
-  for (const f of [0, 1, 2]) {
+  for (const f of [0, 1, 2, 3, 4]) {
     setSwingFrame(h, f);
-    assert.equal(h.meleeHitboxWorld, null, `frame ${f} should be null`);
+    assert.equal(h.meleeHitboxWorld, null, `frame ${f} → no sheet boxes in node tests → null`);
   }
-});
-ok('hitbox is null on recovery frame 4', () => {
-  const h = makeHero();
-  setSwingFrame(h, 4);
-  assert.equal(h.meleeHitboxWorld, null);
-});
-ok('hitbox exists ONLY on active frame 3', () => {
-  const h = makeHero();
-  setSwingFrame(h, 3);
-  const hb = h.meleeHitboxWorld;
-  assert.ok(hb, 'expected a box on frame 3');
-  assert.equal(hb.w, 40);
-  assert.equal(hb.h, 40);
-});
-ok('hitbox flips with facing (left vs right)', () => {
-  const h = makeHero();
-  h.x = 100; h.y = 100; h.facing = 1;
-  setSwingFrame(h, 3);
-  const right = { ...h.meleeHitboxWorld };
-  h.facing = -1;
-  const left = { ...h.meleeHitboxWorld };
-  // Facing right: box starts ahead of center (x > center).
-  const cx = h.x + h.w / 2;
-  assert.ok(right.x >= cx, `right box x=${right.x} should be ahead of center ${cx}`);
-  // Facing left: box extends backward (x < center).
-  assert.ok(left.x + left.w <= cx, `left box right-edge=${left.x + left.w} behind center ${cx}`);
-  assert.notEqual(right.x, left.x, 'facing must move the box');
 });
 ok('hitbox null when not swinging at all', () => {
   const h = makeHero();
@@ -197,10 +169,7 @@ ok('melee attack value routes through damage() to kill a target', () => {
   const h = makeHero();
   h.traceStats = createTrace();
   const e = makeEnemy(0, 0, 20, 0); // 20hp, hero attack 10 → 2 swings
-  // Simulate two active-frame hits.
-  setSwingFrame(h, 3);
-  const hb = h.meleeHitboxWorld;
-  assert.ok(hb);
+  // Simulate two active-frame hits (damage routing is sheet-independent).
   const dealt1 = damage(h, e, h.stats.attack, 'melee');
   assert.equal(dealt1, 10);
   assert.equal(e.alive, true);

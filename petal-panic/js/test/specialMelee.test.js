@@ -161,42 +161,29 @@ ok('scarlet facing left advances left (-vx), sprite still faces left', () => {
 });
 
 console.log('Acceptance #4 — hitbox only on active frames, mirrors by facing');
-ok('no sheet (node path): table-fallback box present on every frame', () => {
+ok('no sheet (node path): sheet-only contract → no box on any frame', () => {
   const h = makeHero('balthazar');
   for (let f = 0; f < h.specialMeleeTotalFrames; f++) {
     setSpecialFrame(h, f);
-    assert.ok(h.specialMeleeHitboxWorld, `frame ${f} should have the fallback box`);
+    assert.equal(h.specialMeleeHitboxWorld, null, `frame ${f} → no sheet boxes in node tests → null`);
   }
-});
-ok('hitbox mirrors when facing left', () => {
-  const h = makeHero('balthazar');
-  setSpecialFrame(h, 4); // first active frame
-  h.facing = 1;
-  const rightBox = h.specialMeleeHitboxWorld;
-  h.facing = -1;
-  const leftBox = h.specialMeleeHitboxWorld;
-  const cx = h.x + h.w / 2;
-  const hb = HEROES.balthazar.specialMelee.hitbox;
-  assert.ok(approx(rightBox.x, cx + hb.ox), `right x=${rightBox.x}`);
-  assert.ok(approx(leftBox.x, cx - hb.ox - hb.bw), `left x=${leftBox.x}`);
-  assert.ok(approx(rightBox.y, leftBox.y));
 });
 ok('damage lands via central damage() during active phase', () => {
   const h = makeHero('balthazar'); // attack 20
   h.facing = 1;
   setSpecialFrame(h, 4);
-  const box = h.specialMeleeHitboxWorld;
-  assert.ok(box);
-  const e = makeEnemy(box.x + 5, box.y + 5, 50);
+  // Damage routing is sheet-independent: the box geometry comes from the
+  // authored sheet in-game; here we just verify the central damage() path.
+  const e = makeEnemy(0, 0, 50);
   const dealt = damage(h, e, h.stats.attack, 'specialMelee');
   assert.ok(dealt > 0, `dealt=${dealt}`);
   assert.equal(e.hp, 50 - dealt);
 });
-ok('no damage outside the active phase', () => {
+ok('no box outside the active phase (windup)', () => {
   const h = makeHero('balthazar');
-  setSpecialFrame(h, 0);
-  // No sheet → table fallback: every frame is active, so a box resolves.
-  assert.ok(h.specialMeleeHitboxWorld);
+  h.specialMeleeActive = true;
+  h.specialMeleePhase = 'windup';
+  assert.equal(h.specialMeleeHitboxWorld, null);
 });
 
 console.log('Acceptance #5 — committed frames do not cancel; recovery cancellable');

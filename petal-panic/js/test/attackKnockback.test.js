@@ -75,9 +75,8 @@ for (const id of ['balthazar', 'scarlet']) {
     assert.equal(cfg.knockbackBig.y, -260);
     assert.equal(cfg.knockbackBig.hitstun, 0.45);
     assert.equal(cfg.knockbackBig.dirMode, 'fromAttacker');
-    for (const frame of cfg.frames) {
-      if (frame) assert.equal(frame.knockback, undefined, 'knockback sits beside the frames, not inside them');
-    }
+    // Sheet-only contract: no frame table, no per-frame knockback.
+    assert.equal(cfg.frames, undefined, 'melee frames table removed (sheet-only boxes)');
   });
 
   ok(`${id} strength ordering: super >= sweep > melee (big tier)`, () => {
@@ -104,16 +103,13 @@ for (const id of ['balthazar', 'scarlet']) {
 
 console.log('Resolved world boxes expose both tiers');
 
-ok('sweep hitbox resolves with moderate + big vectors', () => {
+ok('sweep hitbox is sheet-only without authored sheet boxes', () => {
   for (const id of ['balthazar', 'scarlet']) {
     const h = makeHero(id);
     setSpecialActive(h);
-    const box = h.attackHitboxWorld(ATTACK_SPECIAL_MELEE);
-    assert.ok(box, 'active-phase sweep must resolve a box');
-    assert.deepEqual(box.knockbackModerate, HEROES[id].specialMelee.knockbackModerate);
-    assert.deepEqual(box.knockbackBig, HEROES[id].specialMelee.knockbackBig);
-    // finisher:false — the kill tier is owned by the kill check in hitbox.js
-    assert.equal(box.finisher, false);
+    assert.equal(h.attackHitboxWorld(ATTACK_SPECIAL_MELEE), null,
+      `${id} sweep must resolve a sheet-only box (null without sheets)`);
+    h.specialMeleeActive = false;
   }
 });
 
@@ -126,16 +122,13 @@ ok('supermove hitbox is sheet-only without authored sheet boxes', () => {
   }
 });
 
-ok('melee hitbox resolves with moderate + big vectors', () => {
+ok('melee hitbox is sheet-only without authored sheet boxes', () => {
   for (const id of ['scarlet', 'balthazar']) {
     const h = makeHero(id);
-    setSwingFrame(h, 3); // active frame per MELEE_HITBOX_FRAMES
-    const box = h.attackHitboxWorld(ATTACK_MELEE);
-    assert.ok(box, 'active-frame melee must resolve a box');
-    assert.deepEqual(box.knockbackModerate, HEROES[id].attacks[ATTACK_MELEE].knockbackModerate);
-    assert.deepEqual(box.knockbackBig, HEROES[id].attacks[ATTACK_MELEE].knockbackBig);
-    // finisher:false — the kill tier is owned by the kill check in hitbox.js
-    assert.equal(box.finisher, false);
+    setSwingFrame(h, 3); // active frame
+    assert.equal(h.attackHitboxWorld(ATTACK_MELEE), null,
+      `${id} melee must resolve a sheet-only box (null without sheets)`);
+    h.meleeActive = false;
   }
 });
 

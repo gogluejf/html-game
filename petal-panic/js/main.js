@@ -216,7 +216,7 @@ async function boot() {
   const { initFireSprites } = await import('./combat/attack/primitives/fireArea.js');
   const { loadHeroSprites } = await import('./hero/heroSprites.js');
   await Promise.all([initBarrelSprites(), initCheckpointSprites(), initProjectileSprites(), initCoinSprites(), initFireSprites(),
-    loadHeroSprites('scarlet_vale'), loadHeroSprites('balthazar'), loadHeroSprites('bruno'), loadHeroSprites('ringo')]);
+    loadHeroSprites('scarlet_vale'), loadHeroSprites('balthazar')]);
   // Boot visibility: log exactly what the hero sprite pipeline has so a
   // silent "green square" regression is one console glance away.
   try {

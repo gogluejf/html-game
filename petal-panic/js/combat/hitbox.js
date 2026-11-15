@@ -147,7 +147,14 @@ export function processHitboxes(hitboxes, targets, onHit) {
     for (const t of targets) {
       if (!t || t.alive === false) continue;
       if (t === hb.owner) continue;           // never self-hit
-      if (hb.hitSet.has(t)) continue;         // already struck this swing
+      // Dedupe: one hit per target per SCOPE. Default scope = this hitbox
+      // instance (hb.hitSet, cleared when the box re-appears). 'swing' scope
+      // (melee / special melee sheet boxes) uses the OWNER's swing-level set
+      // instead — it survives box gaps mid-swing and is cleared only when the
+      // swing ends (Hero.endNormalMelee / endSpecialMelee). Supermove bursts
+      // keep the default: each burst IS a separate hit by design.
+      const dedupeSet = hb.dedupeScope === 'swing' ? (hb.owner?._swingDedupeSet ?? hb.hitSet) : hb.hitSet;
+      if (dedupeSet.has(t)) continue;         // already struck this scope
       if (!layers.includes(t.layer)) continue; // team routing
 
       const tb = t.worldBox ? t.worldBox() : { x: t.x, y: t.y, w: t.w, h: t.h };
@@ -276,7 +283,7 @@ export function processHitboxes(hitboxes, targets, onHit) {
       }
 
       if (dealt > 0) {
-        hb.hitSet.add(t);
+        dedupeSet.add(t);
         // Hero hit reaction — only flinch/stun if actual energy was lost
         // (shield-only absorption = no reaction, shield pulse is enough).
         if (t.layer === LAYER.HERO && (t._lastEnergyLost ?? 0) > 0) {

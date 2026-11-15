@@ -5,6 +5,8 @@
 import { strict as assert } from 'node:assert';
 import { Hero } from '../hero/hero.js';
 import { HEROES, ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../hero/heroDefs.js';
+import { makeHitbox, processHitboxes } from '../combat/hitbox.js';
+import { LAYER } from '../consts.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -20,8 +22,6 @@ function makeHero(id = 'scarlet', x = 0, y = 0) { return new Hero(HEROES[id], x,
 // Advance a normal swing to a specific integer frame index without update().
 function setSwingFrame(h, idx) { h.meleeActive = true; h.meleeFrame = idx; }
 // Advance a special swing to a specific integer frame index + derived phase.
-// Sheet-driven: without an attached sheet (node path) every frame is 'active'
-// (table fallback).
 function setSpecialFrame(h, idx) {
   h.specialMeleeActive = true;
   h.specialMeleePhase = h._specialMeleePhaseAt(idx) ?? 'active';
@@ -34,17 +34,6 @@ function startDash(h, facing = 1) {
   const inp = noInput(); inp.super = true;
   h.update(DT, inp);
 }
-const center = (h) => { const wb = h.worldBox(); return { cx: wb.x + wb.w / 2, cy: wb.y + wb.h / 2 }; };
-/** Assert a box is mirrored correctly around the active-box center for `dir`. */
-function assertMirrored(box, dir, entry, h) {
-  const { cx, cy } = center(h);
-  const wantX = dir > 0 ? cx + entry.ox : cx - entry.ox - entry.bw;
-  assert.ok(approx(box.x, wantX), `x=${box.x} want ${wantX} (facing ${dir})`);
-  assert.ok(approx(box.y, cy + entry.oy - entry.bh / 2), `y=${box.y} want ${cy + entry.oy - entry.bh / 2}`);
-  assert.equal(box.w, entry.bw);
-  assert.equal(box.h, entry.bh);
-}
-
 console.log('Resolver API');
 ok('all three attacks resolve through attackHitboxWorld', () => {
   const h = makeHero();
@@ -64,9 +53,10 @@ ok('every hero carries an attacks table with all three entries', () => {
   for (const id of ['scarlet', 'balthazar']) {
     const atk = HEROES[id].attacks;
     assert.ok(atk, `${id} missing attacks table`);
-    assert.ok(Array.isArray(atk[ATTACK_MELEE].frames), `${id} melee frames must be a per-frame array`);
-    assert.ok(atk[ATTACK_MELEE].frames.length >= 5, `${id} melee frames must span the 5-frame swing`);
-    assert.ok(atk[ATTACK_SPECIAL_MELEE] ?? HEROES[id].specialMelee.hitbox, `${id} missing special melee hitbox data`);
+    // Melee: sheet-only boxes — the table carries knockback tiers only.
+    assert.ok(atk[ATTACK_MELEE].knockbackModerate && atk[ATTACK_MELEE].knockbackBig, `${id} missing melee knockback data`);
+    assert.equal(atk[ATTACK_MELEE].frames, undefined, `${id} melee must not carry a frame table (sheet-only)`);
+    assert.ok(HEROES[id].specialMelee.hitbox, `${id} missing special melee hitbox data`);
     // Supermove: NO hardcoded box — the damage window is sheet-authored only
     // (per-frame `attack` boxes). The table keeps knockback data as two tiers
     // (moderate burst shove / big finisher launch) since the two-tier rework.
@@ -75,46 +65,35 @@ ok('every hero carries an attacks table with all three entries', () => {
   }
 });
 ok('per-hero special melee differences come from DATA, not code branches', () => {
-  // Both heroes share geometry today; the point is the resolver reads the
-  // per-hero table. Give scarlet a distinct box and confirm it flows through
-  // with zero code changes.
+  // Both heroes share geometry today; the point is the data table carries the
+  // per-hero box (tuning surface for sheets without authored boxes). The
+  // resolver itself is sheet-only — this asserts the DATA shape only.
   const saved = { ...HEROES.scarlet.specialMelee.hitbox };
   HEROES.scarlet.specialMelee.hitbox = { ox: 12, oy: -4, bw: 52, bh: 30 };
   try {
-    const s = makeHero('scarlet');
-    const b = makeHero('balthazar');
-    s.x = 100; s.y = 100; s.facing = 1;
-    b.x = 100; b.y = 100; b.facing = 1;
-    setSpecialFrame(s, 4);
-    setSpecialFrame(b, 4);
-    const sb = s.attackHitboxWorld(ATTACK_SPECIAL_MELEE);
-    const bb = b.attackHitboxWorld(ATTACK_SPECIAL_MELEE);
-    assert.equal(sb.w, 52); assert.equal(sb.h, 30);   // scarlet's data
-    assert.equal(bb.w, 36); assert.equal(bb.h, 35);   // balthazar's data (~2/3-height leg sweep)
-    assert.notEqual(sb.x, bb.x, 'boxes must differ purely by data');
+    assert.deepEqual(HEROES.scarlet.specialMelee.hitbox, { ox: 12, oy: -4, bw: 52, bh: 30 });
+    assert.notDeepEqual(HEROES.scarlet.specialMelee.hitbox, HEROES.balthazar.specialMelee.hitbox,
+      'boxes must differ purely by data');
   } finally {
     HEROES.scarlet.specialMelee.hitbox = saved;
   }
 });
 
 console.log('Active windows (AC #2)');
-ok('melee: box only on configured active frame(s), null elsewhere', () => {
+ok('melee: sheet-only — null on every swing frame without authored boxes', () => {
   const h = makeHero();
-  const frames = HEROES.scarlet.attacks[ATTACK_MELEE].frames;
-  for (let f = 0; f < frames.length; f++) {
+  for (let f = 0; f < 5; f++) {
     setSwingFrame(h, f);
-    const box = h.attackHitboxWorld(ATTACK_MELEE);
-    if (frames[f]) assert.ok(box, `frame ${f} has data → box expected`);
-    else assert.equal(box, null, `frame ${f} has no data → null expected`);
+    assert.equal(h.attackHitboxWorld(ATTACK_MELEE), null, `frame ${f} → no sheet boxes in node tests → null`);
   }
   h.meleeActive = false;
   assert.equal(h.attackHitboxWorld(ATTACK_MELEE), null, 'idle hero → null');
 });
-ok('special melee: table-fallback box present on every frame without a sheet', () => {
+ok('special melee: sheet-only box — null without authored sheet boxes', () => {
   const h = makeHero('balthazar');
   for (let f = 0; f < h.specialMeleeTotalFrames; f++) {
     setSpecialFrame(h, f);
-    assert.ok(h.attackHitboxWorld(ATTACK_SPECIAL_MELEE), `frame ${f} → fallback box expected`);
+    assert.equal(h.attackHitboxWorld(ATTACK_SPECIAL_MELEE), null, `frame ${f} → no sheet boxes in node tests → null`);
   }
   h.specialMeleeActive = false;
   assert.equal(h.attackHitboxWorld(ATTACK_SPECIAL_MELEE), null, 'idle hero → null');
@@ -137,21 +116,18 @@ console.log('Facing mirror (AC #3): both facings × all attacks');
 for (const id of ['scarlet', 'balthazar']) {
   ok(`${id}: melee mirrors correctly for facing ±1`, () => {
     const h = makeHero(id, 100, 100);
-    const entry = HEROES[id].attacks[ATTACK_MELEE].frames[3];
+    // Sheet-only: node tests attach no sheets → null on the active frame.
     setSwingFrame(h, 3);
-    h.facing = 1;
-    assertMirrored(h.attackHitboxWorld(ATTACK_MELEE), 1, entry, h);
-    h.facing = -1;
-    assertMirrored(h.attackHitboxWorld(ATTACK_MELEE), -1, entry, h);
+    assert.equal(h.attackHitboxWorld(ATTACK_MELEE), null, 'no sheet boxes → null (mirror math covered in-game by _sheetBoxToWorld)');
+    h.meleeActive = false;
   });
   ok(`${id}: special melee mirrors correctly for facing ±1`, () => {
     const h = makeHero(id, 100, 100);
-    const entry = HEROES[id].specialMelee.hitbox;
+    // Sheet-only: node tests attach no sheets → null (mirror math covered
+    // in-game by _sheetBoxToWorld).
     setSpecialFrame(h, 4);
-    h.facing = 1;
-    assertMirrored(h.attackHitboxWorld(ATTACK_SPECIAL_MELEE), 1, entry, h);
-    h.facing = -1;
-    assertMirrored(h.attackHitboxWorld(ATTACK_SPECIAL_MELEE), -1, entry, h);
+    assert.equal(h.attackHitboxWorld(ATTACK_SPECIAL_MELEE), null);
+    h.specialMeleeActive = false;
   });
   ok(`${id}: supermove mirrors correctly for facing ±1`, () => {
     const h = makeHero(id, 100, 100);
@@ -174,6 +150,68 @@ ok('melee/special/supermove getters return exactly what the resolver returns', (
   assert.deepEqual(h.meleeHitboxWorld, h.attackHitboxWorld(ATTACK_MELEE));
   assert.deepEqual(h.specialMeleeHitboxWorld, h.attackHitboxWorld(ATTACK_SPECIAL_MELEE));
   assert.deepEqual(h.supermoveHitboxWorld, h.attackHitboxWorld(ATTACK_SUPERMOVE));
+});
+
+console.log('Swing-scope dedupe (one hit per target per swing across box gaps)');
+// A sheet melee box can blink off mid-swing (unboxed frames). The slot
+// lifecycle re-arms the instance hitSet on each re-appearance, so 'swing'
+// scope boxes must dedupe against the owner's swing-level set instead.
+function mkTarget(x) {
+  const t = { x, y: 0, w: 20, h: 20, layer: LAYER.ENEMY, alive: true, hp: 100 };
+  t.worldBox = () => ({ x: t.x, y: t.y, w: t.w, h: t.h });
+  t.takeDamage = (dmg) => { t.hp -= dmg; return dmg; };
+  return t;
+}
+ok('swing-scoped box hits a target once even when the box re-appears', () => {
+  const h = makeHero('scarlet', 0, 0);
+  const target = mkTarget(30);
+  const hb = makeHitbox({ owner: h, team: 'ally', box: { x: 20, y: -10, w: 40, h: 40 }, damage: 10, method: 'melee' });
+  hb.dedupeScope = 'swing';
+  // Window 1: box active → one connect.
+  processHitboxes([hb], [target]);
+  assert.equal(target.hp, 90, 'first window deals one hit');
+  // Box blinks off (slot would resetHitbox here — emulate it):
+  hb.active = false;
+  hb.hitSet.clear();
+  // Window 2: box back ON within the SAME swing → swing memory blocks re-hit.
+  hb.active = true;
+  processHitboxes([hb], [target]);
+  assert.equal(target.hp, 90, 'second window of the same swing must NOT re-hit');
+  // Swing ends → memory clears → next swing connects again.
+  h.endNormalMelee();
+  hb.hitSet.clear();
+  processHitboxes([hb], [target]);
+  assert.equal(target.hp, 80, 'new swing connects again');
+});
+ok('default-scope box still dedupes per instance only (supermove burst contract)', () => {
+  const h = makeHero('scarlet', 0, 0);
+  const target = mkTarget(30);
+  const hb = makeHitbox({ owner: h, team: 'ally', box: { x: 20, y: -10, w: 40, h: 40 }, damage: 10, method: 'supermove' });
+  processHitboxes([hb], [target]);
+  assert.equal(target.hp, 90, 'burst 1 connects');
+  // Burst gap: instance resets (each supermove burst IS a separate hit).
+  hb.hitSet.clear();
+  processHitboxes([hb], [target]);
+  assert.equal(target.hp, 80, 'burst 2 connects again (no swing memory)');
+});
+ok('swing memory clears on natural completion (updateMelee past total frames)', () => {
+  const h = makeHero('scarlet', 0, 0);
+  const target = mkTarget(30);
+  const hb = makeHitbox({ owner: h, team: 'ally', box: { x: 20, y: -10, w: 40, h: 40 }, damage: 10, method: 'melee' });
+  hb.dedupeScope = 'swing';
+  // Swing 1: connect.
+  h.meleeActive = true;
+  processHitboxes([hb], [target]);
+  assert.equal(target.hp, 90, 'swing 1 connects');
+  // Run the swing out naturally — the inline completion path must clear memory.
+  h.updateMelee(h.MELEE_DURATION + 0.05);
+  assert.equal(h.meleeActive, false, 'swing ended');
+  assert.equal(h._meleeHitTargets.size, 0, 'memory cleared on natural completion');
+  // Swing 2 against the same target must connect again.
+  h.tryMelee();
+  hb.hitSet.clear();
+  processHitboxes([hb], [target]);
+  assert.equal(target.hp, 80, 'swing 2 connects after natural completion');
 });
 
 console.log(`\n${passed} assertions passed.`);
