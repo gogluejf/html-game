@@ -109,69 +109,6 @@ export function starPowerKill(hero, victim) {
   Effects.triggerShake(STAR_POWER_SHAKE);
 }
 
-/**
- * Pinball-bumper separation: push the hero's box out of a solid body along
- * the minimum-penetration axis so it can never render INSIDE an enemy while
- * invincible (or right after a hit). One-shot positional resolve — velocity
- * is owned by knockback; this only fixes the overlap. The ENEMY never moves
- * (it is the fixed bumper; the hero is the ball).
- * @param {object} hero  hero entity (x/y mutated)
- * @param {object} body  the enemy/boss body to separate from
- */
-export function separateHeroFromBumper(hero, body) {
-  const hb = hero.worldBox ? hero.worldBox() : { x: hero.x, y: hero.y, w: hero.w, h: hero.h };
-  const bb = body.worldBox ? body.worldBox() : { x: body.x, y: body.y, w: body.w, h: body.h };
-  // Penetration depths (<=0 on an axis = no overlap that axis).
-  const penX = Math.min(hb.x + hb.w - bb.x, bb.x + bb.w - hb.x);
-  const penY = Math.min(hb.y + hb.h - bb.y, bb.y + bb.h - hb.y);
-  if (penX <= 0 || penY <= 0) return; // not overlapping
-  // HEAD-BOUNCE WINDOW: right after a head-landing hit the hero is being
-  // ejected up-and-out. Parking them back on top of the body every frame
-  // (the normal i-frame bumper behavior) would re-ground them on the head
-  // and cancel the arc — "kick up, fall back, stuck". While the window is
-  // active, push along BOTH axes away from the body center so the hero keeps
-  // clearing the head instead of resting on it.
-  if ((hero._headBounceT ?? 0) > 0) {
-    const hcx = hb.x + hb.w / 2, bcx = bb.x + bb.w / 2;
-    const hcy = hb.y + hb.h / 2, bcy = bb.y + bb.h / 2;
-    if (hcx >= bcx) hero.x += penX; else hero.x -= penX;
-    if (hcy < bcy) { hero.y -= penY; if (hero.vy > 0) hero.vy = 0; }
-    else { hero.y += penY; }
-    return;
-  }
-  // Push along the axis of least penetration; ties break HORIZONTAL so a
-  // side-by-side touch never launches the hero vertically off the floor.
-  if (penX < penY || (penX === penY && penX > 0)) {
-    const hcx = hb.x + hb.w / 2, bcx = bb.x + bb.w / 2;
-    hero.x += (hcx >= bcx ? penX : -penX);
-    if (hero.vx && Math.sign(hero.vx) !== Math.sign(hcx - bcx)) hero.vx = 0; // don't slide back in
-  } else {
-    const hcy = hb.y + hb.h / 2, bcy = bb.y + bb.h / 2;
-    // Hero ABOVE the bumper center → rest on top (push up, kill fall speed).
-    if (hcy < bcy) {
-      // INVINCIBLE EXCEPTION: never park the ghost on a head. Resting on top
-      // during i-frames reads as "stuck to them / carrying me" and sets up
-      // the re-hit the moment immunity ends. Instead roll OFF sideways —
-      // the bump gives the hero the chance to go away (hit → bounce → rolled
-      // off → free to run), so the fall-back never lands back on the head.
-      if (hero.invincible) {
-        const hcx = hb.x + hb.w / 2, bcx = bb.x + bb.w / 2;
-        const dir = hcx >= bcx ? 1 : -1;
-        hero.x += dir * Math.max(penX, 4);
-        // Keep the fall going (do NOT zero vy): the hero is phasing past,
-        // not landing. A small sideways nudge sells the "rolled off" read.
-        hero.vx = dir * Math.max(Math.abs(hero.vx), 120);
-        return;
-      }
-      hero.y -= penY;
-      if (hero.vy > 0) hero.vy = 0;
-    } else {
-      // Hero BELOW (inside from under) → push DOWN out of the body.
-      hero.y += penY;
-    }
-  }
-}
-
 function hitSolidTerrain(projectile, target) {
   const box = target.worldBox();
   projectile._impactPoint = null;
@@ -409,29 +346,12 @@ export function registerCollisionHandlers(collisionWorld) {
     if (!source.alive || source.aiState === 'dead') return; // dead enemies don't hurt
     // Boss zone flow (boss-arena.md §2): the boss is untouchable before COMBAT.
     if (source === boss && !bossZone.bossCanTakeDamage()) return;
-    // PINBALL BUMPER RULE: invincibility absorbs DAMAGE but never disables
-    // collision. While blinking, live enemies are solid bumpers to the hero —
-    // push the hero's box out along the overlap normal so it can never render
-    // inside a body. (Previously this early-returned and the hero phased
-    // through enemies for the full i-frame window.) The damage path below
-    // stays gated on invincible as before.
-    if (heroEnt.invincible) {
-      separateHeroFromBumper(heroEnt, source);
-      // STAR POWER (mario star): while the star powerup is active, touching an
-      // enemy/boss one-shots it with a big launch + hitstop + shake. Regular
-      // i-frames (hit/respawn/dash) keep the old absorb-only behavior.
-      if (heroEnt.starPower) starPowerKill(heroEnt, source);
-      return;
-    }
     // Self-protection on connect (knockback.md ): a clean sweep connect
     // keeps the hero immune to contact damage until that
     // swing's active+recovery end. The flag is set by the unified hitbox
     // system on first connect and cleared by endSpecialMelee(); whiffs never
     // set it, so a missed swing leaves the hero fully exposed here.
     if (heroEnt.connectProtected) return;
-    if (source._contactCd > 0) return;
-    console.log(`[immunity] CONTACT DAMAGE from ${source.type} | hero.invincible=${heroEnt.invincible} invulnSource=${heroEnt.invulnSource} supermoveActive=${heroEnt.supermoveActive}`); // TRACE (temporary)
-    source._contactCd = CONTACT_COOLDOWN;
     const amt = source.stats?.attack ?? 10;
     // Body-contact shove vector (§9): carried on the enemy. The x component IS
     // the strength (px/s); y carries the small upward lobe. Push normal is
@@ -445,6 +365,37 @@ export function registerCollisionHandlers(collisionWorld) {
     const bk = source.bodyKnockback ?? {};
     const headOn = Math.max(0, (source.vx ?? 0) * nx + (source.vy ?? 0) * ny);
     const motion = headOn * (source.stats?.weight ?? 1);
+    const shove = {
+      x: nx * (bk.x ?? 0) + nx * motion,
+      y: ny * (bk.y ?? 0) + ny * motion,
+    };
+    // STAR POWER still one-shots on touch even while blinking.
+    if (heroEnt.starPower) starPowerKill(heroEnt, source);
+    // ONE cooldown per enemy, shared by the real hit and the i-frame bump:
+    // exactly one bump/hit per re-contact — never a per-frame slingshot.
+    if (source._contactCd > 0) return;
+    source._contactCd = CONTACT_COOLDOWN;
+    // I-FRAME BUMPER: while invincible, the SAME knockback as a real hit —
+    // applyKnockback() is the exact function the real hit's shove routes
+    // through, so the physics is identical — but NO damage, NO hitstun, NO
+    // i-frame refresh. One clean launch per re-contact: a real bumper.
+    if (heroEnt.invincible) {
+      // HEAD CASE: the hero is resting ON TOP of the body (feet at/above the
+      // body's top edge). A pure knockback vector gets eaten here — gravity
+      // re-grounds the hero on the head next frame and the terrain resolve
+      // zeros vy, so the launch reads as "pinned to them". Guarantee an
+      // upward pop + sideways exit so the arc actually leaves the head.
+      const hb3 = heroEnt.worldBox(), sb3 = source.worldBox();
+      const onHead = hb3.y + hb3.h <= sb3.y + 6;
+      applyKnockback(heroEnt, { x: shove.x, y: shove.y });
+      if (onHead) {
+        const dir = Math.sign((hb3.x + hb3.w / 2) - (sb3.x + sb3.w / 2)) || 1;
+        heroEnt.vy = -420;                    // guaranteed pop off the head
+        heroEnt.vx = (heroEnt.vx || 0) + dir * 160;
+        heroEnt.y = sb3.y - hb3.h;            // fully clear the body so the arc starts clean
+      }
+      return;
+    }
     // ONE door: applyHit() owns the damage AND the shove — the vector rides
     // the context and lands exactly when damage lands (immune heroes absorb
     // both via the resolver's immunity gate).
@@ -456,8 +407,7 @@ export function registerCollisionHandlers(collisionWorld) {
       team: Team.FOE,
       method: 'contact',
       knockback: {
-        x: nx * (bk.x ?? 0) + nx * motion,
-        y: ny * (bk.y ?? 0) + ny * motion,
+        ...shove,
         hitstun: bk.hitstun,
         iFrames: bk.iFrames,
       },
@@ -467,35 +417,26 @@ export function registerCollisionHandlers(collisionWorld) {
       // Special loss (special-weapons.md): a hit that costs damage drops the
       // selected special. i-frame/connect-protected paths early-return above.
       heroEnt.loseSelectedSpecial();
-      // ON-HIT SEPARATION (pinball bumper): the impulse alone is a suggestion —
-      // weak hits (idle enemy, no motion term) leave the hero parked inside
-      // the attacker's box for the whole stun. Push the boxes apart NOW so the
-      // i-frame blink plays NEXT TO the enemy, never inside it.
-      separateHeroFromBumper(heroEnt, source);
       // HEAD-LANDING BOUNCE: when the hit connects from ABOVE (hero falling,
       // feet in the enemy's upper half), the horizontal shove is useless —
-      // the bumper separation parks the hero ON TOP of the body, grounded,
-      // and friction eats the sideways impulse. Worse, during the post-hit
-      // i-frames the bumper re-parks the hero on the head EVERY frame, so a
-      // one-frame launch just reads as "kick up, fall back, stuck". Instead:
-      // stamp a short head-bounce window. While it's active the bumper pushes
-      // the hero UP AND OUT (diagonal) instead of parking them on top, so the
-      // hero arcs away cleanly and cannot re-ground on the head. Side hits
-      // never set it — they keep the normal park-next-to behavior.
+      // friction eats it while grounded on the head. Pop them up-and-out
+      // instead so they arc away cleanly. Side hits never set it.
       const hb2 = heroEnt.worldBox ? heroEnt.worldBox() : { x: heroEnt.x, y: heroEnt.y, w: heroEnt.w, h: heroEnt.h };
       const sb2 = source.worldBox ? source.worldBox() : { x: source.x, y: source.y, w: source.w, h: source.h };
       const feetInHead = hb2.y + hb2.h <= sb2.y + sb2.h * 0.5;
       if (feetInHead && (heroEnt.vy ?? 0) >= 0) {
-        heroEnt._headBounceT = 0.35; // seconds of up-and-out ejection
         heroEnt.vy = -420;           // initial pop (apex ~59px at GRAVITY 1500)
         heroEnt.vx = (heroEnt.vx || 0) + (Math.sign(hb2.x + hb2.w / 2 - (sb2.x + sb2.w / 2)) || 1) * 160;
         heroEnt.y = sb2.y - hb2.h;   // fully clear the body so the arc starts clean
         // The arc takes ~0.56s round-trip (0.28 up + 0.28 down at GRAVITY 1500).
-        // The contact's own iFrames (0.60 regular / 0.70 boss) expire right as
-        // the hero lands BACK on the head → immediate second hit → bounce
-        // re-arms → "kick up, fall back, get hit again" loop. Extend the
-        // window past the full arc so the fall-back lands inside immunity.
+        // Extend the window past the full arc so the fall-back lands inside
+        // immunity — no second hit on the way down.
         heroEnt.setInvincible('hit', Math.max(heroEnt.timers.get('invincible') ?? 0, 0.9));
+        // SHORT STOMP STUN: a head-landing bonk locks input only 0.15s (~9
+        // frames) instead of the full contact hitstun — it expires while the
+        // hero is still rising, so the double-jump escape is alive the moment
+        // control returns. Side hits keep the normal hitstun below.
+        heroEnt.hitstunTimer = Math.min(heroEnt.hitstunTimer ?? 0, 0.15);
       }
       // system so the existing invincible flag + render blink keep working.
       if (heroEnt.hitstunTimer > 0) {
