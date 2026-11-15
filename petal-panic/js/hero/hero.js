@@ -89,6 +89,11 @@ export const KNOCKBACK_PROFILES = {
   projectile:  { strength: 220, recovery: 0.25, iFrames: 0.30 }, // ordinary foe shot
   heavyProj:   { strength: 300, recovery: 0.30, iFrames: 0.40 }, // heavy foe shot
   explosion:   { strength: 380, recovery: 0.30, iFrames: 0.60 }, // barrel/bomb AoE
+  // Persistent zones (fire/toxic): brief flinch, NO input lock, NO i-frames.
+  // Full control while standing in the hazard — damage ticks, visual flash,
+  // but you can still run out.
+  fire:        { strength: 0,   recovery: 0,    iFrames: 0 },
+  poison:      { strength: 0,   recovery: 0,    iFrames: 0 },
 };
 
 /** Fallback profile for unknown sources (keeps takeHit total; no magic numbers). */
@@ -440,10 +445,17 @@ export class Hero extends Entity {
     }
     // Hit-stun (§24/§26): input locked, physics keep running; knockback decays
     // under friction during the window and control resumes cleanly after.
-    this.timers.set('rec', profile.recovery);
+    // Zero-recovery profiles (fire/poison zones) skip the stun entirely —
+    // full control while standing in the hazard.
+    if (profile.recovery > 0) {
+      this.timers.set('rec', profile.recovery);
+    }
     // Damage-immune for the i-frame duration (§27 / immunity.md): one call owns
     // flag + timer + source tag. Source 'hit' → transparent blink look.
-    this.setInvincible('hit', Math.max(this.timers.get('invincible'), profile.iFrames));
+    // Zero i-frames (persistent zones) skip invincibility — every tick lands.
+    if (profile.iFrames > 0) {
+      this.setInvincible('hit', Math.max(this.timers.get('invincible'), profile.iFrames));
+    }
     // Stamp the hit time so the HUD can play the 'hit' expression briefly.
     this.lastHitAt = performance.now();
     return true;
@@ -873,10 +885,6 @@ export class Hero extends Entity {
     // refuses while a normal swing is up; this is the symmetric guard so a
     // plain Melee press can't start a normal swing under an active special one.
     if (this.meleeCooldown > 0 || this.meleeActive || this.specialMeleeActive) return;
-    // TEMP TRACE (barrel multi-hit investigation): log every swing START so
-    // damage lines can be matched to swings.
-    this._swingId = (this._swingId ?? 0) + 1;
-    console.log(`[swing] melee #${this._swingId} start t=${performance.now().toFixed(1)} airborne=${!this.grounded}`);
     this.meleeFrame = 0;
     this.meleeActive = true;
     // Airborne at swing START → play the `air_melee` sheet for the whole swing
@@ -1257,9 +1265,6 @@ export class Hero extends Entity {
    */
   startSpecialMelee() {
     if (this.specialMeleeActive || this.meleeActive) return;
-    // TEMP TRACE (barrel multi-hit investigation): log every sweep START.
-    this._swingId = (this._swingId ?? 0) + 1;
-    console.log(`[swing] superMelee #${this._swingId} start t=${performance.now().toFixed(1)}`);
     const cfg = this.heroDef.specialMelee;
     // The super_melee sweep is a full-height standing move — stand up first
     // so the art isn't clipped at crouch height.
@@ -1778,6 +1783,19 @@ export class Hero extends Entity {
    * @returns {{x:number,y:number,w:number,h:number}|null}
    */
   get supermoveHitboxWorld() { return this.attackHitboxWorld(ATTACK_SUPERMOVE); }
+
+  /**
+   * True while the supermove ANIMATION is still on screen: the physics window
+   * (supermoveActive) PLUS the visual freeze tail — the sheet keeps playing
+   * its terminal frames after endSupermove() until the SpritePlayer reaches
+   * its done state (see the freeze-tail branch in heroSprites.js). Combat
+   * input locks (shooting/melee) use THIS, not supermoveActive, so the gun
+   * stays silent until the whole anim is off screen.
+   */
+  get supermoveAnimPlaying() {
+    if (this.supermoveActive) return true;
+    return this._spriteAnim === 'supermove' && !!(this._player && !this._player.isDone);
+  }
 
   /**
    * Draw the hero. When crouching, scale the sprite to match the crouch box
