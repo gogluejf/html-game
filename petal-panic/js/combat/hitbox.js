@@ -269,10 +269,9 @@ export function processHitboxes(hitboxes, targets, onHit) {
           const appliedX = modVec ? (modVec.x / resist) : 0;
           const appliedY = modVec ? (modVec.y / resist) : 0;
           applyKnockback(t, {
-            x: bigVec.x - appliedX,
-            y: bigVec.y - appliedY,
+            impulse: { x: bigVec.x - appliedX, y: bigVec.y - appliedY },
             hitstun: bigVec.hitstun ?? 0,
-            ignoreResist: true,
+            ignoreVictimResistance: true,
           });
         }
         t.intangible = true; // star-style ghost flight until despawn

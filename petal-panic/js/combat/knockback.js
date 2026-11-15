@@ -32,32 +32,43 @@ export function calculateKnockback(attacker, pop = 0) {
 }
 
 /**
- * Apply a knockback vector to a victim.
+ * Apply a knockback impulse to a victim.
+ *
+ * Factors:
+ *   - impulse: the force from the attacker (kb.x, kb.y in px/s)
+ *   - victim velocity: current vx/vy (added to, unless ignoreVictimResistance)
+ *   - victim mass: knockbackResist divisor (divides impulse, unless ignoreVictimResistance)
  *
  * @param {object} victim  Entity being hit. Reads/writes vx, vy; reads
- *                         knockbackResist (mass divisor, default 1); writes
+ *                         knockbackResist (mass, default 1); writes
  *                         hitstunTimer, iFrameTimer.
- * @param {{x?:number,y?:number,hitstun?:number,iFrames?:number}|null|undefined} kb
- *        The shove vector (px/s) plus optional stun / protection durations (s).
+ * @param {{x?:number,y?:number,hitstun?:number,iFrames?:number,ignoreVictimResistance?:boolean}|null|undefined} kb
+ *        The impulse vector (px/s) plus optional stun / protection durations (s).
+ *        ignoreVictimResistance: skip BOTH victim mass AND victim current
+ *        velocity. The impulse becomes the final velocity (attacker owns it).
  * @returns {boolean} true if applied, false if no-op.
  */
 export function applyKnockback(victim, kb) {
   if (!kb) return false;
-  const fx = kb.x ?? 0, fy = kb.y ?? 0;
+  const impulse = kb.impulse ?? { x: kb.x ?? 0, y: kb.y ?? 0 };
+  const fx = impulse.x, fy = impulse.y;
   if (!fx && !fy && !(kb.hitstun > 0) && !(kb.iFrames > 0)) return false;
 
-  // Mass resists knockback as a divisor (§3). Default resist 1 → unchanged.
-  // ignoreResist (per-call): the attack owns the FINAL velocity — victim mass
-  // is skipped entirely, so the same vector lands identically on every target
-  // (star-power kick rule: YOUR kick, not physics).
-  const resist = kb.ignoreResist ? 1 : (victim.knockbackResist ?? 1);
-  victim.vx = (victim.vx ?? 0) + fx / resist;
-  victim.vy = (victim.vy ?? 0) + fy / resist;
+  if (kb.ignoreVictimResistance) {
+    // Attacker owns the final velocity: no mass division, no old velocity.
+    victim.vx = fx;
+    victim.vy = fy;
+  } else {
+    // Normal: victim mass divides the impulse, victim velocity is added to.
+    const mass = victim.knockbackResist ?? 1;
+    victim.vx = (victim.vx ?? 0) + fx / mass;
+    victim.vy = (victim.vy ?? 0) + fy / mass;
+  }
 
-  // Stun (§6): never shorten an existing longer stun.
+  // Stun: never shorten an existing longer stun.
   victim.hitstunTimer = Math.max(victim.hitstunTimer ?? 0, kb.hitstun ?? 0);
 
-  // Protection window (§6): optional.
+  // Protection window: optional.
   if ((kb.iFrames ?? 0) > 0) {
     victim.iFrameTimer = Math.max(victim.iFrameTimer ?? 0, kb.iFrames);
   }

@@ -93,7 +93,7 @@ export function starPowerKill(hero, victim) {
     damage: amt,
     team: Team.ALLY,
     method: 'contact',
-    knockback: { x: STAR_POWER_KNOCKBACK.x * dirX * jx, y: STAR_POWER_KNOCKBACK.y * jy, hitstun: STAR_POWER_KNOCKBACK.hitstun, ignoreResist: true },
+    knockback: { impulse: { x: STAR_POWER_KNOCKBACK.x * dirX * jx, y: STAR_POWER_KNOCKBACK.y * jy }, hitstun: STAR_POWER_KNOCKBACK.hitstun, ignoreVictimResistance: true },
     // Juice: freeze the whole sim for ~83ms. Rides the context so ONLY a
     // connected kill freezes time (rejected hits return before reactions).
     // Max-merge semantics mean overlapping kills hold the larger window.
@@ -387,18 +387,30 @@ export function registerCollisionHandlers(collisionWorld) {
       // upward pop + sideways exit so the arc actually leaves the head.
       const hb3 = heroEnt.worldBox(), sb3 = source.worldBox();
       const onHead = hb3.y + hb3.h <= sb3.y + 6;
-      applyKnockback(heroEnt, { x: shove.x, y: shove.y });
       if (onHead) {
+        // Stomp bounce: the impulse IS the final velocity (ignoreVictimResistance)
+        // — the hero's fall speed and mass don't dilute the pop. Position snap
+        // keeps the arc start clean (knockback can't move entities).
         const dir = Math.sign((hb3.x + hb3.w / 2) - (sb3.x + sb3.w / 2)) || 1;
-        heroEnt.vy = -420;                    // guaranteed pop off the head
-        heroEnt.vx = (heroEnt.vx || 0) + dir * 160;
+        applyKnockback(heroEnt, { impulse: { x: dir * 160, y: -420 }, ignoreVictimResistance: true });
         heroEnt.y = sb3.y - hb3.h;            // fully clear the body so the arc starts clean
+      } else {
+        applyKnockback(heroEnt, { impulse: { x: shove.x, y: shove.y } });
       }
       return;
     }
     // ONE door: applyHit() owns the damage AND the shove — the vector rides
     // the context and lands exactly when damage lands (immune heroes absorb
     // both via the resolver's immunity gate).
+    // HEAD-LANDING BOUNCE (precomputed): when the hero falls onto the enemy's
+    // upper half, the contact shove is a stomp — the impulse becomes the FINAL
+    // velocity (ignoreVictimResistance) so the fall speed and hero mass don't
+    // dilute the pop. Side hits keep the normal additive shove.
+    const hb2 = heroEnt.worldBox ? heroEnt.worldBox() : { x: heroEnt.x, y: heroEnt.y, w: heroEnt.w, h: heroEnt.h };
+    const sb2 = source.worldBox ? source.worldBox() : { x: source.x, y: source.y, w: source.w, h: source.h };
+    const feetInHead = hb2.y + hb2.h <= sb2.y + sb2.h * 0.5;
+    const stomp = feetInHead && (heroEnt.vy ?? 0) >= 0;
+    const stompDir = Math.sign(hb2.x + hb2.w / 2 - (sb2.x + sb2.w / 2)) || 1;
     const res = applyHit({
       provenance: AttackProvenance.CONTACT,
       source,
@@ -406,37 +418,23 @@ export function registerCollisionHandlers(collisionWorld) {
       damage: amt,
       team: Team.FOE,
       method: 'contact',
-      knockback: {
-        ...shove,
-        hitstun: bk.hitstun,
-        iFrames: bk.iFrames,
-      },
+      knockback: stomp
+        ? { impulse: { x: stompDir * 160, y: -420 }, ignoreVictimResistance: true, hitstun: 0.15, iFrames: 0.9 }
+        : { impulse: { x: shove.x, y: shove.y }, hitstun: bk.hitstun, iFrames: bk.iFrames },
     });
     const dealt = res.dealt;
     if (dealt > 0) {
       // Special loss (special-weapons.md): a hit that costs damage drops the
       // selected special. i-frame/connect-protected paths early-return above.
       heroEnt.loseSelectedSpecial();
-      // HEAD-LANDING BOUNCE: when the hit connects from ABOVE (hero falling,
-      // feet in the enemy's upper half), the horizontal shove is useless —
-      // friction eats it while grounded on the head. Pop them up-and-out
-      // instead so they arc away cleanly. Side hits never set it.
-      const hb2 = heroEnt.worldBox ? heroEnt.worldBox() : { x: heroEnt.x, y: heroEnt.y, w: heroEnt.w, h: heroEnt.h };
-      const sb2 = source.worldBox ? source.worldBox() : { x: source.x, y: source.y, w: source.w, h: source.h };
-      const feetInHead = hb2.y + hb2.h <= sb2.y + sb2.h * 0.5;
-      if (feetInHead && (heroEnt.vy ?? 0) >= 0) {
-        heroEnt.vy = -420;           // initial pop (apex ~59px at GRAVITY 1500)
-        heroEnt.vx = (heroEnt.vx || 0) + (Math.sign(hb2.x + hb2.w / 2 - (sb2.x + sb2.w / 2)) || 1) * 160;
-        heroEnt.y = sb2.y - hb2.h;   // fully clear the body so the arc starts clean
-        // The arc takes ~0.56s round-trip (0.28 up + 0.28 down at GRAVITY 1500).
-        // Extend the window past the full arc so the fall-back lands inside
-        // immunity — no second hit on the way down.
+      // HEAD-LANDING BOUNCE: the velocity is already set by the stomp knockback
+      // above (ignoreVictimResistance — impulse IS the final velocity). What's
+      // left is what knockback can't do: snap the hero fully off the body so
+      // the arc starts clean, and cover the ~0.56s round-trip arc with
+      // invincibility so the fall-back never re-hits.
+      if (stomp) {
+        heroEnt.y = sb2.y - hb2.h;
         heroEnt.setInvincible('hit', Math.max(heroEnt.timers.get('invincible') ?? 0, 0.9));
-        // SHORT STOMP STUN: a head-landing bonk locks input only 0.15s (~9
-        // frames) instead of the full contact hitstun — it expires while the
-        // hero is still rising, so the double-jump escape is alive the moment
-        // control returns. Side hits keep the normal hitstun below.
-        heroEnt.hitstunTimer = Math.min(heroEnt.hitstunTimer ?? 0, 0.15);
       }
       // system so the existing invincible flag + render blink keep working.
       if (heroEnt.hitstunTimer > 0) {

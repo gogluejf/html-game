@@ -57,8 +57,10 @@ export function barrelImpactSweep(b) {
       team: Team.NEUTRAL,
       method: 'barrelImpact',
       knockback: {
-        x: dirX * (BARREL_IMPACT_KNOCKBACK.x + (kb?.x ?? 0) * dirX),
-        y: BARREL_IMPACT_KNOCKBACK.y,
+        impulse: {
+          x: dirX * (BARREL_IMPACT_KNOCKBACK.x + (kb?.x ?? 0) * dirX),
+          y: BARREL_IMPACT_KNOCKBACK.y,
+        },
         hitstun: BARREL_IMPACT_KNOCKBACK.hitstun,
       },
     });
@@ -90,17 +92,16 @@ export function barrelImpactSweep(b) {
 // resting-on-head frame doesn't machine-gun.
 const FALLING_BARREL_MIN_VY = 260;   // px/s downward before it counts as "falling"
 const FALLING_BARREL_COOLDOWN = 0.3; // re-arm window per barrel
-// Head-hit response: the barrel gets a small knockback launch (up + away from
-// the hero) and a short fuse. It stays alive and arcs under gravity; it
+// Head-hit response: the barrel gets a knockback launch (up + away from the
+// hero) and a short fuse. It stays alive and arcs under gravity; it
 // detonates when the fuse expires OR it lands on a surface — whichever first.
 // The blast fires at its CURRENT position, so the explosion travels with the
 // launched barrel (kick-a-barrel-and-it-blows-up feel).
-const STOMP_KNOCKBACK = { x: 260, y: -120, hitstun: 0, iFrames: 0 };
-// The stomp POP: applied as a SET (b.vy = STOMP_POP_VY) after the applyHit
-// shove, because the barrel arrives falling >= FALLING_BARREL_MIN_VY and an
-// additive lobe can't reverse it. -420 vs GRAVITY 1500 → ~0.28s of rise,
-// apex ~59px above the head — a clean visible hop before the arc comes down.
-const STOMP_POP_VY = -420;
+// ignoreVictimResistance: a stomp is a BOUNCE, not a shove — the barrel
+// arrives falling fast and has its own mass, so an additive impulse would be
+// absorbed and never reverse the fall. The flag makes the impulse the FINAL
+// velocity: no mass division, no old velocity. One source of truth.
+const STOMP_KNOCKBACK = { x: 260, y: -420, hitstun: 0, iFrames: 0 };
 const STOMP_FUSE = 0.45;             // seconds of cooking after the head-hit
 // STAR POWER barrel pop: shove the barrel in front of the hero like an enemy
 // knockback — a horizontal push with a SMALL fixed `pop` lobe (the same shape
@@ -174,7 +175,9 @@ export function fallingBarrelImpact(b) {
   // Launch the barrel off the head: upward + horizontally away from the
   // target's center. Pure impulse (no damage — the stomp is a physics
   // interaction, not a hit), so it rides the single door with damage: 0;
-  // stepDynamicSolid carries the arc.
+  // stepDynamicSolid carries the arc. ignoreVictimResistance makes the
+  // impulse the FINAL velocity — the barrel's fall speed and mass don't
+  // dilute the bounce (a stomp is a set, not an add).
   const dirX = Math.sign((bb.x + bb.w / 2) - (tb.x + tb.w / 2)) || 1;
   applyHit({
     provenance: AttackProvenance.STOMP,
@@ -183,14 +186,8 @@ export function fallingBarrelImpact(b) {
     damage: 0,
     team: Team.NEUTRAL,
     method: 'stomp',
-    knockback: { x: STOMP_KNOCKBACK.x * dirX, y: STOMP_KNOCKBACK.y },
+    knockback: { impulse: { x: STOMP_KNOCKBACK.x * dirX, y: STOMP_KNOCKBACK.y }, ignoreVictimResistance: true },
   });
-  // POP: the barrel arrived falling fast (>= FALLING_BARREL_MIN_VY down) and
-  // applyKnockback only ADDS its vector — a -120 lobe against a 300+ fall
-  // leaves it still moving down (no visible bounce). A stomp must REVERSE the
-  // fall into a clean hop, so set vy to the launch value outright; the
-  // sideways shove from applyHit is kept as-is.
-  b.vy = STOMP_POP_VY;
   // Arm the fuse. It cooks while airborne; landing or fuse-expiry detonates.
   b._fuse = STOMP_FUSE;
   if (ctx.hero) record(ctx.hero, { kind: 'enemyStomped' });

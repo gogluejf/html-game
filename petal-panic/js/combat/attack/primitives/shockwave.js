@@ -133,7 +133,7 @@ registerPrimitive('shockwave', {
             target: ent,
             damage: dmg,
             team: Team.NEUTRAL,
-            knockback: { x: Math.cos(angle) * kbInt, y: Math.sin(angle) * kbInt },
+            knockback: { impulse: { x: Math.cos(angle) * kbInt, y: Math.sin(angle) * kbInt } },
           });
         }
       }

@@ -882,7 +882,7 @@ export function update(dt) {
           damage: 0,
           team: Team.ALLY,
           method: 'starPower',
-          knockback: { x: STAR_BARREL_KNOCKBACK.x * awayX * jx, y: STAR_BARREL_KNOCKBACK.y * jy, ignoreResist: true },
+          knockback: { impulse: { x: STAR_BARREL_KNOCKBACK.x * awayX * jx, y: STAR_BARREL_KNOCKBACK.y * jy }, ignoreVictimResistance: true },
           // Juice rides the context: only a connected pop freezes time.
           hitstop: STAR_POWER_HITSTOP_FRAMES,
         });

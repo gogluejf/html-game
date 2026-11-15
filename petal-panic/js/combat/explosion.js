@@ -193,7 +193,7 @@ export function resolveExplosion(explosion, targets) {
       target: t,
       damage: dmg,
       team,
-      knockback: { x: kx, y: ky, hitstun: knockback?.hitstun ?? 0, iFrames: knockback?.iFrames ?? 0 },
+      knockback: { impulse: { x: kx, y: ky }, hitstun: knockback?.hitstun ?? 0, iFrames: knockback?.iFrames ?? 0 },
     });
     const dealt = res.dealt;
     if (dealt <= 0) continue;
