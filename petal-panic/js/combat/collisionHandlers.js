@@ -371,31 +371,49 @@ export function registerCollisionHandlers(collisionWorld) {
     };
     // STAR POWER still one-shots on touch even while blinking.
     if (heroEnt.starPower) starPowerKill(heroEnt, source);
-    // ONE cooldown per enemy, shared by the real hit and the i-frame bump:
-    // exactly one bump/hit per re-contact — never a per-frame slingshot.
-    if (source._contactCd > 0) return;
-    source._contactCd = CONTACT_COOLDOWN;
-    // I-FRAME BUMPER: while invincible, the SAME knockback as a real hit —
-    // applyKnockback() is the exact function the real hit's shove routes
-    // through, so the physics is identical — but NO damage, NO hitstun, NO
-    // i-frame refresh. One clean launch per re-contact: a real bumper.
+    // I-FRAME SOLIDITY: while invincible, live enemies are SOLID bodies —
+    // the hero is pushed OUT of them every single frame (positional, no
+    // cooldown), so nothing — not a 920px/s supermove, not a 420px/s vine
+    // charge — can pass through. On top of that, the FIRST contact in each
+    // re-contact window fires the SAME knockback as a real hit (launch feel),
+    // gated by the shared _contactCd. NO damage, NO hitstun, NO i-frame
+    // refresh: position keeps you out, the shove sells the bump.
     if (heroEnt.invincible) {
-      // HEAD CASE: the hero is resting ON TOP of the body (feet at/above the
-      // body's top edge). A pure knockback vector gets eaten here — gravity
-      // re-grounds the hero on the head next frame and the terrain resolve
-      // zeros vy, so the launch reads as "pinned to them". Guarantee an
-      // upward pop + sideways exit so the arc actually leaves the head.
       const hb3 = heroEnt.worldBox(), sb3 = source.worldBox();
-      const onHead = hb3.y + hb3.h <= sb3.y + 6;
-      applyKnockback(heroEnt, { x: shove.x, y: shove.y });
-      if (onHead) {
-        const dir = Math.sign((hb3.x + hb3.w / 2) - (sb3.x + sb3.w / 2)) || 1;
-        heroEnt.vy = -420;                    // guaranteed pop off the head
-        heroEnt.vx = (heroEnt.vx || 0) + dir * 160;
-        heroEnt.y = sb3.y - hb3.h;            // fully clear the body so the arc starts clean
+      // POSITIONAL PUSH-OUT (every frame): least-penetration axis, ties break
+      // horizontal. Velocity is NOT touched here — knockback/dash/jump own
+      // it; this only guarantees the boxes never overlap next frame.
+      const penX = Math.min(hb3.x + hb3.w - sb3.x, sb3.x + sb3.w - hb3.x);
+      const penY = Math.min(hb3.y + hb3.h - sb3.y, sb3.y + sb3.h - hb3.y);
+      if (penX > 0 && penY > 0) {
+        if (penX < penY || (penX === penY)) {
+          const hcx = hb3.x + hb3.w / 2, scx = sb3.x + sb3.w / 2;
+          heroEnt.x += (hcx >= scx ? penX : -penX);
+        } else {
+          const hcy = hb3.y + hb3.h / 2, scy = sb3.y + sb3.h / 2;
+          heroEnt.y += (hcy < scy ? -penY : penY);
+        }
+      }
+      // KNOCKBACK LAUNCH (first contact per re-contact window): the same
+      // shove a real hit would deal, for the bump feel.
+      if (source._contactCd <= 0) {
+        source._contactCd = CONTACT_COOLDOWN;
+        applyKnockback(heroEnt, { x: shove.x, y: shove.y });
+        // HEAD CASE: resting ON TOP of the body — gravity + terrain resolve
+        // would re-ground the hero on the skull and eat the launch. Guarantee
+        // an upward pop + sideways exit so the arc actually leaves the head.
+        const onHead = hb3.y + hb3.h <= sb3.y + 6;
+        if (onHead) {
+          const dir = Math.sign((hb3.x + hb3.w / 2) - (sb3.x + sb3.w / 2)) || 1;
+          heroEnt.vy = -420;                    // guaranteed pop off the head
+          heroEnt.vx = (heroEnt.vx || 0) + dir * 160;
+          heroEnt.y = sb3.y - hb3.h;            // fully clear the body so the arc starts clean
+        }
       }
       return;
     }
+    if (source._contactCd > 0) return;
+    source._contactCd = CONTACT_COOLDOWN;
     // ONE door: applyHit() owns the damage AND the shove — the vector rides
     // the context and lands exactly when damage lands (immune heroes absorb
     // both via the resolver's immunity gate).

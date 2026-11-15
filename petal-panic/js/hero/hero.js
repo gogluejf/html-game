@@ -92,8 +92,8 @@ export const KNOCKBACK_PROFILES = {
   // Persistent zones (fire/toxic): shorter stun + shorter i-frames than
   // discrete hits. You flinch, you blink, but you can still steer out.
   // Tick rate is 5Hz (0.2s); iFrames 0.25 means every other tick lands.
-  fire:        { strength: 0,   recovery: 0.10, iFrames: 0.25 },
-  poison:      { strength: 0,   recovery: 0.10, iFrames: 0.25 },
+  fire:        { strength: 0,   recovery: 0.25, iFrames: 0.30 },
+  poison:      { strength: 0,   recovery: 0.25, iFrames: 0.30 },
 };
 
 /** Fallback profile for unknown sources (keeps takeHit total; no magic numbers). */
