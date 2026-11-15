@@ -47,8 +47,8 @@ const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }
  * `big` (launches them away on death). dirMode 'fromAttacker' orients per
  * impact in hitbox.js. Vector = px/s along the push direction.
  */
-const MELEE_KNOCKBACK_MODERATE = { x: 250, y: -50, hitstun: 0.35, dirMode: 'fromAttacker' };
-const MELEE_KNOCKBACK_BIG = { x: 450, y: -120, hitstun: 0.40, dirMode: 'fromAttacker' };
+const MELEE_KNOCKBACK_MODERATE = { x: 450, y: -120, hitstun: 0.40, dirMode: 'fromAttacker' };
+const MELEE_KNOCKBACK_BIG = { x: 750, y: -260, hitstun: 0.45, dirMode: 'fromAttacker' };
 
 /**
  * Shared supermove knockback tiers (knockback.md §11). The damage BOX is
@@ -102,8 +102,8 @@ const SWEEP = {
   // lunges. Vector = px/s along the lunge + upward hop.
   // `moderate` = surviving hit (stays in reach); `big` = killing hit / finisher
   // (launches them away).
-  knockbackModerate: { x: 325, y: -100, hitstun: 0.45, dirMode: 'fixed' },
-  knockbackBig: { x: 550, y: -180, hitstun: 0.45, dirMode: 'fixed' },
+  knockbackModerate: { x: 550, y: -180, hitstun: 0.45, dirMode: 'fixed' },
+  knockbackBig: { x: 750, y: -330, hitstun: 0.50, dirMode: 'fixed' },
 };
 
 export const HEROES = {

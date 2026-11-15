@@ -1078,7 +1078,12 @@ export class Hero extends Entity {
       if (sheetBox) {
         const wb = this.worldBox();
         const box = this._sheetBoxToWorld(sheetBox);
-        return { ...box, ...this._attackKnockback(attackName), finisher: true, _source: 'sheet' };
+        // finisher: false — the finisher tier (big launch + screen shake) is
+        // reserved for KILLS (hitbox.js upgrades moderate→big + KILL_SHAKE when
+        // the victim dies) and the supermove's last burst. Stamping finisher:true
+        // on every sheet frame made ALL melee connects use the kill-tier launch
+        // + shake, reading as "every hit is a finisher."
+        return { ...box, ...this._attackKnockback(attackName), finisher: false, _source: 'sheet' };
       }
       const frames = this.heroDef.attacks[ATTACK_MELEE].frames;
       entry = frames[Math.floor(this.meleeFrame)] ?? null;
@@ -1090,7 +1095,11 @@ export class Hero extends Entity {
       const sheetBox = this._sheetAttackBox('super_melee');
       if (sheetBox) {
         const box = this._sheetBoxToWorld(sheetBox);
-        return { ...box, ...this._attackKnockback(attackName), finisher: true, _source: 'sheet' };
+        // finisher: false — same rule as melee: the finisher tier is for KILLS
+        // (hitbox.js kill check upgrades to big + KILL_SHAKE) and the supermove
+        // ender. Every-frame finisher made each super-melee connect shake +
+        // launch at kill strength.
+        return { ...box, ...this._attackKnockback(attackName), finisher: false, _source: 'sheet' };
       }
       entry = this.heroDef.specialMelee.hitbox;
     } else if (attackName === ATTACK_SUPERMOVE) {
@@ -1151,7 +1160,7 @@ export class Hero extends Entity {
       w: entry.bw,
       h: entry.bh,
       ...knockback,
-      finisher: true,
+      finisher: false, // kill check in hitbox.js upgrades to big + KILL_SHAKE
       _source: 'table',
     };
   }

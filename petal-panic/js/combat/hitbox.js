@@ -23,9 +23,11 @@ import { Team, AttackProvenance } from './targeting.js';
 /** Methods whose connect deals blood (melee-family strikes). */
 const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
 
-/** Screen shake on a KILL (star treatment) and on a FINISHER-frame hit. */
+/** Screen shake tiers: any connect gets a solid kick; a KILL (star treatment)
+ * is the biggest kick. The camera-shake merge rule is max-kick, so a 6 fired
+ * on the same frame as the 4 always wins — no double-shake bookkeeping needed. */
+const CONNECT_SHAKE = 4;
 const KILL_SHAKE = 6;
-const FINISHER_SHAKE = 4;
 
 /**
  * Map a hitbox's method label to an AttackProvenance value for the unified
@@ -264,13 +266,9 @@ export function processHitboxes(hitboxes, targets, onHit) {
         }
         t.intangible = true; // star-style ghost flight until despawn
         Effects.triggerShake(KILL_SHAKE);
-      } else if (hb.finisher && dealt > 0) {
-        // FINISHER (non-kill): the big-launch frame that didn't kill — still a
-        // "big moment", so it shakes. No intangible / ignoreResist (those are
-        // kill-only, matching the star). The big vector was already applied via
-        // kbVector selection above (finisher → big).
-        Effects.triggerShake(FINISHER_SHAKE);
       }
+      // Non-fatal finisher frames (supermove ender) shake at the connect tier
+      // (4) — same as any other landed hit; only kills escalate to 6.
 
       // TRACE (temporary): what velocity does the victim actually get after a hero hit?
       if (t.layer !== LAYER.HERO) {
@@ -293,6 +291,9 @@ export function processHitboxes(hitboxes, targets, onHit) {
         // placeholders (hitFlashOwnership contract), so the shake (which
         // bumps hitFlash) runs only for pipeline targets.
         if (t.layer !== LAYER.HERO && pipeline) {
+          // Every connect gets a 4px kick; kills merge up to 6 via the
+          // max-kick rule.
+          Effects.triggerShake(CONNECT_SHAKE);
           if (BLOOD_METHODS.has(hb.method)) {
             const tb = t.worldBox ? t.worldBox() : t;
             Effects.spawnHitSparkles(tb.x + tb.w / 2, tb.y + tb.h / 2);

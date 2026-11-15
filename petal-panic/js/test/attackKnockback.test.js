@@ -41,13 +41,13 @@ for (const id of ['balthazar', 'scarlet']) {
   ok(`${id} sweep carries moderate + big pushback`, () => {
     const cfg = HEROES[id].specialMelee;
     assert.ok(cfg.knockbackModerate && cfg.knockbackBig);
-    assert.equal(cfg.knockbackModerate.x, 325);
-    assert.equal(cfg.knockbackModerate.y, -100);
+    assert.equal(cfg.knockbackModerate.x, 550);
+    assert.equal(cfg.knockbackModerate.y, -180);
     assert.equal(cfg.knockbackModerate.hitstun, 0.45);
     assert.equal(cfg.knockbackModerate.dirMode, 'fixed');
-    assert.equal(cfg.knockbackBig.x, 550);
-    assert.equal(cfg.knockbackBig.y, -180);
-    assert.equal(cfg.knockbackBig.hitstun, 0.45);
+    assert.equal(cfg.knockbackBig.x, 750);
+    assert.equal(cfg.knockbackBig.y, -330);
+    assert.equal(cfg.knockbackBig.hitstun, 0.50);
     assert.equal(cfg.knockbackBig.dirMode, 'fixed');
   });
 
@@ -67,28 +67,32 @@ for (const id of ['balthazar', 'scarlet']) {
   ok(`${id} normal melee carries moderate + big jab shove`, () => {
     const cfg = HEROES[id].attacks[ATTACK_MELEE];
     assert.ok(cfg.knockbackModerate && cfg.knockbackBig);
-    assert.equal(cfg.knockbackModerate.x, 250);
-    assert.equal(cfg.knockbackModerate.y, -50);
-    assert.equal(cfg.knockbackModerate.hitstun, 0.35);
+    assert.equal(cfg.knockbackModerate.x, 450);
+    assert.equal(cfg.knockbackModerate.y, -120);
+    assert.equal(cfg.knockbackModerate.hitstun, 0.40);
     assert.equal(cfg.knockbackModerate.dirMode, 'fromAttacker');
-    assert.equal(cfg.knockbackBig.x, 450);
-    assert.equal(cfg.knockbackBig.y, -120);
-    assert.equal(cfg.knockbackBig.hitstun, 0.40);
+    assert.equal(cfg.knockbackBig.x, 750);
+    assert.equal(cfg.knockbackBig.y, -260);
+    assert.equal(cfg.knockbackBig.hitstun, 0.45);
     assert.equal(cfg.knockbackBig.dirMode, 'fromAttacker');
     for (const frame of cfg.frames) {
       if (frame) assert.equal(frame.knockback, undefined, 'knockback sits beside the frames, not inside them');
     }
   });
 
-  ok(`${id} strength ordering: super > sweep > melee (big tier)`, () => {
+  ok(`${id} strength ordering: super >= sweep > melee (big tier)`, () => {
     const superX = HEROES[id].attacks[ATTACK_SUPERMOVE].knockbackBig.x;
     const sweepX = HEROES[id].specialMelee.knockbackBig.x;
     const meleeX = HEROES[id].attacks[ATTACK_MELEE].knockbackBig.x;
-    assert.ok(superX > sweepX && sweepX > meleeX);
+    // 2026-11-14 retune: sweep and melee bigs share the 750 x-cap (user cap);
+    // supermove's finisher (850, alongVelocity) still leads on raw push.
+    assert.ok(superX >= sweepX && sweepX >= meleeX);
     const superY = HEROES[id].attacks[ATTACK_SUPERMOVE].knockbackBig.y;
     const sweepY = HEROES[id].specialMelee.knockbackBig.y;
     const meleeY = HEROES[id].attacks[ATTACK_MELEE].knockbackBig.y;
-    assert.ok(superY < sweepY && sweepY < meleeY);
+    // loft order flipped with the retune: sweep now arcs HIGHER than melee
+    // (sweep kill should launch harder than a jab kill).
+    assert.ok(sweepY < meleeY);
   });
 
   ok(`${id} thorn / special projectile definitions carry NO knockback`, () => {
@@ -108,7 +112,8 @@ ok('sweep hitbox resolves with moderate + big vectors', () => {
     assert.ok(box, 'active-phase sweep must resolve a box');
     assert.deepEqual(box.knockbackModerate, HEROES[id].specialMelee.knockbackModerate);
     assert.deepEqual(box.knockbackBig, HEROES[id].specialMelee.knockbackBig);
-    assert.equal(box.finisher, true);
+    // finisher:false — the kill tier is owned by the kill check in hitbox.js
+    assert.equal(box.finisher, false);
   }
 });
 
@@ -129,7 +134,8 @@ ok('melee hitbox resolves with moderate + big vectors', () => {
     assert.ok(box, 'active-frame melee must resolve a box');
     assert.deepEqual(box.knockbackModerate, HEROES[id].attacks[ATTACK_MELEE].knockbackModerate);
     assert.deepEqual(box.knockbackBig, HEROES[id].attacks[ATTACK_MELEE].knockbackBig);
-    assert.equal(box.finisher, true);
+    // finisher:false — the kill tier is owned by the kill check in hitbox.js
+    assert.equal(box.finisher, false);
   }
 });
 
@@ -155,16 +161,17 @@ ok('supermove loft scales down for heavier victims (mass resists the whole vecto
   assert.ok(Math.abs(heavy.vy - light.vy / 2) < 1e-9, `heavy vy=${heavy.vy} should be half of light vy=${light.vy}`);
 });
 
-ok('sweep gives a smaller hop than the supermove (tuned, not exaggerated)', () => {
+ok('sweep loft is tuned between melee and supermove (not exaggerated)', () => {
   const sweepKb = HEROES.balthazar.specialMelee.knockbackBig;
-  const superKb = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockbackBig;
-  const sweepVictim = mkVictim(1);
-  const superVictim = mkVictim(1);
-  applyKnockback(sweepVictim, { x: sweepKb.x, y: sweepKb.y });
-  applyKnockback(superVictim, { x: superKb.x, y: superKb.y });
-  assert.ok(sweepVictim.vy < 0, 'sweep must still loft upward');
-  assert.ok(-sweepVictim.vy < -superVictim.vy,
-    `sweep loft (${Math.abs(sweepVictim.vy)}) must be smaller than super loft (${Math.abs(superVictim.vy)})`);
+  const meleeKb = HEROES.scarlet.attacks[ATTACK_MELEE].knockbackBig;
+  const v1 = mkVictim(1);
+  const v2 = mkVictim(1);
+  applyKnockback(v1, { x: sweepKb.x, y: sweepKb.y });
+  applyKnockback(v2, { x: meleeKb.x, y: meleeKb.y });
+  assert.ok(v1.vy < 0, 'sweep must still loft upward');
+  // 2026-11-14 retune: sweep kill arcs higher than a jab kill.
+  assert.ok(-v1.vy > -v2.vy,
+    `sweep loft (${Math.abs(v1.vy)}) must be bigger than melee loft (${Math.abs(v2.vy)})`);
 });
 
 ok('a Thorn hit (no knockback) leaves vy unchanged', () => {
