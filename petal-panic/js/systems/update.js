@@ -674,7 +674,11 @@ export function update(dt) {
   // Shooting is blocked only during the actual intro presentation (LOCKED
   // through BOSS_ENTER), NOT during APPROACH. The player can shoot the moment
   // they enter the boss zone; the presentation just needs to play out visually.
-  const shootingAllowed = !(bossZone.active &&
+  // Also blocked for the WHOLE supermove (burst + decel): the committed dash
+  // owns the hero until endSupermove() — jump-cancel is allowed, shooting is
+  // not. A held fire button does NOT auto-fire on exit: tryFire is
+  // edge-triggered on intent.shoot, so release+press is required.
+  const shootingAllowed = !hero.supermoveActive && !(bossZone.active &&
     (bossZone.state === BZ_LOCKED || bossZone.state === BZ_INTRO_SWEEP ||
      bossZone.state === BZ_BAR_FILL || bossZone.state === BZ_BOSS_ENTER));
   if (shootingAllowed) {
