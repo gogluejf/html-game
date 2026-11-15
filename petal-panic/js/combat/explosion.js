@@ -38,7 +38,7 @@ export const TEAMS = Object.freeze(['ally', 'foe', 'neutral']);
 // Do NOT add a y bias here: oriented per-component (normal.y × KB.y) it pushes
 // far-side victims INWARD toward the center (sign flip), not outward.
 export const BARREL_EXPLOSION_KNOCKBACK = Object.freeze({
-  x: 380, y: 0, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial',
+  x: 800, y: 0, hitstun: 0.45, iFrames: 0.60, dirMode: 'radial',
 });
 
 // A Jack-O-Lantern is a foe-side self-detonation: it threatens the player but spares
@@ -181,8 +181,11 @@ export function resolveExplosion(explosion, targets) {
     // never in this loop.
     const source = explosion.self ?? null;
     const normal = radialNormal({ cx, cy }, tc);
-    // knockback may be null/absent (damage-only blast) — treat as zero vector.
-    const kx = normal.x * (knockback?.x ?? 0), ky = normal.y * (knockback?.x ?? 0);
+    // Fixed force along the radial direction. The vector IS the launch:
+    // angle from blast to victim × fixed magnitude. No special cases.
+    // The entity's accel/lerp in update() handles deceleration naturally.
+    const mag = knockback?.x ?? 0;
+    const kx = normal.x * mag, ky = normal.y * mag;
     Debug.logEvent(`[blast] ${_srcName(source)} → ${_tgtName(t)} | blastC=(${cx.toFixed(0)},${cy.toFixed(0)}) tgtC=(${tc.cx.toFixed(0)},${tc.cy.toFixed(0)}) dir=(${normal.x.toFixed(2)},${normal.y.toFixed(2)}) kb=(${kx.toFixed(0)},${ky.toFixed(0)})`);
     const res = applyHit({
       provenance: AttackProvenance.EXPLOSION,

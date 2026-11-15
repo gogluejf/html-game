@@ -51,7 +51,7 @@ function mkEnemy(x, y, hp = 30) {
   return e;
 }
 
-const KB = { x: 380, y: 0, hitstun: 0.30, iFrames: 0.60, dirMode: 'radial' };
+const KB = { x: 800, y: 0, hitstun: 0.45, iFrames: 0.60, dirMode: 'radial' };
 
 /** A plain non-null detonator stand-in (no combatStats — damage() tolerates that). */
 const DETONATOR = { x: 0, y: 0, w: 40, h: 40, alive: true, type: 'detonator' };
@@ -94,11 +94,11 @@ ok('neutral explosion shoves the enemy radially away from center', () => {
   const enemy = mkEnemy(160, 0);   // center (180, 20)
   const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
-  // Normal from center (60,20) to enemy center (180,20) = (1, 0).
-  // Whole-vector scale by normal (1,0): vx = 380, vy = 0.
-  assert.ok(close(enemy.vx, 380), `vx=${enemy.vx}, expected 380`);
+  // Normal from center (60,20) to enemy center (180,20) = (1, 0). dist=120 > 40 → pure radial.
+  // Whole-vector scale by normal (1,0): vx = 800, vy = 0.
+  assert.ok(close(enemy.vx, 800), `vx=${enemy.vx}, expected 800`);
   assert.ok(close(enemy.vy, 0), `vy=${enemy.vy}, expected 0 (pure radial)`);
-  assert.ok(close(enemy.hitstunTimer, 0.30), `hitstun=${enemy.hitstunTimer}`);
+  assert.ok(close(enemy.hitstunTimer, 0.45), `hitstun=${enemy.hitstunTimer}`);
 });
 
 // ============================================================================
@@ -191,21 +191,23 @@ ok('invincible HERO absorbs the blast (takeHit guard, no double-fling)', () => {
 // Knockback direction is radial (away from center) for an enemy.
 // ============================================================================
 ok('enemy knockback points radially away from the blast center (diagonal)', () => {
-  // Enemy center at (160, 120); blast center at (60, 20). Offset (100, 100).
-  const enemy = mkEnemy(140, 100); // center (160, 120)
+  // Enemy center at (160, -80); blast center at (60, 20). Offset (100, -100). dist≈141 > 60, normal.y < 0 → pure radial.
+  const enemy = mkEnemy(140, -100); // center (160, -80)
   const exp = { cx: 60, cy: 20, radius: 300, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
-  const n = 1 / Math.SQRT2;        // normalized (1,1)/√2
-  // Whole-vector scale: both components = n × 380 — exactly along the line.
-  assert.ok(close(enemy.vx, n * 380), `vx=${enemy.vx}, expected ${(n * 380).toFixed(4)}`);
-  assert.ok(close(enemy.vy, n * 380), `vy=${enemy.vy}, expected ${(n * 380).toFixed(4)}`);
+  const n = 1 / Math.SQRT2;        // normalized (1,-1)/√2
+  // Whole-vector scale: vx = n × 800, vy = -n × 800 (upward-right).
+  const expectedX = n * 800;
+  const expectedY = -n * 800;
+  assert.ok(close(enemy.vx, expectedX), `vx=${enemy.vx}, expected ${expectedX.toFixed(4)}`);
+  assert.ok(close(enemy.vy, expectedY), `vy=${enemy.vy}, expected ${expectedY.toFixed(4)}`);
 });
 
 ok('enemy on the far side of the center is shoved the opposite way', () => {
-  const enemy = mkEnemy(-60, 0);   // center (-40, 20); offset from (60,20) = (-100,0) → normal (-1,0)
+  const enemy = mkEnemy(-60, 0);   // center (-40, 20); offset from (60,20) = (-100,0) → normal (-1,0). dist=100 > 40.
   const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
-  assert.ok(close(enemy.vx, -380), `vx=${enemy.vx}, expected -380`);
+  assert.ok(close(enemy.vx, -800), `vx=${enemy.vx}, expected -800`);
   assert.ok(close(enemy.vy, 0), `vy=${enemy.vy}, expected 0 (horizontal normal)`);
 });
 
@@ -228,16 +230,15 @@ function mkBarrel(x, y) {
 }
 
 ok('a barrel ABOVE the blast center is launched UPWARD (out of the blast)', () => {
-  // Barrel center at (60, -40); blast center at (60, 20) → normal (0, -1).
-  // Whole-vector scale: shove = normal × 380 = (0, -380) → ÷ resist 0.5
-  // = (0, -760): straight UP, out of the blast. This is the regression that
-  // used to shove the top barrel DOWNWARD (per-component × old y:-60 bias).
+  // Barrel center at (60, -40); blast center at (60, 20) → normal (0, -1). dist=60 > 40 → pure radial.
+  // Whole-vector scale: shove = normal × 800 = (0, -800) → ÷ resist 0.5
+  // = (0, -1600): straight UP, out of the blast.
   const barrel = mkBarrel(36, -64);
   const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [barrel]);
   assert.ok(close(barrel.vx, 0), `vx=${barrel.vx}`);
-  assert.ok(close(barrel.vy, -760), `vy=${barrel.vy}, expected -760 (launched UP)`);
-  assert.ok(close(barrel.hitstunTimer, 0.30));
+  assert.ok(close(barrel.vy, -1600), `vy=${barrel.vy}, expected -1600 (launched UP)`);
+  assert.ok(close(barrel.hitstunTimer, 0.45));
 });
 
 ok('a barrel BESIDE the blast is shoved sideways (per-victim direction differs)', () => {
@@ -249,8 +250,8 @@ ok('a barrel BESIDE the blast is shoved sideways (per-victim direction differs)'
   resolveExplosion(expB, [beside]);
   assert.ok(close(above.vx, 0), `above-barrel vx=${above.vx} (should be ~0)`);
   assert.ok(beside.vx > 0, `beside-barrel must fly right, vx=${beside.vx}`);
-  // Light mass: 380 / 0.5 = 760 face value.
-  assert.ok(close(beside.vx, 760), `vx=${beside.vx}, expected 760`);
+  // Light mass: 800 / 0.5 = 1600 face value.
+  assert.ok(close(beside.vx, 1600), `vx=${beside.vx}, expected 1600`);
 });
 
 // ============================================================================
@@ -272,20 +273,21 @@ ok('target outside the radius is untouched', () => {
 ok('hero shoved radially through the unified choke point (no special case)', () => {
   const hero = mkHero();
   // Blast at the SAME y as the hero center → normal (-1, 0) → pure horizontal
-  // shove of 380 (hero resist 1). Timers come from the vector's hitstun/iFrames
+  // shove of 800 (hero resist 1). Timers come from the vector's hitstun/iFrames
   // via applyKnockback, then transfer into the hero's unified timer system
   // ('rec' + invincible) so hit-stun actually arms — the crouch anim must
   // switch to the hit pose during the fling.
   const hc = { x: hero.x + hero.w / 2, y: hero.y + hero.h / 2 };
   const exp = { cx: hc.x + 100, cy: hc.y, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   resolveExplosion(exp, [hero]);
-  assert.ok(close(hero.vx, -380), `vx=${hero.vx}, expected -380`);
+  assert.ok(close(hero.vx, -800), `vx=${hero.vx}, expected -800`);
   assert.ok(close(hero.vy, 0), `vy=${hero.vy}, expected 0`);
   // Plain fields are drained into the unified timers by the transfer.
   assert.ok(close(hero.hitstunTimer, 0), `hitstun field drained, got ${hero.hitstunTimer}`);
   assert.ok(close(hero.iFrameTimer, 0), `iFrame field drained, got ${hero.iFrameTimer}`);
   // The unified timers carry the stun + protection window.
-  assert.ok(close(hero.timers.get('rec'), 0.30), `rec=${hero.timers.get('rec')}, expected 0.30`);
+  const recVal = hero.timers.get('rec');
+  assert.ok(close(recVal, 0.45), `rec=${recVal}, expected 0.45`);
   assert.ok(hero.invincible, 'hero should be in i-frames after the blast');
 });
 
