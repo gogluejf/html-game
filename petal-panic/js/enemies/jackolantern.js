@@ -16,8 +16,6 @@
 import { Enemy } from './enemy.js';
 import { UNIT_PX_X } from '../world/macros.js';
 
-import { JACKO_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
-
 export const JACKO_DEF = {
   id: 'jackolantern',
   name: 'Jack-O-Lantern',
@@ -37,7 +35,7 @@ export const JACKO_DEF = {
     radius: 80,
     damage: 22,                 // matches stats.attack
     team: 'foe',
-    knockback: JACKO_EXPLOSION_KNOCKBACK,
+    // knockback omitted — inherits DEFAULT_EXPLOSION_KNOCKBACK (rules TBD)
   },
 };
 
@@ -178,7 +176,8 @@ export class JackOLantern extends Enemy {
 
 // --- Explosion AoE -----------------------------------------------------------
 // The Jack-O-Lantern's blast is resolved by the generic explosion system
-// (explosion.js resolveExplosion) with a foe team + JACKO_EXPLOSION_KNOCKBACK,
-// driven by the game loop in update.js. There is no per-source detonation routine here
-// — the lantern only latches exploded once and fires onExplode(); the actual AoE math
-// lives in the single shared resolver (see docs/architecture/explosion.md §5).
+// (explosion.js resolveExplosion) with a foe team + the default explosion
+// knockback character, driven by the game loop in update.js. There is no
+// per-source detonation routine here — the lantern only latches exploded once
+// and fires onExplode(); the actual AoE math lives in the single shared
+// resolver (see docs/architecture/explosion.md §5).

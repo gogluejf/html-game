@@ -16,7 +16,6 @@ import { Entity } from '../core/entity.js';
 import { spriteColorPulse } from '../effects/spriteColorPulse.js';
 import { isHighGraphic } from '../core/renderMode.js';
 import { LAYER } from '../consts.js';
-import { BARREL_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
 import { flashTarget, assertDamageAmount } from '../combat/damage.js';
 import { parseSheet } from '../core/spriteData.js';
 import { loadFrames } from '../core/frameLoader.js';
@@ -45,7 +44,7 @@ export const BARREL_DEF = {
     radius: 120,
     damage: BARREL_DAMAGE,
     team: 'neutral',
-    knockback: BARREL_EXPLOSION_KNOCKBACK,
+    // knockback omitted — inherits DEFAULT_EXPLOSION_KNOCKBACK (the primitive's default)
   },
   coinDrop: null,
   spriteAnim: 'explosion',
@@ -87,7 +86,7 @@ export const PROPANE_BARREL_DEF = {
     radius: 120,
     damage: BARREL_DAMAGE,
     team: 'neutral',
-    knockback: BARREL_EXPLOSION_KNOCKBACK,
+    // knockback omitted — inherits DEFAULT_EXPLOSION_KNOCKBACK (the primitive's default)
   },
   coinDrop: null,
   spriteAnim: 'propane',

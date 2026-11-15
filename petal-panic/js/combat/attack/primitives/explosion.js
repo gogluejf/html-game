@@ -15,7 +15,7 @@
 
 import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
-import { resolveExplosion, BARREL_EXPLOSION_KNOCKBACK } from '../../explosion.js';
+import { resolveExplosion, DEFAULT_EXPLOSION_KNOCKBACK } from '../../explosion.js';
 import { fireDeclared } from '../../../effects/index.js';
 import { blastFallbackDrawer } from '../../../effects/spriteBurst.js';
 import { getSpecialSpriteData } from '../../../objects/projectile.js';
@@ -69,7 +69,7 @@ export function fireBlast(p, ctx) {
       radius: p.radius,
       damage: p.damage,
       team: p.team,
-      knockback: p.knockback ?? BARREL_EXPLOSION_KNOCKBACK,
+      knockback: p.knockback ?? DEFAULT_EXPLOSION_KNOCKBACK,
       self: telemetrySource,
       ctx: { hero: ctx.world?.hero ?? null },
     },

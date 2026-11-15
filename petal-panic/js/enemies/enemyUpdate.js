@@ -83,11 +83,13 @@ function updateRealEnemy(e, dt) {
   // per-source difference is WHEN the trigger fires: barrels detonate on
   // destruction, the Jack-O-Lantern latches `exploded` when it blows up. No
   // instanceof checks; the engine reads e.explosion and resolves uniformly.
+  // payloadType lets a source swap in a different primitive (the explosive
+  // monkey can be configured as a shockwave mine); default 'explosion'.
   if (e.explosion && e.exploded && !e._explodeHandled) {
     e._explodeHandled = true;
     const cx = e.x + e.w / 2;
     const cy = e.y + e.h / 2;
-    invoke('explosion', {
+    invoke(e.explosion.payloadType ?? 'explosion', {
       x: cx, y: cy,
       radius: e.explosion.radius,
       damage: e.explosion.damage,

@@ -95,11 +95,14 @@ ok('TTL null = contact-only: idle monkey never auto-detonates', () => {
   assert.equal(t.hp, 999);
 });
 
-ok('contact detonates exactly once through the explosion primitive', () => {
+ok('contact detonates exactly once through the explosion primitive', async () => {
   const e = new ExplosiveMonkey(540, GROUND_Y - 36, { ttl: null, team: 'neutral' });
   e.vy = 0;
-  e._heroRef = null;
+  // The contact trigger checks the chase target (cfg.target ?? _heroRef), NOT
+  // the hostStep candidate list — wire the victim as the hero ref.
   const t = target(); t.x = 545; // overlapping
+  t.update = () => {}; // engine update pass calls e.update (real Enemy has it)
+  e._heroRef = t;
   let booms = 0;
   const origDetonate = e.detonate.bind(e);
   e.detonate = (...a) => { booms++; origDetonate(...a); };
@@ -109,16 +112,41 @@ ok('contact detonates exactly once through the explosion primitive', () => {
   // Keep stepping: re-entrant contacts must not double-fire.
   for (let i = 0; i < 120; i++) e.hostStep(dt, [t]);
   assert.equal(booms, 1, `exactly one blast (${booms})`);
-  assert.ok(t.hp < 999, `target damaged: ${t.hp}`);
+  // The blast itself fires via the GENERIC enemyUpdate.js path (same door as
+  // barrels / Jack-O'-Lantern): drive one update pass over the monkey and
+  // verify the engine's resolveExplosion damaged the overlapping target.
+  const { updateRealEnemies } = await import('../../enemies/enemyUpdate.js');
+  const { ctx } = await import('../../world/context.js');
+  const saved = { hero: ctx.hero, realEnemies: ctx.realEnemies, solids: ctx.solids, barrelSolidBoxes: ctx.barrelSolidBoxes, getActiveZone: ctx.getActiveZone };
+  ctx.hero = null;
+  // The blast resolves against getDamageables() (ctx-driven) — the victim
+  // must be a live "real enemy" in this harness for the engine to see it.
+  ctx.realEnemies = [e, t];
+  ctx.solids = [];
+  ctx.barrelSolidBoxes = [];
+  ctx.getActiveZone = () => null;
+  try {
+    updateRealEnemies(dt);
+  } finally {
+    ctx.hero = saved.hero; ctx.realEnemies = saved.realEnemies;
+    ctx.solids = saved.solids; ctx.barrelSolidBoxes = saved.barrelSolidBoxes;
+    ctx.getActiveZone = saved.getActiveZone;
+  }
+  assert.ok(t.hp < 999, `target damaged by the engine-fired blast: ${t.hp}`);
 });
 
-ok('team semantics: foe blast hits hero-ref only, ally hits enemies, neutral both', () => {
+ok('team semantics: foe blast hits hero-ref only, ally hits enemies, neutral both', async () => {
+  // The monkey no longer carries its own target gate — team routing lives in
+  // the central isValidTarget() (explosion.js), which the generic enemyUpdate
+  // path applies when it fires e.explosion. Verify the def + gate agree.
+  const { isValidTarget } = await import('../../combat/explosion.js');
   const mk = (team) => {
     const e = new ExplosiveMonkey(0, 0, { team, ttl: null, explodeOnContact: false });
+    assert.equal(e.explosion.team, team, 'def carries the team');
     const hero = { x: 0, y: 0, w: 10, h: 10, alive: true };
     const foe = { x: 0, y: 0, w: 10, h: 10, alive: true, bodyKnockback: {}, takeDamage() {} };
-    e._heroRef = hero;
-    return { heroOk: e.validBlastTarget(hero), foeOk: e.validBlastTarget(foe) };
+    return { heroOk: isValidTarget({ team, ctx: { hero } }, hero, e),
+             foeOk: isValidTarget({ team, ctx: { hero } }, foe, e) };
   };
   assert.deepEqual(mk('foe'), { heroOk: true, foeOk: false });
   assert.deepEqual(mk('ally'), { heroOk: false, foeOk: true });
@@ -133,10 +161,26 @@ ok('TTL detonates after settling when configured', async () => {
   assert.equal(e._detonated, false, 'not yet at 0.98s');
   e.hostStep(dt, [t]);
   assert.equal(e._detonated, true, 'detonated at ~1s');
-  // Fire-and-forget (task 3.1): the payload handle is owned by the
-  // AttackLifecycle registry, not stored on the enemy — verify it landed in
-  // _live as a shockwave and actually ticks damage over its duration (the
-  // latent inert-shockwave bug this migration fixes).
+  // The monkey now rides the GENERIC enemyUpdate.js path: detonate() only
+  // latches `exploded` + dies; the engine's update pass invokes the payload
+  // primitive (registered with AttackLifecycle) and steps it. Drive one
+  // update pass over the monkey to fire the blast, then verify the registry
+  // owns a live shockwave that ticks ring-pass damage.
+  const { updateRealEnemies } = await import('../../enemies/enemyUpdate.js');
+  const { ctx } = await import('../../world/context.js');
+  const saved = { hero: ctx.hero, realEnemies: ctx.realEnemies, solids: ctx.solids, barrelSolidBoxes: ctx.barrelSolidBoxes, getActiveZone: ctx.getActiveZone };
+  ctx.hero = null;
+  ctx.realEnemies = [e];
+  ctx.solids = [];
+  ctx.barrelSolidBoxes = [];
+  ctx.getActiveZone = () => null; // lethal-fall cull no-op (no zones in this harness)
+  try {
+    updateRealEnemies(dt);
+  } finally {
+    ctx.hero = saved.hero; ctx.realEnemies = saved.realEnemies;
+    ctx.solids = saved.solids; ctx.barrelSolidBoxes = saved.barrelSolidBoxes;
+    ctx.getActiveZone = saved.getActiveZone;
+  }
   const { AttackLifecycle } = await import('../../combat/attack/lifecycle.js');
   const ph = [...AttackLifecycle._live].find((x) => x.id === 'shockwave');
   assert.ok(ph, 'shockwave payload registered with the lifecycle registry');

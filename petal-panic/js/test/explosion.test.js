@@ -51,7 +51,7 @@ function mkEnemy(x, y, hp = 30) {
   return e;
 }
 
-const KB = { x: 800, y: 0, hitstun: 0.45, iFrames: 0.60, dirMode: 'radial' };
+const KB = { impulse: { x: 800, y: 0 }, hitstun: 0.45, iFrames: 0.60, dirMode: 'radial', ignoreVictimResistance: true };
 
 /** A plain non-null detonator stand-in (no combatStats — damage() tolerates that). */
 const DETONATOR = { x: 0, y: 0, w: 40, h: 40, alive: true, type: 'detonator' };
@@ -231,13 +231,13 @@ function mkBarrel(x, y) {
 
 ok('a barrel ABOVE the blast center is launched UPWARD (out of the blast)', () => {
   // Barrel center at (60, -40); blast center at (60, 20) → normal (0, -1). dist=60 > 40 → pure radial.
-  // Whole-vector scale: shove = normal × 800 = (0, -800) → ÷ resist 0.5
-  // = (0, -1600): straight UP, out of the blast.
+  // Whole-vector scale: shove = normal × 800 = (0, -800). ignoreVictimResistance:
+  // mass is skipped — the barrel flies at exactly face value, straight UP.
   const barrel = mkBarrel(36, -64);
   const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [barrel]);
   assert.ok(close(barrel.vx, 0), `vx=${barrel.vx}`);
-  assert.ok(close(barrel.vy, -1600), `vy=${barrel.vy}, expected -1600 (launched UP)`);
+  assert.ok(close(barrel.vy, -800), `vy=${barrel.vy}, expected -800 (launched UP, no mass division)`);
   assert.ok(close(barrel.hitstunTimer, 0.45));
 });
 
@@ -250,8 +250,8 @@ ok('a barrel BESIDE the blast is shoved sideways (per-victim direction differs)'
   resolveExplosion(expB, [beside]);
   assert.ok(close(above.vx, 0), `above-barrel vx=${above.vx} (should be ~0)`);
   assert.ok(beside.vx > 0, `beside-barrel must fly right, vx=${beside.vx}`);
-  // Light mass: 800 / 0.5 = 1600 face value.
-  assert.ok(close(beside.vx, 1600), `vx=${beside.vx}, expected 1600`);
+  // ignoreVictimResistance: face value, no mass division.
+  assert.ok(close(beside.vx, 800), `vx=${beside.vx}, expected 800`);
 });
 
 // ============================================================================

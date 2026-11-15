@@ -9,10 +9,11 @@
 // real collision registration.
 //
 // Detonation rules:
-//   - exactly ONE blast per lifetime (latched before the synchronous payload
-//     invoke, so re-entrant contacts can never double-detonate);
-//   - payload is the existing explosion OR shockwave primitive (same team
-//     semantics as mine.js: isValidTarget + resolveExplosion routing);
+//   - exactly ONE blast per lifetime (latched before the engine fires, so
+//     re-entrant contacts can never double-detonate);
+//   - payload is the existing explosion OR shockwave primitive — declared as
+//     a standard `explosion` def and fired by the GENERIC enemyUpdate.js path
+//     (same door as barrels and the Jack-O'-Lantern; no per-type invoke);
 //   - after the blast the body enters the standard death pipeline (shrink/
 //     fade) and dies — no second boom;
 //   - cancellation (host/theater teardown) removes the entity cleanly and
@@ -20,20 +21,6 @@
 
 import { Enemy } from './enemy.js';
 import { UNIT_PX_X } from '../world/macros.js';
-import { invoke } from '../combat/attack/engine.js';
-import { makeContext } from '../combat/attack/context.js';
-import { isValidTarget } from '../combat/explosion.js';
-import { getHero } from '../world/accessors.js';
-
-/** Minimal context for detonation when no attack ctx was wired (standalone use).
- * MUST carry the LIVE hero — a null hero makes resolveExplosion unable to
- * route the hero's damage/knockback branch (t === hero fails, isValidTarget
- * loses its reference), so ambient monkeys would blast everything except the
- * player. Read lazily at detonation time, not construction time. */
-function makeDetonateContext() {
-  const hero = getHero?.() ?? null;
-  return makeContext(null, { world: { targets: hero ? [hero] : [], hero } });
-}
 
 export const EXPLOSIVE_MONKEY_DEF = {
   id: 'explosive_monkey',
@@ -81,12 +68,28 @@ export class ExplosiveMonkey extends Enemy {
       radius: cfg.radius ?? 70,
       target: cfg.target ?? null,
     };
-    this._detonated = false;   // latch: one blast per lifetime
+    // Generic explosion property (enemyUpdate.js): the engine fires the blast
+    // uniformly when we latch `exploded` — same door as barrels and the
+    // Jack-O'-Lantern. No per-type invoke here.
+    this.explosion = this._buildExplosion();
+    this.exploded = false;   // latched so the AoE fires exactly once
+    this._detonated = false; // trigger latch: one detonation decision per lifetime
     this._settled = false;     // ground contact reached (TTL clock may start)
     this._settleTimer = 0;     // grace period before fuse arms
     this._fuseLeft = this.cfg.ttl;
     // Snappy death: a suicide unit shouldn't linger with a long shrink/fade.
     this.deathDuration = 0.25;
+  }
+
+  /** Build the standard explosion def from cfg (knockback omitted → the
+   * primitive's DEFAULT_EXPLOSION_KNOCKBACK applies). */
+  _buildExplosion() {
+    return {
+      payloadType: this.cfg.mineType,
+      radius: this.cfg.radius,
+      damage: this.cfg.damage,
+      team: this.cfg.team,
+    };
   }
 
   /**
@@ -96,6 +99,7 @@ export class ExplosiveMonkey extends Enemy {
    */
   applyThrowConfig(cfg = {}) {
     Object.assign(this.cfg, cfg);
+    this.explosion = this._buildExplosion(); // re-derive the payload def
     this._fuseLeft = this.cfg.ttl; // configured at materialization, before the first tick
   }
 
@@ -144,7 +148,7 @@ export class ExplosiveMonkey extends Enemy {
     // Spawn starts the fuse; throwEnemy owns the single tick per frame.
     if (!this._detonated && this._fuseLeft != null) {
       this._fuseLeft -= dt;
-      if (this._fuseLeft <= 1e-9) this.detonate(targets);
+      if (this._fuseLeft <= 1e-9) this.detonate();
     }
     // --- Contact -------------------------------------------------------------
     // Detonate ONLY on the chase target (the hero). The monkey is a FOE that
@@ -156,42 +160,23 @@ export class ExplosiveMonkey extends Enemy {
       if (victim && victim.alive !== false && victim !== this) {
         const box = this.worldBox();
         const tb = victim.worldBox?.() ?? victim;
-        if (overlaps(box, tb)) this.detonate(targets);
+        if (overlaps(box, tb)) this.detonate();
       }
     }
     return this.alive === false;
   }
 
-  /** Team-semantics gate for contact detonation (same source as mine.js). */
-  validBlastTarget(t) {
-    // The chase target is authoritative for team validation; _heroRef is only
-    // a fallback when no explicit target was supplied (standalone use).
-    const hero = this.cfg.target ?? this._heroRef ?? null;
-    return isValidTarget({ team: this.cfg.team, ctx: { hero } }, t, this);
-  }
-
   /**
-   * Detonate exactly once: fire the configured payload (explosion/shockwave
-   * primitive) centered on the body, then enter the death pipeline. The
-   * _detonated latch is set BEFORE the synchronous payload invoke so a
-   * re-entrant contact check can never double-fire.
-   *
-   * Fire-and-forget: the AttackLifecycle registry (engine.invoke auto-
-   * registration) owns the payload handle's step/draw/prune — no stored
-   * handle, no manual stepping here. This also fixes the latent inert-
-   * shockwave bug: the ring now actually ticks damage over its duration.
+   * Detonate exactly once: latch `exploded` (the generic enemyUpdate.js path
+   * fires the configured payload through the SAME explosion/shockwave
+   * primitive a barrel uses) and enter the death pipeline. The _detonated
+   * latch is set BEFORE latching so a re-entrant contact check can never
+   * double-fire.
    */
-  detonate(targets) {
+  detonate() {
     if (this._detonated || this.aiState === 'dead') return;
     this._detonated = true;
-    const cx = this.x + this.w / 2, cy = this.y + this.h / 2;
-    const cands = [...new Set([...(targets ?? []), this.cfg.target, this._heroRef].filter(Boolean))]
-      .filter((t) => t !== this && this.validBlastTarget(t));
-    invoke(this.cfg.mineType === 'shockwave' ? 'shockwave' : 'explosion', {
-      x: cx, y: cy,
-      radius: this.cfg.radius, damage: this.cfg.damage, team: this.cfg.team,
-      self: this, targets: cands,
-    }, this._attackCtx ?? makeDetonateContext());
+    this.exploded = true;      // engine fires the blast next update pass
     // The body is gone the instant the blast starts; the short death duration
     // only keeps the entity in the normal removal pipeline for one beat.
     this._goneAtBlast = true;

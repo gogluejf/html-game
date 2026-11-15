@@ -128,7 +128,7 @@ ok('macro materializes immediate enemy children when enemy.thrown=false', () => 
   }
 });
 
-ok('spawnSplit thrown monkey detonates on victim contact through host stepping', () => {
+ok('spawnSplit thrown monkey detonates on victim contact through host stepping', async () => {
   const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:18,h:18,vx:0,vy:0,gravityValue:0,orientSprite(){},setLife(){},applyRockLook(){},timers:new Map()};items.push(e);return e;}, updateAll(dt){ for(const e of items){ if(!e.alive) continue; if(e.gravityValue>0) e.vy+=e.gravityValue*dt; e.x+=e.vx*dt; e.y+=e.vy*dt; } } }; };
   const hero = { x: 260, y: 92, w: 24, h: 24, alive: true, hp: 100, team: 'hero', worldBox(){return this;}, loseSelectedSpecial(){}, takeHit(){} };
   const ctx = makeContext(attacker(), { pools: { projectilePool: mk() }, world: { targets: [hero], hero } });
@@ -145,6 +145,24 @@ ok('spawnSplit thrown monkey detonates on victim contact through host stepping',
     }
   }
   assert.ok(h.enemies[0]?._detonated || h.enemies[0]?.aiState === 'dead', 'monkey detonated');
+  // The blast fires via the GENERIC enemyUpdate.js path (same door as barrels):
+  // drive one engine update pass over the monkey so its latched `exploded`
+  // def resolves against the hero.
+  const { updateRealEnemies } = await import('../../enemies/enemyUpdate.js');
+  const { ctx: gctx } = await import('../../world/context.js');
+  const saved = { hero: gctx.hero, realEnemies: gctx.realEnemies, solids: gctx.solids, barrelSolidBoxes: gctx.barrelSolidBoxes, getActiveZone: gctx.getActiveZone };
+  gctx.hero = hero;
+  gctx.realEnemies = [h.enemies[0]];
+  gctx.solids = [];
+  gctx.barrelSolidBoxes = [];
+  gctx.getActiveZone = () => null;
+  try {
+    updateRealEnemies(1/60);
+  } finally {
+    gctx.hero = saved.hero; gctx.realEnemies = saved.realEnemies;
+    gctx.solids = saved.solids; gctx.barrelSolidBoxes = saved.barrelSolidBoxes;
+    gctx.getActiveZone = saved.getActiveZone;
+  }
   assert.ok(hero.hp < 100, `hero took damage (${hero.hp})`);
 });
 

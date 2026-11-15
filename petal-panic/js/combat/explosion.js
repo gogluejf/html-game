@@ -30,22 +30,18 @@ const _tgtName = (e) => e?.type ?? e?.id ?? e?.constructor?.name ?? '?';
 export const TEAMS = Object.freeze(['ally', 'foe', 'neutral']);
 
 // --- Knockback characters (explosion.md §4; each lives on the blast, never inline) ---
-// A barrel is a neutral hazard: it shoves everyone radially. 380 px/s matches
-// the hero's pre-refactor 'explosion' profile strength so the hero's feel is
-// preserved exactly when routed through takeHit(); enemies get shoved by this
-// same radial shove. PURE RADIAL (y: 0): the radial line itself is the launch
+// The DEFAULT explosion character: any blast that doesn't declare its own
+// knockback inherits this one (barrels, hero bombs/projectiles/mines, monkeys).
+// A neutral hazard shoves everyone radially. 380 px/s matches the hero's
+// pre-refactor 'explosion' profile strength so the hero's feel is preserved
+// exactly when routed through takeHit(); enemies get shoved by this same
+// radial shove. PURE RADIAL (y: 0): the radial line itself is the launch
 // direction — a victim above the blast flies UP, one beside flies sideways.
 // Do NOT add a y bias here: oriented per-component (normal.y × KB.y) it pushes
 // far-side victims INWARD toward the center (sign flip), not outward.
-export const BARREL_EXPLOSION_KNOCKBACK = Object.freeze({
-  x: 800, y: 0, hitstun: 0.45, iFrames: 0.60, dirMode: 'radial',
-});
-
-// A Jack-O-Lantern is a foe-side self-detonation: it threatens the player but spares
-// its own kind. Foe-appropriate shove — a bit softer than a barrel. Pure radial
-// for the same reason (see BARREL_EXPLOSION_KNOCKBACK).
-export const JACKO_EXPLOSION_KNOCKBACK = Object.freeze({
-  x: 300, y: 0, hitstun: 0.25, iFrames: 0.40, dirMode: 'radial',
+export const DEFAULT_EXPLOSION_KNOCKBACK = Object.freeze({
+  impulse: { x: 900, y: 0 }, hitstun: 0.50, iFrames: 0.60, dirMode: 'radial',
+  ignoreVictimResistance: true,
 });
 
 /**
@@ -176,15 +172,17 @@ export function resolveExplosion(explosion, targets) {
     // The radial normal is pure geometry (blast center → this victim), so it
     // is computed here where the blast position is known; the vector is the
     // whole strength scaled by that unit normal (strength along the radial
-    // line). Barrels' knockbackResist 0.5 makes them launch 2x harder than
-    // enemies from the same impulse — mass differences live on the VICTIM,
-    // never in this loop.
+    // line). When the blast character sets ignoreVictimResistance (both
+    // current characters do), mass is skipped: every victim — heavy boss,
+    // light monkey, barrel — flies at exactly face value. That uniform
+    // launch is the juice; per-victim mass differences no longer apply to
+    // blasts (they still apply to melee/contact shoves).
     const source = explosion.self ?? null;
     const normal = radialNormal({ cx, cy }, tc);
     // Fixed force along the radial direction. The vector IS the launch:
     // angle from blast to victim × fixed magnitude. No special cases.
     // The entity's accel/lerp in update() handles deceleration naturally.
-    const mag = knockback?.x ?? 0;
+    const mag = knockback?.impulse?.x ?? 0;
     const kx = normal.x * mag, ky = normal.y * mag;
     Debug.logEvent(`[blast] ${_srcName(source)} → ${_tgtName(t)} | blastC=(${cx.toFixed(0)},${cy.toFixed(0)}) tgtC=(${tc.cx.toFixed(0)},${tc.cy.toFixed(0)}) dir=(${normal.x.toFixed(2)},${normal.y.toFixed(2)}) kb=(${kx.toFixed(0)},${ky.toFixed(0)})`);
     const res = applyHit({
@@ -193,7 +191,7 @@ export function resolveExplosion(explosion, targets) {
       target: t,
       damage: dmg,
       team,
-      knockback: { impulse: { x: kx, y: ky }, hitstun: knockback?.hitstun ?? 0, iFrames: knockback?.iFrames ?? 0 },
+      knockback: { impulse: { x: kx, y: ky }, hitstun: knockback?.hitstun ?? 0, iFrames: knockback?.iFrames ?? 0, ignoreVictimResistance: knockback?.ignoreVictimResistance ?? false },
     });
     const dealt = res.dealt;
     if (dealt <= 0) continue;
