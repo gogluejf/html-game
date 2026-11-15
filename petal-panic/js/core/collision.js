@@ -419,6 +419,12 @@ export class CollisionWorld {
     return this;
   }
 
+  /** Remove ALL entities (nuclear wipe). Used by clearTransientWorld. */
+  clear() {
+    this.entities.clear();
+    return this;
+  }
+
   /**
    * Per-frame collision pass (call once per fixed step, after integrate):
    *   1. rebuild spatial hash

@@ -175,6 +175,21 @@ export const AttackLifecycle = {
     wctx.particles?.reset?.();
     wctx.effects?.reset?.();
     if (wctx.floatTexts) for (const t of wctx.floatTexts) t.alive = false;
+    // Nuke the ENTIRE collision world — every entity, no exceptions.
+    // The fresh zone install (loadActiveZone) re-adds everything that should
+    // exist. This is the nuclear button: nothing from the previous attempt
+    // can survive, regardless of what state it was in.
+    if (wctx.collisionWorld) wctx.collisionWorld.clear();
+    // Mark enemies dead + clear combat state so they can't be re-added
+    // by a stale reference or re-enter the damage pipeline.
+    for (const e of wctx.realEnemies ?? []) {
+      e.alive = false;
+      e.intangible = false;
+      e._hitbox = null;
+      e._atkHitDone = false;
+    }
+    if (wctx.realEnemies) wctx.realEnemies.length = 0;
+    if (wctx.boss) wctx.boss.alive = false;
   },
 };
 

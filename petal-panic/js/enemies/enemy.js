@@ -240,6 +240,7 @@ export class Enemy extends Entity {
     this.aiState = 'dead';
     this.timers.set('death', this.deathDuration); // start the death countdown
     this.fading = false;
+    this.intangible = false; // clear ghost-flight: corpse is dead, not immune
     this.vx = 0;
     this.vy = 0;
   }
