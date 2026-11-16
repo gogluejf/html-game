@@ -273,6 +273,15 @@ export class Hero extends Entity {
     this.supermoveMeter = 0;         // 0..100
     this.SUPERMOVE_MAX = 100;
     this.SUPERMOVE_CHARGE_RATE = 20; // per second → 5s to full
+    // Latch: true once endSupermove() has fired for the current move, so the
+    // animation-terminal-frame check in update() fires exactly once per move.
+    this._supermoveEnded = false;
+    // PLOW (reusable body-mode flag): while true, the hero's body is a solid
+    // wall that PUSHES enemies out of the way positionally (they ride in front
+    // of you) and NOTHING pushes the hero back — contact kicks are skipped
+    // entirely for the hero. Set by the supermove (start/end); any future
+    // dash/charge/vehicle move can reuse the whole behavior by toggling this.
+    this.plow = false;
     this.supermoveActive = false;    // true while the supermove is playing
     this.supermovePhase = null;      // 'burst' | 'decel' | null (not dashing)
     this.supermoveTimer = 0;         // seconds remaining in the CURRENT phase
@@ -714,8 +723,11 @@ export class Hero extends Entity {
     }
     // Supermove jump cancellation (§23): the committed burst is NOT cancellable;
     // once the supermove enters its recovery/deceleration phase a fresh Jump press
-    // cancels out of the remaining recovery (handled by endSupermove below).
+    // cancels out of the remaining recovery. Ends the WHOLE move immediately —
+    // protection (plow + invincible) drops at this instant, not at the sheet's
+    // terminal frame: you chose to break the move, so the move is over.
     if (this.supermoveActive && this.supermovePhase === 'decel' && jumpPressed) {
+      console.log(`[sm] SUPERMOVE END (jump-cancel in decel) pos=(${this.x.toFixed(0)},${this.y.toFixed(0)}) | plow+invincible OFF`);
       this.endSupermove();
     } else if (!dropping && !this.supermoveActive && (canGroundJump || canAirJump) && this._jumpBuffer > 0 && !stunned && !(this.specialMeleeActive && this.specialMeleePhase !== 'recovery')) {
       // §12: crouching must never force a stand-first. Jumping from crouch
@@ -799,6 +811,22 @@ export class Hero extends Entity {
     // Sheet-sprite playback (SpritePlayer): Hero overrides update() without
     // super, so the shared Entity.tickAnim never runs — advance it here.
     this.tickAnim(dt);
+
+    // SUPERMOVE END (animation terminal frame): the move is over when the SHEET
+    // finishes, not when the 0.6s velocity ramp does. This is the single spot
+    // that fires endSupermove() on natural completion — protection (plow +
+    // invincible) stays ON from triggerSupermove() to exactly this frame.
+    // (Jump-cancel during decel ends the move early via its own path above.)
+    // No sheet attached (bare node tests) → the animation can never report
+    // "done", so end at the velocity-phase boundary instead of leaking
+    // protection forever.
+    if (!this._supermoveEnded && !this.supermoveActive && this.plow) {
+      const animDone = this._spriteAnim === 'supermove' && !!this._player?.isDone;
+      if (animDone || !this.spriteAnimData) {
+        this._supermoveEnded = true;
+        this.endSupermove();
+      }
+    }
   }
 
   /**
@@ -1614,6 +1642,14 @@ export class Hero extends Entity {
     // Freeze momentum so the corpse doesn't drift during the fade.
     this.vx = 0;
     this.vy = 0;
+    // Death ends any in-flight supermove IMMEDIATELY: protection (plow +
+    // invincible) must not outlive the hero, and a stale 'supermove' grant
+    // would make the respawned hero permanently untouchable (the scoped clear
+    // at respawn only removes grants it recognizes). The move is over.
+    if (this.plow || this.supermoveActive || this.invulnSource === 'supermove') {
+      console.log(`[sm] SUPERMOVE END (death) pos=(${this.x.toFixed(0)},${this.y.toFixed(0)}) | plow+invincible OFF`);
+      this.endSupermove();
+    }
   }
 
   /**
@@ -1664,6 +1700,7 @@ export class Hero extends Entity {
     this.supermovePhase = null;
     this.supermoveTimer = 0;
     this._supermoveElapsed = 0;
+    this._supermoveEnded = true; // a cancelled/finished move must not re-fire at the terminal frame
     this._fallAnimGrace = 0;
   }
 
@@ -1715,7 +1752,7 @@ export class Hero extends Entity {
         // Recovery: gravity applied in update(). A fresh Jump press cancels here
         // (see the jump block in update()).
         this.supermoveTimer -= dt;
-        if (this.supermoveTimer <= 0) this.endSupermove();
+        if (this.supermoveTimer <= 0) this._velocityPhaseDone();
       }
     }
   }
@@ -1724,6 +1761,7 @@ export class Hero extends Entity {
   triggerSupermove() {
     // §24: combat inputs are locked during hit-stun — no supermove activation.
     if (this.hitStunned) return;
+    this._supermoveEnded = false; // re-arm the animation-end latch for this move
     this.supermoveMeter = 0;
     this.supermoveActive = true;
     // Split the total duration into the committed burst and the recovery tail.
@@ -1739,6 +1777,13 @@ export class Hero extends Entity {
     // outlive the move. A pre-existing longer grant (i-frames / star) is
     // untouched: scoped clear only removes the supermove's own tag.
     this.setInvincible('supermove'); // open-ended, cleared by endSupermove()
+    this.plow = true;                // body pushes enemies, nothing pushes us
+    {
+      const d = this.spriteAnimData;
+      console.log(`[sm] START pos=(${this.x.toFixed(0)},${this.y.toFixed(0)}) facing=${this.facing}` +
+        ` | anim='${this._spriteAnim}' frame ${this.spriteFrameIndex}/${d?.frames.length ?? '?'} (player done=${!!this._player?.isDone})` +
+        ` | plow+invincible ON for the WHOLE move (burst ${this.burstDur.toFixed(2)}s + decel ${this.decelDur.toFixed(2)}s)`);
+    }
     // Swap to the supermove animation.
     if (this.anims.supermove) {
       this._prevAnim = this.anim;
@@ -1748,26 +1793,45 @@ export class Hero extends Entity {
   }
 
   /**
-   * End the supermove early (jump-cancel during the decel phase) or naturally at the
-   * end of the decel phase. Retains a small residual forward nudge so the hero
-   * does not stop dead in mid-air (§22 "do not stop unnaturally"). Normal
-   * control/gravity resume immediately after.
+   * SUPERMOVE END (the real end — the animation's terminal frame).
+   * The supermove is ONE move: it starts at triggerSupermove() and ends HERE,
+   * when the sheet finishes playing. Protection (plow + invincible) lives for
+   * the WHOLE move — start to this exact point — because the damage hitbox
+   * also spans the whole sheet playback. The 0.6s velocity ramp inside
+   * updateSupermove() is just the speed curve; it is NOT the end of the move.
+   *
+   * Called from finishSupermoveAnim() (hero.update), which fires on the first
+   * frame after the player reaches its terminal frame.
    */
   endSupermove() {
-    this.supermoveActive = false;
-    this.supermovePhase = null;
-    this.supermoveTimer = 0;
-    this.vx = this.facing * SUPERMOVE_RESIDUAL;
-    // The supermove's immunity ends exactly here (immunity.md scoped clear):
-    // only the 'supermove' grant is removed. A star or i-frame grant that was
-    // live before or picked up during the move survives untouched — its own
-    // timer owns its lifetime.
+    const d = this.spriteAnimData;
+    console.log(`[sm] SUPERMOVE END pos=(${this.x.toFixed(0)},${this.y.toFixed(0)})` +
+      ` | anim='${this._spriteAnim}' frame ${this.spriteFrameIndex}/${d?.frames.length ?? '?'} (player done=${!!this._player?.isDone})` +
+      ` | plow+invincible OFF — the move is over`);
+    // PROTECTION OFF — exactly at the last frame of the move. Scoped clear:
+    // only the 'supermove' grant is removed; a star or i-frame grant that was
+    // live before or picked up during the move survives untouched.
     this.clearInvincible('supermove');
+    this.plow = false;
     // Restore previous animation.
     if (this._prevAnim) {
       this.anim = this._prevAnim;
       this._prevAnim = null;
     }
+  }
+
+  /**
+   * Velocity-phase handoff (NOT the end of the move). The 0.6s speed ramp is
+   * done: gravity resumes, jump can cancel, residual forward nudge applies.
+   * The ANIMATION keeps playing and protection (plow + invincible) stays ON
+   * until endSupermove() at the sheet's terminal frame — one move, one window.
+   */
+  _velocityPhaseDone() {
+    this.supermoveActive = false;
+    this.supermovePhase = null;
+    this.supermoveTimer = 0;
+    this.vx = this.facing * SUPERMOVE_RESIDUAL;
+    console.log(`[sm] velocity phase done (0.6s ramp finished) — move CONTINUES until the animation ends; plow+invincible stay ON`);
   }
 
   /**

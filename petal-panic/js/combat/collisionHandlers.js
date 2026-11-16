@@ -361,6 +361,12 @@ export function registerCollisionHandlers(collisionWorld) {
     // set it, so a missed swing leaves the hero fully exposed here.
     if (heroEnt.connectProtected) return;
     const amt = source.stats?.attack ?? 10;
+    // PLOW (supermove body-mode): the hero's body is a solid wall — nothing
+    // kicks the hero back (no bumper, no side-hit, no stomp), so the committed
+    // line and the 3-frame combo spacing land clean. The positional push that
+    // carries the enemy out of the way runs in update.js (plowPushEnemies);
+    // damage comes from the supermove hitbox as usual.
+    if (heroEnt.plow) return;
     // STAR POWER still one-shots on touch even while blinking.
     if (heroEnt.starPower) starPowerKill(heroEnt, source);
     // ONE RULE for every hero-kick (same shape as explosion): normalize the

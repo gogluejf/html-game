@@ -752,6 +752,14 @@ export function update(dt) {
   // 1e. real-enemy AI + physics + attack damage + death pipeline.
   updateRealEnemies(dt);
 
+  // 1e-plow. PLOW body-mode (supermove): the hero's box is a solid wall — push
+  // every overlapping enemy OUT of it positionally along the travel direction,
+  // so bodies ride in front of you instead of bumping you back. Position-based
+  // (not an impulse): no launch, no flinging — the 3-frame supermove combo
+  // still lands on the same body. Runs after enemy integrate so the push wins
+  // the frame; capped per-frame so a deep overlap can't teleport a body.
+  if (hero.plow) plowPushEnemies(hero, dt);
+
   // 1e2. boss: camera lock, phase machine, stomp shake, win on death.
   updateBoss(dt);
 
@@ -1009,6 +1017,32 @@ import { processAllHitboxes } from '../combat/hitboxes.js';
 import { registerCollisionHandlers } from '../combat/collisionHandlers.js';
 import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFlow, updateBoss } from '../boss/bossFlow.js';
 import { updateRealEnemies } from '../enemies/enemyUpdate.js';
+
+/** PLOW push: move overlapping enemies FULLY out of the hero's box (like
+ *  resolve() does for terrain) — full separation every frame, no cap, so a
+ *  walking-in enemy can never accumulate depth inside you. Pure position
+ *  write: velocity untouched, nothing gets launched. Direction follows the
+ *  hero's travel axis (fallback: center-line sign). */
+function plowPushEnemies(hero, dt) {
+  const hb = hero.worldBox();
+  for (const e of realEnemies) {
+    if (!e.alive || e.aiState === 'dead' || e.intangible) continue;
+    const eb = e.worldBox ? e.worldBox() : { x: e.x, y: e.y, w: e.w, h: e.h };
+    const ovX = Math.min(hb.x + hb.w - eb.x, eb.x + eb.w - hb.x);
+    const ovY = Math.min(hb.y + hb.h - eb.y, eb.y + eb.h - hb.y);
+    if (ovX <= 0 || ovY <= 0) continue;
+    console.log(`[plow] ${e.type ?? '?'} ov=(${ovX.toFixed(1)},${ovY.toFixed(1)}) hero v=(${hero.vx?.toFixed(0)},${hero.vy?.toFixed(0)})`);
+    const dirX = Math.sign(hero.vx) || Math.sign((hb.x + hb.w / 2) - (eb.x + eb.w / 2)) || 1;
+    const dirY = Math.sign(hero.vy) || Math.sign((hb.y + hb.h / 2) - (eb.y + eb.h / 2));
+    // Full separation on the axis of least penetration (+1px clearance so the
+    // strict-overlap narrowphase doesn't re-trigger next frame).
+    if (ovX <= ovY) {
+      e.x += dirX * (ovX + 1);
+    } else {
+      e.y += dirY * (ovY + 1);
+    }
+  }
+}
 import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
 import { applyObjectImpact } from '../combat/objectImpact.js';
 // Star-power barrel pop juice (same values as the enemy contact kill).
