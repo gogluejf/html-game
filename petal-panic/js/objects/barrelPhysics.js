@@ -11,6 +11,7 @@ import { applyHit } from '../combat/hitResolution.js';
 import { calculateKnockback } from '../combat/knockback.js';
 import { AttackProvenance, Team } from '../combat/targeting.js';
 import { Effects } from '../effects.js';
+import { Debug } from '../debug/debug.js';
 import { record } from '../stats.js';
 
 // --- Rolling-barrel impacts (declaration of impact) ---------------------------
@@ -114,6 +115,26 @@ export const STAR_BARREL_KNOCKBACK = { x: 840, y: -320, hitstun: 0, iFrames: 0 }
 export const STAR_BARREL_FUSE = 0.6; // long enough to SEE the arc: launch up, hang, fall, boom
 
 /**
+ * Arm the cook-and-detonate fuse on a barrel that a melee-family hit is ABOUT
+ * to kill (wouldKill branch). The hit deals NO damage — the fuse owns the
+ * death: tickFallingBarrelFuse() drains everything at its end (or on landing),
+ * so the explosion lands AFTER the kick plays out instead of inline on the
+ * contact frame. Works for ALL barrel types (wood/coin/toxic/explosive/
+ * propane): their normal break/drop/blast payloads all run from onDestroyed.
+ * No-op when a fuse is already cooking (the first lethal hit wins).
+ * @param {object} b the barrel (GameObj)
+ */
+export function armBarrelMeleeFuse(b) {
+  if (!b || b._fuse != null) return;
+  b._fuse = STAR_BARREL_FUSE;
+  // Ghost flight for the whole cook (same contract as the star launch): a
+  // knocked barrel must HANG and arc for the full fuse, not touch ground and
+  // trip the landed-check 0.15s later. clearIntangible() runs at detonation.
+  b.setIntangible(STAR_BARREL_FUSE);
+  Debug.logEvent(`[barrel] FUSE ARM melee fuse=${STAR_BARREL_FUSE} @(${Math.round(b.x)},${Math.round(b.y)}) vx=${Math.round(b.vx ?? 0)} vy=${Math.round(b.vy ?? 0)}`);
+}
+
+/**
  * Impact check for one falling barrel against the hero AND live enemies.
  * Called from the dynamic-solid step AFTER integration (positions final for
  * this frame). First valid head-stomp target wins; the barrel gets ONE launch
@@ -191,6 +212,7 @@ export function fallingBarrelImpact(b) {
   });
   // Arm the fuse. It cooks while airborne; landing or fuse-expiry detonates.
   b._fuse = STOMP_FUSE;
+  Debug.logEvent(`[barrel] FUSE ARM stomp fuse=${STOMP_FUSE} @(${Math.round(b.x)},${Math.round(b.y)}) vy=${Math.round(b.vy ?? 0)}`);
   if (ctx.hero) record(ctx.hero, { kind: 'enemyStomped' });
   b._fallCd = FALLING_BARREL_COOLDOWN;
 }
@@ -213,7 +235,11 @@ export function tickFallingBarrelFuse(b, dt) {
   // Intangible flight (star launch) NEVER lands — terrain is phased — so the
   // fuse timer is its only clock there.
   const landed = !b.intangible && (b.vy ?? 0) <= 1;
+  if (b._fuse != null) Debug.logEvent(
+    `[barrel] FUSE TICK fuse=${b._fuse.toFixed(3)} landed=${landed} intangible=${!!b.intangible} @(${Math.round(b.x)},${Math.round(b.y)}) vy=${Math.round(b.vy ?? 0)}`
+  );
   if (b._fuse <= 0 || (landed && (b.vy ?? 0) >= 0)) {
+    Debug.logEvent(`[barrel] FUSE DETONATE reason=${b._fuse <= 0 ? 'timeout' : 'landed'} @(${Math.round(b.x)},${Math.round(b.y)})`);
     b._fuse = null;
     b.clearIntangible(); // back in the collision world at detonation
     const dealt = b.takeDamage(Number.MAX_SAFE_INTEGER, b, 'stomp');

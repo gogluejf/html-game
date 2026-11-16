@@ -19,6 +19,7 @@ import { invulnFlicker, INVISIBLE } from '../effects/invulnFlicker.js';
 import { blink } from '../effects/blink.js';
 import { ctx } from '../world/context.js';
 import { Effects } from '../effects.js';
+import { Debug } from '../debug/debug.js';
 
 // Invincibility looks (design §27) — the HERO owns them. Two separate effects,
 // each one job:
@@ -1452,6 +1453,12 @@ export class Hero extends Entity {
     // from, so 'active' would clobber a manually-set recovery).
     const derived = this._specialMeleePhaseAt(f);
     const phase = (this._spriteAnim === 'super_melee' && derived != null) ? derived : (this.specialMeleePhase ?? 'active');
+    // FUSE-TRACE (temporary): super-melee frame/phase walk — one line per
+    // frame while the swing plays, so a barrel KILL line can be matched to
+    // the exact melee frame + phase that dealt it.
+    Debug.logEvent(
+      `[melee] super_melee f=${f}/${(this.spriteAnimData?.frames.length ?? '?') - 1} phase=${phase} @(${Math.round(this.x)},${Math.round(this.y)})`
+    );
     this.specialMeleePhase = phase;
 
     // Recovery cancel (§16/§19 shared rule): a fresh jump press OR any

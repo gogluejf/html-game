@@ -69,6 +69,26 @@ export function assertDamageAmount(amount, source, target, method) {
   }
 }
 
+/**
+ * Pure kill prediction — would `amt` raw damage kill this target RIGHT NOW?
+ * Same three lines as heroDamage() (defense read → max(1, amt-def) → pool
+ * compare), zero side effects: no HP write, no telemetry, no vignette, no
+ * death flag. Callers use it to BRANCH before applying (e.g. barrels: a
+ * lethal melee hit arms the fuse instead of draining inline). Safe because
+ * the engine is single-threaded per frame and hitSet dedupe prevents two
+ * sources damaging the same target between probe and apply.
+ * @param {object} target victim (reads .hp / .energy / .defense / .stats)
+ * @param {number} amt raw attack value before defense
+ * @returns {boolean} true when the hit would take the pool to <= 0
+ */
+export function wouldKill(target, amt) {
+  if (!target?.alive) return true; // already dead — anything "kills"
+  const def = target.defense != null ? target.defense : (target.stats?.defense ?? 0);
+  const real = Math.max(1, amt - def);
+  const pool = target.energy != null ? target.energy : (target.hp ?? 0);
+  return pool - real <= 0;
+}
+
 export function heroDamage(source, target, amt, method = 'projectile') {
   assertDamageAmount(amt, source, target, method);
   if (!target.alive) return 0;

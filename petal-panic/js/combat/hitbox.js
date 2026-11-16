@@ -19,6 +19,8 @@ import { Effects } from '../effects.js';
 import { applyHit } from './hitResolution.js';
 import { applyKnockback } from './knockback.js';
 import { Team, AttackProvenance } from './targeting.js';
+import { wouldKill } from './damage.js';
+import { armBarrelMeleeFuse } from '../objects/barrelPhysics.js';
 
 /** Methods whose connect deals blood (melee-family strikes). */
 const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
@@ -229,6 +231,30 @@ export function processHitboxes(hitboxes, targets, onHit) {
       // the single applyKnockback() choke point.
       const provenance = METHOD_PROVENANCE[hb.method] ?? AttackProvenance.MELEE;
       const pipeline = typeof t.takeDamage === 'function';
+      // BARREL FUSE BRANCH (melee-family only): when a melee/specialMelee/super
+      // hit would KILL a barrel, skip the damage entirely and arm the cook
+      // fuse instead — the kick still lands (kbVector via applyHit with 0
+      // damage), the death is scheduled at fuse end / landing, so the break or
+      // explosion plays AFTER the launch arc instead of inline on the contact
+      // frame. Non-lethal hits apply normally (chip damage). Projectiles keep
+      // their inline-kill contract (a thorn pop is instant by design).
+      const MELEE_FUSABLE = BLOOD_METHODS.has(hb.method);
+      if (MELEE_FUSABLE && isBarrelTarget(t) && t._fuse == null && wouldKill(t, hb.damage)) {
+        armBarrelMeleeFuse(t);
+        applyHit({
+          provenance,
+          source: hb.owner,
+          target: t,
+          damage: 0,
+          team: TEAM_CONST[hb.team] ?? Team.NEUTRAL,
+          knockback: kbVector,
+          method: hb.method,
+          hitstop: hb.hitstop,
+        });
+        dedupeSet.add(t);
+        if (onHit) onHit(hb, t, 0);
+        continue;
+      }
       const res = applyHit({
         provenance,
         source: hb.owner,

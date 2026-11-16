@@ -450,12 +450,26 @@ ctx.popSuperCoinHit = popSuperCoinHit;
 // Wire hit-resolution hooks onto GameObj (avoids circular import object.js ↔ barrelSync.js)
 GameObj.prototype.onHit = function (_ctx, result) {
   if (result.dealt > 0) ctx.popSuperCoinHit?.(this, result.dealt);
+  // FUSE-TRACE (temporary): every damage tick on a barrel — HP before/after,
+  // source, method, position. Pairs with the KILL line to show the drain curve.
+  Debug.logEvent(
+    `[barrel] HIT hp=${Math.round(this.hp)} dealt=${Math.round(result.dealt ?? 0)} ` +
+    `method=${_ctx?.knockback ? 'kb' : '-'} src=${_ctx?.source?.type ?? _ctx?.source?.id ?? '?'} @(${Math.round(this.x)},${Math.round(this.y)})`
+  );
 };
 GameObj.prototype.onDestroyed = function (_ctx, _result) {
   // TRIPWIRE (debug): confirm the destroy hook actually fired for this barrel.
   // If a barrel dies (destroyed=true) but you NEVER see this line, the kill
   // path bypassed applyHit/onDestroyed entirely — that's the broken state.
   if (Debug.enabled) Debug.logEvent(`[barrel] onDestroyed HOOK type=${this.type} provenance=${_ctx?.provenance ?? '?'} dealt=${_result?.dealt}`);
+  // FUSE-TRACE (temporary): pin WHO kills the barrel and WHEN — position +
+  // fuse state + call stack top, so an impact-frame explosion vs a fuse-end
+  // explosion is distinguishable in the log.
+  Debug.logEvent(
+    `[barrel] KILL hp=${Math.round(this.hp)} @(${Math.round(this.x)},${Math.round(this.y)}) ` +
+    `fuse=${this._fuse == null ? 'none' : this._fuse.toFixed(3)} intangible=${!!this.intangible} ` +
+    `src=${_ctx?.source?.type ?? _ctx?.source?.id ?? '?'} dealt=${Math.round(_result?.dealt ?? 0)}`
+  );
   ctx.handleBarrelDestroyed?.(this);
 };
 ctx.coins = coins;
@@ -896,6 +910,7 @@ export function update(dt) {
         });
         b._fuse = STAR_BARREL_FUSE; // tickFallingBarrelFuse cooks + detonates
         b.setIntangible(STAR_BARREL_FUSE); // ghost flight for the whole cook (cleared at detonation)
+        Debug.logEvent(`[barrel] FUSE ARM star fuse=${STAR_BARREL_FUSE} @(${Math.round(b.x)},${Math.round(b.y)}) vx=${Math.round(b.vx ?? 0)} vy=${Math.round(b.vy ?? 0)}`);
         Effects.triggerShake(STAR_POWER_SHAKE);
         break; // ONE barrel per touch frame — the rest pop as you walk into them
       }

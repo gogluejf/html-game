@@ -68,6 +68,7 @@ export function handleBarrelDestroyed(barrel) {
   // everyone radially. No-op when the barrel has no explosion config.
   const fireBlast = () => {
     if (!barrel.explosion) return;
+    if (Debug.enabled) Debug.logEvent(`[barrel] EXPLOSION FIRE type=${barrel.type} r=${barrel.explosion.radius} @(${Math.round(cx)},${Math.round(cy)})`);
     const targets = getDamageables();
     const h = invoke('explosion', {
       x: cx, y: cy,
