@@ -890,9 +890,14 @@ export function update(dt) {
         if (!b.alive || b.destroyed || b._fuse != null) continue;
         if (!aabbOverlap(hbx, b.worldBox())) continue;
         // Pure impulse (no damage — star power LAUNCHES the barrel, it doesn't
-        // hit it), so it rides the single door with damage: 0. Push horizontally
-        // in front of the hero (away from you); gravity owns the rest of the arc.
-        const awayX = Math.sign((b.x + b.w / 2) - (hbx.x + hbx.w / 2)) || 1;
+        // hit it), so it rides the single door with damage: 0. Launch ALONG THE
+        // NORMALIZED hero→barrel center line (same direction rule as melee's
+        // fromAttacker): magnitude is constant, angle adapts to where the
+        // barrel actually sits. Gravity owns the rest of the arc.
+        const bcx = b.x + b.w / 2, bcy = b.y + b.h / 2;
+        const hcx2 = hbx.x + hbx.w / 2, hcy2 = hbx.y + hbx.h / 2;
+        const dx = bcx - hcx2, dy = bcy - hcy2;
+        const dl = Math.hypot(dx, dy) || 1;
         // Popcorn scatter: same ±15% per-axis jitter as the star enemy kill —
         // every launch gets its own shape, center of mass unchanged.
         const jx = 0.85 + Math.random() * 0.3;
@@ -904,7 +909,7 @@ export function update(dt) {
           damage: 0,
           team: Team.ALLY,
           method: 'starPower',
-          knockback: { impulse: { x: STAR_BARREL_KNOCKBACK.x * awayX * jx, y: STAR_BARREL_KNOCKBACK.y * jy }, ignoreVictimResistance: true },
+          knockback: { impulse: { x: (dx / dl) * STAR_BARREL_KNOCKBACK.x * jx, y: (dy / dl) * STAR_BARREL_KNOCKBACK.y * jy }, ignoreVictimResistance: true },
           // Juice rides the context: only a connected pop freezes time.
           hitstop: STAR_POWER_HITSTOP_FRAMES,
         });

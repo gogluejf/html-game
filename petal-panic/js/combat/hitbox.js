@@ -242,17 +242,31 @@ export function processHitboxes(hitboxes, targets, onHit) {
       const MELEE_FUSABLE = BLOOD_METHODS.has(hb.method);
       if (MELEE_FUSABLE && isBarrelTarget(t) && t._fuse == null && wouldKill(t, hb.damage)) {
         armBarrelMeleeFuse(t);
+        // Lethal barrels fly at the SAME big-tier launch as lethal enemies —
+        // a kill is a kill. The swing's moderate vector only applies to chip
+        // hits; here we re-orient knockbackBig with the impact geometry.
+        const lethalVec = _orientStored(hb, t, tb, hb.knockbackBig) ?? kbVector;
         applyHit({
           provenance,
           source: hb.owner,
           target: t,
           damage: 0,
           team: TEAM_CONST[hb.team] ?? Team.NEUTRAL,
-          knockback: kbVector,
+          knockback: lethalVec,
           method: hb.method,
           hitstop: hb.hitstop,
         });
         dedupeSet.add(t);
+        // Connect juice: the hit LANDED — shake at the same tier as a chip
+        // connect (dealt==0 skips the engine's normal shake block below).
+        const connectShake =
+          hb.method === 'melee' ? MELEE_CONNECT_SHAKE :
+          hb.method === 'specialMelee' ? SUPER_MELEE_CONNECT_SHAKE :
+          SUPERMOVE_CONNECT_SHAKE;
+        Effects.triggerShake(connectShake);
+        if (BLOOD_METHODS.has(hb.method)) {
+          Effects.spawnHitSparkles(tb.x + tb.w / 2, tb.y + tb.h / 2);
+        }
         if (onHit) onHit(hb, t, 0);
         continue;
       }

@@ -78,8 +78,13 @@ export function starPowerKill(hero, victim) {
   // defense back in so the star truly one-shots.
   const def = victim.defense ?? victim.stats?.defense ?? 0;
   const amt = Math.max(victim.hp ?? 1, victim.stats?.stamina ?? 1) + def;
-  const hcx = hero.x + hero.w / 2, vcx = victim.x + victim.w / 2;
-  const dirX = Math.sign(vcx - hcx) || 1;
+  // Launch ALONG THE NORMALIZED hero→victim center line (same direction rule
+  // as melee's fromAttacker): constant magnitude, angle adapts to where the
+  // victim actually sits.
+  const hcx = hero.x + hero.w / 2, hcy = hero.y + hero.h / 2;
+  const vcx = victim.x + victim.w / 2, vcy = victim.y + victim.h / 2;
+  const dx = vcx - hcx, dy = vcy - hcy;
+  const dl = Math.hypot(dx, dy) || 1;
   // Popcorn scatter: ±15% per-axis jitter on the star launch vector. The star
   // is a chaos power — identical mirror-image arcs on every kick read
   // mechanical; small per-kick variation reads explosive. Center of mass is
@@ -93,7 +98,7 @@ export function starPowerKill(hero, victim) {
     damage: amt,
     team: Team.ALLY,
     method: 'contact',
-    knockback: { impulse: { x: STAR_POWER_KNOCKBACK.x * dirX * jx, y: STAR_POWER_KNOCKBACK.y * jy }, hitstun: STAR_POWER_KNOCKBACK.hitstun, ignoreVictimResistance: true },
+    knockback: { impulse: { x: (dx / dl) * STAR_POWER_KNOCKBACK.x * jx, y: (dy / dl) * STAR_POWER_KNOCKBACK.y * jy }, hitstun: STAR_POWER_KNOCKBACK.hitstun, ignoreVictimResistance: true },
     // Juice: freeze the whole sim for ~83ms. Rides the context so ONLY a
     // connected kill freezes time (rejected hits return before reactions).
     // Max-merge semantics mean overlapping kills hold the larger window.

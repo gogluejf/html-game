@@ -31,13 +31,13 @@ Source code: `js/hero/heroDefs.js` (vectors), `js/combat/hitbox.js`
 
 ## Barrels
 
-| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop |
-|---|---|---|---|---|---|
-| Melee (jab) | 450, −120 | 450, −120 + ghost 0.6s + fuse | 2px | none | 0 |
-| Super melee (sweep) | 550, −180 | 550, −180 + ghost 0.6s + fuse | 2px | none | 0 |
-| Supermove burst | 300, −120 | 300, −120 + ghost 0.6s + fuse | 4px | none | 4f |
-| Supermove finisher | 850, −260 | 850, −260 + ghost 0.6s + fuse | 4px | none | 8f |
-| Star touch | — | 840, −320 ±15% jitter + ghost 0.6s + fuse | — | 6px | 2f |
+| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop | Ghost (lethal) |
+|---|---|---|---|---|---|---|
+| Melee (jab) | 450, −120 | 750, −260 + fuse | 2px | 2px | 0 | Y (0.6s) |
+| Super melee (sweep) | 550, −180 | 750, −330 + fuse | 2px | 2px | 0 | Y (0.6s) |
+| Supermove burst | 300, −120 | 850, −260 + fuse | 4px | 4px | 4f | Y (0.6s) |
+| Supermove finisher | 850, −260 | 850, −260 + fuse | 4px | 4px | 8f | Y (0.6s) |
+| Star touch | — | 840, −320 ±15% jitter + fuse | — | 6px | 2f | Y (0.6s) |
 
 ### Barrel detonation shake (by type, at fuse end)
 
@@ -50,28 +50,29 @@ Source code: `js/hero/heroDefs.js` (vectors), `js/combat/hitbox.js`
 
 ## Enemies
 
-| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop |
-|---|---|---|---|---|---|
-| Melee (jab) | 450, −120 | 750, −260 + ghost until despawn | 2px | 6px | 0 |
-| Super melee (sweep) | 550, −180 | 750, −330 + ghost until despawn | 2px | 6px | 0 |
-| Supermove burst | 300, −120 | 850, −260 + ghost until despawn | 4px | 6px | 4f |
-| Supermove finisher | 850, −260 | 850, −260 + ghost until despawn | 4px | 6px | 8f |
-| Star touch | — (always kills) | 900, −450 ±15% jitter + ghost until despawn | — | 6px | 5f |
+| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop | Ghost (lethal) |
+|---|---|---|---|---|---|---|
+| Melee (jab) | 450, −120 | 750, −260 | 2px | 6px | 0 | Y (until despawn) |
+| Super melee (sweep) | 550, −180 | 750, −330 | 2px | 6px | 0 | Y (until despawn) |
+| Supermove burst | 300, −120 | 850, −260 | 4px | 6px | 4f | Y (until despawn) |
+| Supermove finisher | 850, −260 | 850, −260 | 4px | 6px | 8f | Y (until despawn) |
+| Star touch | — (always kills) | 900, −450 ±15% jitter | — | 6px | 5f | Y (until despawn) |
 
 ## Projectiles (thorn, pea, specials…)
 
-| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop |
-|---|---|---|---|---|---|
-| Any projectile | damage + sparkles + per-enemy shake | same + death pipeline | none | none | 0 |
+| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop | Ghost (lethal) |
+|---|---|---|---|---|---|---|
+| Any projectile | damage + sparkles + per-enemy shake | same + death pipeline | none | none | 0 | N |
 
 ## Rules
 
 1. **Chip is byte-identical per attack** regardless of victim class (barrel or
    enemy) — same vector, same code path. Felt shove can differ slightly via
    victim resist/weight in `applyKnockback`.
-2. **Barrel lethal = chip velocity + delayed boom.** The `wouldKill` probe
-   branches pre-hit: 0 damage, swing's own vector applied, fuse armed with
-   full-cook intangible flight. Barrels NEVER get the kill-upgrade.
+2. **Barrel lethal = big-tier launch + delayed boom.** The `wouldKill` probe
+   branches pre-hit: 0 damage, the attack's BIG-tier vector applied (same
+   numbers as a lethal enemy hit), fuse armed with full-cook intangible
+   flight. Chip hits keep the moderate vector.
 3. **Enemy lethal = always upgraded to the big tier** + ghost corpse +
    KILL_SHAKE. Fires on any frame — not just the finisher.
 4. **Finisher exists only on supermove**: the last contact keyframe of the dash
@@ -79,13 +80,14 @@ Source code: `js/hero/heroDefs.js` (vectors), `js/combat/hitbox.js`
    super melee stamp `finisher: false` on every frame; their big launches come
    exclusively from the kill-upgrade.
 5. **Shake tiers** (max-kick merge): jab 2, super melee 2, supermove 4, kill 6.
-   Only fires when actual damage > 0 on a non-hero pipeline target; zone ticks
-   (fire/poison) excluded. The barrel fuse branch deals 0 damage → no connect
-   shake on a lethal barrel hit (the explosion path shakes instead).
+   Fires when the hit connects on a non-hero pipeline target; zone ticks
+   (fire/poison) excluded. The barrel fuse branch deals 0 damage but still
+   shakes at its own connect tier — a landed hit is a landed hit.
 6. **Star power** is its own path: enemies die inline (real lethal damage,
-   5f hitstop); barrels take the fuse treatment with a fixed impulse
-   (2f hitstop). Vectors differ (enemy 900/−450 vs barrel 840/−320) — known
-   divergence.
+   5f hitstop); barrels take the fuse treatment (2f hitstop). Both launch
+   along the NORMALIZED hero→victim center line at a constant magnitude with
+   ±15% jitter (same direction rule as melee's fromAttacker). Vectors differ
+   (enemy 900/−450 vs barrel 840/−320) — known divergence.
 7. **Hitstop** is stamped per frame on the hitbox and fired by `applyHit` only
    on connect (max-merge: overlapping freezes never stack past the larger).
    Melee and super melee stamp none (0); supermove stamps 4f on burst frames
