@@ -15,6 +15,7 @@
 
 import { Enemy } from './enemy.js';
 import { UNIT_PX_X } from '../world/macros.js';
+import { isPlowShielded } from '../combat/plowShield.js';
 
 export const JACKO_DEF = {
   id: 'jackolantern',
@@ -93,7 +94,9 @@ export class JackOLantern extends Enemy {
         this.rotation += SPIN_SPEED * dt;
 
         this.fuseTimer += dt;
-        if (dist < DETONATE_RANGE || this.fuseTimer >= FUSE_TIME) {
+        // PLOW SHIELD: a plowing hero is an invincible wall — proximity to him
+        // must not waste the launch. Shared isPlowShielded() predicate.
+        if ((dist < DETONATE_RANGE && !isPlowShielded(hero)) || this.fuseTimer >= FUSE_TIME) {
           this.aiState = 'launch';
           this.launchTimer = LAUNCH_TIME;
           this.vx = 0;

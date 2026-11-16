@@ -21,6 +21,8 @@
 
 import { Enemy } from './enemy.js';
 import { UNIT_PX_X } from '../world/macros.js';
+import { Debug } from '../debug/debug.js';
+import { isPlowShielded } from '../combat/plowShield.js';
 
 export const EXPLOSIVE_MONKEY_DEF = {
   id: 'explosive_monkey',
@@ -148,7 +150,10 @@ export class ExplosiveMonkey extends Enemy {
     // Spawn starts the fuse; throwEnemy owns the single tick per frame.
     if (!this._detonated && this._fuseLeft != null) {
       this._fuseLeft -= dt;
-      if (this._fuseLeft <= 1e-9) this.detonate();
+      if (this._fuseLeft <= 1e-9) {
+        Debug.logEvent(`[monkey] TTL FIRE @(${Math.round(this.x)},${Math.round(this.y)}) pinned=${!!this.pinned}`);
+        this.detonate();
+      }
     }
     // --- Contact -------------------------------------------------------------
     // Detonate ONLY on the chase target (the hero). The monkey is a FOE that
@@ -157,10 +162,17 @@ export class ExplosiveMonkey extends Enemy {
     // neutral AoE once fired; only the TRIGGER is target-specific.)
     if (!this._detonated && this.cfg.explodeOnContact) {
       const victim = this.cfg.target ?? this._heroRef ?? null;
-      if (victim && victim.alive !== false && victim !== this) {
+      // PLOW SHIELD: a plowing hero is an invincible wall (supermove). His body
+      // carrying this monkey is not a collision — the shared isPlowShielded()
+      // predicate keeps every foe contact-trigger inert against him. No
+      // per-enemy plow knowledge; one rule at the combat layer.
+      if (victim && victim.alive !== false && victim !== this && !isPlowShielded(victim)) {
         const box = this.worldBox();
         const tb = victim.worldBox?.() ?? victim;
-        if (overlaps(box, tb)) this.detonate();
+        if (overlaps(box, tb)) {
+          Debug.logEvent(`[monkey] CONTACT vs ${victim.type ?? 'hero'} @(${Math.round(this.x)},${Math.round(this.y)}) pinned=${!!this.pinned} plowShielded=${isPlowShielded(victim)} heroInv=${!!victim.invincible}`);
+          this.detonate();
+        }
       }
     }
     return this.alive === false;
@@ -174,7 +186,10 @@ export class ExplosiveMonkey extends Enemy {
    * double-fire.
    */
   detonate() {
-    if (this._detonated || this.aiState === 'dead') return;
+    // PIN DOOR: a pinned monkey is dedicated to dying at the end of the
+    // supermove sequence — neither the TTL fuse nor hero contact may pop it
+    // early (both paths bypass takeDamage, so the guard lives here).
+    if (this._detonated || this.aiState === 'dead' || this.pinned) return;
     this._detonated = true;
     this.exploded = true;      // engine fires the blast next update pass and
                                // latches the position there (enemyUpdate.js)
