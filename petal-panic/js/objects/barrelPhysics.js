@@ -111,7 +111,11 @@ const STOMP_FUSE = 0.45;             // seconds of cooking after the head-hit
 // ignoreResist: true on the call site → these values are FINAL px/s on every
 // target (no mass division) — the star kick hits barrels and enemies with the
 // same force by design.
-export const STAR_BARREL_KNOCKBACK = { x: 840, y: -320, hitstun: 0, iFrames: 0 };
+// Star-power barrel launch: SAME vector as the star enemy kill
+// (STAR_POWER_KNOCKBACK in combat/collisionHandlers.js) — one powerup,
+// one feel. Kept here (not imported) to avoid a barrelPhysics →
+// collisionHandlers dependency cycle; keep the two in sync.
+export const STAR_BARREL_KNOCKBACK = { x: 900, y: -450, hitstun: 0.5, iFrames: 0 };
 export const STAR_BARREL_FUSE = 0.6; // long enough to SEE the arc: launch up, hang, fall, boom
 
 /**
@@ -236,7 +240,7 @@ export function tickFallingBarrelFuse(b, dt) {
   // fuse timer is its only clock there.
   const landed = !b.intangible && (b.vy ?? 0) <= 1;
   if (b._fuse != null) Debug.logEvent(
-    `[barrel] FUSE TICK fuse=${b._fuse.toFixed(3)} landed=${landed} intangible=${!!b.intangible} @(${Math.round(b.x)},${Math.round(b.y)}) vy=${Math.round(b.vy ?? 0)}`
+    `[barrel] FUSE TICK fuse=${b._fuse.toFixed(3)} landed=${landed} intangible=${!!b.intangible} @(${Math.round(b.x)},${Math.round(b.y)}) vx=${Math.round(b.vx ?? 0)} vy=${Math.round(b.vy ?? 0)}`
   );
   if (b._fuse <= 0 || (landed && (b.vy ?? 0) >= 0)) {
     Debug.logEvent(`[barrel] FUSE DETONATE reason=${b._fuse <= 0 ? 'timeout' : 'landed'} @(${Math.round(b.x)},${Math.round(b.y)})`);

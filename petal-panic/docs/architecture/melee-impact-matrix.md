@@ -37,7 +37,7 @@ Source code: `js/hero/heroDefs.js` (vectors), `js/combat/hitbox.js`
 | Super melee (sweep) | 550, −180 | 750, −330 + fuse | 2px | 2px | 0 | Y (0.6s) |
 | Supermove burst | 300, −120 | 850, −260 + fuse | 4px | 4px | 4f | Y (0.6s) |
 | Supermove finisher | 850, −260 | 850, −260 + fuse | 4px | 4px | 8f | Y (0.6s) |
-| Star touch | — | 840, −320 ±15% jitter + fuse | — | 6px | 2f | Y (0.6s) |
+| Star touch | — | 900, −450 ±15% jitter + fuse | — | 6px | 2f | Y (0.6s) |
 
 ### Barrel detonation shake (by type, at fuse end)
 

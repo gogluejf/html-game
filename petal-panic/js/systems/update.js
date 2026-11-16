@@ -721,6 +721,50 @@ export function update(dt) {
   }
   processAllHitboxes();
 
+  // 1c2. STAR POWER barrel launch — MUST run before the barrel physics step
+  //      below (like melee hitboxes at 1c): an impulse only flies this frame
+  //      if it lands BEFORE the victim integrates. Parked post-physics (step 3)
+  //      it launched one frame late, still overlapping the ground, so friction
+  //      choked the arc and barrels dropped fast instead of flying.
+  if (!hero.dying && hero.starPower) {
+    const hbx = hero.worldBox();
+    for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
+      if (!b.alive || b.destroyed || b._fuse != null) continue;
+      if (!aabbOverlap(hbx, b.worldBox())) continue;
+      // Pure impulse (no damage — star power LAUNCHES the barrel, it doesn't
+      // hit it), so it rides the single door with damage: 0. Direction = the
+      // normalized hero→barrel center line for X (away from you), but Y is a
+      // GUARANTEED upward loft: a barrel sitting beside you makes that line
+      // nearly horizontal, which used to split the magnitude into a straight-up
+      // pop that came back down on its own fuse timer and read as "weak". The
+      // fixed loft + signed-x magnitude gives every star launch the same
+      // forward-arc shape as a melee kill.
+      const bcx = b.x + b.w / 2, bcy = b.y + b.h / 2;
+      const hcx2 = hbx.x + hbx.w / 2, hcy2 = hbx.y + hbx.h / 2;
+      const awayX = Math.sign(bcx - hcx2) || 1;
+      // Popcorn scatter: same ±15% per-axis jitter as the star enemy kill —
+      // every launch gets its own shape, center of mass unchanged.
+      const jx = 0.85 + Math.random() * 0.3;
+      const jy = 0.85 + Math.random() * 0.3;
+      applyHit({
+        provenance: AttackProvenance.CONTACT,
+        source: hero,
+        target: b,
+        damage: 0,
+        team: Team.ALLY,
+        method: 'starPower',
+        knockback: { impulse: { x: awayX * STAR_BARREL_KNOCKBACK.x * jx, y: STAR_BARREL_KNOCKBACK.y * jy }, hitstun: STAR_BARREL_KNOCKBACK.hitstun, ignoreVictimResistance: true },
+        // Juice rides the context: only a connected pop freezes time.
+        hitstop: STAR_POWER_HITSTOP_FRAMES,
+      });
+      b._fuse = STAR_BARREL_FUSE; // tickFallingBarrelFuse cooks + detonates
+      b.setIntangible(STAR_BARREL_FUSE); // ghost flight for the whole cook (cleared at detonation)
+      Debug.logEvent(`[barrel] FUSE ARM star fuse=${STAR_BARREL_FUSE} @(${Math.round(b.x)},${Math.round(b.y)}) vx=${Math.round(b.vx ?? 0)} vy=${Math.round(b.vy ?? 0)}`);
+      Effects.triggerShake(STAR_POWER_SHAKE);
+      break; // ONE barrel per touch frame — the rest pop as you walk into them
+    }
+  }
+
   // 1d2. tick live barrels (decays their hit-flash timer) + gravity, via the
   //     SHARED dynamic-solid step: any entity with gravity integrates and
   //     resolves against static terrain AND every other live dynamic solid.
@@ -876,50 +920,8 @@ export function update(dt) {
   // instead of stopping dead against it. Runs before resolve() so the
   // impulse reads the overlapping position; resolve() then separates.
   if (!hero.dying) {
-    // STAR POWER (mario star): touching a destructible barrel LAUNCHES it off
-    // the hero and arms a short fuse — it detonates after a beat, exactly like
-    // the falling-barrel stomp (launch → cook → blast). That delay is the
-    // satisfaction: the barrel flies up, hangs, then BOOM. Runs before bonk/
-    // creep so a starred hero never shoves or creeps a barrel. The detonation
-    // goes through takeDamage() → destroy() and fires onDestroyed (wired in
-    // update.js) which owns the full aftermath: explosion AoE + VFX for
-    // explosive barrels, coin burst for coin barrels.
-    if (hero.starPower) {
-      const hbx = hero.worldBox();
-      for (const b of dynBarrels) {
-        if (!b.alive || b.destroyed || b._fuse != null) continue;
-        if (!aabbOverlap(hbx, b.worldBox())) continue;
-        // Pure impulse (no damage — star power LAUNCHES the barrel, it doesn't
-        // hit it), so it rides the single door with damage: 0. Launch ALONG THE
-        // NORMALIZED hero→barrel center line (same direction rule as melee's
-        // fromAttacker): magnitude is constant, angle adapts to where the
-        // barrel actually sits. Gravity owns the rest of the arc.
-        const bcx = b.x + b.w / 2, bcy = b.y + b.h / 2;
-        const hcx2 = hbx.x + hbx.w / 2, hcy2 = hbx.y + hbx.h / 2;
-        const dx = bcx - hcx2, dy = bcy - hcy2;
-        const dl = Math.hypot(dx, dy) || 1;
-        // Popcorn scatter: same ±15% per-axis jitter as the star enemy kill —
-        // every launch gets its own shape, center of mass unchanged.
-        const jx = 0.85 + Math.random() * 0.3;
-        const jy = 0.85 + Math.random() * 0.3;
-        applyHit({
-          provenance: AttackProvenance.CONTACT,
-          source: hero,
-          target: b,
-          damage: 0,
-          team: Team.ALLY,
-          method: 'starPower',
-          knockback: { impulse: { x: (dx / dl) * STAR_BARREL_KNOCKBACK.x * jx, y: (dy / dl) * STAR_BARREL_KNOCKBACK.y * jy }, ignoreVictimResistance: true },
-          // Juice rides the context: only a connected pop freezes time.
-          hitstop: STAR_POWER_HITSTOP_FRAMES,
-        });
-        b._fuse = STAR_BARREL_FUSE; // tickFallingBarrelFuse cooks + detonates
-        b.setIntangible(STAR_BARREL_FUSE); // ghost flight for the whole cook (cleared at detonation)
-        Debug.logEvent(`[barrel] FUSE ARM star fuse=${STAR_BARREL_FUSE} @(${Math.round(b.x)},${Math.round(b.y)}) vx=${Math.round(b.vx ?? 0)} vy=${Math.round(b.vy ?? 0)}`);
-        Effects.triggerShake(STAR_POWER_SHAKE);
-        break; // ONE barrel per touch frame — the rest pop as you walk into them
-      }
-    }
+    // (Star-power barrel launch moved to 1c2 — before the barrel physics
+    // step — so the impulse integrates this frame instead of one late.)
     for (const b of dynBarrels) {
       if (b._fuse != null) continue; // star-launched barrels are already cooking — no bonk
       if (heroBonkDynamic(hero, b)) break; // one bonk per frame
@@ -1065,6 +1067,7 @@ function plowPushEnemies(hero, dt) {
 }
 import { refreshBarrelSolidBoxes, handleBarrelDestroyed, popSuperCoinHit, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
 import { applyObjectImpact } from '../combat/objectImpact.js';
-// Star-power barrel pop juice (same values as the enemy contact kill).
-const STAR_POWER_HITSTOP_FRAMES = 2; // ~33ms — snappy pop beat (was 5 ≈ 83ms)
+// Star-power barrel pop juice: vector mirrors the enemy contact kill
+// (collisionHandlers.js); the barrel keeps its own short 2f pop beat.
+const STAR_POWER_HITSTOP_FRAMES = 2; // ~33ms — snappy pop beat
 const STAR_POWER_SHAKE = 6;
