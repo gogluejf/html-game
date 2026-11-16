@@ -31,13 +31,13 @@ Source code: `js/hero/heroDefs.js` (vectors), `js/combat/hitbox.js`
 
 ## Barrels
 
-| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop | Ghost (lethal) |
-|---|---|---|---|---|---|---|
-| Melee (jab) | 450, −120 | 750, −260 + fuse | 2px | 2px | 0 | Y (0.6s) |
-| Super melee (sweep) | 550, −180 | 750, −330 + fuse | 2px | 2px | 0 | Y (0.6s) |
-| Supermove burst | 300, −120 | 850, −260 + fuse | 4px | 4px | 4f | Y (0.6s) |
-| Supermove finisher | 850, −260 | 850, −260 + fuse | 4px | 4px | 8f | Y (0.6s) |
-| Star touch | — | 900, −450 ±15% jitter + fuse | — | 6px | 2f | Y (0.6s) |
+| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop (chip) | Hitstop (lethal) | Ghost (lethal) |
+|---|---|---|---|---|---|---|---|
+| Melee (jab) | 450, −120 | 750, −260 + fuse | 2px | 2px | 0 | 0 | Y (0.6s) |
+| Super melee (sweep) | 550, −180 | 750, −330 + fuse | 2px | 2px | 0 | 0 | Y (0.6s) |
+| Supermove burst | 300, −120 | 850, −260 + fuse | 4px | 4px | 4f | 4f | Y (0.6s) |
+| Supermove finisher | 850, −260 | 850, −260 + fuse | 4px | 4px | 8f | 8f | Y (0.6s) |
+| Star touch | — | 900, −450 ±15% jitter + fuse | — | 6px | — | 2f | Y (0.6s) |
 
 ### Barrel detonation shake (by type, at fuse end)
 
@@ -50,19 +50,19 @@ Source code: `js/hero/heroDefs.js` (vectors), `js/combat/hitbox.js`
 
 ## Enemies
 
-| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop | Ghost (lethal) |
-|---|---|---|---|---|---|---|
-| Melee (jab) | 450, −120 | 750, −260 | 2px | 6px | 0 | Y (until despawn) |
-| Super melee (sweep) | 550, −180 | 750, −330 | 2px | 6px | 0 | Y (until despawn) |
-| Supermove burst | 300, −120 | 850, −260 | 4px | 6px | 4f | Y (until despawn) |
-| Supermove finisher | 850, −260 | 850, −260 | 4px | 6px | 8f | Y (until despawn) |
-| Star touch | — (always kills) | 900, −450 ±15% jitter | — | 6px | 5f | Y (until despawn) |
+| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop (chip) | Hitstop (lethal) | Ghost (lethal) |
+|---|---|---|---|---|---|---|---|
+| Melee (jab) | 450, −120 | 750, −260 | 2px | 6px | 0 | 0 | Y (until despawn) |
+| Super melee (sweep) | 550, −180 | 750, −330 | 2px | 6px | 0 | 0 | Y (until despawn) |
+| Supermove burst | 300, −120 | 850, −260 | 4px | 6px | 4f | 4f | Y (until despawn) |
+| Supermove finisher | 850, −260 | 850, −260 | 4px | 6px | 8f | 8f | Y (until despawn) |
+| Star touch | — (always kills) | 900, −450 ±15% jitter | — | 6px | — | 5f | Y (until despawn) |
 
 ## Projectiles (thorn, pea, specials…)
 
-| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop | Ghost (lethal) |
-|---|---|---|---|---|---|---|
-| Any projectile | damage + sparkles + per-enemy shake | same + death pipeline | none | none | 0 | N |
+| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop (chip) | Hitstop (lethal) | Ghost (lethal) |
+|---|---|---|---|---|---|---|---|
+| Any projectile | damage + sparkles + per-enemy shake | same + death pipeline | none | none | 0 | 0 | N |
 
 ## Rules
 
@@ -92,3 +92,27 @@ Source code: `js/hero/heroDefs.js` (vectors), `js/combat/hitbox.js`
    on connect (max-merge: overlapping freezes never stack past the larger).
    Melee and super melee stamp none (0); supermove stamps 4f on burst frames
    and 8f on the finisher; star paths carry their own constants.
+
+## Death sequence (pinned-to-die) — DESIGN, not yet coded
+
+**Pinned = hp hit 0 but the whole death is on hold** (anim, ghost, break,
+coins). The body stays standing, still gets hit: chip kick + shake + hitstop,
+0 damage. The pin clears exactly once — finisher connect OR combo end.
+
+### Supermove (multi-hit — the only attack with a finisher)
+
+| Moment | Enemy | Barrel |
+|---|---|---|
+| Burst 1-2 KILLS | Pinned: no death anim, no ghost. Stays standing, chip-kickable, hittable | Pinned: no break/coins/boom. Stays standing, chip-kickable |
+| Burst 1-2 (survives) | Normal chip hit | Normal chip hit |
+| Finisher HITS pinned/surviving body | BIG kick (850, −260) + ghost → death sequence starts NOW → flies → fades | BIG kick + fuse → arcs 0.6s → BOOM + coins |
+| Finisher MISSES (combo ends) | Unpin: death sequence starts in place → normal fade | Unpin: breaks inline in place → coins/boom now |
+
+Unpin moment = supermove END (known event); also on hero death mid-dash.
+One flag per body, cleared exactly once — nothing can get stuck.
+
+### Melee / super melee (single-hit — every hit IS the last one)
+
+No pinning possible: one hit per swing, so kill = immediate full payoff,
+exactly as in the main matrices above (big kick + ghost / big kick + fuse).
+The pin concept only exists where a later hit can still come — supermove.
