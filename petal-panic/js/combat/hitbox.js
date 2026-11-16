@@ -304,13 +304,14 @@ export function processHitboxes(hitboxes, targets, onHit) {
         // reach the ignoreResist big vector, subtract what's there and add the
         // full big value. Read pre-kill vx/vy is stale post-applyHit, so use the
         // oriented moderate as the "already applied" amount when available.
-        const modVec = hb.knockbackModerate ? _orientStored(hb, t, tb, hb.knockbackModerate) : null;
-        const resist = t.knockbackResist ?? 1;
+        // die() ZEROED the corpse's velocity inside takeDamage (before
+        // applyHit's own knockback step), so the moderate shove never actually
+        // survived to this point — adding a delta would leave only
+        // big−moderate flying. Set the FULL big vector directly:
+        // ignoreVictimResistance overwrites vx/vy, no arithmetic needed.
         if (bigVec) {
-          const appliedX = modVec ? (modVec.x / resist) : 0;
-          const appliedY = modVec ? (modVec.y / resist) : 0;
           applyKnockback(t, {
-            impulse: { x: bigVec.x - appliedX, y: bigVec.y - appliedY },
+            impulse: { x: bigVec.x, y: bigVec.y },
             hitstun: bigVec.hitstun ?? 0,
             ignoreVictimResistance: true,
           });
