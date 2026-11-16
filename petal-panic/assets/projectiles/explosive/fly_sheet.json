@@ -1,10 +1,10 @@
 {
  "file": "petal-panic/assets/projectiles/explosive/fly_sheet.png",
- "size": "1853x170",
+ "size": "1372x170",
  "rows": 1,
- "cols": 6,
+ "cols": 4,
  "kind": "animation",
- "description": "explosive fly (6 frames)",
+ "description": "explosive fly (4 frames)",
  "entities": [
   {
    "name": "explosive",
@@ -17,48 +17,6 @@
      "col": 0,
      "bbox": [
       0,
-      35,
-      234,
-      100
-     ],
-     "offset": {
-      "x": 0,
-      "y": -100
-     },
-     "scale": {
-      "sx": 1,
-      "sy": 1
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "fly_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      234,
-      29,
-      247,
-      111
-     ],
-     "offset": {
-      "x": 0,
-      "y": -96
-     },
-     "scale": {
-      "sx": 0.9352226720647774,
-      "sy": 0.8648648648648649
-     },
-     "boxes": [],
-     "durUnits": 1
-    },
-    {
-     "file": "fly_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      481,
       10,
       309,
       150
@@ -75,11 +33,11 @@
      "durUnits": 1
     },
     {
-     "file": "fly_f4.png",
+     "file": "fly_f2.png",
      "row": 0,
-     "col": 3,
+     "col": 1,
      "bbox": [
-      790,
+      309,
       11,
       366,
       148
@@ -96,11 +54,11 @@
      "durUnits": 1
     },
     {
-     "file": "fly_f5.png",
+     "file": "fly_f3.png",
      "row": 0,
-     "col": 4,
+     "col": 2,
      "bbox": [
-      1156,
+      675,
       0,
       368,
       170
@@ -117,11 +75,11 @@
      "durUnits": 1
     },
     {
-     "file": "fly_f6.png",
+     "file": "fly_f4.png",
      "row": 0,
-     "col": 5,
+     "col": 3,
      "bbox": [
-      1524,
+      1043,
       1,
       329,
       168
@@ -154,5 +112,5 @@
    "markers": []
   }
  ],
- "updated": "2026-11-01"
+ "updated": "2026-11-16"
 }
