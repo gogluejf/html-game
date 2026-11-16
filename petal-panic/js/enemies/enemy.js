@@ -214,6 +214,11 @@ export class Enemy extends Entity {
    * @returns {number} real damage dealt (>=1 if alive), else 0
    */
   takeDamage(amt, source, method = 'melee') {
+    // PIN DOOR: a pinned body is dedicated to dying at the end of the
+    // supermove sequence — no damage path (melee, projectile, explosion,
+    // zone) may kill it early. Knockback still applies (the pin is a body,
+    // not a wall); only the HP drain is refused.
+    if (this.pinned) return 0;
     const real = damage(source, this, amt, method);
     if (real > 0) {
       flashTarget(this);

@@ -20,6 +20,7 @@ import { blink } from '../effects/blink.js';
 import { ctx } from '../world/context.js';
 import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
+import { unpinAll } from '../combat/pin.js';
 
 // Invincibility looks (design §27) — the HERO owns them. Two separate effects,
 // each one job:
@@ -813,6 +814,21 @@ export class Hero extends Entity {
     // super, so the shared Entity.tickAnim never runs — advance it here.
     this.tickAnim(dt);
 
+    // PIN-TRACE (temporary): supermove frame/phase/keyframe walk — one line per
+    // frame AFTER the sheet player advanced, so the index matches the hitbox
+    // path. key=Y = contact box this frame; finisher=Y reads the SAME source
+    // as the impact site (_supermoveBurstKnockback), not a re-derived guess.
+    if (this._spriteAnim === 'supermove' && this.spriteAnimData) {
+      const fr = this.spriteAnimData.frames;
+      const i = this.spriteFrameIndex % fr.length;
+      const cur = fr[i];
+      const isKey = (cur?.durUnits ?? 1) >= SUPERMOVE_HIT_DUR_UNITS;
+      const fin = this._supermoveBurstKnockback().finisher;
+      Debug.logEvent(
+        `[sm] f=${i}/${fr.length - 1} phase=${this.supermovePhase} key=${isKey ? 'Y' : '-'} finisher=${fin ? 'Y' : '-'} @(${Math.round(this.x)},${Math.round(this.y)}) vx=${Math.round(this.vx ?? 0)}`
+      );
+    }
+
     // SUPERMOVE END (animation terminal frame): the move is over when the SHEET
     // finishes, not when the 0.6s velocity ramp does. This is the single spot
     // that fires endSupermove() on natural completion — protection (plow +
@@ -1157,7 +1173,7 @@ export class Hero extends Entity {
       // is the finisher frame OR the hit kills, else moderate. (Previously kb
       // was the pre-chosen tier, which capped non-finisher bursts at 300 even
       // on a kill.)
-      return { ...box, knockbackModerate: a.knockbackModerate, knockbackBig: a.knockbackBig, hitstop: burstHitstop, finisher, _source: 'sheet' };
+      return { ...box, knockbackModerate: a.knockbackModerate, knockbackBig: a.knockbackBig, hitstop: burstHitstop, finisher, _source: 'sheet', _traceFrame: this.spriteFrameIndex };
     } else {
       throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
     }
@@ -1820,6 +1836,10 @@ export class Hero extends Entity {
     // live before or picked up during the move survives untouched.
     this.clearInvincible('supermove');
     this.plow = false;
+    // PIN RELEASE (combo end): any body a burst pinned but the finisher never
+    // connected dies/breaks NOW, in place, the normal way. Runs on every exit
+    // path — natural end, jump-cancel — because they all funnel here.
+    unpinAll({ barrels: [...(ctx.barrels ?? []), ...(ctx.woodBarrels ?? []), ...(ctx.coinBarrels ?? [])], enemies: ctx.realEnemies ?? [] });
     // Restore previous animation.
     if (this._prevAnim) {
       this.anim = this._prevAnim;

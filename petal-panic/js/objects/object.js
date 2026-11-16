@@ -267,6 +267,10 @@ export class GameObj extends Entity {
    * @returns {number} damage actually applied (clamped to remaining HP)
    */
   takeDamage(dmg, _source, _method = 'projectile') {
+    // PIN DOOR: a pinned barrel is dedicated to breaking at the end of the
+    // supermove sequence — no damage path may break it early. Knockback still
+    // applies; only the HP drain (and thus destroy()) is refused.
+    if (this.pinned) return 0;
     assertDamageAmount(dmg, _source, this, _method);
     if (!this.alive || this.destroyed) return 0;
     const applied = Math.min(this.hp, dmg);

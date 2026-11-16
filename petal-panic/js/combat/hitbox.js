@@ -21,6 +21,8 @@ import { applyKnockback } from './knockback.js';
 import { Team, AttackProvenance } from './targeting.js';
 import { wouldKill } from './damage.js';
 import { armBarrelMeleeFuse } from '../objects/barrelPhysics.js';
+import { pin, isPinned, releaseFinisher } from './pin.js';
+import { Debug } from '../debug/debug.js';
 
 /** Methods whose connect deals blood (melee-family strikes). */
 const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
@@ -166,6 +168,15 @@ export function processHitboxes(hitboxes, targets, onHit) {
 
       const tb = t.worldBox ? t.worldBox() : { x: t.x, y: t.y, w: t.w, h: t.h };
       if (!aabbOverlap(hb.box, tb)) continue;
+      // PIN-TRACE (temporary): every supermove contact — victim identity + full
+      // state at the moment of overlap, so pin arm/release/whiff is readable.
+      if (hb.method === 'super') {
+        Debug.logEvent(
+          `[sm-hit] f=${hb._traceFrame ?? '?'} finisher=${hb.finisher ? 'Y' : '-'} vs ${t.type ?? '?'} ` +
+          `hp=${Math.round(t.hp ?? -1)} pinned=${!!t.pinned} aiState=${t.aiState ?? '-'} alive=${t.alive} ` +
+          `@(${Math.round(tb.x)},${Math.round(tb.y)})`
+        );
+      }
 
       // Skip hero if invincible or mid-death.
       if (t.layer === LAYER.HERO) {
@@ -240,7 +251,41 @@ export function processHitboxes(hitboxes, targets, onHit) {
       // frame. Non-lethal hits apply normally (chip damage). Projectiles keep
       // their inline-kill contract (a thorn pop is instant by design).
       const MELEE_FUSABLE = BLOOD_METHODS.has(hb.method);
-      if (MELEE_FUSABLE && isBarrelTarget(t) && t._fuse == null && wouldKill(t, hb.damage)) {
+      // PINNED-TO-DIE (supermove bursts only): a burst-frame hit that would
+      // KILL does not kill — the victim is pinned (death scheduled for the
+      // finisher / combo end). Single-hit attacks never pin. The pin module
+      // owns the state; the door guards in takeDamage keep every other damage
+      // path from killing a pinned body early.
+      if (MELEE_FUSABLE && hb.method === 'super' && t._fuse == null && wouldKill(t, hb.damage)) {
+        // PIN-TRACE: full condition dump so a bypass is readable in one line.
+        Debug.logEvent(
+          `[pin] EVAL ${t.type ?? '?'} method=${hb.method} finisher=${hb.finisher ? 'Y' : '-'} ` +
+          `hp=${Math.round(t.hp ?? -1)} dmg=${hb.damage} pinned=${!!t.pinned}`
+        );
+      }
+      if (MELEE_FUSABLE && hb.method === 'super' && !hb.finisher
+          && t._fuse == null && !isPinned(t) && wouldKill(t, hb.damage)) {
+        if (pin(t)) {
+          applyHit({
+            provenance,
+            source: hb.owner,
+            target: t,
+            damage: 0,
+            team: TEAM_CONST[hb.team] ?? Team.NEUTRAL,
+            knockback: kbVector, // chip vector — the pin is not a launch
+            method: hb.method,
+            hitstop: hb.hitstop,
+          });
+          dedupeSet.add(t);
+          Effects.triggerShake(SUPERMOVE_CONNECT_SHAKE);
+          Effects.spawnHitSparkles(tb.x + tb.w / 2, tb.y + tb.h / 2);
+          if (onHit) onHit(hb, t, 0);
+          continue;
+        }
+        // pin() refused (body already dying) → fall through to normal damage.
+        Debug.logEvent(`[pin] REFUSE ${t.type ?? '?'} @(${Math.round(tb.x)},${Math.round(tb.y)}) alive=${t.alive} aiState=${t.aiState ?? '-'} fuse=${t._fuse != null}`);
+      }
+      if (MELEE_FUSABLE && isBarrelTarget(t) && t._fuse == null && !isPinned(t) && wouldKill(t, hb.damage)) {
         armBarrelMeleeFuse(t);
         // Lethal barrels fly at the SAME big-tier launch as lethal enemies —
         // a kill is a kill. The swing's moderate vector only applies to chip
@@ -274,7 +319,7 @@ export function processHitboxes(hitboxes, targets, onHit) {
         provenance,
         source: hb.owner,
         target: t,
-        damage: hb.damage,
+        damage: t.pinned ? 0 : hb.damage, // pinned bodies are already at hp 0
         team: TEAM_CONST[hb.team] ?? Team.NEUTRAL,
         knockback: kbVector,
         method: hb.method,
@@ -284,6 +329,14 @@ export function processHitboxes(hitboxes, targets, onHit) {
       });
       const dealt = res.accepted ? res.dealt : 0;
 
+      // PIN RELEASE — finisher connect on a pinned body: the fancy death
+      // starts NOW (big launch + ghost / fuse). releaseFinisher clears the
+      // pin, so unpinAll at combo end can never double-release.
+      if (isPinned(t) && hb.finisher) {
+        const bigVec = _orientStored(hb, t, tb, hb.knockbackBig);
+        releaseFinisher(t, bigVec ? { impulse: { x: bigVec.x, y: bigVec.y }, hitstun: bigVec.hitstun ?? 0 } : null);
+        if (!isBarrelTarget(t)) Effects.triggerShake(KILL_SHAKE);
+      }
 
       // KILL = STAR TREATMENT: when this hit kills an enemy (not barrel), it
       // gets the EXACT mario-star payoff — no divergence:
@@ -322,7 +375,10 @@ export function processHitboxes(hitboxes, targets, onHit) {
       // Non-fatal finisher frames (supermove ender) shake at the connect tier
       // (4) — same as any other landed hit; only kills escalate to 6.
 
-      if (dealt > 0) {
+      if (dealt > 0 || isPinned(t)) {
+        // Pinned bodies take 0 damage by design (door guard) but MUST still be
+        // deduped — otherwise every overlapping frame re-kicks them and a
+        // single keyframe launches the barrel 4×.
         dedupeSet.add(t);
         // Hero hit reaction — only flinch/stun if actual energy was lost
         // (shield-only absorption = no reaction, shield pulse is enough).

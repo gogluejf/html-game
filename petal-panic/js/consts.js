@@ -60,7 +60,7 @@ export const LAYER = {
 
 
 // Supermove tuning (shared by hero runtime + validation)
-export const SUPERMOVE_DUR = 0.6;
+export const SUPERMOVE_DUR = 1.0; // sheet length (16 frames @ 16fps) — the velocity ramp runs the WHOLE move so the finisher frame still has pressure
 export const SUPERMOVE_BURST_FRAC = 0.6;
 export const SUPERMOVE_SPEED = 920;
 export const SUPERMOVE_RESIDUAL = 80;

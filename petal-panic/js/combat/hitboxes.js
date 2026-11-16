@@ -44,6 +44,8 @@ function updateSlot(slot) {
     hb.dedupeScope = box.dedupeScope ?? null;
     // Hit-stop frames ride the same way (supermove burst/finisher tiers).
     hb.hitstop = box.hitstop;
+    // PIN-TRACE: sheet frame that authored this box (supermove contact lines).
+    hb._traceFrame = box._traceFrame ?? null;
     hb.active = true;
     if (!resetFlag.get()) {
       resetHitbox(hb);
