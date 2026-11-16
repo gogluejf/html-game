@@ -20,6 +20,8 @@ import { record } from '../stats.js';
 import { fireManual } from '../effects/index.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 
+const _srcName = (e) => e?.type ?? e?.id ?? 'blast';
+
 /**
  * Damage → vignette intensity mapping (design §12). A hit dealing this much
  * real damage kicks the red vignette to full; lighter hits scale linearly.
@@ -70,6 +72,22 @@ export function assertDamageAmount(amount, source, target, method) {
 export function heroDamage(source, target, amt, method = 'projectile') {
   assertDamageAmount(amt, source, target, method);
   if (!target.alive) return 0;
+
+  // GHOST-HUNTER TRACE (temporary): every energy drain on the hero logs at the
+  // DEEPEST level — the exact moment energy leaves the body. Source identity,
+  // method, amount, guard state, and BOTH positions (victim + attacker) so a
+  // "ghost" hit with no visible enemy nearby gets pinned: if srcPos is far
+  // from pos, or source has no type/id, that's our phantom.
+  // LAYER.HERO === 1 (consts.js) — compared by value to sidestep any
+  // module-init ordering edge in the browser bundle.
+  if (target.layer === 1 /* LAYER.HERO */) {
+    const sx = typeof source?.x === 'number' ? source.x.toFixed(0) : '?';
+    const sy = typeof source?.y === 'number' ? source.y.toFixed(0) : '?';
+    console.log(`[dmg] ${_srcName(source)} → Hero | method=${method} amt=${amt}` +
+      ` | plow=${!!target.plow} invincible=${!!target.invincible} dying=${!!target.dying}` +
+      ` | heroPos=(${target.x.toFixed(0)},${target.y.toFixed(0)}) srcPos=(${sx},${sy})` +
+      ` | srcAlive=${source?.alive ?? '?'} srcHp=${typeof source?.hp === 'number' ? source.hp : '?'}`);
+  }
 
   // Defense mitigation, floored at 1 so a hit always registers.
   // Defense belongs to the TARGET: it reads the victim's own stat sheet
