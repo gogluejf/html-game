@@ -295,7 +295,10 @@ export function processHitboxes(hitboxes, targets, onHit) {
         // engine must not double-set or INVENT a flash for non-pipeline
         // placeholders (hitFlashOwnership contract), so the shake (which
         // bumps hitFlash) runs only for pipeline targets.
-        if (t.layer !== LAYER.HERO && pipeline) {
+        // Zone ticks (fire/poison) are sustained ambient damage, not impact
+        // events — they must not re-kick the camera every tick (that reads as
+        // constant shaking for the whole burn). Discrete impacts only.
+        if (t.layer !== LAYER.HERO && pipeline && hb.method !== 'fire' && hb.method !== 'poison') {
           // Normal melee gets the subtle 2px twitch; every other connect gets
           // the standard 4px kick; kills merge up to 6 via the max-kick rule.
           Effects.triggerShake(hb.method === 'melee' ? MELEE_CONNECT_SHAKE : CONNECT_SHAKE);
