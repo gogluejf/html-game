@@ -25,14 +25,15 @@ import { armBarrelMeleeFuse } from '../objects/barrelPhysics.js';
 /** Methods whose connect deals blood (melee-family strikes). */
 const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
 
-/** Screen shake tiers: any connect gets a solid kick; a KILL (star treatment)
- * is the biggest kick. The camera-shake merge rule is max-kick, so a 6 fired
- * on the same frame as the 4 always wins — no double-shake bookkeeping needed. */
-const CONNECT_SHAKE = 4;
-/** Subtle twitch reserved for NORMAL melee connects (the jab is spammy — a
- * full connect kick would read as noise). Special melee + supermove keep the
- * standard CONNECT_SHAKE; kills merge up to KILL_SHAKE regardless. */
+/** Screen shake tiers per connect method (max-kick merge rule: a 6 fired on
+ * the same frame as a 2 or 4 always wins — no double-shake bookkeeping).
+ *   - jab: subtle twitch (spammy attack, full kick would read as noise)
+ *   - leg sweep: also subtle — same spam profile as the jab
+ *   - supermove dash: the standard solid kick
+ * Kills merge up to KILL_SHAKE regardless of method. */
 const MELEE_CONNECT_SHAKE = 2;
+const SUPER_MELEE_CONNECT_SHAKE = 2;
+const SUPERMOVE_CONNECT_SHAKE = 4;
 const KILL_SHAKE = 6;
 
 /**
@@ -325,9 +326,13 @@ export function processHitboxes(hitboxes, targets, onHit) {
         // events — they must not re-kick the camera every tick (that reads as
         // constant shaking for the whole burn). Discrete impacts only.
         if (t.layer !== LAYER.HERO && pipeline && hb.method !== 'fire' && hb.method !== 'poison') {
-          // Normal melee gets the subtle 2px twitch; every other connect gets
-          // the standard 4px kick; kills merge up to 6 via the max-kick rule.
-          Effects.triggerShake(hb.method === 'melee' ? MELEE_CONNECT_SHAKE : CONNECT_SHAKE);
+          // Per-method connect tiers: jab + leg sweep twitch (2), supermove
+          // kicks (4); kills merge up to 6 via the max-kick rule.
+          const connectShake =
+            hb.method === 'melee' ? MELEE_CONNECT_SHAKE :
+            hb.method === 'specialMelee' ? SUPER_MELEE_CONNECT_SHAKE :
+            SUPERMOVE_CONNECT_SHAKE;
+          Effects.triggerShake(connectShake);
           if (BLOOD_METHODS.has(hb.method)) {
             const tb = t.worldBox ? t.worldBox() : t;
             Effects.spawnHitSparkles(tb.x + tb.w / 2, tb.y + tb.h / 2);
