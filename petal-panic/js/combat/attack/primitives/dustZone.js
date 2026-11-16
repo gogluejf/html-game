@@ -63,7 +63,7 @@ registerPrimitive('dustZone', {
     const zone = new HazardZone({
       x: box.x, y: box.y, w: box.w, h: box.h,
       duration: p.duration, tickRate: p.tickRate, damage: p.damage,
-      team: p.team, color: 'rgba(57,255,20,0.15)', label: 'dust',
+      team: p.team, color: 'rgba(57,255,20,0.15)', label: 'poison',
     });
     zone.setOwner(ctx.attacker);
     zone.drawer = dustZoneDrawer;
