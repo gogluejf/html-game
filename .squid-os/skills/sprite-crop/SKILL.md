@@ -181,12 +181,21 @@ Skill actions:
 ## Resources
 
 ### Scripts
-- [extract_frames.py](scripts/extract_frames.py) — Executable script
-- [record_crop.py](scripts/record_crop.py) — CLI: the ONLY writer of crop data (bboxes, frames) into a sheet's twin JSON
 
+| File | Description |
+|---|---|
+| `extract_frames.py` | Crops frames out of a sheet PNG (`extract`), also `gif` and `report`. |
+| `record_crop.py` | ONLY writer of crop data into the twin JSON; idempotent re-crops. `--repair-frames-dir` to fix paths without re-cropping. |
+| `state_format.py` | Cosmetic: compacts frames/bboxes to one line each in the JSON. |
+| `test_record_crop_preservation.py` | Regression test for record_crop field preservation. |
 ### References
-- [extraction-design.md](references/extraction-design.md) — Additional documentation
-- [sheet-schema.json](references/sheet-schema.json) — Machine-checkable sheet schema (full convention: @skill:sprite-engine → references/CONVENTION.md)
 
+| File | Description |
+|---|---|
+| `extraction-design.md` | Design rationale: why frames are clusters not grid cells, stage-by-stage pipeline behavior, failure modes and which flag fixes which symptom. |
+| `sheet-schema.json` | Machine-checkable schema for the twin sheet JSON (entities, frames, bbox, crop block). Full asset convention: @skill:sprite-engine → references/CONVENTION.md. |
 ### Deprecated
-- [_deprecated/](scripts/_deprecated/) — `migrate_state.py`, `normalize_sheets.py`: target the dead `.squid-os/sprite-sheets/<proj>/<label>/` registry layout; kept for history only. Do not use.
+
+| File | Description |
+|---|---|
+| `_deprecated/` | `migrate_state.py`, `normalize_sheets.py`: target the dead `.squid-os/sprite-sheets/<proj>/<label>/` registry layout; kept for history only. Do not use. |

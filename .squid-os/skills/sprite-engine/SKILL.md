@@ -116,12 +116,19 @@ User: "show me the sheets"
 ## Resources
 
 ### References
-- [CONVENTION.md](references/CONVENTION.md) — **Single source of truth** for asset layout, sheet JSON schema, the two-writer data partition, registry, and pipeline stages. Read before any mutation.
-- [sheet-schema.json](references/sheet-schema.json) — Machine-checkable sheet schema (used by record_tuning.py validation).
-- [PLAN.md](references/PLAN.md) — Additional documentation
+| File | Description |
+|---|---|
+| `CONVENTION.md` | **Single source of truth**: asset layout, sheet JSON schema, two-writer data partition, registry, pipeline stages. Read before any mutation. |
+| `sheet-schema.json` | Machine-checkable sheet schema (used by record_tuning.py validation). |
+| `PLAN.md` | The split-sheet-per-anim plan: why gluing cropped frames beats re-cropping, phases A/B. |
 
 ### Scripts
-- [audit.py](scripts/audit.py), [reassemble.py](scripts/reassemble.py), [carve_anim.py](scripts/carve_anim.py), [glue.py](scripts/glue.py) — deterministic CLIs
-- [record_tuning.py](scripts/record_tuning.py) — the ONLY writer of tuning data into a sheet's twin JSON
-- [editor/](scripts/editor/) — served sprite editor app (multi-file ES modules + Python server, port 8766); saves delegate to record_tuning.py
-- [server/](scripts/server/) — browsable sheet gallery server (port 8799)
+| File | Description |
+|---|---|
+| `audit.py` | Ground-truth sheet auditor: walks the assets tree, checks sheet JSON shape, frame gaps, bbox drift, pixel round-trip. Run first. |
+| `reassemble.py` | Glues existing frame PNGs into fresh per-anim sheets (+ exact bbox twins). Additive only — never deletes/overwrites. |
+| `carve_anim.py` | Cuts frame ranges out of a sheet anim into new anims (e.g. sneaked-in explosions), re-glues everything from scratch. |
+| `glue.py` | Shared frames→sheet primitive (PNG + exact bbox JSON) used by reassemble/carve. |
+| `record_tuning.py` | ONLY writer of tuning data into a sheet's twin JSON. |
+| `editor/` | Served sprite editor app (ES modules + Python server, port 8766); saves delegate to record_tuning.py. |
+| `server/` | Browsable sheet gallery server (port 8799). |

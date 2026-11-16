@@ -301,9 +301,16 @@ Skill actions:
 ## Resources
 
 ### Scripts
-- [sprite_gen.py](scripts/sprite_gen.py) — Deterministic CLI: send/wait/download/screenshot/state management via CDP.
 
+
+| File | Description |
+|---|---|
+| `sprite_gen.py` | Deterministic CLI: send/wait/download/screenshot/state management via CDP. |
 ### References
-- [prompt-templates.md](references/prompt-templates.md) — Generic building-block templates (background rule, style block, layout, containment, frame patterns).
-- [regen.md](references/regen.md) — Fixed prompt for regenerating an existing bad sheet (labels/overflow/alignment), size-agnostic.
 - **Project-specific templates:** one file per project in this folder (e.g. `abyss-qwen.md`) that pins that project's style anchor + palette and reuses the generic layout/containment rules. Prefer the project template over the generic one when generating for that project. Add a new `<project>.md` here whenever you start a new project's sprites.
+
+
+| File | Description |
+|---|---|
+| `prompt-templates.md` | Generic building-block templates (background rule, style block, layout, containment, frame patterns). |
+| `regen.md` | Fixed prompt for regenerating an existing bad sheet (labels/overflow/alignment), size-agnostic. |

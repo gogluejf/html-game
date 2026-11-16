@@ -334,13 +334,20 @@ python3 compose.py set-vibe --game GAME --name NAME --vibe "..."
 ```
 
 ### Server
-- [server.sh](server/server.sh) — start/stop/status/go the jukebox HTTP server
-- [server.py](server/server.py) — static file server with no-cache headers
-- [compiler.js](server/js/compiler.js) — backbone+parts → engine grid (browser-side)
 
+
+| File | Description |
+|---|---|
+| `server.sh` | start/stop/status/go the jukebox HTTP server |
+| `server.py` | static file server with no-cache headers |
+| `compiler.js` | backbone+parts → engine grid (browser-side) |
 ### References
-- [constructions/dream.md](references/constructions/dream.md) — DREAM construction: the classic 7-part loop (riff/riff-b/run/run-b/peak/climax/tag), paired variation, drum ladder
-- [craft-instructions.md](references/craft-instructions.md) — musical goals and the scale/voice vocabulary. Most of it is now advisory (audit only WARNs); read it for guidance, not as a rulebook to obey.
-- [song-anatomy.md](references/song-anatomy.md) — the unit ladder (song/part/measure/beat/step), worked example, who-decides-what contract
-- [song-structure.md](references/song-structure.md) — file format spec + chiptune voice recipes only. (Its "Laws of good music" part is unused; the active rules are in craft-instructions.md.)
-- [behavior-spec.md](references/behavior-spec.md) — jukebox transport/UI behavior
+
+
+| File | Description |
+|---|---|
+| `constructions/dream.md` | DREAM construction: the classic 7-part loop (riff/riff-b/run/run-b/peak/climax/tag), paired variation, drum ladder |
+| `craft-instructions.md` | musical goals and the scale/voice vocabulary. Most of it is now advisory (audit only WARNs); read it for guidance, not as a rulebook to obey. |
+| `song-anatomy.md` | the unit ladder (song/part/measure/beat/step), worked example, who-decides-what contract |
+| `song-structure.md` | file format spec + chiptune voice recipes only. (Its "Laws of good music" part is unused; the active rules are in craft-instructions.md.) |
+| `behavior-spec.md` | jukebox transport/UI behavior |
