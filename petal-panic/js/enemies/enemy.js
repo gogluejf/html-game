@@ -243,6 +243,9 @@ export class Enemy extends Entity {
     this.intangible = false; // clear ghost-flight: corpse is dead, not immune
     this.vx = 0;
     this.vy = 0;
+    // DEATH TRACE (temporary ghost-hunting): every kill logs here so the
+    // timeline shows when a body died relative to any [dmg] it later caused.
+    console.log(`[death] ${this.type ?? '?'} pos=(${this.x.toFixed(0)},${this.y.toFixed(0)}) hp=${this.hp} | attack box killed (hitboxes.js deactivates it next frame)`);
   }
 
   /**

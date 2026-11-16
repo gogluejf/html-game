@@ -101,11 +101,15 @@ export function processAllHitboxes() {
 
   // --- Enemy attack hitboxes (whip, lunge, jab) ---
   // Each real enemy exposes an attack hitbox getter. Register dynamically.
+  // GHOST-BOX FIX: a dead/dying enemy gets ehb=null and falls into the
+  // deactivation branch below — its last-armed box is switched off exactly
+  // once. Previously the `continue` for dead enemies skipped that cleanup,
+  // so a body killed mid-lunge left its attack box armed forever at the
+  // corpse's position, hitting anything that walked into it later.
   for (const e of ctx.realEnemies) {
-    if (!e.alive || e.aiState === 'dead') continue;
-    const ehb = getEnemyAttackHitbox(e);
+    const ehb = (e.alive && e.aiState !== 'dead') ? getEnemyAttackHitbox(e) : null;
     if (!ehb) {
-      // No box this frame → deactivate + ready for next attack.
+      // No box this frame (or owner died) → deactivate + ready for next attack.
       if (e._hitbox) {
         e._hitbox.active = false;
         e._hitboxReset = false;
