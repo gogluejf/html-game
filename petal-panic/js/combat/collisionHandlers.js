@@ -363,10 +363,6 @@ export function registerCollisionHandlers(collisionWorld) {
     const amt = source.stats?.attack ?? 10;
     // STAR POWER still one-shots on touch even while blinking.
     if (heroEnt.starPower) starPowerKill(heroEnt, source);
-    // ONE cooldown per enemy, shared by the real hit and the i-frame bump:
-    // exactly one bump/hit per re-contact — never a per-frame slingshot.
-    if (source._contactCd > 0) return;
-    source._contactCd = CONTACT_COOLDOWN;
     // ONE RULE for every hero-kick (same shape as explosion): normalize the
     // line attacker-center to victim-center, multiply by a fixed force, and
     // ignoreVictimResistance so the kick IS the final velocity. Geometry picks
@@ -374,27 +370,38 @@ export function registerCollisionHandlers(collisionWorld) {
     //   invincible contact -> BUMPER_FORCE (no damage, no i-frame refresh)
     //   stomp (feet in upper half, falling) -> STOMP_FORCE
     //   any other real contact -> SIDE_HIT_FORCE
-    // No teleports, no penetration axes, no hand-written shove vectors: the
-    // contact rule RE-FIRES every frame while boxes overlap (spaced by
-    // _contactCd), so re-bumps shove you out until you clear.
+    // No teleports, no penetration axes, no hand-written shove vectors.
     const hb3 = heroEnt.worldBox(), sb3 = source.worldBox();
     const dx = (hb3.x + hb3.w / 2) - (sb3.x + sb3.w / 2);
     const dy = (hb3.y + hb3.h / 2) - (sb3.y + sb3.w / 2);
     const len = Math.hypot(dx, dy) || 1;
+    if (heroEnt.invincible) {
+      // I-FRAME BUMPER: pure separation — NO damage, NO i-frame refresh, and
+      // NO cooldown: it fires EVERY contact frame while boxes overlap, like
+      // terrain resolve does. The kick is ignoreVictimResistance (sets
+      // velocity, doesn't accumulate), so per-frame re-bumps hold you at the
+      // body's surface instead of slingshotting. A chaser that outruns one
+      // kick gets kicked AGAIN next frame — you can never be towed around
+      // inside the body.
+      const kb = {
+        impulse: { x: (dx / len) * BUMPER_FORCE, y: (dy / len) * BUMPER_FORCE },
+        hitstun: 0.3,
+        ignoreVictimResistance: true,
+      };
+      applyKnockback(heroEnt, kb);
+      return;
+    }
+    // REAL HIT PATH: cooldown gates DAMAGE spacing here (i-frames already
+    // block most re-hits; this is the backstop). Bumps above are unaffected.
+    if (source._contactCd > 0) return;
+    source._contactCd = CONTACT_COOLDOWN;
     const feetInHead = hb3.y + hb3.h <= sb3.y + sb3.h * 0.5;
-    const stomp = !heroEnt.invincible && feetInHead && (heroEnt.vy ?? 0) >= 0;
-    const force = heroEnt.invincible ? BUMPER_FORCE : stomp ? STOMP_FORCE : SIDE_HIT_FORCE;
+    const stomp = feetInHead && (heroEnt.vy ?? 0) >= 0;
+    const force = stomp ? STOMP_FORCE : SIDE_HIT_FORCE;
     const kb = {
       impulse: { x: (dx / len) * force, y: (dy / len) * force },
       ignoreVictimResistance: true,
     };
-    if (heroEnt.invincible) {
-      // I-FRAME BUMPER: same kick as a real hit but NO damage, NO i-frame
-      // refresh. Rides applyKnockback() directly.
-      kb.hitstun = 0.3;
-      applyKnockback(heroEnt, kb);
-      return;
-    }
     // ONE door: applyHit() owns the damage AND the shove. The vector rides the
     // context and lands exactly when damage lands (immune heroes absorb both
     // via the resolver's immunity gate).
