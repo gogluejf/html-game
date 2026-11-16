@@ -92,16 +92,15 @@ export function barrelImpactSweep(b) {
 // resting-on-head frame doesn't machine-gun.
 const FALLING_BARREL_MIN_VY = 260;   // px/s downward before it counts as "falling"
 const FALLING_BARREL_COOLDOWN = 0.3; // re-arm window per barrel
-// Head-hit response: the barrel gets a knockback launch (up + away from the
-// hero) and a short fuse. It stays alive and arcs under gravity; it
+// Head-hit response: the barrel gets a knockback launch (away from the hero's
+// head) and a short fuse. It stays alive and arcs under gravity; it
 // detonates when the fuse expires OR it lands on a surface — whichever first.
 // The blast fires at its CURRENT position, so the explosion travels with the
 // launched barrel (kick-a-barrel-and-it-blows-up feel).
-// ignoreVictimResistance: a stomp is a BOUNCE, not a shove — the barrel
-// arrives falling fast and has its own mass, so an additive impulse would be
-// absorbed and never reverse the fall. The flag makes the impulse the FINAL
-// velocity: no mass division, no old velocity. One source of truth.
-const STOMP_KNOCKBACK = { x: 260, y: -420, hitstun: 0, iFrames: 0 };
+// ONE RULE (same as enemy stomp / bumper): normalize the line between the
+// two bodies' centers × fixed force + ignoreVictimResistance — the kick IS
+// the final velocity, geometry picks the angle. No up/away special-casing.
+const STOMP_FORCE = 493;    // px/s (≈ the old 260/420 vector length)
 const STOMP_FUSE = 0.45;             // seconds of cooking after the head-hit
 // STAR POWER barrel pop: shove the barrel in front of the hero like an enemy
 // knockback — a horizontal push with a SMALL fixed `pop` lobe (the same shape
@@ -172,13 +171,15 @@ export function fallingBarrelImpact(b) {
   }
   if (!target) return;
 
-  // Launch the barrel off the head: upward + horizontally away from the
-  // target's center. Pure impulse (no damage — the stomp is a physics
-  // interaction, not a hit), so it rides the single door with damage: 0;
-  // stepDynamicSolid carries the arc. ignoreVictimResistance makes the
-  // impulse the FINAL velocity — the barrel's fall speed and mass don't
-  // dilute the bounce (a stomp is a set, not an add).
-  const dirX = Math.sign((bb.x + bb.w / 2) - (tb.x + tb.w / 2)) || 1;
+  // Launch the barrel off the head: ONE RULE — normalize the line from the
+  // target's center → the barrel's center, fixed force, ignoreVictimResistance
+  // (the kick IS the final velocity — fall speed and mass don't dilute the
+  // bounce). Pure impulse (no damage), rides the single door with damage: 0;
+  // stepDynamicSolid carries the arc.
+  const bcx = bb.x + bb.w / 2, bcy = bb.y + bb.h / 2;
+  const tcx = tb.x + tb.w / 2, tcy = tb.y + tb.h / 2;
+  const dx = bcx - tcx, dy = bcy - tcy;
+  const len = Math.hypot(dx, dy) || 1;
   applyHit({
     provenance: AttackProvenance.STOMP,
     source: target,
@@ -186,7 +187,7 @@ export function fallingBarrelImpact(b) {
     damage: 0,
     team: Team.NEUTRAL,
     method: 'stomp',
-    knockback: { impulse: { x: STOMP_KNOCKBACK.x * dirX, y: STOMP_KNOCKBACK.y }, ignoreVictimResistance: true },
+    knockback: { impulse: { x: (dx / len) * STOMP_FORCE, y: (dy / len) * STOMP_FORCE }, ignoreVictimResistance: true },
   });
   // Arm the fuse. It cooks while airborne; landing or fuse-expiry detonates.
   b._fuse = STOMP_FUSE;

@@ -125,6 +125,14 @@ function hitSolidTerrain(projectile, target) {
 }
 
 const CONTACT_COOLDOWN = 0.5; // seconds between contact hits from same enemy
+// HERO-KICK forces (px/s). ONE RULE everywhere a hero gets kicked (bumper,
+// stomp, explosion): normalize the line attacker-center → victim-center ×
+// fixed force + ignoreVictimResistance — the kick IS the final velocity,
+// geometry picks the angle for free. No if-top / if-side branches, no
+// penetration axes, no hand-written shove vectors.
+const BUMPER_FORCE = 420;   // i-frame contact: push you out, cleanly, any angle
+const STOMP_FORCE = 493;    // head-bonk bounce (≈ the old 160/420 vector length)
+const SIDE_HIT_FORCE = 420; // real contact hit, not on the head: same shape, tuned
 const ONEUP_THRESHOLD = 100;  // total coins collected per extra life (design §14)
 let oneUpProgress = 0;        // running count toward the next 1up
 
@@ -353,64 +361,48 @@ export function registerCollisionHandlers(collisionWorld) {
     // set it, so a missed swing leaves the hero fully exposed here.
     if (heroEnt.connectProtected) return;
     const amt = source.stats?.attack ?? 10;
-    // Body-contact shove vector (§9): carried on the enemy. The x component IS
-    // the strength (px/s); y carries the small upward lobe. Push normal is
-    // horizontal away from attacker + lobe; the motion term adds the enemy's
-    // live velocity × weight along that normal (head-on only, clamped >= 0),
-    // so a charging boss reads harder for free.
-    const hcx = heroEnt.x + heroEnt.w / 2, scx = source.x + source.w / 2;
-    const dirX = Math.sign(hcx - scx) || (heroEnt.facing * -1);
-    const rawLen = Math.hypot(dirX, -0.6) || 1;
-    const nx = dirX / rawLen, ny = -0.6 / rawLen;
-    const bk = source.bodyKnockback ?? {};
-    const headOn = Math.max(0, (source.vx ?? 0) * nx + (source.vy ?? 0) * ny);
-    const motion = headOn * (source.stats?.weight ?? 1);
-    const shove = {
-      x: nx * (bk.x ?? 0) + nx * motion,
-      y: ny * (bk.y ?? 0) + ny * motion,
-    };
     // STAR POWER still one-shots on touch even while blinking.
     if (heroEnt.starPower) starPowerKill(heroEnt, source);
     // ONE cooldown per enemy, shared by the real hit and the i-frame bump:
     // exactly one bump/hit per re-contact — never a per-frame slingshot.
     if (source._contactCd > 0) return;
     source._contactCd = CONTACT_COOLDOWN;
-    // I-FRAME BUMPER: while invincible, the SAME knockback as a real hit —
-    // applyKnockback() is the exact function the real hit's shove routes
-    // through, so the physics is identical — but NO damage, NO hitstun, NO
-    // i-frame refresh. One clean launch per re-contact: a real bumper.
+    // ONE RULE for every hero-kick (same shape as explosion): normalize the
+    // line attacker-center to victim-center, multiply by a fixed force, and
+    // ignoreVictimResistance so the kick IS the final velocity. Geometry picks
+    // the angle for free. Force varies by case only:
+    //   invincible contact -> BUMPER_FORCE (no damage, no i-frame refresh)
+    //   stomp (feet in upper half, falling) -> STOMP_FORCE
+    //   any other real contact -> SIDE_HIT_FORCE
+    // No teleports, no penetration axes, no hand-written shove vectors: the
+    // contact rule RE-FIRES every frame while boxes overlap (spaced by
+    // _contactCd), so re-bumps shove you out until you clear.
+    const hb3 = heroEnt.worldBox(), sb3 = source.worldBox();
+    const dx = (hb3.x + hb3.w / 2) - (sb3.x + sb3.w / 2);
+    const dy = (hb3.y + hb3.h / 2) - (sb3.y + sb3.w / 2);
+    const len = Math.hypot(dx, dy) || 1;
+    const feetInHead = hb3.y + hb3.h <= sb3.y + sb3.h * 0.5;
+    const stomp = !heroEnt.invincible && feetInHead && (heroEnt.vy ?? 0) >= 0;
+    const force = heroEnt.invincible ? BUMPER_FORCE : stomp ? STOMP_FORCE : SIDE_HIT_FORCE;
+    const kb = {
+      impulse: { x: (dx / len) * force, y: (dy / len) * force },
+      ignoreVictimResistance: true,
+    };
     if (heroEnt.invincible) {
-      // HEAD CASE: the hero is resting ON TOP of the body (feet at/above the
-      // body's top edge). A pure knockback vector gets eaten here — gravity
-      // re-grounds the hero on the head next frame and the terrain resolve
-      // zeros vy, so the launch reads as "pinned to them". Guarantee an
-      // upward pop + sideways exit so the arc actually leaves the head.
-      const hb3 = heroEnt.worldBox(), sb3 = source.worldBox();
-      const onHead = hb3.y + hb3.h <= sb3.y + 6;
-      if (onHead) {
-        // Stomp bounce: the impulse IS the final velocity (ignoreVictimResistance)
-        // — the hero's fall speed and mass don't dilute the pop. Position snap
-        // keeps the arc start clean (knockback can't move entities).
-        const dir = Math.sign((hb3.x + hb3.w / 2) - (sb3.x + sb3.w / 2)) || 1;
-        applyKnockback(heroEnt, { impulse: { x: dir * 160, y: -420 }, ignoreVictimResistance: true });
-        heroEnt.y = sb3.y - hb3.h;            // fully clear the body so the arc starts clean
-      } else {
-        applyKnockback(heroEnt, { impulse: { x: shove.x, y: shove.y } });
-      }
+      // I-FRAME BUMPER: same kick as a real hit but NO damage, NO i-frame
+      // refresh. Rides applyKnockback() directly.
+      kb.hitstun = 0.3;
+      applyKnockback(heroEnt, kb);
       return;
     }
-    // ONE door: applyHit() owns the damage AND the shove — the vector rides
-    // the context and lands exactly when damage lands (immune heroes absorb
-    // both via the resolver's immunity gate).
-    // HEAD-LANDING BOUNCE (precomputed): when the hero falls onto the enemy's
-    // upper half, the contact shove is a stomp — the impulse becomes the FINAL
-    // velocity (ignoreVictimResistance) so the fall speed and hero mass don't
-    // dilute the pop. Side hits keep the normal additive shove.
-    const hb2 = heroEnt.worldBox ? heroEnt.worldBox() : { x: heroEnt.x, y: heroEnt.y, w: heroEnt.w, h: heroEnt.h };
-    const sb2 = source.worldBox ? source.worldBox() : { x: source.x, y: source.y, w: source.w, h: source.h };
-    const feetInHead = hb2.y + hb2.h <= sb2.y + sb2.h * 0.5;
-    const stomp = feetInHead && (heroEnt.vy ?? 0) >= 0;
-    const stompDir = Math.sign(hb2.x + hb2.w / 2 - (sb2.x + sb2.w / 2)) || 1;
+    // ONE door: applyHit() owns the damage AND the shove. The vector rides the
+    // context and lands exactly when damage lands (immune heroes absorb both
+    // via the resolver's immunity gate).
+    if (stomp) {
+      kb.hitstun = 0.15; kb.iFrames = 0.9;
+    } else {
+      kb.hitstun = 0.25; kb.iFrames = 0.60;
+    }
     const res = applyHit({
       provenance: AttackProvenance.CONTACT,
       source,
@@ -418,9 +410,7 @@ export function registerCollisionHandlers(collisionWorld) {
       damage: amt,
       team: Team.FOE,
       method: 'contact',
-      knockback: stomp
-        ? { impulse: { x: stompDir * 160, y: -420 }, ignoreVictimResistance: true, hitstun: 0.15, iFrames: 0.9 }
-        : { impulse: { x: shove.x, y: shove.y }, hitstun: bk.hitstun, iFrames: bk.iFrames },
+      knockback: kb,
     });
     const dealt = res.dealt;
     if (dealt > 0) {
@@ -433,7 +423,7 @@ export function registerCollisionHandlers(collisionWorld) {
       // the arc starts clean, and cover the ~0.56s round-trip arc with
       // invincibility so the fall-back never re-hits.
       if (stomp) {
-        heroEnt.y = sb2.y - hb2.h;
+        heroEnt.y = sb3.y - hb3.h;
         heroEnt.setInvincible('hit', Math.max(heroEnt.timers.get('invincible') ?? 0, 0.9));
       }
       // system so the existing invincible flag + render blink keep working.
