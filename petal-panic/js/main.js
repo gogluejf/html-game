@@ -193,6 +193,14 @@ function applyTransform() {
 // update.js calls buildWorld() at module scope, which requires MACROS to be
 // populated. We must await loadMacros() BEFORE importing update.js.
 async function boot() {
+  // Console mirror (debug package): wrap console.* so every call also lands
+  // in the server-side tmp log file. The real console keeps working normally;
+  // the file is a tail-able mirror for mobile testing / AI diagnosis without
+  // pasting logs. The server truncates that file on every page load itself
+  // (Sec-Fetch-Site detection) — no JS flush call needed.
+  const { installConsoleMirror } = await import('./debug/consoleLog.js');
+  installConsoleMirror();
+
   const macros = await loadMacros();
   setMacros(macros);
   console.info(`[macros] loaded ${Object.keys(macros).length} macros from macros/levels/`);

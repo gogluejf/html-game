@@ -91,12 +91,11 @@ function bindPadButton(btnIdx, els) {
       press(btnIdx);
       buzz();
       showReadout(`btn:${btnIdx} ▼`);
-      console.info(`[vpad] btn:${btnIdx} down`);
     }, { passive: false });
     const clear = (e) => {
       e.preventDefault();
       for (const t of e.changedTouches) active.delete(t.identifier);
-      if (active.size === 0) { release(btnIdx); el.classList.remove('pp-pressed'); showReadout(`btn:${btnIdx} ▲`); console.info(`[vpad] btn:${btnIdx} up`); }
+      if (active.size === 0) { release(btnIdx); el.classList.remove('pp-pressed'); showReadout(`btn:${btnIdx} ▲`); }
     };
     el.addEventListener('touchend', clear, { passive: false });
     el.addEventListener('touchcancel', clear, { passive: false });

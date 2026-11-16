@@ -14,9 +14,21 @@ import json
 import os
 import re
 import sys
+import tempfile
+import threading
+import time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+
+# Console mirror (js/debug/consoleLog.js contract): the browser posts every
+# console.* call here; we append it to ONE fixed tmp file so the log can be
+# tailed from a phone-less workflow. The game calls GET /console-log/flush on
+# every boot/hard-refresh, which truncates the file — no accumulation of old
+# runs, no pile of per-session files.
+CONSOLE_LOG_PATH = os.path.join(
+    tempfile.gettempdir(), 'petal-panic-console.log')
+_console_log_lock = threading.Lock()
 
 # HTML: src="..." or href="..." (skip external + fragments)
 HTML_TAG_RE = re.compile(r'((?:src|href)=")(?!https?://|#)([^"]+)(?=")')
@@ -54,6 +66,15 @@ class DevHandler(SimpleHTTPRequestHandler):
         path = self.path.split('?', 1)[0].lstrip('/')
         if not path:
             path = 'index.html'
+
+        # Console-log flush: truncate the shared tmp file when the page
+        # loads/reloads. The browser tags every request with Sec-Fetch-Site;
+        # 'none' means top-level navigation (a fresh document), so that
+        # request marks a boot/hard-refresh. Purely server-side — no JS call.
+        # NOTE: do NOT respond here — fall through and serve the page normally.
+        if self.headers.get('Sec-Fetch-Site') == 'none':
+            with _console_log_lock:
+                open(CONSOLE_LOG_PATH, 'w').close()
 
         if path.endswith('.html'):
             self._serve_html(path)
@@ -206,6 +227,40 @@ class DevHandler(SimpleHTTPRequestHandler):
             self._send_json(400, {'error': str(e)})
         except OSError as e:
             self._send_json(500, {'error': f'delete failed: {e}'})
+
+    # ------------------------------------------------------------------
+    # Console mirror API (js/debug/consoleLog.js contract):
+    #   POST /console-log  { level, args: [...] }  → append one line to the
+    #     shared tmp file (CONSOLE_LOG_PATH). Args are stringified by the
+    #     client; objects arrive pre-serialized so the server stays dumb.
+    # The file is truncated by GET /console-log/flush on every game boot.
+    # ------------------------------------------------------------------
+    def do_POST(self):
+        path = self.path.split('?', 1)[0].lstrip('/')
+        if path != 'console-log':
+            self.send_error(404, 'Not found')
+            return
+        try:
+            payload = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_json(400, {'error': 'bad json'})
+            return
+        level = str(payload.get('level', 'log'))
+        ts = time.strftime('%H:%M:%S')
+        parts = []
+        for a in payload.get('args', []):
+            if isinstance(a, str):
+                parts.append(a)
+            else:
+                try:
+                    parts.append(json.dumps(a, ensure_ascii=False))
+                except (TypeError, ValueError):
+                    parts.append(repr(a))
+        line = f'{ts} [{level}] ' + ' '.join(parts) + '\n'
+        with _console_log_lock:
+            with open(CONSOLE_LOG_PATH, 'a', encoding='utf-8') as f:
+                f.write(line)
+        self._send_json(200, {'ok': True})
 
 
 if __name__ == '__main__':
