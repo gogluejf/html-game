@@ -163,28 +163,29 @@ ok('isValidTarget excludes self across all teams', () => {
 // ============================================================================
 // Intangible targets absorb the blast (no damage, no shove).
 // ============================================================================
-ok('invincible target absorbs the blast (no damage, no shove)', () => {
+ok('invincible target: no damage, but the bump (shove) still applies', () => {
   const enemy = mkEnemy(40, 0);
   enemy.invincible = true;         // i-frames up
   const exp = { cx: 30, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   const beforeHp = enemy.hp;
   const result = resolveExplosion(exp, [enemy]);
-  assert.equal(result.hit.length, 0, 'no hits recorded');
+  assert.equal(result.hit.length, 0, 'no damaging hit recorded');
   assert.equal(enemy.hp, beforeHp, 'HP unchanged');
-  assert.equal(enemy.vx, 0, 'not shoved');
-  assert.equal(enemy.hitstunTimer, 0, 'no stun applied');
+  // I-frame bump: the shove lands exactly like the contact bumper (ignoreVictimResistance).
+  assert.ok(Math.abs(enemy.vx) > 0, `bump applied, vx=${enemy.vx}`);
 });
 
-ok('invincible HERO absorbs the blast (takeHit guard, no double-fling)', () => {
+ok('invincible HERO: no damage, but the bump (shove) still applies', () => {
   const hero = mkHero();
   hero.invincible = true;
   hero.invulnSource = 'hit';
   const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   const beforeEnergy = hero.energy;
   const result = resolveExplosion(exp, [hero]);
-  assert.equal(result.hit.length, 0, 'hero absorbed');
+  assert.equal(result.hit.length, 0, 'no damaging hit registered');
   assert.equal(hero.energy, beforeEnergy, 'energy unchanged');
-  assert.equal(hero.vx, 0, 'no knockback');
+  // I-frame bump: launched radially, same as the contact bumper.
+  assert.ok(Math.abs(hero.vx) > 0, `bump applied, vx=${hero.vx}`);
 });
 
 // ============================================================================
@@ -291,16 +292,17 @@ ok('hero shoved radially through the unified choke point (no special case)', () 
   assert.ok(hero.invincible, 'hero should be in i-frames after the blast');
 });
 
-ok('an invincible hero absorbs the whole blast (damage AND shove, unified gate)', () => {
+ok('an invincible hero: no damage, bump via the unified gate', () => {
   const hero = mkHero();
   hero.setInvincible('test', 1.0);   // in an invincibility window
   const hc = { x: hero.x + hero.w / 2, y: hero.y + hero.h / 2 };
   const before = hero.energy;
   const exp = { cx: hc.x + 100, cy: hc.y, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   const result = resolveExplosion(exp, [hero]);
-  assert.equal(result.hit.length, 0, 'immune hero must not register a hit');
+  assert.equal(result.hit.length, 0, 'immune hero must not register a damaging hit');
   assert.ok(close(hero.energy, before), 'no energy lost while invincible');
-  assert.ok(close(hero.vx, 0), `no shove while invincible, vx=${hero.vx}`);
+  // The bump still launches (radial dir × force, ignoreVictimResistance).
+  assert.ok(Math.abs(hero.vx) > 0, `bump applied, vx=${hero.vx}`);
 });
 
 // Dead targets are skipped.

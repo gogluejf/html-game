@@ -52,9 +52,30 @@
 <body>
   <canvas id="game"></canvas>
   <script type="module">
+    // Boot-time error mirror: ANY exception during module load / startGame()
+    // posts to the server log file BEFORE the console mirror exists, so a
+    // dead boot is visible in /tmp/petal-panic-console.log (phone debugging).
+    const _bootPost = (level, args) => {
+      try {
+        fetch('/console-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ level, args }),
+          keepalive: true,
+        }).catch(() => {});
+      } catch { /* best-effort */ }
+    };
+    window.addEventListener('error', (e) => {
+      _bootPost('error', [`[boot-error] ${e.message} @ ${e.filename}:${e.lineno}`]);
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      const r = e.reason;
+      _bootPost('error', [`[boot-reject] ${r?.message ?? r} ${r?.stack ?? ''}`.trim()]);
+    });
     // Explicit boot (fullscreen-layout plan): main.js exports startGame so
     // headless test imports never trigger the game boot sequence.
-    import('./js/main.js').then((m) => m.startGame());
+    import('./js/main.js').then((m) => m.startGame())
+      .catch((err) => _bootPost('error', [`[boot-fail] ${err?.message ?? err} ${err?.stack ?? ''}`.trim()]));
   </script>
 </body>
 </html>

@@ -40,13 +40,29 @@ export function applyHit(context) {
   if (!target || target.destroyed || target.alive === false) {
     return { accepted: false, dealt: 0, destroyed: false, rejectReason: 'target invalid or dead' };
   }
-  // Damage-immune targets absorb the whole hit — no damage, no shove, no
-  // callbacks. Heroes in their invincible window (i-frames, star power) and
-  // intangible entities (barrel cook) live here; this is the ONE place that
-  // decision is made so every damaging path shares it. Zero-damage impulses
-  // (stomp / star-barrel launches) are pure physics: they still ride this door
-  // and ignore the immunity flags.
+  // Damage-immune targets absorb the DAMAGE — no drain, no callbacks.
+  // Heroes in their invincible window (i-frames, star power) and intangible
+  // entities (barrel cook) live here; this is the ONE place that decision is
+  // made so every damaging path shares it. Zero-damage impulses (stomp /
+  // star-barrel launches) are pure physics: they still ride this door and
+  // ignore the immunity flags.
+  //
+  // I-FRAME BUMP (same idea as the contact bumper): an invincible hero still
+  // gets the KNOCKBACK — no damage, no i-frame refresh, no cooldown. A blast
+  // under your feet while blinking launches you exactly like touching an
+  // enemy body does: radial dir × force via applyKnockback, every time.
+  // Intangible targets stay fully exempt (ghosts aren't bumpable).
   if ((target.invincible || target.intangible) && rawAmt > 0) {
+    if (target.invincible && !target.intangible && context.knockback?.impulse) {
+      const kb = { ...context.knockback, iFrames: 0 };
+      applyKnockback(target, kb);
+      // Hero victims: transfer the stun into the unified timers (same as the
+      // real-hit reaction block below) so the fling reads as a launch.
+      if (target.layer === LAYER.HERO && target.timers && target.hitstunTimer > 0) {
+        target.timers.set('rec', Math.max(target.timers.get('rec'), target.hitstunTimer));
+        target.hitstunTimer = 0;
+      }
+    }
     return { accepted: false, dealt: 0, destroyed: false, rejectReason: 'target immune' };
   }
   // Damage must be a finite number BEFORE any mutation or callback. A missing

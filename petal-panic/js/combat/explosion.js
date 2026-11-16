@@ -94,7 +94,9 @@ function withinRadius(aCx, aCy, bCx, bCy, radius) {
 export function isValidTarget(explosion, target, source) {
   if (!target || target === source) return false;   // never self-hit
   if (target.alive === false) return false;          // skip already-dead
-  if (target.invincible) return false;               // i-frames absorb the blast
+  // NOTE: invincible targets are NOT filtered here anymore — they must reach
+  // the resolver so its immunity gate can skip the DAMAGE but still apply the
+  // i-frame BUMP (knockback without damage), same as the contact bumper.
 
   const hero = ctxHero(explosion);
   // `team` is the engine-wide side vocabulary (same key as the hitbox
