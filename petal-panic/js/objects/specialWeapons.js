@@ -123,7 +123,7 @@ export const SPECIAL_WEAPONS = [
     speed: 600,
     damage: 12,
     lifetime: 2,
-    size: 18 / UNIT_PX_Y,
+    size: 0.5,            // box height in units (24px) — sheet art scales to it
     spriteAnim: 'throw',
     fireCooldown: 1,
     gravity: 800,
