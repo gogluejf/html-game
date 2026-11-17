@@ -4,7 +4,7 @@ const GROUND_FRICTION = 0.85;
 
 export class MeleeAttack extends BaseAttack {
   constructor(hero) {
-    super(hero, { id: 'melee', multiHit: true, sheet: h => h._meleeSheet ?? (h._meleeAirborne ? 'air_melee' : 'melee'), active: h => h.meleeActive });
+    super(hero, { id: 'melee', multiHit: true, plow: true, sheet: h => h._meleeSheet ?? (h._meleeAirborne ? 'air_melee' : 'melee'), active: h => h.meleeActive });
   }
 
   tryMelee() {

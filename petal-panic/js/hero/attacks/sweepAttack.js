@@ -7,7 +7,7 @@ const GROUND_FRICTION = 0.85;
 
 export class SweepAttack extends BaseAttack {
   constructor(hero) {
-    super(hero, { id: 'specialMelee', multiHit: false, sheet: () => 'super_melee', active: h => h.specialMeleeActive });
+    super(hero, { id: 'specialMelee', multiHit: false, plow: true, sheet: () => 'super_melee', active: h => h.specialMeleeActive });
   }
 
   startSpecialMelee() {

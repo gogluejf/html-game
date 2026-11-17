@@ -12,7 +12,7 @@ function fixture(multiHit = true) {
   _sheetBoxToWorld: () => ({ x: 0, y: 0, w: 10, h: 10 }),
   _attackKnockback: () => ({ knockbackModerate: { x: 300 }, knockbackBig: { x: 850 } }),
   setInvincible() { this.invincible = true; }, clearInvincible() { this.invincible = false; } };
-  const a = new BaseAttack(h, { id: 'melee', multiHit, sheet: () => 'melee', active: () => true });
+  const a = new BaseAttack(h, { id: 'melee', multiHit, plow: multiHit, sheet: () => 'melee', active: () => true });
   h.attackMoves.melee = a;
   a.begin();
   return { h, a };
@@ -55,3 +55,37 @@ test('last-hit release applies launch after death clears velocity', () => {
   assert.equal(t.pinned, false); assert.equal(t.intangible, true);
   assert.equal(t.vx, 850); assert.equal(t.vy, -260);
 });
+
+test('sweep enables plow without multi-hit or invincibility', async () => {
+  const { SweepAttack } = await import('../hero/attacks/sweepAttack.js');
+  const h = { attackMoves: {}, facing: 1 };
+  const a = new SweepAttack(h); h.attackMoves.specialMelee = a;
+  a.begin();
+  assert.equal(a.config.multiHit, false);
+  assert.equal(h.plow, true);
+  assert.equal(h.invincible, undefined);
+  a.end();
+  assert.equal(h.plow, false);
+});
+
+for (const facing of [-1, 1]) {
+  test(`blocked supermove retains lethal horizontal launch, facing ${facing}`, async () => {
+    const { SupermoveAttack } = await import('../hero/attacks/supermoveAttack.js');
+    const h = { attackMoves: {}, facing, vx: facing * 900, vy: 0,
+      setInvincible() {}, clearInvincible() {},
+      _attackKnockback: () => ({ knockbackModerate: { x: 300, y: -120 },
+        knockbackBig: { x: 850, y: -260, dirMode: 'alongVelocity' } }) };
+    const a = new SupermoveAttack(h); h.attackMoves.supermove = a;
+    a.begin();
+    h.vx = 0; h.vy = 500; h.facing = -facing;
+    const tiers = a.knockback();
+    assert.equal(tiers.knockbackBig.x, 850 * facing);
+    assert.equal(tiers.knockbackBig.y, -260);
+    assert.equal(tiers.knockbackBig.dirMode, 'fixed');
+    assert.equal(tiers.knockbackModerate.x, 300);
+    const target = { pinned: true, die() { this.vx = this.vy = 0; } };
+    releaseFinisher(target, { impulse: tiers.knockbackBig });
+    assert.equal(target.vx, 850 * facing);
+    assert.equal(target.vy, -260);
+  });
+}

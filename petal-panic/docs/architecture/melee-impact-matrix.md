@@ -11,7 +11,7 @@ Ghost means intangible flight. Barrel fuse means a 0.6s cook before break/boom.
 | Move | Mode | Contact source | Hits per target | Plow | Full invincibility |
 |---|---|---|---|---|---|
 | Melee (standing / running / airborne) | Multi-hit | Sheet boxes named `hit` | Once per authored hit frame | Whole attack | No |
-| Super melee (sweep) | Single-hit | Sheet boxes named `hit` | Once per attack | No | No |
+| Super melee (sweep) | Single-hit | Sheet boxes named `hit` | Once per attack | Whole attack | No |
 | Supermove (dash) | Multi-hit | Sheet boxes named `hit` | Once per authored hit frame | Whole attack | Whole attack |
 
 - `durUnits` controls animation duration only, never hit eligibility.
@@ -20,6 +20,8 @@ Ghost means intangible flight. Barrel fuse means a 0.6s cook before break/boom.
 - Frames without a `hit` box cannot connect.
 - The last hit window is the final authored frame containing a `hit` box.
   It controls pin release, not a force bonus for survivors.
+- All three moves enable plow independently of single/multi-hit mode.
+- Supermove lethal launch follows the attack-start facing, even when blocked.
 - Plow controls body contact; full damage immunity is a separate setting.
   Existing clean-connect protection for melee/sweep remains separate too.
 

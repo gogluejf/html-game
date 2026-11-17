@@ -5,7 +5,15 @@ const GROUND_FRICTION = 0.85;
 
 export class SupermoveAttack extends BaseAttack {
   constructor(hero) {
-    super(hero, { id: 'supermove', multiHit: true, invincible: true, sheet: () => 'supermove', active: h => !h._supermoveEnded && h.supermoveAnimPlaying });
+    super(hero, { id: 'supermove', multiHit: true, plow: true, invincible: true, sheet: () => 'supermove', active: h => !h._supermoveEnded && h.supermoveAnimPlaying });
+  }
+
+  // A stopped dash still launches forward. Body collision must not scale
+  // the authored lethal vector down to zero (or tilt it with falling speed).
+  knockback() {
+    const tiers = super.knockback();
+    return { ...tiers, knockbackBig: { ...tiers.knockbackBig,
+      x: tiers.knockbackBig.x * this.direction, dirMode: 'fixed' } };
   }
 
   updateSupermove(dt, input) {
