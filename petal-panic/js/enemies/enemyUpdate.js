@@ -8,6 +8,7 @@
 
 import { ctx } from '../world/context.js';
 import { resolve } from '../core/collision.js';
+import { resolvePlowEnemy } from '../combat/plowContact.js';
 
 import { Effects } from '../effects.js';
 import { invoke } from '../combat/attack/engine.js';
@@ -48,6 +49,9 @@ function updateRealEnemy(e, dt) {
   } else {
     e._grounded = false;
   }
+
+  // Only correct the enemy's own movement; never move the hero here.
+  resolvePlowEnemy(e, ctx.hero);
 
   // Host-step contract (explosiveMonkey et al.): some real enemies carry an
   // optional hostStep(dt, targets) that owns per-frame rules the base Enemy
