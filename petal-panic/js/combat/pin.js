@@ -51,11 +51,6 @@ export function releaseFinisher(victim, launch) {
   if (!isPinned(victim)) return;
   victim.pinned = false;
   Debug.logEvent(`[pin] RELEASE ${victim.type ?? '?'} @(${Math.round(victim.x)},${Math.round(victim.y)}) by finisher`);
-  if (launch) {
-    victim.vx = launch.impulse.x;
-    victim.vy = launch.impulse.y;
-    if (launch.hitstun > 0) victim.hitstunTimer = Math.max(victim.hitstunTimer ?? 0, launch.hitstun);
-  }
   if (victim.layer === LAYER.SOLID) {
     // Barrel: arm the cook fuse; tickFallingBarrelFuse owns detonation.
     // Synchronous import — barrelPhysics does not import pin.js, so no cycle.
@@ -65,6 +60,12 @@ export function releaseFinisher(victim, launch) {
     victim.die?.();
     victim.intangible = true;
   }
+  if (launch) {
+    victim.vx = launch.impulse.x;
+    victim.vy = launch.impulse.y;
+    if (launch.hitstun > 0) victim.hitstunTimer = Math.max(victim.hitstunTimer ?? 0, launch.hitstun);
+  }
+
 }
 
 /**

@@ -39,11 +39,16 @@ function updateSlot(slot) {
     hb.knockbackModerate = box.knockbackModerate;
     hb.knockbackBig = box.knockbackBig ?? box.knockback;
     hb.finisher = box.finisher;
+    hb.attack = box.attack;
+    hb.hitTargets = box.hitTargets;
+    hb.multiHit = box.multiHit;
+    hb.lastHit = box.lastHit;
     // Dedupe scope rides the same way: 'swing' boxes (melee/special melee)
     // dedupe against the owner's swing-level set; default = this instance.
     hb.dedupeScope = box.dedupeScope ?? null;
     // Hit-stop frames ride the same way (supermove burst/finisher tiers).
     hb.hitstop = box.hitstop;
+    hb.impact = box.impact;
     // PIN-TRACE: sheet frame that authored this box (supermove contact lines).
     hb._traceFrame = box._traceFrame ?? null;
     hb.active = true;

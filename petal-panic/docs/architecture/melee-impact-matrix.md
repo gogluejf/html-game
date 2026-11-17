@@ -1,118 +1,106 @@
 # Melee Impact Matrix
 
-Single source of truth for what a melee-family impact does per move × outcome.
-Velocities are px/s as stamped on the hitbox (pre victim-resist division).
-"Ghost" = intangible flight (phases through terrain). "Fuse" = 0.6s cook →
-break/explosion at fuse end.
+Current melee-family contract. No separate finisher attack or automatic
+last-hit force bonus: **surviving hit = chip kick; death release = strong kick**.
 
-Source code: `js/hero/heroDefs.js` (vectors), `js/combat/hitbox.js`
-(tier selection, fuse branch, kill-upgrade, shake tiers),
-`js/objects/barrelPhysics.js` (`armBarrelMeleeFuse`, star barrel constants),
-`js/systems/update.js` (star barrel touch path),
-`js/combat/collisionHandlers.js` (`starPowerKill`),
-`js/objects/barrelSync.js` + `js/combat/attack/primitives/explosion.js`
-(detonation shake).
+Velocities below are px/s before victim resistance and direction resolution.
+Ghost means intangible flight. Barrel fuse means a 0.6s cook before break/boom.
 
-## Attack structure (hits per swing)
+## Attack structure
 
-| Move | Contact frames | Hits on one target | Finisher |
+| Move | Mode | Contact source | Hits per target | Plow | Full invincibility |
+|---|---|---|---|---|---|
+| Melee (standing / running / airborne) | Multi-hit | Sheet boxes named `hit` | Once per authored hit frame | Whole attack | No |
+| Super melee (sweep) | Single-hit | Sheet boxes named `hit` | Once per attack | No | No |
+| Supermove (dash) | Multi-hit | Sheet boxes named `hit` | Once per authored hit frame | Whole attack | Whole attack |
+
+- `durUnits` controls animation duration only, never hit eligibility.
+- Holding one hit frame for several updates does not repeat its hit.
+- Adjacent authored hit frames are separate windows in multi-hit mode.
+- Frames without a `hit` box cannot connect.
+- The last hit window is the final authored frame containing a `hit` box.
+  It controls pin release, not a force bonus for survivors.
+- Plow controls body contact; full damage immunity is a separate setting.
+  Existing clean-connect protection for melee/sweep remains separate too.
+
+## Kick forces — enemies and barrels
+
+| Move | Surviving hit | Earlier would-be lethal hit | Lethal release |
 |---|---|---|---|
-| Melee (jab) | all active frames | 1 (first frame to hit) | none |
-| Super melee (sweep) | all active frames | 1 (first frame to hit) | none |
-| Supermove (dash) | keyframes only (`durUnits >= 3`) | up to 3 (one per keyframe) | yes — last keyframe |
+| Melee (all variants) | 450, −120 | Pin + 450, −120 | 750, −260 |
+| Super melee (single-hit sweep) | 550, −180 | Not applicable | 750, −330 |
+| Supermove | 300, −120 | Pin + 300, −120 | 850, −260 |
 
-- **Melee / super melee:** the box is re-resolved every frame from the sheet,
-  but owner-level swing dedupe means one target is struck once per swing.
-  Set cleared when the swing ends.
-- **Supermove:** only held money poses (keyframes) carry contact; short frames
-  between them deal nothing. Each keyframe has its own hitbox instance, so the
-  same target can connect on every burst. The final keyframe is the finisher
-  (big vector + 8f hitstop, pre-hit).
+**Lethal release** means a single-hit attack kills, or the last window of a
+multi-hit attack hits a pinned target or kills an unpinned target.
+A survivor on the last window still receives the **surviving-hit** vector.
+Existing damage and vector values are unchanged by the refactor.
 
-## Barrels
+## Multi-hit death sequence
 
-| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop (chip) | Hitstop (lethal) | Ghost (lethal) |
-|---|---|---|---|---|---|---|---|
-| Melee (jab) | 450, −120 | 750, −260 + fuse | 2px | 2px | 0 | 0 | Y (0.6s) |
-| Super melee (sweep) | 550, −180 | 750, −330 + fuse | 2px | 2px | 0 | 0 | Y (0.6s) |
-| Supermove burst | 300, −120 | 850, −260 + fuse | 4px | 4px | 4f | 4f | Y (0.6s) |
-| Supermove finisher | 850, −260 | 850, −260 + fuse | 4px | 4px | 8f | 8f | Y (0.6s) |
-| Star touch | — | 900, −450 ±15% jitter + fuse | — | 6px | — | 2f | Y (0.6s) |
+| Event | Enemy | Barrel |
+|---|---|---|
+| Earlier hit survives | Damage + chip kick | Damage + chip kick |
+| Earlier hit would kill | Pin; chip kick; no death animation or ghost | Pin; chip kick; no break, fuse, coins or boom |
+| Later non-last hit touches pinned target | No further damage; chip kick | No further damage; chip kick |
+| Last window hits a survivor | Damage + chip kick | Damage + chip kick |
+| Last window kills or hits a pinned target | Strong kick + death animation + ghost | Strong kick + ghost + fuse, then break/boom |
+| Attack ends with target still pinned | Death in place, no launch | Break/boom in place, no launch |
 
-### Barrel detonation shake (by type, at fuse end)
+Pinned means **death is scheduled**, not frozen position or forced HP=0.
+The body remains physical, hittable and chip-kickable. Pinning does not
+itself set HP to zero in the implementation.
+
+The owning attack releases its remaining pins on end, including cancellation
+or owner death. A target already released by the last window is not released
+again. Single-hit attacks never pin: lethal hits release immediately.
+
+## Hitstop and screen shake
+
+| Attack | Chip hitstop | Lethal hitstop | Chip shake | Lethal shake |
+|---|---|---|---|---|
+| Melee (all variants) | 0 | 0 | 2px | 6px |
+| Super melee | 0 | 0 | 2px | 6px |
+| Supermove | 4 frames | 8 frames | 4px | 6px |
+
+Four configurable values per attack, selected per target by outcome—not by
+frame position. The same profile applies to enemies and barrels.
+
+- **Chip:** survivors (even on the last window), earlier would-be lethal hits
+  that pin, and earlier contacts with pinned targets.
+- **Lethal:** single-hit kill, or last-window contact that releases a pinned
+  target or makes a fresh kill.
+- Ending an attack with unreleased pins is cleanup, not a connecting hit; it
+  does not award impact hitstop/shake.
+- Shake and hitstop use max-merge, not additive stacking.
+- Barrel detonation shake is separate from the lethal impact shake.
+
+Tuning: `MELEE_IMPACTS` in `js/combat/meleeImpact.js`.
+
+### Barrel detonation shake
 
 | Barrel type | Detonation shake |
 |---|---|
-| Explosive / propane | 4px (explosion primitive default) |
+| Explosive / propane | 4px |
 | Supercoin | 14px |
 | Toxic | 6px |
-| Wood / coin | none |
+| Wood / coin | None |
 
-## Enemies
+## Scope and implementation
 
-| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop (chip) | Hitstop (lethal) | Ghost (lethal) |
-|---|---|---|---|---|---|---|---|
-| Melee (jab) | 450, −120 | 750, −260 | 2px | 6px | 0 | 0 | Y (until despawn) |
-| Super melee (sweep) | 550, −180 | 750, −330 | 2px | 6px | 0 | 0 | Y (until despawn) |
-| Supermove burst | 300, −120 | 850, −260 | 4px | 6px | 4f | 4f | Y (until despawn) |
-| Supermove finisher | 850, −260 | 850, −260 | 4px | 6px | 8f | 8f | Y (until despawn) |
-| Star touch | — (always kills) | 900, −450 ±15% jitter | — | 6px | — | 5f | Y (until despawn) |
+Star touch and projectile attacks retain their separate behavior; this
+refactor changes the three hero melee-family attacks only.
 
-## Projectiles (thorn, pea, specials…)
+- `js/hero/attacks/baseAttack.js`: shared hit-window tracking, plow/protection lifecycle and owned-pin cleanup.
+- `js/hero/attacks/meleeAttack.js`: melee, including run/air sheet selection.
+- `js/hero/attacks/sweepAttack.js`: super melee.
+- `js/hero/attacks/supermoveAttack.js`: supermove.
+- `js/hero/heroDefs.js`: existing kick vectors.
+- `js/combat/meleeImpact.js`: chip/lethal hitstop and shake tuning.
+- `js/combat/hitbox.js`: impact, pin eligibility and lethal release.
+- `js/combat/pin.js`: deferred death and release.
+- `js/objects/barrelPhysics.js`: barrel fuse/launch lifecycle.
 
-| Move | Chip | Lethal | Shake (chip) | Shake (lethal) | Hitstop (chip) | Hitstop (lethal) | Ghost (lethal) |
-|---|---|---|---|---|---|---|---|
-| Any projectile | damage + sparkles + per-enemy shake | same + death pipeline | none | none | 0 | 0 | N |
-
-## Rules
-
-1. **Chip is byte-identical per attack** regardless of victim class (barrel or
-   enemy) — same vector, same code path. Felt shove can differ slightly via
-   victim resist/weight in `applyKnockback`.
-2. **Barrel lethal = big-tier launch + delayed boom.** The `wouldKill` probe
-   branches pre-hit: 0 damage, the attack's BIG-tier vector applied (same
-   numbers as a lethal enemy hit), fuse armed with full-cook intangible
-   flight. Chip hits keep the moderate vector.
-3. **Enemy lethal = always upgraded to the big tier** + ghost corpse +
-   KILL_SHAKE. Fires on any frame — not just the finisher.
-4. **Finisher exists only on supermove**: the last contact keyframe of the dash
-   sheet carries the big vector PRE-HIT, whether or not it kills. Melee and
-   super melee stamp `finisher: false` on every frame; their big launches come
-   exclusively from the kill-upgrade.
-5. **Shake tiers** (max-kick merge): jab 2, super melee 2, supermove 4, kill 6.
-   Fires when the hit connects on a non-hero pipeline target; zone ticks
-   (fire/poison) excluded. The barrel fuse branch deals 0 damage but still
-   shakes at its own connect tier — a landed hit is a landed hit.
-6. **Star power** is its own path: enemies die inline (real lethal damage,
-   5f hitstop); barrels take the fuse treatment (2f hitstop). Both launch
-   along the NORMALIZED hero→victim center line at a constant magnitude with
-   ±15% jitter (same direction rule as melee's fromAttacker). Vectors differ
-   (enemy 900/−450 vs barrel 840/−320) — known divergence.
-7. **Hitstop** is stamped per frame on the hitbox and fired by `applyHit` only
-   on connect (max-merge: overlapping freezes never stack past the larger).
-   Melee and super melee stamp none (0); supermove stamps 4f on burst frames
-   and 8f on the finisher; star paths carry their own constants.
-
-## Death sequence (pinned-to-die) — DESIGN, not yet coded
-
-**Pinned = hp hit 0 but the whole death is on hold** (anim, ghost, break,
-coins). The body stays standing, still gets hit: chip kick + shake + hitstop,
-0 damage. The pin clears exactly once — finisher connect OR combo end.
-
-### Supermove (multi-hit — the only attack with a finisher)
-
-| Moment | Enemy | Barrel |
-|---|---|---|
-| Burst 1-2 KILLS | Pinned: no death anim, no ghost. Stays standing, chip-kickable, hittable | Pinned: no break/coins/boom. Stays standing, chip-kickable |
-| Burst 1-2 (survives) | Normal chip hit | Normal chip hit |
-| Finisher HITS pinned/surviving body | BIG kick (850, −260) + ghost → death sequence starts NOW → flies → fades | BIG kick + fuse → arcs 0.6s → BOOM + coins |
-| Finisher MISSES (combo ends) | Unpin: death sequence starts in place → normal fade | Unpin: breaks inline in place → coins/boom now |
-
-Unpin moment = supermove END (known event); also on hero death mid-dash.
-One flag per body, cleared exactly once — nothing can get stuck.
-
-### Melee / super melee (single-hit — every hit IS the last one)
-
-No pinning possible: one hit per swing, so kill = immediate full payoff,
-exactly as in the main matrices above (big kick + ghost / big kick + fuse).
-The pin concept only exists where a later hit can still come — supermove.
+Some internal identifiers still use the old terminology (for example
+`releaseFinisher` and `SUPERMOVE_FINISHER_HITSTOP`). These are legacy names
+for last-window release/timing, not an additional attack mechanic.

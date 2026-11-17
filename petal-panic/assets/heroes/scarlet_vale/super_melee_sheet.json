@@ -44,7 +44,7 @@
      ],
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": -106,
        "y": -118,
        "w": 198,
@@ -73,7 +73,7 @@
      ],
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": -102,
        "y": -121,
        "w": 198,
@@ -102,7 +102,7 @@
      ],
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": -1,
        "y": -114,
        "w": 198,
@@ -131,7 +131,7 @@
      ],
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": -19,
        "y": -117,
        "w": 198,
@@ -160,7 +160,7 @@
      ],
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": -12,
        "y": -115,
        "w": 198,
@@ -189,7 +189,7 @@
      ],
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": -1,
        "y": -148,
        "w": 173,
@@ -218,7 +218,7 @@
      ],
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": -27,
        "y": -152,
        "w": 199,
@@ -247,7 +247,7 @@
      ],
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": -23,
        "y": -155,
        "w": 175,
@@ -276,7 +276,7 @@
      ],
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": -12,
        "y": -118,
        "w": 146,

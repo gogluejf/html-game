@@ -20,7 +20,9 @@ import { blink } from '../effects/blink.js';
 import { ctx } from '../world/context.js';
 import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
-import { unpinAll } from '../combat/pin.js';
+import { MeleeAttack } from './attacks/meleeAttack.js';
+import { SweepAttack } from './attacks/sweepAttack.js';
+import { SupermoveAttack } from './attacks/supermoveAttack.js';
 
 // Invincibility looks (design §27) — the HERO owns them. Two separate effects,
 // each one job:
@@ -284,6 +286,7 @@ export class Hero extends Entity {
     // entirely for the hero. Set by the supermove (start/end); any future
     // dash/charge/vehicle move can reuse the whole behavior by toggling this.
     this.plow = false;
+    this.attackMoves = { melee: new MeleeAttack(this), specialMelee: new SweepAttack(this), supermove: new SupermoveAttack(this) };
     this.supermoveActive = false;    // true while the supermove is playing
     this.supermovePhase = null;      // 'burst' | 'decel' | null (not dashing)
     this.supermoveTimer = 0;         // seconds remaining in the CURRENT phase
@@ -822,7 +825,7 @@ export class Hero extends Entity {
       const fr = this.spriteAnimData.frames;
       const i = this.spriteFrameIndex % fr.length;
       const cur = fr[i];
-      const isKey = (cur?.durUnits ?? 1) >= SUPERMOVE_HIT_DUR_UNITS;
+      const isKey = (cur?.boxes ?? []).some(b => b.label === 'hit');
       const fin = this._supermoveBurstKnockback().finisher;
       Debug.logEvent(
         `[sm] f=${i}/${fr.length - 1} phase=${this.supermovePhase} key=${isKey ? 'Y' : '-'} finisher=${fin ? 'Y' : '-'} @(${Math.round(this.x)},${Math.round(this.y)}) vx=${Math.round(this.vx ?? 0)}`
@@ -837,7 +840,7 @@ export class Hero extends Entity {
     // No sheet attached (bare node tests) → the animation can never report
     // "done", so end at the velocity-phase boundary instead of leaking
     // protection forever.
-    if (!this._supermoveEnded && !this.supermoveActive && this.plow) {
+    if (this.attackMoves.supermove.running && !this._supermoveEnded && !this.supermoveActive) {
       const animDone = this._spriteAnim === 'supermove' && !!this._player?.isDone;
       if (animDone || !this.spriteAnimData) {
         this._supermoveEnded = true;
@@ -919,31 +922,14 @@ export class Hero extends Entity {
    * active — or during the cooldown tail — further calls are ignored, which
    * is what prevents spamming.
    */
-  tryMelee() {
-    // Mutual exclusion (§15/§16): the two swings never overlap. startSpecialMelee
-    // refuses while a normal swing is up; this is the symmetric guard so a
-    // plain Melee press can't start a normal swing under an active special one.
-    if (this.meleeCooldown > 0 || this.meleeActive || this.specialMeleeActive) return;
-    this.meleeFrame = 0;
-    this.meleeActive = true;
-    // Airborne at swing START → play the `air_melee` sheet for the whole swing
-    // (captured once, so landing mid-swing keeps the air art in lockstep with
-    // the hitbox). Grounded starts keep the grounded `melee` sheet even during
-    // the coyote-time grace window after leaving a ledge.
-    this._meleeAirborne = !this.grounded;
-    this.meleeCooldown = this.MELEE_TOTAL_FRAMES * this.MELEE_FRAME_DURATION;
-    // Jump the attack anim to frame 0 so it plays from the windup. The sheet
-    // player is time-driven (SpritePlayer), so rewind it via setProgress(0);
-    // updateMelee then maps each logical swing frame onto it every tick.
-    this._meleeAnimProgress(0);
-  }
+  tryMelee() { return this.attackMoves.melee.tryMelee(); }
 
   /** Map a logical swing frame (0..MELEE_TOTAL_FRAMES-1) onto the active
    * melee/super_melee sheet player. Progress-based so the art follows the
    * slide regardless of how many frames the sheet has. No-op when no sheet
    * is attached (primitive path / node tests). */
   _meleeAnimProgress(p) {
-    const name = this.specialMeleeActive ? 'super_melee' : (this._meleeAirborne ? 'air_melee' : 'melee');
+    const name = this.specialMeleeActive ? 'super_melee' : (this._meleeSheet ?? (this._meleeAirborne ? 'air_melee' : 'melee'));
     if (this._spriteAnim === name && this._player) this.setProgress(p);
   }
 
@@ -1001,53 +987,7 @@ export class Hero extends Entity {
    * @param {number} dt seconds
    * @param {object} input intent (jump/left/right used for recovery cancel)
    */
-  updateMelee(dt, input) {
-    if (this.meleeCooldown > 0) this.meleeCooldown -= dt;
-    if (!this.meleeActive) return;
-    // Phase derived from the frame count BEFORE advancing (frame N owns its own
-    // phase): windup [0, ACTIVE_FRAME), active [ACTIVE_FRAME, TOTAL-1),
-    // recovery [TOTAL-1, TOTAL).
-    const f = Math.floor(this.meleeFrame);
-    const inRecovery = f >= this.MELEE_TOTAL_FRAMES - 1;
-    if (inRecovery && this._meleeCancelRequested(input)) {
-      // Recovery cancel (§16/§19): end the swing NOW, discard the buffered
-      // action — cancellation always wins and clears the buffer. Locomotion
-      // resumes immediately (the movement/jump blocks in update() already ran
-      // with this frame's input, so control is regained the same frame).
-      this.endNormalMelee();
-      this.pendingMelee = null;
-      this._prevMeleeJumpHeld = !!(input && input.jump);
-      return;
-    }
-    this.meleeFrame += dt / this.MELEE_FRAME_DURATION;
-    // Self-protection on connect (markMeleeConnect): the window is counted in
-    // swing frames, so it decays one frame per tick while the jab is running.
-    // Armed during active → drained to exactly zero by recovery's end.
-    if (this._connectProtectFrames > 0) {
-      this._connectProtectFrames = Math.max(0, this._connectProtectFrames - 1);
-    }
-    if (this.meleeFrame >= this.MELEE_TOTAL_FRAMES) {
-      this.meleeActive = false;
-      this.meleeFrame = 0;
-      this._meleeAirborne = false;
-      this._meleeHitTargets.clear(); // swing over — next swing re-arms freely
-      // Clamp to exactly 0: the decrement above can leave a tiny positive float
-      // (~1e-16) when the last tick overshoots the boundary. tryMelee()'s guard
-      // (`meleeCooldown > 0`) would then reject a buffered 'normal' attack that
-      // executePendingMelee fires on this very tick.
-      this.meleeCooldown = 0;
-      // Natural completion (§18): a buffered melee fires NOW — after windup →
-      // active → full natural recovery — without any re-press. Buffering did
-      // not shorten the swing: this tick happened on the original schedule.
-      this.executePendingMelee();
-    } else {
-      // Keep the visible attack frame aligned with the logical frame index:
-      // map the swing's normalized progress onto the sheet player so the art
-      // spans the WHOLE swing duration (sheet fps is irrelevant).
-      this._meleeAnimProgress(this.meleeFrame / (this.MELEE_TOTAL_FRAMES - 1));
-    }
-    this._prevMeleeJumpHeld = !!(input && input.jump);
-  }
+  updateMelee(dt, input) { return this.attackMoves.melee.updateMelee(dt, input); }
 
   /**
    * Shared recovery-cancel predicate (design §16/§19): true when the player
@@ -1066,14 +1006,7 @@ export class Hero extends Entity {
   }
 
   /** End the normal swing (natural completion or recovery cancel, §16/§19). */
-  endNormalMelee() {
-    this.meleeActive = false;
-    this.meleeFrame = 0;
-    this._meleeAirborne = false;
-    this.meleeCooldown = 0;
-    this._meleeHitTargets.clear(); // swing over — next swing re-arms freely
-    this._flushPendingCrouch();
-  }
+  endNormalMelee() { return this.attackMoves.melee.endNormalMelee(); }
 
   /** Apply a crouch entry/exit that was deferred across a swing's recovery.
    * Called from endNormalMelee / endSpecialMelee so the height change lands
@@ -1109,74 +1042,9 @@ export class Hero extends Entity {
    * @returns {{x:number,y:number,w:number,h:number}|null}
    */
   attackHitboxWorld(attackName) {
-    if (attackName === ATTACK_MELEE) {
-      if (!this.meleeActive) return null;
-      // Sheet-authored box ONLY: the per-frame `attack` boxes on the active
-      // melee/air_melee sheet ARE the damage window. No table fallback — a
-      // frame without an authored box deals no damage (same contract as
-      // supermove). A hero whose sheet lacks boxes simply cannot jab.
-      const sheetBox = this._sheetAttackBox(this._meleeAirborne ? 'air_melee' : 'melee');
-      if (!sheetBox) return null;
-      const wb = this.worldBox();
-      const box = this._sheetBoxToWorld(sheetBox);
-      // finisher: false — the finisher tier (big launch + screen shake) is
-      // reserved for KILLS (hitbox.js upgrades moderate→big + KILL_SHAKE when
-      // the victim dies) and the supermove's last burst. Stamping finisher:true
-      // on every sheet frame made ALL melee connects use the kill-tier launch
-      // + shake, reading as "every hit is a finisher."
-      // dedupeScope: 'swing' — ONE connect per target per SWING. The box can
-      // blink off mid-swing (unboxed sheet frames); the slot lifecycle treats
-      // each re-appearing box as a fresh instance, so swing-level memory
-      // (Hero._meleeHitTargets) owns the already-hit set across gaps.
-      return { ...box, ...this._attackKnockback(attackName), finisher: false, dedupeScope: 'swing', _source: 'sheet' };
-    } else if (attackName === ATTACK_SPECIAL_MELEE) {
-      if (!this.specialMeleeActive || this.specialMeleePhase !== 'active') return null;
-      // Sheet-authored box ONLY (super_melee sheet plays during the swing —
-      // its per-frame boxes ARE the active window). No table fallback: a
-      // frame without an authored box deals no damage.
-      const sheetBox = this._sheetAttackBox('super_melee');
-      if (!sheetBox) return null;
-      const box = this._sheetBoxToWorld(sheetBox);
-      // finisher: false — same rule as melee: the finisher tier is for KILLS
-      // (hitbox.js kill check upgrades to big + KILL_SHAKE) and the supermove
-      // ender. Every-frame finisher made each super-melee connect shake +
-      // launch at kill strength.
-      // dedupeScope: 'swing' — one connect per target per sweep, same reason
-      // as melee (box gaps within the swing must not re-arm the hitSet).
-      return { ...box, ...this._attackKnockback(attackName), finisher: false, dedupeScope: 'swing', _source: 'sheet' };
-    } else if (attackName === ATTACK_SUPERMOVE) {
-      // Sheet-authored box ONLY (melee active-frame pattern): the per-frame
-      // `attack` boxes on the supermove sheet ARE the damage window. No table
-      // fallback — a frame without an authored box deals no damage. The window
-      // spans the WHOLE sheet playback — supermove AND the post-supermove visual tail —
-      // because _sheetAttackBox already gates on _spriteAnim === 'supermove',
-      // which stays set until the player reaches its terminal frame.
-      //
-      // Burst gating (durUnits): only KEYFRAMES (durUnits >= 3 — the held
-      // extended-fist / planted-foot poses) actually connect. Short frames
-      // between keyframes show their box in debug but deal nothing, so each
-      // visible "money pose" is one contact window and the hitSet (cleared
-      // per swing in hitboxes.js) re-arms when the box drops off between
-      // bursts. The LAST keyframe of the dash carries the finisher launch;
-      // earlier keyframes use the moderate burst shove that keeps the victim
-      // in reach for the next burst to re-grab.
-      const sheetBox = this._sheetAttackBox('supermove');
-      if (!sheetBox) return null;
-      const data = this.spriteAnimData;
-      const frame = data?.frames[this.spriteFrameIndex % (data?.frames.length ?? 1)];
-      const isKeyframe = (frame?.durUnits ?? 1) >= SUPERMOVE_HIT_DUR_UNITS;
-      if (!isKeyframe) return null; // short frame: box visible in debug, no contact
-      const { hitstop: burstHitstop, finisher } = this._supermoveBurstKnockback();
-      const a = this.heroDef.attacks[ATTACK_SUPERMOVE];
-      const box = this._sheetBoxToWorld(sheetBox);
-      // Always carry BOTH tiers on the box; the impact site picks big when this
-      // is the finisher frame OR the hit kills, else moderate. (Previously kb
-      // was the pre-chosen tier, which capped non-finisher bursts at 300 even
-      // on a kill.)
-      return { ...box, knockbackModerate: a.knockbackModerate, knockbackBig: a.knockbackBig, hitstop: burstHitstop, finisher, _source: 'sheet', _traceFrame: this.spriteFrameIndex };
-    } else {
-      throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
-    }
+    const attack = this.attackMoves[attackName];
+    if (!attack) throw new Error(`Unknown attack: ${attackName}`);
+    return attack.hitbox();
   }
 
   /**
@@ -1218,15 +1086,8 @@ export class Hero extends Entity {
    * @returns {object} KnockbackSetting for the current keyframe
    */
   _supermoveBurstKnockback() {
-    const data = this.spriteAnimData;
-    if (!data || this._spriteAnim !== 'supermove') return { hitstop: SUPERMOVE_FINISHER_HITSTOP, finisher: true };
-    const frames = data.frames;
-    const idx = this.spriteFrameIndex % frames.length;
-    // Is the CURRENT frame the last keyframe in the sheet?
-    const isLastKeyframe = !frames.slice(idx + 1).some(f => (f?.durUnits ?? 1) >= SUPERMOVE_HIT_DUR_UNITS);
-    return isLastKeyframe
-      ? { hitstop: SUPERMOVE_FINISHER_HITSTOP, finisher: true }
-      : { hitstop: SUPERMOVE_BURST_HITSTOP, finisher: false };
+    const lastHit = this.attackMoves.supermove.isLastHit();
+    return { finisher: lastHit }; // Debug window marker only; impact outcome owns hitstop.
   }
 
   /**
@@ -1245,7 +1106,7 @@ export class Hero extends Entity {
     if (this._spriteAnim !== animName || !this.spriteAnimData) return null;
     const data = this.spriteAnimData;
     const frame = data.frames[this.spriteFrameIndex % data.frames.length];
-    const box = (frame?.boxes ?? []).find(b => b.label === 'attack');
+    const box = (frame?.boxes ?? []).find(b => b.label === 'hit');
     if (!box) return null;
     // Boxes are authored in EDITOR/ANCHOR SPACE — the same space as the
     // collision box and pivot (y-down, origin at the sheet's (0,0)). The
@@ -1302,27 +1163,7 @@ export class Hero extends Entity {
    * Facing/mirrorX are never flipped here. The `super_melee` sheet plays via
    * updateHeroLocomotionAnim while specialMeleeActive is set.
    */
-  startSpecialMelee() {
-    if (this.specialMeleeActive || this.meleeActive) return;
-    const cfg = this.heroDef.specialMelee;
-    // The super_melee sweep is a full-height standing move — stand up first
-    // so the art isn't clipped at crouch height.
-    if (this.crouching) this.exitCrouch();
-    this.specialMeleeActive = true;
-    this.specialMeleeFrame = 0;
-    // Resolved movement direction: toward facing (+1 for the unified sweep).
-    // Captured ONCE at trigger — it cannot be reversed mid-attack.
-    this.specialMeleeDir = this.facing * cfg.direction;
-    // Rewind the sheet to frame 1 so the art plays its natural cycle in lockstep
-    // with the swing clock (updateSpecialMelee maps progress every tick). The
-    // phase is derived from the sheet frame each tick — no stored windup/active
-    // counts; frames carrying an authored attack box ARE the active window.
-    this._meleeAnimProgress(0);
-    // Initial phase: 'windup' when the sheet's first frame has no box, else the
-    // derived value ('active'). No sheet / no boxes → 'windup' (committed);
-    // updateSpecialMelee re-derives it on the first tick.
-    this.specialMeleePhase = this._spriteAnim === 'super_melee' ? this._specialMeleePhaseAt(0) ?? 'windup' : 'windup';
-  }
+  startSpecialMelee() { return this.attackMoves.specialMelee.startSpecialMelee(); }
 
   /** Duration (s) of one normal melee swing. Sheet-driven (§30 v2): the
    * heroDef override wins when present; otherwise ONE FULL CYCLE of the
@@ -1332,7 +1173,7 @@ export class Hero extends Entity {
   get MELEE_DURATION() {
     const d = this.heroDef.meleeTiming?.duration;
     if (d != null && Number.isFinite(d)) return d;
-    const sheetName = this._meleeAirborne ? 'air_melee' : 'melee';
+    const sheetName = this._meleeSheet ?? (this._meleeAirborne ? 'air_melee' : 'melee');
     if (this._spriteAnim === sheetName && this._player) return this._player.cycleDuration;
     return 0.4;
   }
@@ -1422,7 +1263,7 @@ export class Hero extends Entity {
     const n = data.frames.length;
     let firstBoxed = -1, lastBoxed = -1;
     for (let i = 0; i < n; i++) {
-      if ((data.frames[i].boxes ?? []).some(b => b.label === 'attack')) {
+      if ((data.frames[i].boxes ?? []).some(b => b.label === 'hit')) {
         if (firstBoxed < 0) firstBoxed = i;
         lastBoxed = i;
       }
@@ -1443,98 +1284,10 @@ export class Hero extends Entity {
    * @param {number} dt seconds
    * @param {object} input intent (jump edge used for recovery cancel)
    */
-  updateSpecialMelee(dt, input) {
-    if (!this.specialMeleeActive) return;
-    const cfg = this.heroDef.specialMelee;
-    const total = this.specialMeleeTotalFrames;
-
-    // The PRE-increment value is what this tick acts on (frame N owns its own
-    // phase), so a swing started at frame 0 plays its first sheet frame on the
-    // first tick and crosses each boundary on the exact tick the previous
-    // frame completes.
-    const f = Math.floor(this.specialMeleeFrame);
-
-    // Natural completion once the whole sheet cycle has elapsed.
-    if (f >= total) {
-      this.endSpecialMelee();
-      this.executePendingMelee();
-      this._prevMeleeJumpHeld = !!(input && input.jump);
-      return;
-    }
-
-    // Phase is DERIVED from the sheet frame every tick (box = active window)
-    // when a super_melee sheet is attached. Without one (node tests / table
-    // fallback path) the phase is imperative — callers set it directly and it
-    // must survive this tick (the table fallback has no box data to derive
-    // from, so 'active' would clobber a manually-set recovery).
-    const derived = this._specialMeleePhaseAt(f);
-    const phase = (this._spriteAnim === 'super_melee' && derived != null) ? derived : (this.specialMeleePhase ?? 'active');
-    // FUSE-TRACE (temporary): super-melee frame/phase walk — one line per
-    // frame while the swing plays, so a barrel KILL line can be matched to
-    // the exact melee frame + phase that dealt it.
-    Debug.logEvent(
-      `[melee] super_melee f=${f}/${(this.spriteAnimData?.frames.length ?? '?') - 1} phase=${phase} @(${Math.round(this.x)},${Math.round(this.y)})`
-    );
-    this.specialMeleePhase = phase;
-
-    // Recovery cancel (§16/§19 shared rule): a fresh jump press OR any
-    // horizontal movement input ends the swing early; normal control resumes
-    // immediately. Checked AFTER the phase is derived so a boundary-crossing
-    // frame cancels out of recovery correctly. The jump edge uses
-    // _prevMeleeJumpHeld — a dedicated tracker updated at the END of this
-    // method — because the shared _prevJumpHeld is already set from THIS
-    // frame's input by the time update() reaches here, which would make the
-    // fresh-press check always false (stale signal). Cancellation ALWAYS wins:
-    // the pending melee buffer is discarded along with the remaining recovery
-    // (§19 "cancellation always wins and clears the buffer").
-    if (phase === 'recovery' && this._meleeCancelRequested(input)) {
-      this.endSpecialMelee();
-      this.pendingMelee = null;
-      this._prevMeleeJumpHeld = !!input.jump;
-      return;
-    }
-
-    this.specialMeleeFrame += dt / (this.specialMeleeDuration / total);
-
-    // Self-protection on connect (knockback.md ): the window is
-    // counted in swing frames, so it decays one frame per tick while the
-    // special swing is running. It can only be armed during active, so by the
-    // time recovery ends the count has drained to exactly zero — no separate
-    // expiry check needed. A whiffed swing never arms it.
-    if (this._connectProtectFrames > 0) {
-      this._connectProtectFrames = Math.max(0, this._connectProtectFrames - 1);
-    }
-
-    if (phase === 'recovery') {
-      // Committed velocity bleeds off under friction during recovery.
-      this.vx *= GROUND_FRICTION;
-      if (Math.abs(this.vx) < 1) this.vx = 0;
-    } else {
-      // Windup + active: committed — the trajectory OWNS vx regardless of
-      // held input; it cannot be reversed mid-attack.
-      this.vx = this.specialMeleeDir * cfg.travelSpeed * UNIT_PX_X; // X-units/s → px/s
-    }
-
-    // Keep the visible super_melee frame aligned with the logical swing frame:
-    // map normalized progress onto the sheet player so the art spans the whole
-    // slide duration. No-op when no sheet is attached.
-    this._meleeAnimProgress(f / (total - 1));
-
-    // Refresh the dedicated jump-edge tracker AFTER all consumers have run,
-    // so next frame's fresh-press check compares against THIS frame's state.
-    this._prevMeleeJumpHeld = !!(input && input.jump);
-  }
+  updateSpecialMelee(dt, input) { return this.attackMoves.specialMelee.updateSpecialMelee(dt, input); }
 
   /** End the special swing (natural completion or recovery jump-cancel). */
-  endSpecialMelee() {
-    this.specialMeleeActive = false;
-    this.specialMeleePhase = null;
-    this.specialMeleeFrame = 0;
-    // A cancelled swing ends its self-protection immediately (    // "protection clears when the swing ends or is cancelled").
-    this._connectProtectFrames = 0;
-    this._specialHitTargets.clear(); // sweep over — next sweep re-arms freely
-    this._flushPendingCrouch();
-  }
+  endSpecialMelee() { return this.attackMoves.specialMelee.endSpecialMelee(); }
 
   /**
    * World-space AABB of the special melee hitbox, or null when no damage
@@ -1659,6 +1412,7 @@ export class Hero extends Entity {
    */
   die() {
     if (this.dying) return;
+    for (const attack of Object.values(this.attackMoves)) attack.end();
     this.dying = true;
     this.deathTimer = 0;
     this.energy = 0;
@@ -1736,84 +1490,10 @@ export class Hero extends Entity {
    * @param {number} dt seconds
    * @param {object} input { super: boolean }
    */
-  updateSupermove(dt, input) {
-    // Charge the meter (only when not already full and not mid-supermove).
-    if (!this.supermoveActive && this.supermoveMeter < this.SUPERMOVE_MAX) {
-      this.supermoveMeter = Math.min(this.SUPERMOVE_MAX, this.supermoveMeter + this.SUPERMOVE_CHARGE_RATE * dt);
-    }
-
-    // Trigger: super pressed + meter full + not already dashing.
-    if (input.super && this.supermoveMeter >= this.SUPERMOVE_MAX && !this.supermoveActive) {
-      this.triggerSupermove();
-    }
-
-    // supermove playback: committed burst → decelerating recovery. The sheet art
-    // is NOT progress-mapped — it plays at its authored fps (the SpritePlayer
-    // ticks below), so the supermove covers only the first part of the cycle and
-    // the remainder finishes as a visual freeze tail after endSupermove()
-    // (see _supermoveTail in heroSprites.js).
-    if (this.supermoveActive) {
-      const dir = this.facing;
-      // §22 velocity profile: ONE continuous linear ramp from SUPERMOVE_SPEED at
-      // supermove start down to SUPERMOVE_RESIDUAL at supermove end, driven by TOTAL elapsed
-      // time since the trigger. The phase split (burst vs decel) only governs
-      // gravity and jump-cancel eligibility — it must NOT create a velocity
-      // discontinuity at the handoff (supermoveTimer resets between phases).
-      this._supermoveElapsed += dt;
-      const f = Math.min(1, this._supermoveElapsed / SUPERMOVE_DUR); // 0→1 across the whole supermove
-      this.vx = dir * (SUPERMOVE_SPEED + (SUPERMOVE_RESIDUAL - SUPERMOVE_SPEED) * f);
-      if (this.supermovePhase === 'burst') {
-        // Committed: no gravity (handled by the gate in update()).
-        this.vy = 0;
-        this.supermoveTimer -= dt;
-        if (this.supermoveTimer <= 0) {
-          // Hand off to the recovery phase; carry the boundary velocity.
-          this.supermovePhase = 'decel';
-          this.supermoveTimer = this.decelDur;
-        }
-      } else {
-        // Recovery: gravity applied in update(). A fresh Jump press cancels here
-        // (see the jump block in update()).
-        this.supermoveTimer -= dt;
-        if (this.supermoveTimer <= 0) this._velocityPhaseDone();
-      }
-    }
-  }
+  updateSupermove(dt, input) { return this.attackMoves.supermove.updateSupermove(dt, input); }
 
   /** Start the super supermove. Resets meter, sets active state, swaps anim. */
-  triggerSupermove() {
-    // §24: combat inputs are locked during hit-stun — no supermove activation.
-    if (this.hitStunned) return;
-    this._supermoveEnded = false; // re-arm the animation-end latch for this move
-    this.supermoveMeter = 0;
-    this.supermoveActive = true;
-    // Split the total duration into the committed burst and the recovery tail.
-    this.burstDur = SUPERMOVE_DUR * SUPERMOVE_BURST_FRAC;
-    this.decelDur = SUPERMOVE_DUR - this.burstDur;
-    this.decelFrac = this.decelDur / SUPERMOVE_DUR; // speed scale at handoff
-    this.supermovePhase = 'burst';
-    this.supermoveTimer = this.burstDur;
-    this._supermoveElapsed = 0; // total elapsed since trigger (drives the velocity ramp)
-    // The supermove is untouchable for its whole window (immunity.md):
-    // EVENT-BASED invincibility — no timer. It starts here and ends in
-    // endSupermove() (natural end or jump-cancel), so immunity can never
-    // outlive the move. A pre-existing longer grant (i-frames / star) is
-    // untouched: scoped clear only removes the supermove's own tag.
-    this.setInvincible('supermove'); // open-ended, cleared by endSupermove()
-    this.plow = true;                // body pushes enemies, nothing pushes us
-    {
-      const d = this.spriteAnimData;
-      console.log(`[sm] START pos=(${this.x.toFixed(0)},${this.y.toFixed(0)}) facing=${this.facing}` +
-        ` | anim='${this._spriteAnim}' frame ${this.spriteFrameIndex}/${d?.frames.length ?? '?'} (player done=${!!this._player?.isDone})` +
-        ` | plow+invincible ON for the WHOLE move (burst ${this.burstDur.toFixed(2)}s + decel ${this.decelDur.toFixed(2)}s)`);
-    }
-    // Swap to the supermove animation.
-    if (this.anims.supermove) {
-      this._prevAnim = this.anim;
-      this.anim = this.anims.supermove;
-      this.anim.reset();
-    }
-  }
+  triggerSupermove() { return this.attackMoves.supermove.triggerSupermove(); }
 
   /**
    * SUPERMOVE END (the real end — the animation's terminal frame).
@@ -1826,26 +1506,7 @@ export class Hero extends Entity {
    * Called from finishSupermoveAnim() (hero.update), which fires on the first
    * frame after the player reaches its terminal frame.
    */
-  endSupermove() {
-    const d = this.spriteAnimData;
-    console.log(`[sm] SUPERMOVE END pos=(${this.x.toFixed(0)},${this.y.toFixed(0)})` +
-      ` | anim='${this._spriteAnim}' frame ${this.spriteFrameIndex}/${d?.frames.length ?? '?'} (player done=${!!this._player?.isDone})` +
-      ` | plow+invincible OFF — the move is over`);
-    // PROTECTION OFF — exactly at the last frame of the move. Scoped clear:
-    // only the 'supermove' grant is removed; a star or i-frame grant that was
-    // live before or picked up during the move survives untouched.
-    this.clearInvincible('supermove');
-    this.plow = false;
-    // PIN RELEASE (combo end): any body a burst pinned but the finisher never
-    // connected dies/breaks NOW, in place, the normal way. Runs on every exit
-    // path — natural end, jump-cancel — because they all funnel here.
-    unpinAll({ barrels: [...(ctx.barrels ?? []), ...(ctx.woodBarrels ?? []), ...(ctx.coinBarrels ?? [])], enemies: ctx.realEnemies ?? [] });
-    // Restore previous animation.
-    if (this._prevAnim) {
-      this.anim = this._prevAnim;
-      this._prevAnim = null;
-    }
-  }
+  endSupermove() { return this.attackMoves.supermove.endSupermove(); }
 
   /**
    * Velocity-phase handoff (NOT the end of the move). The 0.6s speed ramp is
@@ -1853,13 +1514,7 @@ export class Hero extends Entity {
    * The ANIMATION keeps playing and protection (plow + invincible) stays ON
    * until endSupermove() at the sheet's terminal frame — one move, one window.
    */
-  _velocityPhaseDone() {
-    this.supermoveActive = false;
-    this.supermovePhase = null;
-    this.supermoveTimer = 0;
-    this.vx = this.facing * SUPERMOVE_RESIDUAL;
-    console.log(`[sm] velocity phase done (0.6s ramp finished) — move CONTINUES until the animation ends; plow+invincible stay ON`);
-  }
+  _velocityPhaseDone() { return this.attackMoves.supermove._velocityPhaseDone(); }
 
   /**
    * World-space AABB of the super supermove hitbox, or null when not dashing.
