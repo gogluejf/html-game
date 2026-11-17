@@ -3,7 +3,7 @@
 // follows the same lifecycle: box appears → activate + reset hitSet, box
 // persists → stay active, box disappears → deactivate.
 
-import { makeHitbox, resetHitbox, processHitboxes } from './hitbox.js';
+import { makeHitbox, resetHitbox, processHitboxes, stepImpactTraces } from './hitbox.js';
 import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../hero/heroDefs.js';
 import { LAYER } from '../consts.js';
 import { Effects } from '../effects.js';
@@ -95,6 +95,9 @@ const _slotSpecialMelee = makeSlot(_hbSpecialMelee, {
  */
 export function processAllHitboxes() {
   const h = ctx.hero;
+
+  // IMPACT-TRACE: advance per-frame follow-up traces (barrel vs enemy slide).
+  stepImpactTraces();
 
   // --- Hero slots (melee + special melee + supermove) ---
   updateSlot(_slotMelee);

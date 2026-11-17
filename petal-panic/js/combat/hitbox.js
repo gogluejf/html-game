@@ -27,6 +27,34 @@ import { Debug } from '../debug/debug.js';
 /** Methods whose connect deals blood (melee-family strikes). */
 const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
 
+// IMPACT-TRACE follow-up: after a melee-family connect, log the victim's
+// position + velocity every frame for 30 frames so the decay curve (barrel
+// per-second friction vs enemy per-frame friction + AI takeover) is visible.
+const _impactTraces = []; // { t, label, until }
+const IMPACT_TRACE_FRAMES = 30;
+let _impactTraceSeq = 0;
+
+function startImpactTrace(t, label) {
+  if (_impactTraces.length >= 6) return; // cap: don't trace everything on screen
+  _impactTraces.push({ t, label, until: IMPACT_TRACE_FRAMES });
+}
+
+/** Call once per update tick (from processAllHitboxes): advance follow-ups. */
+export function stepImpactTraces() {
+  for (let i = _impactTraces.length - 1; i >= 0; i--) {
+    const tr = _impactTraces[i];
+    const v = tr.t;
+    if (!v || v.alive === false) { _impactTraces.splice(i, 1); continue; }
+    Debug.logEvent(
+      `[impact+${IMPACT_TRACE_FRAMES - tr.until}] ${tr.label} ` +
+      `@(${Math.round(v.x ?? 0)},${Math.round(v.y ?? 0)}) ` +
+      `v=(${Math.round(v.vx ?? 0)},${Math.round(v.vy ?? 0)}) ` +
+      `stun=${Math.round((v.hitstunTimer ?? 0) * 100) / 100}s`
+    );
+    if (--tr.until <= 0) _impactTraces.splice(i, 1);
+  }
+}
+
 /** Screen shake tiers per connect method (max-kick merge rule: a 6 fired on
  * the same frame as a 2 or 4 always wins — no double-shake bookkeeping).
  *   - jab: subtle twitch (spammy attack, full kick would read as noise)
@@ -329,6 +357,28 @@ export function processHitboxes(hitboxes, targets, onHit) {
       });
       const dealt = res.accepted ? res.dealt : 0;
 
+      // Kill detection for the kill-upgrade below AND the impact trace: hp<=0
+      // or aiState flipped to 'dead'. (applyHit's res.destroyed is unreliable
+      // for enemies — takeDamage restores alive=true for the death anim.)
+      const justKilled = t.layer !== LAYER.HERO && !isBarrelTarget(t)
+        && ((typeof t.hp === 'number' && t.hp <= 0) || t.aiState === 'dead');
+      // IMPACT-TRACE: one line per melee-family connect — method, victim class,
+      // position + velocity right after the shove. Used to compare barrel vs
+      // enemy slide behavior (friction model mismatch investigation).
+      if (BLOOD_METHODS.has(hb.method)) {
+        const label = `${hb.method} ${isBarrelTarget(t) ? 'barrel' : 'enemy:' + (t.type ?? '?')} #${_impactTraceSeq++}`;
+        Debug.logEvent(
+          `[impact] ${label} finisher=${hb.finisher ? 'Y' : '-'} ` +
+          `@(${Math.round(tb.x)},${Math.round(tb.y)}) ` +
+          `v=(${Math.round(t.vx ?? 0)},${Math.round(t.vy ?? 0)}) ` +
+          `dealt=${dealt} hp=${Math.round(t.hp ?? -1)} maxhp=${Math.round(t.maxHp ?? t.stats?.stamina ?? -1)} ` +
+          `kbSrc=${hb.finisher ? 'finisher-big' : (justKilled ? 'kill-upgrade-big' : 'chip-moderate')} ` +
+          `stun=${Math.round((t.hitstunTimer ?? 0) * 100) / 100}s ` +
+          `fuse=${t._fuse != null ? t._fuse : '-'} intangible=${!!t.intangible}`
+        );
+        startImpactTrace(t, label);
+      }
+
       // PIN RELEASE — finisher connect on a pinned body: the fancy death
       // starts NOW (big launch + ghost / fuse). releaseFinisher clears the
       // pin, so unpinAll at combo end can never double-release.
@@ -349,8 +399,6 @@ export function processHitboxes(hitboxes, targets, onHit) {
       // aiState flipped to 'dead'. The moderate vector was ALREADY applied by
       // applyHit (respecting weight); we add the DELTA to land exactly on the
       // ignoreResist big vector, then ghost + shake.
-      const justKilled = t.layer !== LAYER.HERO && !isBarrelTarget(t)
-        && ((typeof t.hp === 'number' && t.hp <= 0) || t.aiState === 'dead');
       if (justKilled && hb.knockbackBig) {
         const bigVec = _orientStored(hb, t, tb, hb.knockbackBig);
         // Current velocity already includes the moderate shove (÷ resist). To
