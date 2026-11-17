@@ -52,7 +52,7 @@
      },
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": 80,
        "y": -406,
        "w": 205,
@@ -110,7 +110,7 @@
      },
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": 188,
        "y": -332,
        "w": 259,
@@ -168,7 +168,7 @@
      },
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": 49,
        "y": -337,
        "w": 372,

@@ -31,7 +31,7 @@
      },
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": 2,
        "y": -402,
        "w": 411,
@@ -58,7 +58,15 @@
       "sx": 1,
       "sy": 1
      },
-     "boxes": [],
+     "boxes": [
+      {
+       "label": "attack",
+       "x": 2,
+       "y": -402,
+       "w": 417,
+       "h": 269
+      }
+     ],
      "durUnits": 1
     },
     {
@@ -81,7 +89,7 @@
      },
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": 305,
        "y": -272,
        "w": 215,
@@ -139,7 +147,7 @@
      },
      "boxes": [
       {
-       "label": "attack",
+       "label": "hit",
        "x": 305,
        "y": -272,
        "w": 451,
